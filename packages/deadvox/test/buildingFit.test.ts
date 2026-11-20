@@ -174,7 +174,8 @@ const RULE = /breaks the (\w+) rule/;
 const rulesOf = (issues: readonly ContentIssue[]) =>
   issues.map(({ path, message }) => ({ path, rule: RULE.exec(message)?.[1] }));
 
-const ANSWER = 'mapAssemblies[1]';
+// The answer assembly is appended after the fixture kit's own assemblies, so its index follows the fixture's list.
+const ANSWER = `mapAssemblies[${KITS.mapAssemblies!.length}]`;
 
 describe('building fit check', () => {
   it('accepts an assembly that fits its brief over every slot variant', () => {

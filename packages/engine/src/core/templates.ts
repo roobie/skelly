@@ -199,6 +199,8 @@ export interface CompiledTemplate {
   readonly provenance?: readonly (VoxelProvenance | undefined)[];
   readonly anchors?: Readonly<Record<string, KitAnchor>>;
   readonly ports?: readonly KitPort[];
+  /** The piece's road passage through this template's own coordinates; compilation projects it as it projects ports. */
+  readonly route?: readonly Vec3[];
   readonly pieces: readonly Piece[];
   readonly spawns: readonly SpawnMarker[];
   readonly groundLoot?: readonly GroundLootMarker[];
@@ -490,6 +492,7 @@ export const compileMapPiece = (
     ...compiled,
     anchors: piece.anchors,
     ports: piece.ports,
+    ...(piece.route ? { route: piece.route.map((point) => [...point] as Vec3) } : {}),
     provenance: compiled.provenance!.map((entry) => entry && { ...entry, owner, slotPath: owner }),
   };
 };
@@ -618,7 +621,7 @@ const resolveSlot = (
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
-    JSON.stringify([...(template.ports ?? [])].sort((a, b) => compareCodeUnits(a.id, b.id)));
+    JSON.stringify([[...(template.ports ?? [])].sort((a, b) => compareCodeUnits(a.id, b.id)), template.route ?? null]);
   for (const { placement } of candidates) {
     if (
       placement.template.ownership!.some(
@@ -634,7 +637,7 @@ const resolveSlot = (
       traversalContract(registry, placement.template) !== traversalContract(registry, reference)
     ) {
       throw new Error(
-        `${label} variant=${placement.template.id}: alternatives need the same ownership domain and reserved voids, with equal solid support and ports, anchors, reserved-body furniture collision and ladder geometry`,
+        `${label} variant=${placement.template.id}: alternatives need the same ownership domain and reserved voids, with equal solid support and ports, route, anchors, reserved-body furniture collision and ladder geometry`,
       );
     }
   }
@@ -649,7 +652,7 @@ const resolveSlot = (
   return drawn.placement;
 };
 
-const placedPort = (placement: Placement, port: KitPort): KitPort => {
+export const placedPort = (placement: Placement, port: KitPort): KitPort => {
   const low = placedPoint(placement, port.clearance.min);
   const high = placedPoint(
     placement,
@@ -675,6 +678,14 @@ const OPPOSITE_PORT: Record<KitPort['facing'], KitPort['facing']> = {
   up: 'down',
   down: 'up',
 };
+
+/** Whether two ports mate exactly: same socket type and traversal, opposite facings, one point and one aperture. */
+export const portsMate = (a: KitPort, b: KitPort): boolean =>
+  a.type === b.type &&
+  a.traversal === b.traversal &&
+  a.facing === OPPOSITE_PORT[b.facing] &&
+  a.at.every((value, axis) => value === b.at[axis]) &&
+  a.aperture.every((value, axis) => value === b.aperture[axis]);
 const validateJoins = (
   assembly: TemplateAssembly,
   resolved: readonly { slot: TemplateSlot; placement: Placement }[],
@@ -692,13 +703,7 @@ const validateJoins = (
     return placedPort(placement, port);
   };
   const mate = (a: KitPort, b: KitPort): void => {
-    if (
-      a.type !== b.type ||
-      a.traversal !== b.traversal ||
-      a.facing !== OPPOSITE_PORT[b.facing] ||
-      a.at.some((value, axis) => value !== b.at[axis]) ||
-      a.aperture.some((value, axis) => value !== b.aperture[axis])
-    ) {
+    if (!portsMate(a, b)) {
       throw new Error(`${source}: incompatible ports ${a.id} and ${b.id}`);
     }
   };
@@ -808,11 +813,17 @@ export const compileAssembly = (
     resolved,
     `seed=${context.seed} slot=${context.slotPath ?? assembly.id} source=${source}`,
   );
+  // A placed slot's road passage projects into assembly coordinates beside its ports, so a road assembly exposes one
+  // route made of its slots' authored routes, in slot order.
+  const route = resolved.flatMap(({ placement }) =>
+    placement.template.route ? [placement.template.route.map((point) => placedPoint(placement, point))] : [],
+  );
   return {
     id: assembly.id,
     lootContext: assembly.lootContext,
     anchors: assembly.anchors,
     ports,
+    ...(route.length > 0 ? { route: route.flat() } : {}),
     ...templateEnvelope(assembly),
     ...composeAssemblyVoxels(assembly, resolved, context),
     pieces: resolved.flatMap(({ placement }) => placedPieces(placement).map(handDown)),

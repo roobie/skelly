@@ -271,3 +271,43 @@ it('rejects a graph connection without a supported walking-and-return route', ()
   const result = build(data);
   expect(result.issues.some((issue) => NO_ROUTE.test(issue.message))).toBe(true);
 });
+
+it("rejects a road port whose aperture does not span its road profile's width", () => {
+  const data = fixture();
+  data.roadProfiles![0]!.widthMetres = 1.5;
+  expect(
+    build(data).issues.some(
+      (issue) =>
+        issue.path.includes('mapPieces') &&
+        issue.message.includes('road port must span the 1.5 m width of road profile "fixture_road", not 1 m'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a route whose mouths are not two distinct walk ports', () => {
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  bend.route![0] = [0, 1, 1];
+  expect(
+    build(data).issues.some(
+      (issue) =>
+        issue.path.includes('mapPieces') &&
+        issue.message.includes('route endpoints must sit on two distinct walk ports'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a route whose mouths no supported passage joins', () => {
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  for (const y of [1, 2, 3, 4]) {
+    bend.layers[y] = ['....', '..=.', '..=.', '....'];
+    bend.ownership.layers[y] = ['RRRR', 'RRSR', 'RRSR', 'RRRR'];
+  }
+  expect(
+    build(data).issues.some(
+      (issue) =>
+        issue.path.includes('mapPieces') && issue.message.includes('route mouths need a supported standing passage'),
+    ),
+  ).toBe(true);
+});

@@ -3,6 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { STRUCTURAL_MATERIAL_ROLES } from './schema/templates.ts';
 import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
 import {
@@ -130,6 +131,13 @@ const portIssues = (registry: Registry, template: CompiledTemplate): [string, st
       issues.push([path, 'ports need unique ids and an anchor on their declared face']);
     }
     ids.add(port.id);
+    const profile = registry.roadProfiles.get(port.type);
+    if (profile && port.aperture[0] * TEMPLATE_BLOCK_SIZE !== profile.widthMetres) {
+      issues.push([
+        path,
+        `road port must span the ${profile.widthMetres} m width of road profile "${profile.id}", not ${port.aperture[0] * TEMPLATE_BLOCK_SIZE} m`,
+      ]);
+    }
     const { min, size } = port.clearance;
     if (!inside(template.size, min) || min.some((value, axis) => value + size[axis]! > template.size[axis]!)) {
       issues.push([path, 'port clearance lies outside the piece']);
@@ -148,6 +156,25 @@ const portIssues = (registry: Registry, template: CompiledTemplate): [string, st
   return issues;
 };
 
+/** A compiled route's mouths must be two distinct walk ports whose landings a body can walk between. */
+const pieceRouteIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => {
+  const route = template.route;
+  if (!route) {
+    return [];
+  }
+  const mouths = [route[0]!, route.at(-1)!].map((end) =>
+    (template.ports ?? []).find(
+      (port) => port.traversal === 'walk' && port.at.every((value, axis) => value === end[axis]),
+    ),
+  );
+  if (!(mouths[0] && mouths[1] && mouths[0] !== mouths[1])) {
+    return [['.route', 'route endpoints must sit on two distinct walk ports']];
+  }
+  return templateStandingRoute(registry, template, mouths[0]!.standing, mouths[1]!.standing)
+    ? []
+    : [['.route', 'route mouths need a supported standing passage through this template']];
+};
+
 const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
   ...templateStoreyIssues(template),
   ...(template.access && !reservedStanding(registry, template, template.access.entrance)
@@ -155,6 +182,7 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
     : []),
   ...anchorIssues(registry, template),
   ...portIssues(registry, template),
+  ...pieceRouteIssues(registry, template),
   ...templateDoorIssues(registry, template),
   ...templateGroundLootIssues(registry, template),
   ...pieceItemIssues(registry, template),
