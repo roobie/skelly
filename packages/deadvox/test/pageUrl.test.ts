@@ -1,9 +1,9 @@
 import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import perfBaseline from '../src/config/perf-baseline.json' with { type: 'json' };
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
-import { newWorldHref, replayHref, tutorialHash } from '../src/product/page.ts';
+import { newWorldHref, playPage, replayHref, tutorialHash } from '../src/product/page.ts';
 import { gameUrl, inlineStartMod } from './browser/gameUrl.mjs';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
@@ -67,6 +67,19 @@ describe('page query', () => {
 });
 
 describe('page links', () => {
+  it('keeps the active content selectors in the development map link', () => {
+    const page = new URL('https://example.test/game/?mods=fixture.cover&start-mod=fixture.start#{debug:true}');
+    vi.stubGlobal('location', page);
+    try {
+      const map = new URL(playPage().reviewMapHref);
+      expect(map.searchParams.get('mods')).toBe(page.searchParams.get('mods'));
+      expect(map.searchParams.get('start-mod')).toBe(page.searchParams.get('start-mod'));
+      expect(map.hash).toBe('');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('starts a new world with the hash seed, keeping the query and the rest of the hash', () => {
     const page = gameUrl('https://example.org/', {
       startMod: 'fixture.start',

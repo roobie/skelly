@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you add a composed-site ask, anchor or population mechanism
+  - you add a composed-site ask, anchor, landscape cover or population mechanism
   - you add or change a link that joins two asks with a road
   - you decide whether a world feature belongs in the city planner or authored layout
   - you change supply guarantees or the boundary between wave content and runtime events
@@ -94,8 +94,13 @@ and `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonne
 > 6. Template eligibility (settlement kinds) is passed down the tree, not ignored, so a
 >    borough's kind narrows which templates fit in it.
 
-Nesting, cover designations and route diagnostics need their own mechanisms; these
-constraints keep their extension points open without pretending they are implemented.
+Resolve landscape cover before dependent anchors, using the same density evaluator as
+vegetation; units supply exclusions rather than their own tree pass. Spawn admission
+must agree with the generated land. See `packages/engine/src/core/composeLayout.ts`,
+`resolveAnchors`, and `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+
+Nesting and route diagnostics need their own mechanisms; these constraints keep their
+extension points open without pretending they are implemented.
 The event count safety bound and player-position horde target remain engine constraints;
 move their tuning to content when adding the corresponding budget and target mechanisms.
 

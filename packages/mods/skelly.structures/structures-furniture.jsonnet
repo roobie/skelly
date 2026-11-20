@@ -201,6 +201,7 @@ local basics = shape.colliding({
       name: 'Shelf',
       size: [2, 4, 1],
       color: '#8d7355',
+      serves: ['storage'],
       shape: [
         { position: [0, 0, 0], size: [0.12, 4, 1] },
         { position: [1.88, 0, 0], size: [0.12, 4, 1] },

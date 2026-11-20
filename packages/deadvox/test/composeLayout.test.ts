@@ -300,12 +300,10 @@ it('resolves anchors once and gives each wave a named anchor cell without append
       ),
     ).toBeGreaterThanOrEqual(anchor.minDistance);
     expect(
-      anchorCleared(
-        anchor,
-        cell,
-        resolved.layout,
-        resolved.reservations.filter((r) => r.ask !== anchor.id),
-      ),
+      anchorCleared(anchor, cell, resolved.layout, {
+        reservations: resolved.reservations.filter((r) => r.ask !== anchor.id),
+        densityAt: () => 0,
+      }),
     ).toBe(true);
     expect(resolved.reservations.some((r) => r.ask === anchor.id && r.kind === 'anchor')).toBe(true);
   }
@@ -331,9 +329,21 @@ it('enforces cell-anchor clearance classes and distance rather than silently rel
   const home = composed.layout.player.position;
   const at: [number, number, number] = home.map((v) => v * 2) as [number, number, number];
   const anchor = { ...edgeAnchor('blocked'), kind: 'cell' as const, at, minDistance: 0 };
-  expect(anchorCleared(anchor, at, composed.layout, composed.reservations)).toBe(false);
-  expect(anchorCleared({ ...anchor, clearOf: [] }, at, composed.layout, composed.reservations)).toBe(true);
-  expect(anchorCleared({ ...anchor, minDistance: 1, clearOf: [] }, at, composed.layout, [])).toBe(false);
+  expect(anchorCleared(anchor, at, composed.layout, { reservations: composed.reservations, densityAt: () => 0 })).toBe(
+    false,
+  );
+  expect(
+    anchorCleared({ ...anchor, clearOf: [] }, at, composed.layout, {
+      reservations: composed.reservations,
+      densityAt: () => 0,
+    }),
+  ).toBe(true);
+  expect(
+    anchorCleared({ ...anchor, minDistance: 1, clearOf: [] }, at, composed.layout, {
+      reservations: [],
+      densityAt: () => 0,
+    }),
+  ).toBe(false);
   const layout = {
     ...composed.layout,
     woodlands: [
@@ -344,16 +354,50 @@ it('enforces cell-anchor clearance classes and distance rather than silently rel
           [80, 80],
           [-80, 80],
         ] as [number, number][],
-        density: 0.8,
+        profile: 'woodland',
       },
     ],
   };
-  expect(anchorCleared(anchor, at, layout, [])).toBe(false);
-  expect(anchorCleared({ ...anchor, woodlandDensityFloor: 0.9 }, at, layout, [])).toBe(true);
+  expect(anchorCleared(anchor, at, layout, { reservations: [], densityAt: () => 0.8 })).toBe(false);
+  expect(
+    anchorCleared({ ...anchor, woodlandDensityFloor: 0.9 }, at, layout, { reservations: [], densityAt: () => 0.8 }),
+  ).toBe(true);
   scenario.anchors = [anchor];
   expect(() => composeLayout(11, registry, scenario)).toThrow('anchor "blocked" could not resolve');
   anchor.clearOf = [];
   expect(composeLayout(11, registry, scenario).anchors.blocked).toEqual(at);
+});
+
+it('admits composed anchors against resolved low-density cover before applying their own exclusion', () => {
+  const scenario = scenarioFixture();
+  const { registry } = load(scenario);
+  const tuning = [...registry.siteGeneration.values()][0]!;
+  tuning.vegetation.openDensity = 0.3;
+  tuning.vegetation.forestDensityField = { wavelengthMetres: 8, seedSalt: 0, floor: 1, gain: 0, ceiling: 1 };
+  tuning.vegetation.regionProfiles = {
+    forest: { density: 1, edgeWavelengthMetres: 8, edgeVariationMetres: 0, treeMix: ['broadleaf'] },
+    field: { density: 0, edgeWavelengthMetres: 8, edgeVariationMetres: 0, treeMix: ['young'] },
+  };
+  const polygon: [number, number][] = [
+    [-80, -80],
+    [80, -80],
+    [80, 80],
+    [-80, 80],
+  ];
+  scenario.woodlands = [
+    { polygon, profile: 'forest' },
+    { polygon, profile: 'field' },
+  ];
+  scenario.anchors = [
+    { ...edgeAnchor('field-arrival'), kind: 'cell', at: [-158, 1, -158], minDistance: 0, clearOf: ['woodland'] },
+  ];
+  const result = composeLayout(11, registry, scenario);
+  expect(result.layout.woodlands).toEqual(scenario.woodlands);
+  expect(result.anchors['field-arrival']).toEqual(
+    scenario.anchors[0]!.kind === 'cell' ? scenario.anchors[0]!.at : undefined,
+  );
+  scenario.woodlands = scenario.woodlands.slice(0, 1);
+  expect(() => composeLayout(11, registry, scenario)).toThrow('anchor "field-arrival" could not resolve');
 });
 
 it('rejects missing and duplicate anchor references at load and never accepts wave cells', () => {

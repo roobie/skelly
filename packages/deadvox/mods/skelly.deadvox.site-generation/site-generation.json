@@ -36,6 +36,7 @@
         "wavelengthMetres": 28
       },
       "vegetation": {
+        "crownMarginMetres": 6,
         "forestDensityField": {
           "ceiling": 0.75,
           "floor": 0.20000000000000001,
@@ -44,11 +45,26 @@
           "wavelengthMetres": 128
         },
         "forestHalfExtentMetres": 384,
+        "forestTreeMix": ["broadleaf", "broadleaf", "conifer", "young"],
         "obstacleMarginMetres": 1,
         "openDensity": 0.035000000000000003,
+        "openTreeMix": ["young"],
+        "regionProfiles": {
+          "meadow": {
+            "density": 0,
+            "edgeVariationMetres": 0,
+            "edgeWavelengthMetres": 20,
+            "treeMix": ["young"]
+          },
+          "woodland": {
+            "density": 0.94999999999999996,
+            "edgeVariationMetres": 6,
+            "edgeWavelengthMetres": 20,
+            "treeMix": ["broadleaf", "broadleaf", "conifer", "young"]
+          }
+        },
         "treeCellMetres": 8,
         "treeJitterMetres": 1.5,
-        "treeMix": ["broadleaf", "broadleaf", "conifer", "young"],
         "trees": {
           "branchLayer": {
             "thicknessMetres": 0.5,
@@ -86,9 +102,7 @@
             }
           },
           "trunkHalfWidthMetres": 0.25
-        },
-        "woodlandEdgeVariation": 0.29999999999999999,
-        "woodlandEdgeWavelengthMetres": 20
+        }
       }
     }
   ]

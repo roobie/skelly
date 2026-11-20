@@ -1,3 +1,4 @@
+export { createGroundCoverSampler } from './render/paperMapRender.ts';
 export {
   hillshade,
   marchingSquares,

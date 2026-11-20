@@ -146,6 +146,9 @@ const floorCourses = (id: string, template: ReturnType<typeof compileTemplate>, 
   const at = (x: number, y: number, z: number) =>
     x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
   const solid = (block: number) => native.blocks[block]?.solid === true;
+  // A partition in the facade's block is shell-coloured too; only open sky beside a wall makes it exterior.
+  const outdoors = (x: number, y: number, z: number) =>
+    Array.from({ length: sy - y }, (_, rise) => at(x, y + rise, z)).every((block) => !solid(block));
   const slabLayers = new Set([
     ...template.access!.storeys.map((storey) => storey.floor - 1),
     ...assembly.slots.filter((slot) => slot.id.includes('roof')).map((slot) => slot.at[1]),
@@ -167,7 +170,7 @@ const floorCourses = (id: string, template: ReturnType<typeof compileTemplate>, 
       [-1, 0],
       [0, 1],
       [0, -1],
-    ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
+    ].some(([dx, dz]) => outdoors(x + dx!, y - 1, z + dz!));
     const slab = [
       [1, 0],
       [-1, 0],

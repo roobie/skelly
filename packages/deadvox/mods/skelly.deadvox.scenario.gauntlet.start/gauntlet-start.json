@@ -7447,6 +7447,11 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
+        },
         "Z": {
           "chance": 0.80000000000000004,
           "spawn": "shambler"

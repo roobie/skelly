@@ -204,7 +204,7 @@ export const SiteLayoutSchema = strictObject({
     }),
   ),
   hordes: optional(array(strictObject({ id: Id, position: MetrePosition }))),
-  woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
+  woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), profile: Id })),
   /** Standing water: wherever a column inside the polygon has its bed below the level, water fills up to it. */
   water: optional(
     array(

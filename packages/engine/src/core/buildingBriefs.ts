@@ -52,6 +52,21 @@ const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | und
 
 const styleLabel = (style: string | undefined): string => (style === undefined ? 'its own styles' : `style "${style}"`);
 
+/** The floors of the storeys an assembly declares below its ground storey: its cellar storeys. */
+const cellarFloors = (assembly: MapAssemblyDef): number[] => {
+  const storeys = assembly.access?.storeys ?? [];
+  const ground = storeys.find(({ id }) => id === assembly.access?.ground)?.floor;
+  return ground === undefined ? [] : storeys.filter(({ floor }) => floor < ground).map(({ floor }) => floor);
+};
+
+type ProgramRoom = BuildingBriefDef['program'][string];
+
+/** The brief's rooms `assembly` must carry: every room, but a cellar room only when the answer has a cellar. */
+const carriedRooms = (assembly: MapAssemblyDef, brief: BuildingBriefDef): [string, ProgramRoom][] => {
+  const cellar = cellarFloors(assembly).length > 0;
+  return Object.entries(brief.program).filter(([, room]) => cellar || !room.cellar);
+};
+
 /**
  * Every piece style reachable under `assembly`, with the first slot path and variant that leads to it. Slots whose
  * choices do not resolve and nesting cycles are skipped here because the map kit check reports them.
@@ -120,9 +135,13 @@ const declaredFitIssues = (
     report('storeys', '.access.storeys', `declares ${storeys} storeys, outside ${fewest} to ${most}`);
   }
   styleFitIssues(registry, assembly, brief, report);
-  for (const room of Object.keys(brief.program)) {
-    if (assembly.anchors[room]?.kind !== 'standing') {
+  const cellars = cellarFloors(assembly);
+  for (const [room, { cellar }] of carriedRooms(assembly, brief)) {
+    const anchor = assembly.anchors[room];
+    if (anchor?.kind !== 'standing') {
       report('program', `.anchors.${room}`, `room "${room}" has no standing anchor`);
+    } else if (cellar && !cellars.includes(anchor.at[1])) {
+      report('program', `.anchors.${room}`, `cellar room "${room}" stands on no cellar storey`);
     }
   }
 };
@@ -150,7 +169,7 @@ const styleFitIssues = (
 const builtFitIssues = (
   registry: Registry,
   { template, doorway }: Built,
-  brief: BuildingBriefDef,
+  rooms: readonly string[],
   report: (rule: FitRule, path: string, detail: string) => void,
 ): void => {
   const { access } = template;
@@ -164,7 +183,7 @@ const builtFitIssues = (
     report('entrance', '.access.entrance', 'entrance reaches no ground-storey opening on the street (north) edge');
   }
   const route = templateStandingRouteBeside(registry, template, doorway);
-  for (const room of Object.keys(brief.program)) {
+  for (const room of rooms) {
     const anchor = template.anchors?.[room];
     if (anchor?.kind === 'standing' && !route(access.entrance, anchor.at)) {
       report(
@@ -184,7 +203,7 @@ const requiredServices = (registry: Registry, assembly: MapAssemblyDef, brief: B
   );
   return [
     ...new Set([
-      ...Object.values(brief.program).flatMap(({ serves }) => serves ?? []),
+      ...carriedRooms(assembly, brief).flatMap(([, { serves }]) => serves ?? []),
       ...standards.flatMap(({ serves }) => serves),
     ]),
   ];
@@ -375,7 +394,7 @@ const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }
 };
 
 /**
- * Whether a body can stand beside a box in every draw of `variant`, walking from the entrance through reserved
+ * Whether a body can stand beside a piece, or under one hung from the ceiling, in every draw of `variant`, walking from the entrance through reserved
  * circulation, doorways and the floor the variant leaves free in the cells its own piece claims. Its own doors stand
  * outside any doorway contract, so they are not free. Every other slot's alternatives stand in at once, so no cell one
  * of them covers or stands over is free, whatever they draw; in reserved cells the slot contract keeps them equal
@@ -399,7 +418,9 @@ const variantReach = (
   const free = (cell: Vec3) =>
     doorway(cell) ||
     (owned.has(index(cell)) && !taken.has(index(cell)) && !taken.has(index([cell[0], cell[1] - 1, cell[2]])));
-  return templateReachesBeside(registry, { ...template, pieces: [...variant.pieces, ...foreign] }, free);
+  const reaches = templateReachesBeside(registry, { ...template, pieces: [...variant.pieces, ...foreign] }, free);
+  // A ceiling piece hangs over the room, so a body uses it from under it, not beside it.
+  return (piece) => reaches(piece, registry.furniture.get(piece.furniture)?.mount === 'ceiling');
 };
 
 /**
@@ -468,6 +489,7 @@ const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: 
     });
   declaredFitIssues(registry, assembly, brief, report);
   const services = requiredServices(registry, assembly, brief);
+  const rooms = carriedRooms(assembly, brief).map(([room]) => room);
   const pieceCache = new Map<string, CompiledTemplate>();
   for (const style of rootStyles(registry, assembly)) {
     let template: CompiledTemplate;
@@ -503,7 +525,7 @@ const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: 
         report('doorways', '.slots', detail, `${styleLabel(style)}, ${choice}`),
       ),
     };
-    builtFitIssues(registry, built, brief, (rule, path, detail) =>
+    builtFitIssues(registry, built, rooms, (rule, path, detail) =>
       report(rule, path, detail, `${styleLabel(style)}, every slot variant`),
     );
     for (const { detail, choice } of serviceFitIssues(context, root, built, services)) {

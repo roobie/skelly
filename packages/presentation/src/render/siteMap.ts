@@ -169,6 +169,8 @@ export interface SiteMapRasterInput {
   width: number;
   height: number;
   view: SiteMapView;
+  groundCover?: ArrayLike<number>;
+  coverTone?: { readonly color: readonly [number, number, number]; readonly strength: number };
 }
 
 /** Build a shaded sRGB raster from the world's sampled heights and top-block ids. */
@@ -180,6 +182,8 @@ export const siteMapPixels = ({
   width,
   height,
   view,
+  groundCover,
+  coverTone,
 }: SiteMapRasterInput): Uint8ClampedArray => {
   const pixels = new Uint8ClampedArray(width * height * 4);
   let min = Number.POSITIVE_INFINITY;
@@ -205,6 +209,12 @@ export const siteMapPixels = ({
       red = blockColors[block] ?? 0;
       green = blockColors[block + 1] ?? 0;
       blue = blockColors[block + 2] ?? 0;
+    }
+    if (view === 'topographic' && groundCover && coverTone) {
+      const amount = Math.max(0, Math.min(1, groundCover[i]! * coverTone.strength));
+      red += (coverTone.color[0] - red) * amount;
+      green += (coverTone.color[1] - green) * amount;
+      blue += (coverTone.color[2] - blue) * amount;
     }
     const shade = shades[i]!;
     const offset = i * 4;

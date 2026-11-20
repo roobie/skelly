@@ -245,6 +245,53 @@ describe('building fit check', () => {
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.anchors.cellar`, rule: 'program' }]);
   });
 
+  describe('cellar rooms', () => {
+    const CellarProgram: Brief['program'] = {
+      entry: { purpose: 'In.' },
+      objective: { purpose: 'Far.' },
+      down: { purpose: 'Below.', cellar: true, serves: [SERVICE] },
+    };
+    // The cellar storey is declared at the floor the fixture has and the ground storey a layer over it: only the
+    // declared storeys decide whether an answer has a cellar.
+    const cellared = (anchors: Assembly['anchors'] = route.anchors): Assembly =>
+      answer({
+        size: [route.size[0], route.size[1] + 1, route.size[2]],
+        anchors,
+        access: {
+          ground: 'ground',
+          entrance: [1, 1, 2],
+          storeys: [
+            { id: 'cellar', floor: 1 },
+            { id: 'ground', floor: 2 },
+          ],
+          stairs: [],
+        },
+      });
+    const cellarBrief = () => brief({ storeys: [1, 2], program: CellarProgram });
+    const ruled = (issues: readonly ContentIssue[], rule: string) =>
+      issues.filter(({ message }) => RULE.exec(message)?.[1] === rule);
+
+    it('leaves a cellar room and its services out of an answer without a cellar', () => {
+      expect(fitIssues(answer(), cellarBrief(), serviceContent())).toEqual([]);
+    });
+
+    it('requires a cellar room and its services of an answer with a cellar storey', () => {
+      const issues = fitIssues(cellared(), cellarBrief(), serviceContent());
+      expect(rulesOf(ruled(issues, 'program'))).toEqual([{ path: `${ANSWER}.anchors.down`, rule: 'program' }]);
+      expect(ruled(issues, 'services')[0]?.message).toContain(`no piece serves "${SERVICE}"`);
+    });
+
+    it('reports a cellar room whose anchor stands on no cellar storey', () => {
+      const onCellar = cellared({ ...route.anchors, down: { kind: 'standing', at: [9, 1, 2] } });
+      expect(ruled(fitIssues(onCellar, cellarBrief(), serviceContent()), 'program')).toEqual([]);
+      const onGround = cellared({ ...route.anchors, down: { kind: 'standing', at: [9, 2, 2] } });
+      const messages = ruled(fitIssues(onGround, cellarBrief(), serviceContent()), 'program').map(
+        ({ message }) => message,
+      );
+      expect(messages).toContainEqual(expect.stringContaining('cellar room "down" stands on no cellar storey'));
+    });
+  });
+
   it('reports a program room no walk from the entrance reaches', () => {
     // A portless room behind an empty gap: its anchor stands, but no floor joins it to the entrance.
     const gap = 2;
@@ -491,6 +538,63 @@ describe('building services check', () => {
     const issues = fitIssues(nookAnswer(['open_nook', 'boxed_nook']), nookBrief(), serviceContent());
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
     expect(issues[0]!.message).toContain('nook=piece:boxed_nook');
+  });
+
+  describe('a serving piece hung from the ceiling', () => {
+    const LampHeight = roomA.size[1] + 3;
+    /**
+     * Room A three layers taller under a ceiling, a serving lamp hung from it over the north-east corner, a layer above
+     * the head of a body standing there. With a `slab`, a solid block fills that layer under the lamp.
+     */
+    const lampRoom = (id: string, slab: boolean): Piece => {
+      const rows = (row: string) => [row, row, row, row];
+      const corner = (mark: string, rest: string) => [`${rest.repeat(3)}${mark}`, ...rows(rest.repeat(4)).slice(1)];
+      const room = roomA.layers.slice(1).map(() => rows('....'));
+      const reserved = roomA.layers.slice(1).map(() => rows('RRRR'));
+      return {
+        id,
+        style: roomA.style,
+        size: [4, LampHeight, 4],
+        lootContext: roomA.lootContext,
+        palette: { ...roomA.palette, L: { furniture: 'fixture_lamp' } },
+        layers: [rows('===='), ...room, slab ? corner('=', '.') : rows('....'), corner('L', '.'), rows('====')],
+        ownership: {
+          layers: [rows('SSSS'), ...reserved, slab ? corner('S', 'A') : rows('AAAA'), corner('S', 'A'), rows('SSSS')],
+        },
+        anchors: {},
+        ports: roomA.ports,
+      };
+    };
+    const lampContent = (): Partial<ContentFile> => {
+      const content = serviceContent();
+      content.furniture!.push({
+        ...fixtureFurniture('fixture_lamp', [SERVICE]),
+        mount: 'ceiling',
+        solid: false,
+        shape: [{ position: [0.4, 0.5, 0.4], size: [0.2, 0.5, 0.2] }],
+      });
+      content.mapPieces!.push(lampRoom('lamp_room', false), lampRoom('slab_lamp_room', true));
+      return content;
+    };
+    const lampAnswer = (room: string): Assembly => {
+      const assembly = answer({ size: [route.size[0], LampHeight, route.size[2]] });
+      assembly.slots[0] = {
+        ...assembly.slots[0]!,
+        size: [4, LampHeight, 4],
+        choices: [{ ref: { kind: 'piece', id: room }, weight: 1 }],
+      };
+      return assembly;
+    };
+
+    it('serves from under it, where a body stands on open floor', () => {
+      expect(fitIssues(lampAnswer('lamp_room'), brief({ program: SERVICED_PROGRAM }), lampContent())).toEqual([]);
+    });
+
+    it('serves no body under it through a solid block', () => {
+      const issues = fitIssues(lampAnswer('slab_lamp_room'), brief({ program: SERVICED_PROGRAM }), lampContent());
+      expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+      expect(issues[0]!.message).toContain(`no piece serving "${SERVICE}" stands beside a walk from the entrance`);
+    });
   });
 
   it('requires a standard of its settlement kind of an answer with its usage', () => {

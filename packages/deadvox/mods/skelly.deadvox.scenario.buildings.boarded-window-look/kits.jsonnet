@@ -25,7 +25,9 @@ local house(id, shellId) = assembly('gauntlet_city_1') + {
   slots: [
     if slot.id == 'shell' then slot + { choices: only(shellId, 'assembly') }
     else if slot.id == 'door' then slot + { choices: only('gauntlet_city_door_intact') }
-    else if slot.id == 'room' then slot + { choices: only('gauntlet_city_room_calm') }
+    else if slot.id == 'room' then slot + {
+      choices: [choice + { weight: 1 } for choice in slot.choices if std.endsWith(choice.ref.id, '_calm')],
+    }
     else slot
     for slot in super.slots
   ],

@@ -349,6 +349,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.json"
     },
@@ -925,6 +937,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-cube-one/templates.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/templates.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.leaper-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.leaper-look/layouts.json"
     },
@@ -1191,6 +1219,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/start-grants.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/start-grants.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",

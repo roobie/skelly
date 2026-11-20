@@ -711,16 +711,22 @@ const reservedReach = (registry: Registry, template: CompiledTemplate, free?: (c
 
 /**
  * Whether a body walking from the entrance can stand beside a box: one of its body cells is next to one of the box's
- * cells on the same layer. The walk keeps to reserved circulation and the cells `free` admits; none without access.
+ * cells on the same layer. A box `hung` from a ceiling is beside a body standing under it instead: one of its cells is
+ * straight above the body with only open cells between. The walk keeps to reserved circulation and the cells `free`
+ * admits; none without access.
  */
 export const templateReachesBeside = (
   registry: Registry,
   template: CompiledTemplate,
   free?: (cell: Vec3) => boolean,
-): ((box: { readonly pos: Vec3; readonly size: Vec3 }) => boolean) => {
+): ((box: { readonly pos: Vec3; readonly size: Vec3 }, hung?: boolean) => boolean) => {
+  const space = new TemplateSpace(registry, template);
   const beside = new Set<string>();
+  const under = new Set<string>();
   for (const point of reservedReach(registry, template, free)) {
-    for (const [x, y, z] of bodyCells(point.split(',').map(Number) as Vec3)) {
+    const cells = [...bodyCells(point.split(',').map(Number) as Vec3)];
+    const head = Math.max(...cells.map(([, y]) => y));
+    for (const [x, y, z] of cells) {
       for (const [dx, dz] of [
         [1, 0],
         [-1, 0],
@@ -729,8 +735,15 @@ export const templateReachesBeside = (
       ] as const) {
         beside.add(key([x + dx, y, z + dz]));
       }
+      if (y === head) {
+        for (let above = y + 1; !space.occupied(x, above, z, true); above++) {
+          under.add(key([x, above, z]));
+        }
+      }
     }
   }
-  return ({ pos, size }) =>
-    [...cellsOf(size)].some((offset) => beside.has(key(offset.map((value, axis) => value + pos[axis]!) as Vec3)));
+  return ({ pos, size }, hung = false) =>
+    [...cellsOf(size)].some((offset) =>
+      (hung ? under : beside).has(key(offset.map((value, axis) => value + pos[axis]!) as Vec3)),
+    );
 };

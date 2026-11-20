@@ -1,7 +1,8 @@
-import { buildingIdentityIssues, inPolygon } from './authoredLayout.ts';
+import { buildingIdentityIssues } from './authoredLayout.ts';
 import { buildingFootprint, buildingSource, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
 import { lotOf } from './authoredTerrain.mjs';
-import { createAuthoredGround } from './authoredTerrainEvaluator.ts';
+import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrainEvaluator.ts';
+import { createBaselineCover } from './baselineCover.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -377,7 +378,13 @@ export const anchorCleared = (
   anchor: ComposedSiteDef['anchors'][number],
   cell: [number, number, number],
   layout: SiteLayoutDef,
-  reservations: readonly SiteReservation[],
+  {
+    reservations,
+    densityAt,
+  }: {
+    reservations: readonly SiteReservation[];
+    densityAt: (x: number, z: number) => number;
+  },
 ): boolean => {
   const x = cell[0] * 0.5;
   const z = cell[2] * 0.5;
@@ -394,10 +401,7 @@ export const anchorCleared = (
           (anchor.clearOf.includes('building') && (other.kind === 'building' || other.kind === 'start'))) &&
         overlaps(reserved, other),
     ) &&
-    !(
-      anchor.clearOf.includes('woodland') &&
-      layout.woodlands.some((wood) => wood.density >= anchor.woodlandDensityFloor && inPolygon([x, z], wood.polygon))
-    )
+    !(anchor.clearOf.includes('woodland') && densityAt(x, z) >= anchor.woodlandDensityFloor)
   );
 };
 
@@ -436,7 +440,7 @@ function resolveAnchors({
     throw new Error('Missing authored site generation tuning');
   }
   const rects = layout.buildings.map((building) => buildingFootprint(registry, building));
-  const ground = createAuthoredGround({
+  const groundData: AuthoredGroundData = {
     blockSize: 0.5,
     seed,
     topography: tuning.topography,
@@ -451,13 +455,11 @@ function resolveAnchors({
         .map((marker): [number, number] => [marker.pos[0] * 0.5, marker.pos[2] * 0.5]),
     ],
     lots: layout.buildings.map((building, i) => lotOf(building, rects[i]!)),
-    tracks: layout.tracks.map((track) => ({
-      points: track.points,
-      width: track.width,
-      surface: registry.blockIds.get(track.surface),
-    })),
+    tracks: layout.tracks.map((track) => ({ ...track, surface: registry.blockIds.get(track.surface) })),
     catalogue: undefined,
-  });
+  };
+  const ground = createAuthoredGround(groundData);
+  const cover = createBaselineCover({ ground: groundData, regions: layout.woodlands, vegetation: tuning.vegetation });
   const anchors: Record<string, [number, number, number]> = Object.create(null);
   for (const anchor of scenario.anchors) {
     const rng = Rng.stream(seed, `site:${scenario.id}:anchor:${anchor.id}`);
@@ -471,7 +473,7 @@ function resolveAnchors({
         const [cx, cz] = edgeCell(rng, layout.bounds);
         cell = [cx, ground.height(cx, cz, scenario.ground * 2) + 1, cz];
       }
-      if (!anchorCleared(anchor, cell, layout, reservations)) {
+      if (!anchorCleared(anchor, cell, layout, { reservations, densityAt: cover.densityAt })) {
         continue;
       }
       anchors[anchor.id] = cell;
@@ -1124,7 +1126,7 @@ export const composeLayout = (
     player: startPlayer({ seed, registry, scenario, buildings, start: placements.get(scenario.start.ask)! }),
     terrain: [],
     actors: [],
-    woodlands: [],
+    woodlands: scenario.woodlands,
     tracks,
   };
   const anchors = resolveAnchors({ seed, registry, scenario, layout, reservations });

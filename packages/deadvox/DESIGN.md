@@ -17,7 +17,8 @@ read_if:
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
-  - you change regional paper-map coverage, item ownership or persistence
+  - you change regional paper-map coverage, item ownership, baseline ground-cover tone or persistence
+  - you change landscape region precedence, edge profiles or Holdout meadow scope
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
@@ -2891,12 +2892,23 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
 A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
-blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
-A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
-changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
-must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
-A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
-shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+blocker, including a door, a model or a crowd figure.
+A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
+no visible light. Glass must not hide an illuminated room from this rule.
+The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
+a little latency is acceptable so neither discovery nor a large exact-pose rebuild monopolizes a frame.
+Light is visible where it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway
+spill that a coarse volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
+surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
+Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
+On stopping, the exact source pose matters: even a shift within one block can open real doorway spill,
+so block-cell reuse is not a safe shortcut.
+Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
+spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
+Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
+Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
+a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+leaves out its holder, and a dropped lamp's includes the player.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
@@ -2909,11 +2921,14 @@ the first fixture always sits right after the item slots. See `packages/engine/s
 A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
 pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
 the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
-Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
-build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
-neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
-a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
-See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+Nearby construction must still change the rules' reach for base building to work. Bulk terrain access avoids the
+per-cell world-query cost of exact-pose rebuilds, while furniture and vehicles retain their obstruction authority:
+batching must not approximate their masks. Sharing blocking answers within a build does not imply sharing
+visibility between neighbouring rays: clear neighbours do not prove a clear path around a corner. Keeping that
+reuse local to a build prevents it from retaining a shut door or removed wall after invalidation. Parked vehicle
+moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/collision.ts`, `worldLightBlocking` and `withLightVehicles`;
+`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
 `Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
 `packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and
@@ -3784,11 +3799,14 @@ play, not only decorate it.
     still hide you. Author concealing overgrowth as passable opaque blocks;
     vegetation takes its movement and visibility rules from content properties,
     not its name or appearance.
-  - **Placement:** authored sites default to light growth, weeds and a few
-    shrubs, which keeps them legible and their paths clear; heavier growth is
-    left for sites that should feel abandoned. Whether hiding growth stands near
-    a gate is each site's own content choice, because no project-wide rule
-    exists yet.
+  - **Placement:** authored sites default to light growth so places stay legible
+    and paths stay clear. Landscape content selects region edges and orders overlapping
+    cover. A later qualifying region wins even with lower density, so land use can
+    clear woodland and the open-ground floor. Units contribute exclusions rather
+    than generating or deleting their own trees. See
+    `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+    Holdout's agricultural ground is meadow or fallow pasture, not crop rows:
+    cultivation is outside its scope, not prohibited for later farming packs or scenarios.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
@@ -4017,6 +4035,12 @@ contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
 `packages/presentation/src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+Woodland is a shaded ground-cover tone in that terrain layer, area-sampled from
+baseline density, never a public feature, individual tree symbols or live damage.
+The query shares vegetation's generation owner, avoiding drift, speckle and sheet
+chunk generation; see `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+The development preview shows these shared samples; carried-paper painting remains
+#1483, so printable data is not a finished reading surface.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,

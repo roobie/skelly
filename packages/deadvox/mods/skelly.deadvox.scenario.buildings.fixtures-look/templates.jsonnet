@@ -24,6 +24,7 @@ local bays = [
   [stood('J', 3, 6, 2)],
   [stood('v', 3, 2, 2)],
   [piece('H', [0, 1, back], [2, 2, 1])],
+  [stood('g', 1, 1, 1)],
   hung('L'),
   hung('l'),
 ];
@@ -63,6 +64,7 @@ local cell(x, y, z) =
       J: { furniture: 'solid_fuel_boiler' },
       v: { furniture: 'coal_bin' },
       H: { furniture: 'coal_hatch' },
+      g: { furniture: 'floor_drain' },
       L: { furniture: 'bare_bulb' },
       l: { furniture: 'ceiling_lamp' },
     },
