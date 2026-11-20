@@ -26,10 +26,11 @@ local variants = [
   mapPieces: [
     door('gauntlet_city_door_intact', { D: leaf }, 'DD', 'SS'),
     // The leaf is gone: an open doorway.
-    door('gauntlet_city_door_missing', { '.': { role: 'opening', material: 'opening' } }, '..', 'AA'),
+    door('gauntlet_city_door_missing', { '.': { role: 'opening', material: 'opening' } }, '..', 'AA')
+    + { aftermath: ['broken'] },
     // Boarded from the street: the leaf faces north, the side every placed house turns to the street.
     door('gauntlet_city_door_boarded', {
       D: leaf + { boarding: { type: 'wood_door_boarding', side: 'front' } },
-    }, 'DD', 'SS'),
+    }, 'DD', 'SS') + { aftermath: ['boarded'] },
   ],
 }

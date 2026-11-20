@@ -108,9 +108,12 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       { ref: { kind: 'assembly', id: row.id, style: style.id }, weight: row.weight * style.share }
       for row in [
         { id: 'gauntlet_city_1', weight: 36 },
-        { id: 'gauntlet_city_2', weight: 30 },
-        { id: 'gauntlet_city_3', weight: 18 },
-        { id: 'gauntlet_city_cellar', weight: 12 },
+        { id: 'gauntlet_city_1_cellar', weight: 12 },
+        // A third of the two- and three-storey houses stand over a cellar, so the storey mix holds.
+        { id: 'gauntlet_city_2', weight: 20 },
+        { id: 'gauntlet_city_2_cellar', weight: 10 },
+        { id: 'gauntlet_city_3', weight: 12 },
+        { id: 'gauntlet_city_3_cellar', weight: 6 },
       ]
       for style in [{ id: 'brick_townhouse', share: 0.75 }, { id: 'concrete_townhouse', share: 0.25 }]
     ] + [

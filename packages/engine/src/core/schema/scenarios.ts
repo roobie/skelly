@@ -33,7 +33,7 @@ import {
   SiteLayoutSchema,
 } from './layouts.ts';
 import { Count, Id, PositiveGameHours } from './primitives.ts';
-import { CellCoordinate, CellPosition } from './templates.ts';
+import { AftermathOddsSchema, CellCoordinate, CellPosition } from './templates.ts';
 
 const HordeEffectSchema = strictObject({
   kind: literal('releaseHorde'),
@@ -60,6 +60,8 @@ const CityScenarioSchema = strictObject({
   id: Id,
   kind: literal(SCENARIO_KINDS.assembledCity),
   outbreakAgeGameHours: PositiveGameHours,
+  /** Odds for every slot the city's buildings draw. */
+  aftermathOdds: optional(AftermathOddsSchema),
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
   compression: Id,
@@ -286,6 +288,7 @@ export const ComposedSiteSchema = strictObject({
   bounds: LayoutRect,
   ground: SiteLayoutSchema.entries.ground,
   lootContext: SiteLayoutSchema.entries.lootContext,
+  aftermathOdds: SiteLayoutSchema.entries.aftermathOdds,
   settlementKind: Id,
   woodlands: optional(SiteLayoutSchema.entries.woodlands, []),
   start: strictObject({ ask: Id }),

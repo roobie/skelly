@@ -5,6 +5,7 @@
 // whatever part of it falls inside a chunk, so buildings that span chunks come out
 // the same whichever chunk generates first.
 
+import { type AftermathOdds, aftermathWeight, innerAftermathOdds } from './aftermathOdds.ts';
 import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
@@ -426,6 +427,8 @@ export interface AssemblyContext {
   readonly ancestors?: readonly string[];
   readonly style?: string;
   readonly pieceCache?: Map<string, CompiledTemplate>;
+  /** The aftermath odds in force, already merged so the innermost scope wins per tag. */
+  readonly aftermathOdds?: AftermathOdds | undefined;
   /**
    * Told the alternative each slot of the compiled template draws, by slot path, so a review tool can find a seed
    * that draws a chosen one; a nested slot is told only from the alternative its parent slot drew.
@@ -614,7 +617,12 @@ const resolveSlot = (
     if (width !== slot.size[0] || template.size[1] !== slot.size[1] || depth !== slot.size[2]) {
       throw new Error(`${label} variant=${template.id}: piece must equal its delegated slot`);
     }
-    return { weight: choice.weight, ref: choice.ref, placement, nestedDraws };
+    return {
+      weight: aftermathWeight(registry, choice, context.aftermathOdds),
+      ref: choice.ref,
+      placement,
+      nestedDraws,
+    };
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
@@ -638,10 +646,14 @@ const resolveSlot = (
       );
     }
   }
+  // A zeroed alternative still compiles above, so its contract holds for any odds a scenario or mod sets.
   const drawn = pickWeighted(
     candidates,
     Rng.stream(context.seed, JSON.stringify([context.siteId, context.slotPath ?? assembly.id, slot.id])),
-  )!;
+  );
+  if (!drawn) {
+    throw new Error(`${label}: aftermath odds leave no alternative`);
+  }
   context.onDraw?.(`${context.slotPath ?? assembly.id}/${slot.id}`, drawn.ref);
   for (const [path, ref] of drawn.nestedDraws) {
     context.onDraw?.(path, ref);
@@ -772,6 +784,7 @@ export const compileAssembly = (
     ...context,
     pieceCache: context.pieceCache ?? new Map<string, CompiledTemplate>(),
     ancestors: [...(context.ancestors ?? []), assembly.id],
+    aftermathOdds: innerAftermathOdds(context.aftermathOdds, assembly.aftermathOdds),
   };
   const seams: TemplateSlot[] = assembly.joins.map((join) => {
     const piece = registry.mapPieces.get(join.seam.piece);

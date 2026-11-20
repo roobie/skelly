@@ -3,17 +3,23 @@
     {
       "actors": [],
       "bounds": {
-        "x0": -44,
-        "x1": 44,
+        "x0": -64,
+        "x1": 64,
         "z0": -14,
         "z1": 46
       },
       "buildings": [
         {
-          "position": [-40, 21, 0],
+          "position": [-60, 21, 0],
           "rotation": 0,
           "style": "brick_townhouse",
           "template": "gauntlet_city_1"
+        },
+        {
+          "position": [-40, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_1_cellar"
         },
         {
           "position": [-20, 21, 0],
@@ -25,19 +31,31 @@
           "position": [0, 21, 0],
           "rotation": 0,
           "style": "brick_townhouse",
-          "template": "gauntlet_city_3"
+          "template": "gauntlet_city_2_cellar"
         },
         {
           "position": [20, 21, 0],
           "rotation": 0,
           "style": "brick_townhouse",
-          "template": "gauntlet_city_cellar"
+          "template": "gauntlet_city_3"
+        },
+        {
+          "position": [40, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_3_cellar"
+        },
+        {
+          "position": [-60, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_1"
         },
         {
           "position": [-40, 21, 26],
           "rotation": 0,
           "style": "concrete_townhouse",
-          "template": "gauntlet_city_1"
+          "template": "gauntlet_city_1_cellar"
         },
         {
           "position": [-20, 21, 26],
@@ -49,13 +67,19 @@
           "position": [0, 21, 26],
           "rotation": 0,
           "style": "concrete_townhouse",
-          "template": "gauntlet_city_3"
+          "template": "gauntlet_city_2_cellar"
         },
         {
           "position": [20, 21, 26],
           "rotation": 0,
           "style": "concrete_townhouse",
-          "template": "gauntlet_city_cellar"
+          "template": "gauntlet_city_3"
+        },
+        {
+          "position": [40, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_3_cellar"
         }
       ],
       "demo": true,
@@ -67,17 +91,17 @@
       },
       "player": {
         "bearing": 180,
-        "position": [-31.5, 21.5, -6]
+        "position": [-51.5, 21.5, -6]
       },
       "terrain": [],
       "tracks": [
         {
-          "points": [[-41, -5], [41, -5]],
+          "points": [[-61, -5], [61, -5]],
           "surface": "asphalt",
           "width": 6
         },
         {
-          "points": [[-41, 21], [41, 21]],
+          "points": [[-61, 21], [61, 21]],
           "surface": "asphalt",
           "width": 6
         }

@@ -251,7 +251,7 @@ function resolveAnchors({
       [layout.player.position[0], layout.player.position[2]],
       ...layout.buildings
         .flatMap((building, i) =>
-          placedSpawns(placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, layout.id, i))),
+          placedSpawns(placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, layout, i))),
         )
         .map((marker): [number, number] => [marker.pos[0] * 0.5, marker.pos[2] * 0.5]),
     ],
@@ -352,7 +352,7 @@ const startPlayer = ({
     registry,
     start,
     scenario.lootContext,
-    layoutBuildingSite(seed, scenario.id, buildings.indexOf(start)),
+    layoutBuildingSite(seed, scenario, buildings.indexOf(start)),
   );
   const { template } = placement;
   const { entrance } = template.access!;
@@ -424,6 +424,7 @@ export const composeLayout = (
     id: scenario.id,
     ...(scenario.attemptPolicy ? { attemptPolicy: scenario.attemptPolicy } : {}),
     lootContext: scenario.lootContext,
+    ...(scenario.aftermathOdds ? { aftermathOdds: scenario.aftermathOdds } : {}),
     bounds,
     ground: scenario.ground,
     buildings,

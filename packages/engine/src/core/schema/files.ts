@@ -51,6 +51,7 @@ import { SiteGenerationSchema, type TreeCrownSchema } from './siteGeneration.ts'
 import { SkillProgressionSchema, SkillSchema } from './skills.ts';
 import { StartSchema } from './starts.ts';
 import {
+  AftermathTagSchema,
   type DoorLockSchema,
   type FixedLootItem,
   type KitAnchorSchema,
@@ -179,6 +180,7 @@ const SECTION_DESCRIPTOR = {
   cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },
   controls: { schema: optional(array(ControlSchema)), label: 'default keys', order: 31 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
+  aftermathTags: { schema: optional(array(AftermathTagSchema)), label: 'aftermath tags', order: 22.9 },
   mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },

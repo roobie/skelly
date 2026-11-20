@@ -447,7 +447,7 @@ it('external json and asset entries admit in the browser with the reader hashes'
 it('stamps each pack in a multi-root stack with its own content identity', () =>
   withMultiRootFixture(async (root) => {
     const inputs = readBundledPacks(root, 'fixture.entry');
-    const stamps = await stampPacks(inputs, 'fixture-proof', 'fixture.entry');
+    const stamps = await stampPacks(root, inputs, 'fixture-proof', 'fixture.entry');
     expect(Object.keys(stamps).sort(compareCodeUnits)).toEqual(
       inputs.map(({ manifest }) => manifest.id).sort(compareCodeUnits),
     );
@@ -455,4 +455,12 @@ it('stamps each pack in a multi-root stack with its own content identity', () =>
     inputs.forEach((input, index) => {
       expect(stamps[input.manifest.id]!.sourceHash).toBe(hashes[index]);
     });
+  }));
+
+it('stamps no pack of a stack that validate refuses', () =>
+  withOptInPacks(async (root) => {
+    // The fixture's default pack lacks the rows every playable stack requires.
+    await expect(stampPacks(root, readAvailablePacks(root), 'fixture-proof', 'fixture.default')).rejects.toThrow(
+      'Bundle validation failed',
+    );
   }));
