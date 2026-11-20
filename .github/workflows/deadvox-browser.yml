@@ -180,6 +180,10 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: xvfb-run -a node test/browser/firefox-ui.mjs identity
+      - name: Firefox UI mods-screen selection and reload contract
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 4
+        run: xvfb-run -a node test/browser/firefox-ui.mjs mods
       - name: Firefox UI play contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
