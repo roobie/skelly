@@ -50,7 +50,7 @@ registry.furniture.set(PIECE, {
 for (const [id, result] of [
   [CELL_RECIPE, { block: BLOCK, count: 1 }],
   [ENTITY_RECIPE, { entity: PIECE, count: 1 }],
-  [BOARD_RECIPE, { doorBoarding: [...registry.doorBoardings.keys()][0]!, count: 1 }],
+  [BOARD_RECIPE, { doorBoarding: [...registry.boardings.keys()][0]!, count: 1 }],
 ] as const) {
   registry.recipes.set(id, {
     id,

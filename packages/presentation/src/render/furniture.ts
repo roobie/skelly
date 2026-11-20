@@ -728,7 +728,7 @@ export class FurnitureMeshes {
 
   /** Boards hang on the hinge group, so they swing open with the leaf they are nailed to. */
   private addDoorBoarding(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
-    const boarding = entity.boarding && this.entities?.registry.doorBoardings.get(entity.boarding.type);
+    const boarding = entity.boarding && this.entities?.registry.boardings.get(entity.boarding.type);
     if (!boarding) {
       return;
     }

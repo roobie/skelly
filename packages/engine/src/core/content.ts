@@ -1736,8 +1736,8 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
-  if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
-    found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
+  if (entry.boarding && !registry.boardings.has(entry.boarding.type)) {
+    found.push(['.boarding.type', `no boarding "${entry.boarding.type}"`]);
   }
   if (entry.boarding && furniture && !boardableDoor(furniture)) {
     found.push(['.boarding', 'only an upright doorway leaf takes boarding']);
@@ -2283,8 +2283,8 @@ const checkRecipeResult = (registry: Registry, recipe: RecipeDef, report: Report
       report('recipes', recipe.id, '.result.block', `no solid block "${result.block}"`);
     }
   } else if ('doorBoarding' in result) {
-    if (!registry.doorBoardings.has(result.doorBoarding)) {
-      report('recipes', recipe.id, '.result.doorBoarding', `no door boarding "${result.doorBoarding}"`);
+    if (!registry.boardings.has(result.doorBoarding)) {
+      report('recipes', recipe.id, '.result.doorBoarding', `no boarding "${result.doorBoarding}"`);
     }
   } else if (!registry.furniture.has(result.entity)) {
     report('recipes', recipe.id, '.result.entity', `no furniture "${result.entity}"`);
@@ -3320,7 +3320,7 @@ export const repairTargetName = (registry: Registry, recipe: RecipeDef): string 
     return registry.furniture.get(recipe.result.entity)!.name;
   }
   if ('doorBoarding' in recipe.result) {
-    return registry.doorBoardings.get(recipe.result.doorBoarding)!.name;
+    return registry.boardings.get(recipe.result.doorBoarding)!.name;
   }
   return registry.items.get(recipe.result.item)!.name;
 };

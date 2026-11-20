@@ -26,7 +26,7 @@ export type {
   ContentPatch,
   ContentSection,
   DayCycleDef,
-  DoorBoardingDef,
+  BoardingDef,
   DoorLockDef,
   FigureDef,
   FixedLootItemDef,

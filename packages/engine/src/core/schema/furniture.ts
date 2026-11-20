@@ -71,7 +71,7 @@ export const FurnitureMaterialSchema = pipe(
  * Boards nailed across a door leaf on one side (`packages/deadvox/docs/aftermath.md`, "Door variants"). They hang on the
  * leaf, so they fit any upright door and swing with it; their side is the look, while either face refuses opening.
  */
-export const DoorBoardingSchema = strictObject({
+export const BoardingSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
