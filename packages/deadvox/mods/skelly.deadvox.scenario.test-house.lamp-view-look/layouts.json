@@ -98,6 +98,11 @@
           "position": [0, 20.5, -22],
           "rotation": 0,
           "template": "lamp_view_rooms"
+        },
+        {
+          "position": [10, 20.5, -27],
+          "rotation": 0,
+          "template": "lamp_view_spill"
         }
       ],
       "demo": true,

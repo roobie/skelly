@@ -1,4 +1,5 @@
 import { worldLightBlocking, worldOpaque } from '@skelly/engine/internal/core/collision.ts';
+import { reaches } from '@skelly/engine/internal/core/illumination.ts';
 import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { BlockEntities, Chunk, type PoweredLight, type Vec3, World } from '@skelly/engine/world';
@@ -37,7 +38,7 @@ function room(glass: boolean, rangeMetres = 3) {
     { world, entities, isSightBlocking: sight },
     worldLightBlocking(world, registry, entities),
     1,
-    { cellBlocks: 1, rangeMetres, viewCellsPerRadius: 2 },
+    { cellBlocks: 1, rangeMetres },
   );
   const lamp: PoweredLight = { pos: [4.5, 3.5, 6.5], radius: 2, color: '#ffffff', intensity: 1 };
   const camera: Vec3 = [4.5, 3.5, 1.5];
@@ -75,6 +76,56 @@ function shadowPass(visible: () => boolean) {
 }
 
 describe('item lamp reach meets the view', () => {
+  it('keeps a hidden still lamp lit when its doorway spill reaches visible floor, within the sight budget', () => {
+    const world = new World();
+    for (const cx of [-1, 0]) {
+      for (const cy of [-1, 0]) {
+        for (const cz of [-1, 0]) {
+          world.addChunk(new Chunk(cx, cy, cz));
+        }
+      }
+    }
+    const brick = registry.blocks.findIndex((block) => block?.id === 'brick');
+    if (brick <= 0) {
+      throw new Error('Fixture needs brick');
+    }
+    const paintColumn = (x: number) => {
+      for (let z = -24; z < 24; z++) {
+        world.setBlock(x, -1, z, brick);
+      }
+      for (let y = 0; y < 22; y++) {
+        if (!(x >= 1 && x < 3 && y < 4)) {
+          world.setBlock(x, y, 10, brick);
+        }
+      }
+    };
+    for (let x = -24; x < 24; x++) {
+      paintColumn(x);
+    }
+    const entities = new BlockEntities(registry);
+    const sight = worldOpaque(world, registry, entities);
+    const cache = new LampReachCache(
+      { world, entities, isSightBlocking: sight },
+      worldLightBlocking(world, registry, entities),
+      0.5,
+      tuning.illumination.reach,
+    );
+    const lamp: PoweredLight = { pos: [-4.5, 2.5, 4.5], radius: 8, color: '#ffffff', intensity: 1, reachSource: {} };
+    const camera: Vec3 = [6.5, 3.5, 18.5];
+    expect(reaches(camera, lamp.pos, sight)).toBe(false);
+    const budget = tuning.illumination.reach.viewRaysPerFrame;
+    let receivers = 0;
+    cache.beginViewFrame(budget);
+    cache.meetsView(lamp, camera, () => {
+      receivers += 1;
+      return false;
+    });
+    expect(receivers).toBeGreaterThan(0);
+    expect(receivers).toBeLessThanOrEqual(budget);
+    cache.beginViewFrame(budget);
+    expect(cache.meetsView(lamp, camera, (point) => point[2] > 10.5)).toBe(true);
+    cache.dispose();
+  });
   it.each([false, true])('skips the caster walk behind brick but draws through glass (%s)', (glass) => {
     const { cache, lamp, camera } = room(glass);
     cache.beginViewFrame(1000);
@@ -112,17 +163,18 @@ describe('item lamp reach meets the view', () => {
         world.setBlock(x, y, 4, 0);
       }
     }
+    // The opening alone is empty air; put a receiving surface below the lamp.
+    world.setBlock(4, 2, 6, world.getBlock(0, 0, 4));
     cache.beginViewFrame(1000);
     expect(cache.meetsView(lamp, camera, () => true)).toBe(true);
     cache.dispose();
   });
 
-  it('reuses coarse reach and receiver storage across a one-block source move', () => {
-    const blocking = vi.fn(() => false);
+  it('skips surface rebuilds while moving and reuses receiver storage while still', () => {
+    const blocking = vi.fn((_x: number, y: number) => y === 0);
     const cache = new LampReachCache({ world: new World(), entities: new BlockEntities(registry) }, blocking, 0.5, {
       cellBlocks: 1,
       rangeMetres: 4,
-      viewCellsPerRadius: 2,
     });
     const lamp: PoweredLight = {
       pos: [0.5, 3.5, 0.5],
@@ -144,18 +196,26 @@ describe('item lamp reach meets the view', () => {
     const queries = blocking.mock.calls.length;
     expect(queries).toBeGreaterThan(0);
     cache.beginViewFrame(1000);
-    expect(cache.meetsView({ ...lamp, pos: [1.5, 3.5, 0.5] }, [0, 3, -8], outside)).toBe(false);
-    expect(blocking).toHaveBeenCalledTimes(queries);
+    const moved: PoweredLight = { ...lamp, pos: [1.5, 3.5, 0.5] };
+    expect(cache.meetsView(moved, [0, 3, -8], outside)).toBe(true);
+    expect(blocking).toHaveBeenCalledTimes(queries + 1);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(moved, [0, 3, -8], outside)).toBe(false);
+    const rebuilt = blocking.mock.calls.length;
+    expect(rebuilt).toBeGreaterThan(queries + 1);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(moved, [0, 3, -8], outside)).toBe(false);
+    expect(blocking).toHaveBeenCalledTimes(rebuilt);
     expect(positions.size).toBe(1);
     cache.dispose();
   });
 
-  it('does not miss a directly visible emitter between coarse receiver samples', () => {
+  it('does not turn a still emitter in empty air into a surface receiver', () => {
     const { cache, lamp, camera } = room(true);
     const source = { ...lamp, radius: 4 };
     cache.beginViewFrame(1000);
     expect(cache.meetsView(source, camera, (point) => point.every((value, axis) => value === source.pos[axis]))).toBe(
-      true,
+      false,
     );
     cache.dispose();
   });
@@ -180,18 +240,24 @@ describe('item lamp reach meets the view', () => {
     cache.dispose();
   });
 
-  it('does not treat untested grid-edge cells as reached after subcell source motion', () => {
+  it('uses free-cell visibility during motion and returns to surface culling when motion stops', () => {
     const { cache, lamp, camera } = room(false);
     const source = { ...lamp, radius: 2.8, reachSource: {} };
     cache.beginViewFrame(1000);
     expect(cache.meetsView(source, camera, () => true)).toBe(false);
     cache.beginViewFrame(1000);
-    expect(cache.meetsView({ ...source, pos: [4.5, 3.5, 6.1] }, camera, () => true)).toBe(false);
+    const moved: PoweredLight = { ...source, pos: [4.5, 3.5, 6.1] };
+    expect(cache.meetsView(moved, camera, () => true)).toBe(true);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(moved, camera, () => true)).toBe(false);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView({ ...moved, pos: [4.5, 3.5, 4.5] }, camera, () => true)).toBe(false);
     cache.dispose();
   });
 
   it('checks item receivers beyond the fixture grid upload cap', () => {
-    const { cache, lamp, camera } = room(true, 0.5);
+    const { cache, lamp, camera, world } = room(true, 0.5);
+    world.setBlock(4, 2, 8, world.getBlock(0, 0, 4));
     cache.beginViewFrame(1000);
     expect(cache.meetsView(lamp, camera, (point) => point[2] > 7)).toBe(true);
     cache.dispose();

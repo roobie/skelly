@@ -33,4 +33,26 @@ local room = {
   },
   layers: [floor, walls, glazed, glazed, glazed, walls, walls, roof],
 };
-{ templates: [room + { ownership: kit.piece(room).ownership }] }
+local forecourtAir = [
+  '................', '................', '................', '................', '................',
+  '................', '................', '................', '................', '................',
+];
+local forecourtFloor = [
+  'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkk',
+];
+local spillWalls = forecourtAir + [
+  'bbbbbbbbbb..bbbb',
+  'b..............b', 'b..............b', 'b..............b', 'b..............b', 'b..............b',
+  'b..............b', 'b..............b', 'b..............b', 'b..............b', 'b..............b',
+  'bbbbbbbbbbbbbbbb',
+];
+local spillHead = forecourtAir + ['bbbbbbbbbbbbbbbb'] + spillWalls[11:];
+local spillPedestal = spillWalls[:15] + ['b...b..........b'] + spillWalls[16:];
+local spill = {
+  id: 'lamp_view_spill', size: [16, 8, 22],
+  lootContext: room.lootContext,
+  palette: { '.': 'air', b: 'brick', k: 'concrete' },
+  layers: [forecourtFloor + floor, spillPedestal, spillPedestal, spillWalls, spillWalls, spillHead, spillHead, forecourtAir + roof],
+};
+{ templates: [room + { ownership: kit.piece(room).ownership }, spill + { ownership: kit.piece(spill).ownership }] }

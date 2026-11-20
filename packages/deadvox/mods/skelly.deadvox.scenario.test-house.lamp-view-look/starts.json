@@ -79,6 +79,15 @@
           "id": "hidden_lamp",
           "item": "oil_lamp",
           "lit": true
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [24, 44, -39]
+          },
+          "id": "spill_lamp",
+          "item": "oil_lamp",
+          "lit": true
         }
       ],
       "recipes": [

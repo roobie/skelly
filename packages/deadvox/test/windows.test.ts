@@ -269,7 +269,6 @@ describe('fitted windows', () => {
     const cache = new LampReachCache({ world, entities }, light, 0.5, {
       cellBlocks: 1,
       rangeMetres: 8,
-      viewCellsPerRadius: 2,
     });
     const before = cache.reachOf(lamp)!;
     expect(before.at(reader)).toBe(1);

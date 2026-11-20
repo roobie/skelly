@@ -37,7 +37,6 @@
           "reach": {
             "cellBlocks": 1,
             "rangeMetres": 12,
-            "viewCellsPerRadius": 5,
             "viewRaysPerFrame": 2048
           },
           "readingThreshold": 0.59999999999999998

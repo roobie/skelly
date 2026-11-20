@@ -16,8 +16,6 @@ export interface LampReachTuning {
   cellBlocks: number;
   /** The most of a lamp's radius that gets a grid, in metres. */
   rangeMetres: number;
-  /** Item view samples per radius, bounding discovery work independently of block scale and lamp range. */
-  viewCellsPerRadius: number;
 }
 
 /** A cube of cells centred on a lamp; each holds 1 where the lamp reaches and 0 where a wall stops it. */
@@ -39,6 +37,8 @@ interface Entry {
   light: PoweredLight;
   rangeMetres: number;
   cellBlocks: number;
+  surface: boolean;
+  viewPosition: Vec3;
   /** The block cube the grid covers, for deciding whether an edit touches it. */
   min: Vec3;
   max: Vec3;
@@ -55,7 +55,7 @@ const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly
 
 /**
  * Shared reach for point lights (`packages/deadvox/DESIGN.md`, "Light"). Moving renderer slots keep a bounded
- * identity instead of caching every frame's position; subcell motion reuses reach to keep held lights cheap.
+ * identity instead of caching every frame's position; motion avoids rebuilding the still lamp's surface samples.
  */
 export class LampReachCache {
   private readonly entries = new Map<string | object, Entry>();
@@ -125,7 +125,12 @@ export class LampReachCache {
   }
 
   /** Whether a lamp's grid is built and no change since has touched it. */
-  isCurrent(light: PoweredLight, rangeMetres = this.tuning.rangeMetres, cellBlocks = this.tuning.cellBlocks): boolean {
+  isCurrent(
+    light: PoweredLight,
+    rangeMetres = this.tuning.rangeMetres,
+    cellBlocks = this.tuning.cellBlocks,
+    surface = false,
+  ): boolean {
     this.catchUpWithPieces();
     const entry = this.entries.get(light.reachSource ?? keyOf(light));
     return (
@@ -133,6 +138,7 @@ export class LampReachCache {
       !entry.stale &&
       entry.rangeMetres === rangeMetres &&
       entry.cellBlocks === cellBlocks &&
+      entry.surface === surface &&
       this.sameCell(entry.light, light, cellBlocks)
     );
   }
@@ -145,8 +151,9 @@ export class LampReachCache {
     light: PoweredLight,
     mayBuild = true,
     rangeMetres = this.tuning.rangeMetres,
-    cellBlocks = this.tuning.cellBlocks,
+    options: { cellBlocks?: number; surface?: boolean } = {},
   ): LampReach | undefined {
+    const { cellBlocks = this.tuning.cellBlocks, surface = false } = options;
     this.catchUpWithPieces();
     const key = light.reachSource ?? keyOf(light);
     let entry = this.entries.get(key);
@@ -156,6 +163,7 @@ export class LampReachCache {
       entry &&
       (entry.rangeMetres !== rangeMetres ||
         entry.cellBlocks !== cellBlocks ||
+        entry.surface !== surface ||
         !this.sameCell(entry.light, light, cellBlocks))
     ) {
       if (!mayBuild) {
@@ -171,6 +179,8 @@ export class LampReachCache {
         light: { ...light, pos: [...light.pos] },
         rangeMetres,
         cellBlocks,
+        surface,
+        viewPosition: [...light.pos],
         view,
         min: light.pos.map((value) => Math.floor(value) - reachBlocks) as Vec3,
         max: light.pos.map((value) => Math.floor(value) + reachBlocks + 1) as Vec3,
@@ -181,6 +191,9 @@ export class LampReachCache {
       this.entries.set(key, entry);
     }
     if (entry.stale && mayBuild) {
+      if (surface) {
+        entry.light = { ...light, pos: [...light.pos] };
+      }
       entry.revision += 1;
       entry.reach = this.build(entry, cellBlocks);
       entry.stale = false;
@@ -199,15 +212,15 @@ export class LampReachCache {
    * `inView` borrows one point to avoid per-receiver frame allocations.
    */
   meetsView(light: PoweredLight, camera: Vec3, inView: (point: Vec3) => boolean): boolean {
-    // View discovery needs bounded samples, not the fixture shader's block-sharp wall mask.
-    const cellBlocks = light.radius / this.blockSize / this.tuning.viewCellsPerRadius;
-    const current = this.isCurrent(light, light.radius, cellBlocks);
-    const reach = this.reachOf(light, this.mayBuildView, light.radius, cellBlocks);
-    const entry = this.entries.get(light.reachSource ?? keyOf(light))!;
-    if (!current && reach) {
-      this.mayBuildView = false;
+    const moving = this.movingView(light);
+    if (moving !== undefined) {
+      return moving;
     }
-    if (!(reach && this.isCurrent(light, light.radius, cellBlocks))) {
+    const current = this.isCurrent(light, light.radius, 1, true);
+    const reach = this.reachOf(light, this.mayBuildView, light.radius, { cellBlocks: 1, surface: true });
+    const entry = this.entries.get(light.reachSource ?? keyOf(light))!;
+    this.mayBuildView &&= current || !reach;
+    if (!(reach && this.isCurrent(light, light.radius, 1, true))) {
       return entry.view?.answer ?? false;
     }
     if (entry.view?.revision !== reach.revision) {
@@ -241,13 +254,30 @@ export class LampReachCache {
     return view.answer;
   }
 
+  // Motion, not inventory exposure, avoids rebuilding a fine surface grid each animation frame.
+  private movingView(light: PoweredLight): boolean | undefined {
+    const entry = this.entries.get(light.reachSource ?? keyOf(light));
+    if (!entry) {
+      return undefined;
+    }
+    const moving = entry.viewPosition.some((value, axis) => value !== light.pos[axis]);
+    entry.viewPosition[0] = light.pos[0];
+    entry.viewPosition[1] = light.pos[1];
+    entry.viewPosition[2] = light.pos[2];
+    if (!moving) {
+      return undefined;
+    }
+    entry.stale = true;
+    const visible = !this.isSightBlocking(Math.floor(light.pos[0]), Math.floor(light.pos[1]), Math.floor(light.pos[2]));
+    entry.view ??= { key: '', revision: 0, points: new Float64Array(0), rays: new Uint8Array(0), answer: false };
+    entry.view.answer = visible;
+    return visible;
+  }
+
   private prepareView(entry: Entry, reach: LampReach): NonNullable<Entry['view']> {
     const { size, origin, cellBlocks, cells } = reach;
-    const points = new Float64Array((cells.length + 1) * 3);
-    // Coarse cell centres can miss a directly visible emitter, especially through a small window.
-    points.set(entry.light.pos);
-    const rangeSquared = (entry.light.radius / this.blockSize) ** 2;
-    let count = 1;
+    const points = new Float64Array(cells.reduce((sum, value) => sum + value, 0) * 3);
+    let count = 0;
     for (let index = 0; index < cells.length; index++) {
       if (!cells[index]) {
         continue;
@@ -255,12 +285,6 @@ export class LampReachCache {
       const x = (origin[0] + (index % size) + 0.5) * cellBlocks;
       const y = (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks;
       const z = (origin[2] + (Math.floor(index / size) % size) + 0.5) * cellBlocks;
-      if (
-        (x - entry.light.pos[0]) ** 2 + (y - entry.light.pos[1]) ** 2 + (z - entry.light.pos[2]) ** 2 >
-        rangeSquared
-      ) {
-        continue;
-      }
       points[count * 3] = x;
       points[count * 3 + 1] = y;
       points[count * 3 + 2] = z;
@@ -269,7 +293,7 @@ export class LampReachCache {
     return {
       key: '',
       revision: reach.revision,
-      points: points.subarray(0, count * 3),
+      points,
       rays: new Uint8Array(count),
       answer: entry.view?.answer ?? false,
     };
@@ -295,13 +319,25 @@ export class LampReachCache {
     );
   }
 
-  private build({ light, revision, rangeMetres }: Entry, resolution: number): LampReach {
+  private surfaceAt(x: number, y: number, z: number, isBlocking: SolidAt): boolean {
+    return (
+      !isBlocking(x, y, z) &&
+      (isBlocking(x - 1, y, z) ||
+        isBlocking(x + 1, y, z) ||
+        isBlocking(x, y - 1, z) ||
+        isBlocking(x, y + 1, z) ||
+        isBlocking(x, y, z - 1) ||
+        isBlocking(x, y, z + 1))
+    );
+  }
+
+  private build({ light, revision, rangeMetres, surface }: Entry, resolution: number): LampReach {
     const cellBlocks = resolution;
     const range = Math.min(light.radius, rangeMetres) / this.blockSize;
     const half = Math.ceil(range / cellBlocks);
     const size = 2 * half + 1;
     const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
-    const cells = new Uint8Array(size ** 3).fill(1);
+    const cells = new Uint8Array(size ** 3).fill(surface ? 0 : 1);
     // Rays share blocking queries, not visibility: a clear receiver does not prove its neighbours clear.
     // Pad the bounds for a ray ending exactly on a voxel boundary in the negative direction.
     const min = light.pos.map((value) => Math.floor(value - range) - 1) as Vec3;
@@ -316,20 +352,23 @@ export class LampReachCache {
       }
       return value === 2;
     };
-    for (let y = 0; y < size; y++) {
-      for (let z = 0; z < size; z++) {
-        for (let x = 0; x < size; x++) {
-          const centre: Vec3 = [
-            (origin[0] + x + 0.5) * cellBlocks,
-            (origin[1] + y + 0.5) * cellBlocks,
-            (origin[2] + z + 0.5) * cellBlocks,
-          ];
-          const distance = Math.hypot(centre[0] - light.pos[0], centre[1] - light.pos[1], centre[2] - light.pos[2]);
-          // Past the range no light is drawn, so the cell is never read; it keeps the default.
-          if (distance <= range && !reaches(light.pos, centre, isBlocking, light.body)) {
-            cells[x + size * (z + size * y)] = 0;
-          }
+    const receiver: Vec3 = [0, 0, 0];
+    for (let index = 0; index < cells.length; index++) {
+      const centre = receiver;
+      centre[0] = (origin[0] + (index % size) + 0.5) * cellBlocks;
+      centre[1] = (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks;
+      centre[2] = (origin[2] + (Math.floor(index / size) % size) + 0.5) * cellBlocks;
+      const distance = Math.hypot(centre[0] - light.pos[0], centre[1] - light.pos[1], centre[2] - light.pos[2]);
+      // Fixture masks retain their outside-range default; surface grids contain only tested receivers.
+      if (distance > range) {
+        continue;
+      }
+      if (surface) {
+        if (this.surfaceAt(Math.floor(centre[0]), Math.floor(centre[1]), Math.floor(centre[2]), isBlocking)) {
+          cells[index] = Number(reaches(light.pos, centre, isBlocking, light.body));
         }
+      } else if (!reaches(light.pos, centre, isBlocking, light.body)) {
+        cells[index] = 0;
       }
     }
     return {

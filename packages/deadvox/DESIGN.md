@@ -2890,13 +2890,16 @@ Every point light uses a wall check in the picture: a room the rules call dark m
 A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
 blocker, including a door, a model or a crowd figure.
-A lamp costs shadow work only when its light lands on something the camera can see. Hidden lamps paid full shadow
-cost, consuming 20% of the main thread in a crowd trace. Glass must not hide an illuminated room from this rule.
+A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
+no visible light. Glass must not hide an illuminated room from this rule.
 The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
-a little latency is acceptable so discovery can share a bounded ray budget across frames. View discovery needs
-coarse receivers rather than the fixture shader's block-sharp wall mask, so walking with a lamp need not rebuild
-a dense cube. Reusing reached, in-range receivers avoids paying for empty cube corners every frame. Keeping the last answer while work is pending prevents a visible light blinking
-off when another candidate spends the frame's budget.
+a little latency is acceptable so discovery can share a bounded ray budget across frames. Light is visible where
+it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway spill that a coarse
+volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
+surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
+Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
+Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
+spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
 Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
 Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
 a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map

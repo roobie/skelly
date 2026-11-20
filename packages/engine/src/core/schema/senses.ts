@@ -88,8 +88,6 @@ export const SenseSchema = strictObject({
         rangeMetres: Positive,
         /** Shared sight-ray budget for discovering item-light receivers over successive frames. */
         viewRaysPerFrame: pipe(Count, minValue(1)),
-        /** Samples per item-light radius; bounds view discovery independently of range and block scale. */
-        viewCellsPerRadius: pipe(Count, minValue(1)),
       }),
     }),
   }),

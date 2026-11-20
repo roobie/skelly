@@ -10,7 +10,7 @@ import { skyFixture } from './fixtures/sky.ts';
 // A pool unlike either the content's size or the old fixed one, so a stale constant cannot agree by luck.
 const SIZES = { heldLamps: 1, droppedLamps: 2, renderedFixtureLimit: 2 };
 const FADE_GUARD = /UNROLLED_LOOP_INDEX >= (\d+)/;
-const tuning = { cellBlocks: 1, rangeMetres: 8, viewCellsPerRadius: 2 };
+const tuning = { cellBlocks: 1, rangeMetres: 8 };
 const fixture: PoweredLight = { pos: [0.5, 2.5, 0.5], radius: 6, color: '#ffffff', intensity: 1 };
 
 describe('light pool order', () => {
