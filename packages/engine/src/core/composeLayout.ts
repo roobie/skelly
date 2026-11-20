@@ -850,12 +850,7 @@ const planLink = (
 ): { road: PlannedRoad } | { failure: string } => {
   const { seed, registry, scenario, buildings, indices, reservations, plannedRoads } = fit;
   const gateAt = (building: LayoutBuilding, index: number, portId: string): KitPort | undefined => {
-    const placement = placementOf(
-      registry,
-      building,
-      scenario.lootContext,
-      layoutBuildingSite(seed, scenario, index),
-    );
+    const placement = placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, scenario, index));
     const port = placement.template.ports?.find((candidate) => candidate.id === portId);
     return port && placedPort(placement, port);
   };
