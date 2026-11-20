@@ -220,7 +220,7 @@ export const readPackSelections = (packageRoot: string, stack: string): PackSele
   const inputs = readAvailablePacks(packageRoot);
   const defaults = stackClosure(inputs, stack);
   if (defaults.some(({ manifest }) => manifest.id === stack && manifest.optIn)) {
-    throw new Error(`Stack pack "${stack}" is an opt-in; validate it with --opt-in`);
+    throw new Error(`Stack pack "${stack}" is an opt-in; validate it with --pack`);
   }
   return [
     { packs: defaults },

@@ -1460,6 +1460,7 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     reachBelow: physics.stepHeight,
     reach: Player.reach / s,
+    bodyMassKg: Player.bodyMassKg,
     restored: restoredPlayer?.ladder,
   });
   inventory.handHold = ladderHold;
@@ -1689,6 +1690,10 @@ export const createSession = (options: SessionOptions) => {
       }
     }
     return true;
+  };
+  /** A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. */
+  const tearPiece = (piece: BlockEntity): void => {
+    bashPiece(piece, entities.defOf(piece).breach.durability);
   };
   const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
     const context = options.terrainDestruction;
@@ -2290,6 +2295,16 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
+  /** The piece the climber holds this step, unless it tears off under them. */
+  const holdLadder = (letGo: boolean): BlockEntity | undefined => {
+    const held = ladderHold.piece(letGo);
+    const torn = held && ladderHold.overloaded();
+    if (torn) {
+      tearPiece(torn);
+    }
+    return torn ? undefined : held;
+  };
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -2302,7 +2317,7 @@ export const createSession = (options: SessionOptions) => {
       throwCharge.active ||
       castCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
-    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    const ladder = holdLadder(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
     if (jumpStarted) {
       playPlayerSound(bodyTuning.sounds.strain, time);

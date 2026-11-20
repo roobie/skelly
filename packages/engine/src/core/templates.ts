@@ -270,6 +270,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         ...(entry.lock ? { lock: entry.lock } : {}),
         ...(entry.boarding ? { boarding: { ...entry.boarding } } : {}),
         ...(entry.fixed ? { fixed: true as const } : {}),
+        ...(entry.wear === undefined ? {} : { wear: entry.wear }),
         ...(entry.items ? { items: entry.items } : {}),
       });
     }
@@ -425,7 +426,10 @@ export interface AssemblyContext {
   readonly ancestors?: readonly string[];
   readonly style?: string;
   readonly pieceCache?: Map<string, CompiledTemplate>;
-  /** Told the alternative each slot draws, by slot path, so a review tool can find a seed that draws a chosen one. */
+  /**
+   * Told the alternative each slot of the compiled template draws, by slot path, so a review tool can find a seed
+   * that draws a chosen one; a nested slot is told only from the alternative its parent slot drew.
+   */
   readonly onDraw?: (slotPath: string, drawn: KitRef) => void;
 }
 
@@ -591,10 +595,13 @@ const resolveSlot = (
       throw new Error(`${label} variant=${refKey(choice.ref)}: weight must be finite and positive`);
     }
     let template: CompiledTemplate;
+    // Every alternative compiles, so its nested draws wait until the pick says which alternative is shown.
+    const nestedDraws: [string, KitRef][] = [];
     try {
       template = compileKitRef(registry, choice.ref, {
         ...context,
         slotPath: `${context.slotPath ?? assembly.id}/${slot.id}`,
+        ...(context.onDraw ? { onDraw: (path: string, ref: KitRef) => nestedDraws.push([path, ref]) } : {}),
       });
     } catch (error) {
       throw new Error(
@@ -607,7 +614,7 @@ const resolveSlot = (
     if (width !== slot.size[0] || template.size[1] !== slot.size[1] || depth !== slot.size[2]) {
       throw new Error(`${label} variant=${template.id}: piece must equal its delegated slot`);
     }
-    return { weight: choice.weight, ref: choice.ref, placement };
+    return { weight: choice.weight, ref: choice.ref, placement, nestedDraws };
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
@@ -636,6 +643,9 @@ const resolveSlot = (
     Rng.stream(context.seed, JSON.stringify([context.siteId, context.slotPath ?? assembly.id, slot.id])),
   )!;
   context.onDraw?.(`${context.slotPath ?? assembly.id}/${slot.id}`, drawn.ref);
+  for (const [path, ref] of drawn.nestedDraws) {
+    context.onDraw?.(path, ref);
+  }
   return drawn.placement;
 };
 

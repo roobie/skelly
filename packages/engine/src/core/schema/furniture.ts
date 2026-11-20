@@ -277,8 +277,6 @@ export const FurnitureSchema = pipe(
         blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
-        /** The face the boards show on, the facing side (`front`) or its opposite (`back`); either face refuses opening. */
-        barredFrom: optional(picklist(['front', 'back'])),
         detail: optional(DoorDetailSchema),
       }),
     ),
@@ -320,8 +318,17 @@ export const FurnitureSchema = pipe(
         ),
       ),
     ),
-    /** The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and hatches"). */
-    climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
+    /**
+     * The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and
+     * hatches"). With a `load`, a piece bears a climber of at most `limitKg` at full condition, scaled by its condition
+     * raised to `conditionExponent`; without one it bears any climber.
+     */
+    climbable: optional(
+      strictObject({
+        speedMetresPerSimSecond: Positive,
+        load: optional(strictObject({ limitKg: Positive, conditionExponent: Positive })),
+      }),
+    ),
     appearance: optional(
       strictObject({
         kind: picklist(['cabinet', 'drawers', 'fridge', 'door', 'lid', 'rack']),

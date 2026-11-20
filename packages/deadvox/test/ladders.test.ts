@@ -1,4 +1,7 @@
+import { blockId } from '@skelly/engine/content';
 import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { typeWeightGrams } from '@skelly/engine/internal/core/items.ts';
+import { bearableKg } from '@skelly/engine/internal/core/ladders.ts';
 import { pieceSize } from '@skelly/engine/internal/core/templates.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { applyToHeldItem } from '@skelly/engine/internal/game/playerTickActions.ts';
@@ -39,13 +42,15 @@ const advanceUntilStandingAt = (runtime: Runtime, height: number, frames: number
 interface RuntimeOptions {
   readonly restore?: Readonly<SaveSnapshot>;
   readonly content?: typeof registry;
+  /** The blocks that furniture settling sees; the body sees `terrain`. */
+  readonly world?: World;
 }
 
 const makeRuntime = (
   terrain: SolidAt,
   spawn: Vec3,
   entities: BlockEntities,
-  { restore, content = registry }: RuntimeOptions = {},
+  { restore, content = registry, world = new World() }: RuntimeOptions = {},
 ) => {
   let intent: MoveIntent = { ...IDLE };
   let yaw = FACING_EAST;
@@ -56,7 +61,7 @@ const makeRuntime = (
   const session = createSession({
     registry: content,
     actorFigureFiles: stackActorFigureFiles(content),
-    world: new World(),
+    world,
     entities,
     isSolid,
     isOpaque: isSolid,
@@ -527,6 +532,124 @@ describe('one hand on a ladder', () => {
     }
     expect(inventory.hands[ladderHand]).toBe(kept);
     expect(inventory.hands[dominantSide(inventory.character)]).toBe(loose);
+  });
+});
+
+const downspout = 'downspout';
+const pipeFoot: Vec3 = [-1, 1, 0];
+const pipeSize = pieceSize(registry.furniture.get(downspout)!.size, 'w');
+/** The house's west wall and the ground before it as blocks, so a torn segment's neighbours hang on the wall. */
+const houseWall = (): World => {
+  const world = new World();
+  const rock = blockId(registry, 'rock');
+  for (let z = -1; z <= 1; z++) {
+    for (let x = -4; x <= 0; x++) {
+      world.setBlock(x, 0, z, rock);
+    }
+    for (let y = 1; y < roofTop; y++) {
+      world.setBlock(0, y, z, rock);
+    }
+  }
+  return world;
+};
+/** A sound downspout up the house's west wall, with the segment `worn` placed at `wear`, as worldgen places it. */
+const houseWithPipe = (worn?: { readonly y: number; readonly wear: number }, options: RuntimeOptions = {}) => {
+  const entities = new BlockEntities(registry);
+  for (let y = 1; y < roofTop; y++) {
+    const segment = entities.add({ type: downspout, pos: [-1, y, 0], size: pipeSize, facing: 'w' })!;
+    if (y === worn?.y) {
+      entities.wear(segment, worn.wear);
+    }
+  }
+  // A save carries the wall's columns, so a restored session starts from an empty world.
+  return makeRuntime(house, [-3, 1, 0.5], entities, { world: options.restore ? new World() : houseWall(), ...options });
+};
+const loadKg = (runtime: Runtime): number => PLAYER.bodyMassKg + runtime.session.inventory.carriedWeight() / 1000;
+/** Grabs the pipe's foot and climbs until the hold ends or the feet stand on the roof. */
+const climbPipe = (runtime: Runtime): void => {
+  const { session } = runtime;
+  const refused = session.grabLadder(session.entities.at(...pipeFoot)!);
+  if (refused) {
+    throw new Error(`Could not grab the downspout fixture: ${refused}`);
+  }
+  runtime.set({ ...IDLE, forward: 1, walk: true });
+  const frames = climbFrames(roofHeight) * 2;
+  for (let frame = 0; frame < frames && !(session.body.onGround && session.body.pos[1] >= roofTop - 1e-3); frame++) {
+    runtime.advance(1);
+  }
+};
+/** Packs a worn backpack with the item that fills it heaviest until the climber outweighs what `bears` kilograms carry. */
+const packHeavierThan = (runtime: Runtime, bears: number): void => {
+  const { inventory } = runtime.session;
+  const pack = inventory.create('hiking_backpack');
+  const [width, depth] = inventory.registry.items.get(pack.type)!.container!.pockets[0]!.grid!;
+  // An assembly weighs what its model's parts do; an atom weighs what it authors.
+  const weighed = itemDefs.filter(
+    (def) => !def.twoHanded && (def.weight !== undefined || registry.models.get(def.model ?? '')?.parts !== undefined),
+  );
+  const filled = (def: (typeof itemDefs)[number]): number =>
+    Math.floor(width / def.size[0]) * Math.floor(depth / def.size[1]) * typeWeightGrams(registry, def.id);
+  const [heaviest] = weighed.sort((a, b) => filled(b) - filled(a));
+  const [across, down] = heaviest!.size;
+  let packed = inventory.add(pack, { kind: 'worn' });
+  for (let y = 0; packed && y + down <= depth && loadKg(runtime) <= bears; y += down) {
+    for (let x = 0; packed && x + across <= width && loadKg(runtime) <= bears; x += across) {
+      const at = { x, y, rotated: false };
+      packed = inventory.add(inventory.create(heaviest!.id), { kind: 'pocket', owner: pack, pocket: 0, at });
+    }
+  }
+  if (!packed || loadKg(runtime) <= bears) {
+    throw new Error(`Could not pack the backpack fixture past ${bears} kg`);
+  }
+};
+
+describe('downspouts', () => {
+  it('bears a light climber up a sound pipe to the roof', () => {
+    const runtime = houseWithPipe();
+    const { session } = runtime;
+    expect(loadKg(runtime)).toBeLessThanOrEqual(bearableKg(session.entities, session.entities.at(...pipeFoot)!)!);
+    climbPipe(runtime);
+    expect(session.body.onGround).toBe(true);
+    expect(session.body.pos[1]).toBeCloseTo(roofTop, 3);
+    for (let y = 1; y < roofTop; y++) {
+      expect(session.entities.at(-1, y, 0)).toBeDefined();
+    }
+  });
+
+  it('tears off a worn segment under a light climber, who falls, leaving a gap the climb cannot cross, kept through a save', () => {
+    // High enough that the climber is on the pipe, off the ground, when the body first loads it.
+    const tornY = 5;
+    const runtime = houseWithPipe({ y: tornY, wear: 0.99 });
+    const { session } = runtime;
+    const torn = session.entities.at(-1, tornY, 0)!;
+    expect(loadKg(runtime)).toBeGreaterThan(bearableKg(session.entities, torn)!);
+    climbPipe(runtime);
+    expect(session.entities.at(-1, tornY, 0)).toBeUndefined();
+    expect(session.ladderHold.on).toBe(false);
+    const dropped = session.inventory.snapshotState().piles.flatMap((pile) => pile.items.map(({ item }) => item.type));
+    expect(dropped).toEqual(registry.furniture.get(downspout)!.ruin!.debris.map(({ item }) => item));
+    // The climber fell back to the ground, and climbs the pieces below the gap no higher than the gap.
+    expect(session.body.onGround).toBe(true);
+    expect(session.body.pos[1]).toBeCloseTo(1, 3);
+    climbPipe(runtime);
+    expect(session.body.pos[1]).toBeLessThanOrEqual(tornY + 1e-3);
+    expect(session.entities.at(-1, tornY + 1, 0)).toBeDefined();
+
+    const resumed = houseWithPipe(undefined, {
+      restore: session.snapshot({ worldId: 'world', characterId: 'character' }),
+    });
+    expect(resumed.session.entities.at(-1, tornY, 0)).toBeUndefined();
+    expect(resumed.session.entities.at(-1, tornY + 1, 0)).toBeDefined();
+  });
+
+  it('tears off the lowest loaded segment of a sound pipe under a heavy pack', () => {
+    const runtime = houseWithPipe();
+    const { session } = runtime;
+    packHeavierThan(runtime, bearableKg(session.entities, session.entities.at(...pipeFoot)!)!);
+    climbPipe(runtime);
+    expect(session.entities.at(...pipeFoot)).toBeUndefined();
+    expect(session.entities.at(pipeFoot[0], pipeFoot[1] + 1, pipeFoot[2])).toBeDefined();
+    expect(session.body.pos[1]).toBeCloseTo(1, 3);
   });
 });
 

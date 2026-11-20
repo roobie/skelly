@@ -1,0 +1,40 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -16,
+        "x1": 16,
+        "z0": -12,
+        "z1": 20
+      },
+      "buildings": [
+        {
+          "position": [-9, 21, 0],
+          "rotation": 0,
+          "template": "boarded_door_look_house"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "boardedDoorLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-5, 21.5, -2]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-13, -5], [13, -5]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

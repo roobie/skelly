@@ -287,11 +287,11 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
 /**
- * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already. A
+ * Whether a kind of door can carry boards or a bar: an upright doorway leaf, not a hatch or a cabinet's front. A
  * boarded side owns the boards' visible face; boarding refuses opening from either face. Admission, templates and saves share it.
  */
 export const boardableDoor = (def: FurnitureDef): boolean =>
-  def.door !== undefined && !def.door.hatch && !isBodyDoor(def) && def.door.barredFrom === undefined;
+  def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
@@ -1549,7 +1549,7 @@ export class BlockEntities {
     if (entity.open) {
       return coreMessage(this.registry, 'alreadyOpen');
     }
-    if (door.barredFrom || entity.boarding) {
+    if (entity.boarding) {
       return coreMessage(this.registry, 'boardedUp');
     }
     if (entity.bar && from) {
@@ -1574,19 +1574,13 @@ export class BlockEntities {
 
   /** Why a door can't hold a bar at all, open or shut: a hatch, a cabinet's front, a broken or boarded-up leaf. */
   private barRefusal(entity: BlockEntity): string | undefined {
-    if (!this.leafDoor(entity)) {
+    if (!boardableDoor(this.defOf(entity))) {
       return coreMessage(this.registry, 'cantBar');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');
     }
-    return this.defOf(entity).door!.barredFrom || entity.boarding ? coreMessage(this.registry, 'boardedUp') : undefined;
-  }
-
-  /** An upright doorway leaf: not a hatch or a cabinet's front, so a bar or boards can lie across it. */
-  private leafDoor(entity: BlockEntity): boolean {
-    const def = this.defOf(entity);
-    return def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
+    return entity.boarding ? coreMessage(this.registry, 'boardedUp') : undefined;
   }
 
   /**
@@ -1594,9 +1588,8 @@ export class BlockEntities {
    * on the leaf, so an open door can take them and they swing with it.
    */
   boardingRefusal(entity: BlockEntity): string | undefined {
-    const def = this.defOf(entity);
-    if (!boardableDoor(def)) {
-      return coreMessage(this.registry, def.door?.barredFrom ? 'alreadyBoarded' : 'cantBoard');
+    if (!boardableDoor(this.defOf(entity))) {
+      return coreMessage(this.registry, 'cantBoard');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');

@@ -3,6 +3,7 @@ read_if:
   - you design or curate a building type, or write a building brief
   - you add or change a world setting, or the settlement kinds a setting has
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
+  - you iterate on one building and validate after each try
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -221,15 +222,17 @@ A run-down house may have lost a door or had one broken in, so a doorway may hol
 or nothing, and either keeps the way open. A broken leaf is a state of play, not of
 content, and it stands open (`DESIGN.md`, "Breach by strength"), so content draws a broken
 door as the missing alternative. An alternative closes the way, and is a doorways issue,
-when its leaf is boarded or barred, when it holds any other furniture or a solid block, or
-when it leaves a cell unclaimed, which another slot could build into. A closed alternative's
-cells still count for the walks, so its fault is reported once, as the doorway it is, and
-not again as every walk it cuts.
+when it holds any furniture but a door leaf, when it holds a solid block, or when it leaves
+a cell unclaimed, which another slot could build into. A closed alternative's cells still
+count for the walks, so its fault is reported once, as the doorway it is, and not again as
+every walk it cuts.
 
-A locked leaf passes. The fit check proves how the house was built, not what has become of
-it, as a damaged fixture still serves its service. A lock is the door in its working use,
-and a key or forcing opens it. Boards take the doorway out of use, and that is the line BR
-drew: a missing door passes, a boarded or blocked one does not.
+A locked or boarded leaf passes. The fit check proves how the house was built, not what has
+become of it, as a damaged fixture still serves its service. A lock is the door in its
+working use, and a key or forcing opens it. Boards are state on a real leaf, and blows
+break that leaf open with its boards on (`docs/aftermath.md`, "Door variants"), so boarding
+makes the way cost time and noise without closing it, and a boarded house can still answer
+a brief. Furniture or a wall in the doorway leaves no such way through.
 
 ## Shared pieces
 
@@ -259,6 +262,8 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   style the brief allows but nothing places would pass unproven. The fixture is an opt-in
   pack, and validate checks every opt-in on top of the defaults, so a building that only a
   fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
+  While iterating on one building, name its pack to validate, so each try pays for that
+  selection alone rather than every opt-in; see `docs/pack-split.md`, "Layers".
 - **Every doorway is a doorway slot.** The front door, the kitchen, the bathroom and both
   bedrooms each hang a leaf that may be gone, so the walks cross them
   ([Doorways](#doorways)).

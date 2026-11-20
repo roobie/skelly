@@ -241,6 +241,38 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.downspout-look/templates.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/layouts.json"
     },

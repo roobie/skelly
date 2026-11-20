@@ -103,6 +103,8 @@ const PaletteThingSchema = pipe(
     boarding: optional(strictObject({ type: Id, side: picklist(['front', 'back']) })),
     /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
     fixed: optional(literal(true)),
+    /** A worn share in place of the piece's seeded wear roll, so a fixture can stand a piece at a known condition. */
+    wear: optional(Fraction),
     /** Stock every copy of this piece always holds, beside its table's roll. */
     items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
     /** An actor type that may stand here; the cell itself is air. */
@@ -127,8 +129,9 @@ const PaletteThingSchema = pipe(
         e.lock === undefined &&
         e.boarding === undefined &&
         e.fixed === undefined &&
+        e.wear === undefined &&
         e.items === undefined),
-    '"loot", "facing", "tip", "lock", "boarding", "fixed" and "items" only go with "furniture"',
+    '"loot", "facing", "tip", "lock", "boarding", "fixed", "wear" and "items" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );

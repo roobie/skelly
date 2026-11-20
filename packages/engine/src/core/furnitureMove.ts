@@ -222,6 +222,22 @@ const fastened = (inventory: Inventory, entity: BlockEntity): boolean =>
 const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean =>
   !liftableFurniture(inventory.entities.defOf(entity));
 
+/**
+ * A climbable piece with terrain behind its whole back face hangs on that wall, so it stays when what stood under it
+ * goes, as a downspout's segments stay above one torn off it. Other fastened pieces, such as a fitted cupboard, stand
+ * on their floor and go with it.
+ */
+const wallHung = (mover: FurnitureMover, entity: BlockEntity): boolean => {
+  if (mover.inventory.entities.defOf(entity).climbable === undefined) {
+    return false;
+  }
+  const [ox, oz] = ladderOutward(entity.facing);
+  const cells = boxCells(entity.pos, entity.size);
+  const inside = new Set(cells.map(key));
+  const behind = cells.map(([x, y, z]): Vec3 => [x - ox, y, z - oz]).filter((cell) => !inside.has(key(cell)));
+  return behind.every((cell) => mover.terrainSolid(...cell));
+};
+
 const anyBodyIn = (pos: Readonly<Vec3>, size: Readonly<Vec3>, bodies: Iterable<Body>): boolean =>
   [...bodies].some((body) => boxIntersectsBody(pos, size, body));
 
@@ -287,7 +303,7 @@ const settle = (
   const ruined: BlockEntity[] = [];
   for (let entity = candidates.shift(); entity; entity = candidates.shift()) {
     const onVacated = footprint(entity.pos, entity.size).some((cell) => vacated.has(key(below(cell))));
-    if (!onVacated || shadow.rests(entity.pos, entity.size)) {
+    if (!onVacated || shadow.rests(entity.pos, entity.size) || wallHung(mover, entity)) {
       continue;
     }
     vacate(shadow, vacated, entity);
