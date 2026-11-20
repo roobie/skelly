@@ -44,6 +44,7 @@ import {
   type SolidAt,
   type Vec3,
 } from '@skelly/engine/world';
+import { Frustum, Matrix4, Vector3 } from 'three';
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
 import type { Engine } from '../presentation/engine.ts';
@@ -444,6 +445,11 @@ export const createPlayView = (
   );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning, held.warmUpTarget.scene);
+  const lampViewFrustum = new Frustum();
+  const lampViewMatrix = new Matrix4();
+  const lampViewPoint = new Vector3();
+  const lampCellInView = (point: Vec3) =>
+    lampViewFrustum.containsPoint(lampViewPoint.set(point[0] * s, point[1] * s, point[2] * s));
   const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
     slots: lightPool.size,
     itemSlots: lightPool.itemSlots,
@@ -455,6 +461,7 @@ export const createPlayView = (
     lightPool.lights.slice(0, lightPool.itemSlots),
     () => lightPool.shadowBodies,
     lightTuning.itemShadow,
+    () => lightPool.itemVisible,
   );
   lightPool.shareItemShadows();
   scene.add(
@@ -801,6 +808,11 @@ export const createPlayView = (
       carriedPiece.update(dt, camera.quaternion, s, carried?.floorLocked ? handling.floorPlacement : undefined);
       updateHeldViews(camera, pose, recoil, { ...handling, dt, lift, ...(sourceEyeMetres ? { sourceEyeMetres } : {}) });
       flashlight.update({ registry, lit: light, held: playerMeshes, camera, inventory, piles });
+      lampReach?.beginViewFrame(lightTuning.illumination.reach.viewRaysPerFrame);
+      lampViewFrustum.setFromProjectionMatrix(
+        lampViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      );
+      const lampCamera: Vec3 = [camera.position.x / s, camera.position.y / s, camera.position.z / s];
       lightPool.update(inventory, {
         held: playerMeshes,
         piles,
@@ -808,6 +820,7 @@ export const createPlayView = (
         blockSize: s,
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
+        meetsView: (source) => lampReach?.meetsView(source, lampCamera, lampCellInView) ?? true,
         fixtures: poweredLights(),
         glows: [...acidGlows(actorMeshes.anchors?.() ?? []), ...castShots.glows()],
       });

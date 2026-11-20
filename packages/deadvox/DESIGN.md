@@ -2891,12 +2891,23 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
 A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
-blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
-A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
-changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
-must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
-A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
-shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+blocker, including a door, a model or a crowd figure.
+A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
+no visible light. Glass must not hide an illuminated room from this rule.
+The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
+a little latency is acceptable so neither discovery nor a large exact-pose rebuild monopolizes a frame.
+Light is visible where it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway
+spill that a coarse volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
+surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
+Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
+On stopping, the exact source pose matters: even a shift within one block can open real doorway spill,
+so block-cell reuse is not a safe shortcut.
+Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
+spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
+Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
+Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
+a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+leaves out its holder, and a dropped lamp's includes the player.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
@@ -2909,11 +2920,14 @@ the first fixture always sits right after the item slots. See `packages/engine/s
 A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
 pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
 the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
-Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
-build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
-neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
-a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
-See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+Nearby construction must still change the rules' reach for base building to work. Bulk terrain access avoids the
+per-cell world-query cost of exact-pose rebuilds, while furniture and vehicles retain their obstruction authority:
+batching must not approximate their masks. Sharing blocking answers within a build does not imply sharing
+visibility between neighbouring rays: clear neighbours do not prove a clear path around a corner. Keeping that
+reuse local to a build prevents it from retaining a shut door or removed wall after invalidation. Parked vehicle
+moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/collision.ts`, `worldLightBlocking` and `withLightVehicles`;
+`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
 `Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
 `packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and

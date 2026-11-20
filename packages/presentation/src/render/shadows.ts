@@ -34,10 +34,15 @@ import {
   BackSide,
   type Box3,
   type Camera,
+  CubeDepthTexture,
+  DepthFormat,
   type DirectionalLight,
   DoubleSide,
   type Frustum,
+  GreaterEqualCompare,
+  LessEqualCompare,
   type Light,
+  LinearFilter,
   type Material,
   Mesh,
   type Object3D,
@@ -47,7 +52,9 @@ import {
   type Scene,
   type Side,
   type SpotLight,
+  UnsignedIntType,
   Vector3,
+  WebGLCubeRenderTarget,
   type WebGLRenderer,
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
@@ -152,6 +159,7 @@ export interface CrowdCasters {
 
 export class Shadows {
   private readonly scene: Scene;
+  private readonly renderer: WebGLRenderer;
   private readonly light: DirectionalLight;
   /** Holds the sun and its target, so moving it moves the shadow box without changing the light's direction. */
   private readonly rig: Object3D;
@@ -161,10 +169,12 @@ export class Shadows {
   private torches: readonly SpotLight[] = [];
   private items: readonly PointLight[] = [];
   private itemBodies: () => readonly ({ visible: boolean } | undefined)[] = () => [];
+  private itemVisible: () => readonly boolean[] = () => [];
+  private itemWasVisible: boolean[] = [];
   private readonly itemView = new PerspectiveCamera();
   private readonly itemCache = new ItemShadowCache();
   /** The last frame's item-lamp pass, for the debug readout: which slots redrew, and at what CPU cost. */
-  readonly itemStats = { cpuRealMs: 0, faces: 0, active: 0, redraws: [] as number[] };
+  readonly itemStats = { cpuRealMs: 0, faces: 0, active: 0, culled: 0, redraws: [] as number[] };
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
    * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
@@ -190,6 +200,7 @@ export class Shadows {
   ) {
     const { light, rig } = sun;
     this.scene = scene;
+    this.renderer = renderer;
     this.light = light;
     this.rig = rig;
     this.meshes = meshes;
@@ -259,9 +270,12 @@ export class Shadows {
     lights: readonly PointLight[],
     bodies: () => readonly ({ visible: boolean } | undefined)[],
     tuning: { faceSize: number; bias: number; normalBiasMetres: number; radius: number; nearMetres: number },
+    visible: () => readonly boolean[] = () => [],
   ): void {
     this.items = lights;
     this.itemBodies = bodies;
+    this.itemVisible = visible;
+    this.itemWasVisible = lights.map(() => false);
     for (const light of lights) {
       light.castShadow = true;
       light.shadow.mapSize.set(tuning.faceSize, tuning.faceSize);
@@ -269,6 +283,22 @@ export class Shadows {
       light.shadow.normalBias = tuning.normalBiasMetres;
       light.shadow.radius = tuning.radius;
       light.shadow.camera.near = tuning.nearMetres;
+      if (!light.shadow.map) {
+        // An inactive casting slot still binds samplerCubeShadow. Allocate the right texture, without a draw;
+        // its contents remain unused until the first visible pass refreshes all faces.
+        const map = new WebGLCubeRenderTarget(tuning.faceSize);
+        const depth = new CubeDepthTexture(tuning.faceSize, UnsignedIntType);
+        depth.format = DepthFormat;
+        depth.compareFunction = this.renderer.capabilities?.reversedDepthBuffer
+          ? GreaterEqualCompare
+          : LessEqualCompare;
+        depth.minFilter = LinearFilter;
+        depth.magFilter = LinearFilter;
+        // Three uses CubeDepthTexture here; its render-target declaration still accepts only 2D depth images.
+        map.depthTexture = depth as unknown as NonNullable<typeof map.depthTexture>;
+        light.shadow.map = map;
+        this.renderer.initRenderTarget?.(map);
+      }
     }
     this.reserveCrowdSlots();
   }
@@ -458,14 +488,20 @@ export class Shadows {
     const stats = this.itemStats;
     stats.faces = 0;
     stats.active = 0;
+    stats.culled = 0;
     stats.redraws = this.items.map(() => 0);
-    // Dark lamps with their maps already allocated need no caster walk, which visits the whole scene.
+    const activeSlots = this.items.map((item, index) => item.intensity > 0 && this.itemVisible()[index] !== false);
+    // Hidden and dark lamps need no caster walk, which visits the whole scene.
     let work = false;
-    for (const item of this.items) {
-      const active = item.intensity > 0;
+    for (const [index, item] of this.items.entries()) {
+      const active = activeSlots[index]!;
       item.shadow.intensity = active ? 1 : 0;
-      stats.active += active ? 1 : 0;
-      work ||= active || needsMap(item);
+      stats.active += item.intensity > 0 || this.itemVisible()[index] === false ? 1 : 0;
+      stats.culled += this.itemVisible()[index] === false ? 1 : 0;
+      if (!active) {
+        this.itemWasVisible[index] = false;
+      }
+      work ||= active;
     }
     if (!work) {
       stats.cpuRealMs = performance.now() - started;
@@ -497,9 +533,9 @@ export class Shadows {
     }
     try {
       for (const [index, item] of this.items.entries()) {
-        const active = item.intensity > 0;
-        const cold = needsMap(item);
-        if (!(active || cold)) {
+        const active = activeSlots[index]!;
+        const cold = needsMap(item) || !this.itemWasVisible[index];
+        if (!active) {
           continue;
         }
         const slot = 1 + torches.length + index;
@@ -548,6 +584,7 @@ export class Shadows {
             continue;
           }
           draw([item], casterScene, this.itemView);
+          this.itemWasVisible[index] = true;
           stats.redraws[index] = 1;
         } finally {
           if (body) {

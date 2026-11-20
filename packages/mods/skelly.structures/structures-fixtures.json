@@ -999,6 +999,50 @@
         "durability": 60,
         "minimumStrength": 3.5
       },
+      "color": "#3f4442",
+      "id": "floor_drain",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Floor drain",
+      "serves": ["drainage"],
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.20000000000000001],
+          "size": [0.59999999999999998, 0.040000000000000001, 0.59999999999999998]
+        },
+        {
+          "color": "#2a2d2c",
+          "position": [0.25, 0.040000000000000001, 0.27000000000000002],
+          "size": [0.5, 0.02, 0.059999999999999998]
+        },
+        {
+          "color": "#2a2d2c",
+          "position": [0.25, 0.040000000000000001, 0.39000000000000001],
+          "size": [0.5, 0.02, 0.059999999999999998]
+        },
+        {
+          "color": "#2a2d2c",
+          "position": [0.25, 0.040000000000000001, 0.51000000000000001],
+          "size": [0.5, 0.02, 0.059999999999999998]
+        },
+        {
+          "color": "#2a2d2c",
+          "position": [0.25, 0.040000000000000001, 0.63],
+          "size": [0.5, 0.02, 0.059999999999999998]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
       "color": "#e8dfb8",
       "id": "bare_bulb",
       "massKg": 2,
@@ -1017,6 +1061,7 @@
           }
         ]
       },
+      "serves": ["lighting"],
       "shape": [
         {
           "color": "#2b2622",
@@ -1059,6 +1104,7 @@
           }
         ]
       },
+      "serves": ["lighting"],
       "shape": [
         {
           "position": [0.38, 0.94999999999999996, 0.38],

@@ -1775,7 +1775,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       render(aimReadoutTemplate(pose ? `Gun pose: ${pose.label}` : ''), gunPoseRoot);
     }
     const shadowText = shadows
-      ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuRealMs.toFixed(2)} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active`
+      ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuRealMs.toFixed(2)} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active · ${shadows.itemStats.culled} culled · ${shadows.itemStats.redraws.reduce((sum, drawn) => sum + drawn, 0)} drawn`
       : '3D rendering unavailable (render-free mode)';
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {

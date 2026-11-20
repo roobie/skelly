@@ -1,0 +1,88 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -44,
+        "x1": 44,
+        "z0": -14,
+        "z1": 46
+      },
+      "buildings": [
+        {
+          "position": [-40, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_1"
+        },
+        {
+          "position": [-20, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_2"
+        },
+        {
+          "position": [0, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_3"
+        },
+        {
+          "position": [20, 21, 0],
+          "rotation": 0,
+          "style": "brick_townhouse",
+          "template": "gauntlet_city_cellar"
+        },
+        {
+          "position": [-40, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_1"
+        },
+        {
+          "position": [-20, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_2"
+        },
+        {
+          "position": [0, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_3"
+        },
+        {
+          "position": [20, 21, 26],
+          "rotation": 0,
+          "style": "concrete_townhouse",
+          "template": "gauntlet_city_cellar"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "townhouseLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-31.5, 21.5, -6]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-41, -5], [41, -5]],
+          "surface": "asphalt",
+          "width": 6
+        },
+        {
+          "points": [[-41, 21], [41, 21]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}
