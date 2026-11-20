@@ -216,6 +216,11 @@ const NonnegativeFinite = pipe(
   check((value) => Number.isFinite(value), 'must be finite'),
 );
 
+const FiniteNumber = pipe(
+  number(),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
+
 const PlaceAskSchema = strictObject({
   kind: literal('place'),
   id: Id,
@@ -238,6 +243,8 @@ const PlaceAskSchema = strictObject({
       ),
     }),
   ),
+  /** Fixed metres [x, z] for the building's centre, in place of a random spot. Excludes `distance`. */
+  at: optional(tuple([FiniteNumber, FiniteNumber])),
 });
 
 const AnchorFields = {
@@ -293,6 +300,7 @@ export const ComposedSiteSchema = strictObject({
         'needs exactly one of template or pool',
       ),
       check((ask) => ask.style === undefined || ask.template !== undefined, 'style needs a template'),
+      check((ask) => ask.at === undefined || ask.distance === undefined, 'needs at or distance, not both'),
     ),
   ),
   guarantee: record(Id, Count),

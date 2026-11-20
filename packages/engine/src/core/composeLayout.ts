@@ -303,7 +303,7 @@ const askBuilding = (seed: number, registry: Registry, scenario: ComposedSiteDef
   return { template, ...(style ? { style } : {}) };
 };
 
-/** One try at where an ask's building stands: around the ask it keeps its distance from, else anywhere in bounds. */
+/** One try at where an ask's building stands: its fixed spot, else around the ask it keeps its distance from, else anywhere in bounds. */
 const askCandidate = (
   rng: Rng,
   ask: Ask,
@@ -312,7 +312,9 @@ const askCandidate = (
 ): Pick<LayoutBuilding, 'position' | 'rotation'> => {
   let x: number;
   let z: number;
-  if (ask.distance) {
+  if (ask.at) {
+    [x, z] = ask.at;
+  } else if (ask.distance) {
     const from = placements.get(ask.distance.from)!;
     const radius = weightedRadius(rng, ask.distance.curve);
     const angle = rng.next() * Math.PI * 2;

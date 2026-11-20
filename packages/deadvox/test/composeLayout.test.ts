@@ -115,6 +115,15 @@ it.each([11, 73])(
   },
 );
 
+it.each([11, 73])('a fixed ask stands at its own position whatever the seed (seed %s)', (seed) => {
+  const scenario = scenarioFixture();
+  scenario.asks[0] = { ...scenario.asks[0]!, at: [10, -20] };
+  const { registry } = load(scenario);
+  const { layout } = composeLayout(seed, registry, scenario);
+  expect(layout.buildings[0]?.position[0]).toBe(10);
+  expect(layout.buildings[0]?.position[2]).toBe(-20);
+});
+
 it('appending an ask preserves every earlier placement and reservation', () => {
   const scenario = scenarioFixture();
   const { registry } = load(scenario);
