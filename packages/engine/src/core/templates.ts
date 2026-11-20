@@ -139,7 +139,7 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
 export const compiledLockIds = (registry: Registry, template: CompiledTemplate): string[] =>
   template.pieces.flatMap(({ furniture, lock }) => (lock && registry.furniture.get(furniture)?.door ? [lock.id] : []));
 
-/** Boards an authored door starts with: a `doorBoardings` id on one of its faces. */
+/** Boards an authored door starts with: a `boardings` id on one of its faces. */
 interface PieceBoarding {
   type: string;
   side: 'front' | 'back';

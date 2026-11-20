@@ -1,16 +1,19 @@
-// Window bays: a slot that hangs one shared window in a wall, its glass whole or gone. A building
-// defines only the pieces that place the window in its wall, since a piece carries the building's
-// style and loot context, while the window itself stays shared. Why:
+// Window bays: a slot that hangs one shared window in a wall, its glass whole or gone, or boarded
+// over from the street. A building defines only the pieces that place the window in its wall, since
+// a piece carries the building's style and loot context, while the window itself stays shared. Why:
 // `packages/deadvox/docs/building-pathway.md`, "Shared pieces".
 local furniture = (import 'packages/mods/skelly.structures/windows.jsonnet').furniture;
+local boarded = { boarding: { type: 'wood_window_boarding', side: 'front' } };
 local panes = {
   casement: [
     { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
     { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
+    boarded { id: 'boarded', furniture: 'broken_casement_window', weight: 1 },
   ],
   hinged: [
     { id: 'clear', furniture: 'clear_hinged_window', weight: 3 },
     { id: 'broken', furniture: 'broken_hinged_window', weight: 2 },
+    boarded { id: 'boarded', furniture: 'broken_hinged_window', weight: 1 },
   ],
 };
 local sizeOf(id) = std.filter(function(window) window.id == id, furniture)[0].size;
@@ -28,7 +31,10 @@ function(prefix, base, faces, kind='casement') {
   mapPieces: [
     base + {
       id: pieceId(face, pane), size: size(face),
-      palette: { W: { furniture: pane.furniture, facing: face, fixed: true } },
+      palette: {
+        W: { furniture: pane.furniture, facing: face, fixed: true }
+           + (if std.objectHas(pane, 'boarding') then { boarding: pane.boarding } else {}),
+      },
       layers: cells(size(face), 'W'), ownership: { layers: cells(size(face), 'S') },
       anchors: {}, ports: [],
     }

@@ -28,7 +28,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
 /** @typedef {{ pending: number; masked: boolean }} FirefoxUiStartupSample */
 
 // Each group loads its own pages, split so each CI step keeps headroom under its own timeout.
-const groups = ['identity', 'play', 'acid-death'];
+const groups = ['identity', 'mods', 'play', 'acid-death'];
 const [, , group] = process.argv;
 assert(group !== undefined && groups.includes(group), `usage: firefox-ui.mjs <${groups.join('|')}>`);
 
@@ -319,20 +319,8 @@ try {
     };
     requestAnimationFrame(frame);
   });
-  if (group === 'identity') {
-    await assertOptInModIdentity(page, (queryAndHash) =>
-      browserStageUrl('firefox-ui', `http://127.0.0.1:${port}/?${queryAndHash}`),
-    );
-  } else if (group === 'acid-death') {
-    await checkAcidDeath(browser, port);
-  } else {
-    await page.goto(
-      browserStageUrl(
-        'firefox-ui',
-        `http://127.0.0.1:${port}/?mods=1&play-test=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
-      ),
-    );
-    const fixtureMod = await selectFixtureMods(page);
+  /** Presses Start once the startup screen allows it, and waits for play to publish its handle. */
+  const startPlay = async () => {
     try {
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
         timeout: 30_000,
@@ -355,7 +343,37 @@ try {
     }
     await page.locator('#go').click();
     await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest && document.querySelector('#view')));
+  };
+  const playHash = { debug: true, seed: 1, radius: 64, post: false, sunshadow: false, torchshadow: false };
+  if (group === 'identity') {
+    await assertOptInModIdentity(page, (queryAndHash) =>
+      browserStageUrl('firefox-ui', `http://127.0.0.1:${port}/?${queryAndHash}`),
+    );
+  } else if (group === 'acid-death') {
+    await checkAcidDeath(browser, port);
+  } else if (group === 'mods') {
+    await page.goto(
+      browserStageUrl(
+        'firefox-ui',
+        gameUrl(`http://127.0.0.1:${port}`, { hash: playHash, harness: { mods: 1, 'play-test': 1 } }),
+      ),
+    );
+    const fixtureMod = await selectFixtureMods(page);
+    await startPlay();
     await assertFixtureMods(page, fixtureMod);
+    assert.deepEqual(pageErrors, /** @type {string[]} */ ([]));
+    assert.deepEqual(consoleErrors, /** @type {string[]} */ ([]));
+  } else {
+    await page.goto(
+      browserStageUrl(
+        'firefox-ui',
+        gameUrl(`http://127.0.0.1:${port}`, {
+          hash: { ...playHash, actors: 'detailed' },
+          harness: { 'play-test': 1 },
+        }),
+      ),
+    );
+    await startPlay();
     const initialTime = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await waitForWorldLoaded(page);
     await page.waitForFunction(
@@ -1056,6 +1074,10 @@ try {
   if (group === 'identity') {
     process.stdout.write(
       'Firefox UI identity checks passed: a URL-selected opt-in pack is named once in the save identity.\n',
+    );
+  } else if (group === 'mods') {
+    process.stdout.write(
+      'Firefox UI mods checks passed: the mods screen reports broken and duplicate mods, keeps its ordered selection across a reload, and starts with the selected mods.\n',
     );
   } else if (group === 'acid-death') {
     process.stdout.write('Firefox UI acid-death checks passed: a head shot on an acid zombie bursts its sac.\n');

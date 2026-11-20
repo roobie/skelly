@@ -21,7 +21,7 @@ const { registry, issues } = buildFixtureRegistry([
         { ...piece('repair_box'), container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 0.5 }] } },
         { ...piece('repair_leaf'), door: { handlingSimSeconds: 0.5, methods: {} } },
       ],
-      doorBoardings: [
+      boardings: [
         {
           id: BOARDING.type,
           name: 'Fixture boards',

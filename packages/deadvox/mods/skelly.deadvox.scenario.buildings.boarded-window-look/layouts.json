@@ -1,0 +1,45 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -24,
+        "x1": 24,
+        "z0": -24,
+        "z1": 20
+      },
+      "buildings": [
+        {
+          "position": [-18, 21, 0],
+          "rotation": 0,
+          "template": "boarded_window_look_glass"
+        },
+        {
+          "position": [0, 21, 0],
+          "rotation": 0,
+          "template": "boarded_window_look_boards"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "boardedWindowLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-5, 21.5, -12]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-21, -5], [21, -5]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

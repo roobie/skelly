@@ -34,7 +34,7 @@ const { registry, issues } = buildFixtureRegistry([
         { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
       ],
       furniture: [fixtureDoor('breach_door')],
-      doorBoardings: [
+      boardings: [
         {
           id: BOARDING.type,
           name: 'Fixture boards',

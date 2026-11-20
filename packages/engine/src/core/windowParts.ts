@@ -2,6 +2,7 @@ import type { BlockEntity, DoorPanelBox } from './blockEntities.ts';
 import type { FurnitureDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { rotationOf } from './orientation.ts';
+import type { BoardingDef } from './schema.ts';
 
 export interface WindowState {
   open: boolean;
@@ -12,12 +13,20 @@ export interface WindowState {
 }
 
 export interface WindowPart {
-  kind: 'frame' | 'sash' | 'pane';
+  kind: 'frame' | 'sash' | 'pane' | 'board';
   box: DoorPanelBox;
 }
 
-/** All boxes share the same hinge frame, so rendering and picking cannot disagree about a swung pane. */
-export const windowParts = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): WindowPart[] => {
+/**
+ * All boxes share the same hinge frame, so rendering, picking, light and passage cannot disagree about a swung pane
+ * or the boards across a frame. `boarding` is the definition of the window's boards, when it has any.
+ */
+export const windowParts = (
+  entity: BlockEntity,
+  definition: FurnitureDef,
+  blockSize: number,
+  boarding: BoardingDef | undefined,
+): WindowPart[] => {
   const spec = definition.window;
   if (!(spec && entity.window)) {
     return [];
@@ -37,15 +46,20 @@ export const windowParts = (entity: BlockEntity, definition: FurnitureDef, block
   ];
   const heading = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
   const parts: WindowPart[] = [];
-  const add = (kind: WindowPart['kind'], [x, y, w, h]: readonly [number, number, number, number]): void => {
-    const thickness = (kind === 'pane' ? spec.glass.thicknessBlocks : spec.thicknessBlocks) * blockSize;
+  const add = (
+    kind: WindowPart['kind'],
+    [x, y, w, h]: readonly [number, number, number, number],
+    thickness = (kind === 'pane' ? spec.glass.thicknessBlocks : spec.thicknessBlocks) * blockSize,
+    depth = 0,
+  ): void => {
+    const fixed = kind === 'frame' || kind === 'board' || !entity.window!.open;
     parts.push({
       kind,
       box: {
         pivot,
-        center: [x + w / 2 - (high ? width : 0), y + h / 2, 0],
+        center: [x + w / 2 - (high ? width : 0), y + h / 2, depth],
         size: [w, h, thickness],
-        rotationY: heading + (kind === 'frame' || !entity.window!.open ? 0 : spec.openTurnRadians * (high ? -1 : 1)),
+        rotationY: heading + (fixed ? 0 : spec.openTurnRadians * (high ? -1 : 1)),
       },
     });
   };
@@ -60,6 +74,15 @@ export const windowParts = (entity: BlockEntity, definition: FurnitureDef, block
   if (entity.window.pane === 'intact') {
     const inset = frame + sash;
     add('pane', [inset, inset, width - 2 * inset, height - 2 * inset]);
+  }
+  if (entity.boarding && boarding) {
+    const thickness = boarding.thicknessBlocks * blockSize;
+    // The hinge frame's local -z is the window's front face.
+    const depth =
+      (entity.boarding.side === 'front' ? -1 : 1) * ((spec.thicknessBlocks * blockSize) / 2 + thickness / 2);
+    for (const board of boarding.boards) {
+      add('board', [0, board.from * height, width, board.height * height], thickness, depth);
+    }
   }
   return parts;
 };

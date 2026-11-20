@@ -316,7 +316,7 @@ describe('door locks', () => {
 });
 
 describe('boarded doors', () => {
-  const boarding = { type: [...registry.doorBoardings.keys()][0]!, side: 'front' as const };
+  const boarding = { type: [...registry.boardings.keys()][0]!, side: 'front' as const };
 
   // Every house door faces the street (cityPlan fillRow), so boards on a north leaf's front face the street.
   it('boards every townhouse doorway leaf that has boards on the face toward the street', () => {
