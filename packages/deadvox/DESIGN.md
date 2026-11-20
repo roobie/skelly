@@ -2900,6 +2900,8 @@ it hits a surface, not in empty air. Block-sharp free receivers next to solids p
 volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
 surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
 Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
+On stopping, the exact source pose matters: even a shift within one block can open real doorway spill,
+so block-cell reuse is not a safe shortcut.
 Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
 spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
 Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
@@ -2918,11 +2920,14 @@ the first fixture always sits right after the item slots. See `packages/engine/s
 A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
 pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
 the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
-Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
-build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
-neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
-a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
-See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+Nearby construction must still change the rules' reach for base building to work. Bulk terrain access avoids the
+per-cell world-query cost of exact-pose rebuilds, while furniture and vehicles retain their obstruction authority:
+batching must not approximate their masks. Sharing blocking answers within a build does not imply sharing
+visibility between neighbouring rays: clear neighbours do not prove a clear path around a corner. Keeping that
+reuse local to a build prevents it from retaining a shut door or removed wall after invalidation. Parked vehicle
+moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/collision.ts`, `worldLightBlocking` and `withLightVehicles`;
+`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
 `Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
 `packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and

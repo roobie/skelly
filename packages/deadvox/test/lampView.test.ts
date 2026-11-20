@@ -76,7 +76,10 @@ function shadowPass(visible: () => boolean) {
 }
 
 describe('item lamp reach meets the view', () => {
-  it('keeps a hidden still lamp lit when its doorway spill reaches visible floor, within the sight budget', () => {
+  it.each([
+    { state: 'stationary', doorX: 1, pos: [-4.5, 2.5, 4.5] as Vec3, next: undefined },
+    { state: 'after sub-block motion', doorX: 0, pos: [-6.5, 2.5, 6.5] as Vec3, next: [-6.25, 2.5, 6.5] as Vec3 },
+  ])('keeps hidden doorway spill lit $state, within the sight budget', ({ doorX, pos, next }) => {
     const world = new World();
     for (const cx of [-1, 0]) {
       for (const cy of [-1, 0]) {
@@ -94,7 +97,7 @@ describe('item lamp reach meets the view', () => {
         world.setBlock(x, -1, z, brick);
       }
       for (let y = 0; y < 22; y++) {
-        if (!(x >= 1 && x < 3 && y < 4)) {
+        if (!(x >= doorX && x < doorX + 2 && y < 4)) {
           world.setBlock(x, y, 10, brick);
         }
       }
@@ -110,7 +113,7 @@ describe('item lamp reach meets the view', () => {
       0.5,
       tuning.illumination.reach,
     );
-    const lamp: PoweredLight = { pos: [-4.5, 2.5, 4.5], radius: 8, color: '#ffffff', intensity: 1, reachSource: {} };
+    const lamp: PoweredLight = { pos, radius: 8, color: '#ffffff', intensity: 1, reachSource: {} };
     const camera: Vec3 = [6.5, 3.5, 18.5];
     expect(reaches(camera, lamp.pos, sight)).toBe(false);
     const budget = tuning.illumination.reach.viewRaysPerFrame;
@@ -122,8 +125,18 @@ describe('item lamp reach meets the view', () => {
     });
     expect(receivers).toBeGreaterThan(0);
     expect(receivers).toBeLessThanOrEqual(budget);
+    const inView = (point: Vec3) => point[2] > 10.5;
+    let source = lamp;
+    if (next) {
+      cache.beginViewFrame(budget);
+      expect(cache.meetsView(lamp, camera, inView)).toBe(false);
+      source = { ...lamp, pos: next };
+      expect(reaches(camera, source.pos, sight)).toBe(false);
+      cache.beginViewFrame(budget);
+      expect(cache.meetsView(source, camera, inView)).toBe(true);
+    }
     cache.beginViewFrame(budget);
-    expect(cache.meetsView(lamp, camera, (point) => point[2] > 10.5)).toBe(true);
+    expect(cache.meetsView(source, camera, inView)).toBe(true);
     cache.dispose();
   });
   it.each([false, true])('skips the caster walk behind brick but draws through glass (%s)', (glass) => {
@@ -207,6 +220,25 @@ describe('item lamp reach meets the view', () => {
     expect(cache.meetsView(moved, [0, 3, -8], outside)).toBe(false);
     expect(blocking).toHaveBeenCalledTimes(rebuilt);
     expect(positions.size).toBe(1);
+    cache.dispose();
+  });
+
+  it('rebuilds an exact resting pose from chunks without per-cell terrain queries', () => {
+    const { cache, lamp, camera, world } = room(true);
+    const reads = vi.spyOn(world, 'getBlock');
+    const chunks = vi.spyOn(world, 'getChunk');
+    const source = { ...lamp, reachSource: {} };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, () => false)).toBe(false);
+    const moved: PoweredLight = { ...source, pos: [4.5, 3.5, 6.1] };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(moved, camera, () => false)).toBe(true);
+    reads.mockClear();
+    chunks.mockClear();
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(moved, camera, () => false)).toBe(false);
+    expect(chunks).toHaveBeenCalled();
+    expect(reads).not.toHaveBeenCalled();
     cache.dispose();
   });
 

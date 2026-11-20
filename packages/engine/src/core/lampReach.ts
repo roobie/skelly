@@ -3,6 +3,7 @@
 // lamp's light is dropped wherever its grid says blocked.
 
 import type { BlockEntities } from './blockEntities.ts';
+import type { LightBlocking, LightMemo } from './collision.ts';
 import type { Vec3 } from './coords.ts';
 import { CHUNK } from './coords.ts';
 import { reaches } from './illumination.ts';
@@ -59,7 +60,7 @@ const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly
  */
 export class LampReachCache {
   private readonly entries = new Map<string | object, Entry>();
-  private readonly isBlocking: SolidAt;
+  private readonly isBlocking: LightBlocking;
   private readonly isSightBlocking: SolidAt;
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
@@ -73,7 +74,7 @@ export class LampReachCache {
 
   constructor(
     owner: { world: ChunkSource; entities: BlockEntities; isSightBlocking?: SolidAt },
-    isBlocking: SolidAt,
+    isBlocking: LightBlocking,
     blockSize: number,
     tuning: LampReachTuning,
   ) {
@@ -319,15 +320,33 @@ export class LampReachCache {
     );
   }
 
-  private surfaceAt(x: number, y: number, z: number, isBlocking: SolidAt): boolean {
+  private fillBlocking(memo: LightMemo, surface: boolean): void {
+    if (this.isBlocking.fill) {
+      this.isBlocking.fill(memo);
+    } else if (surface) {
+      const { min, size, cells } = memo;
+      for (let index = 0; index < cells.length; index++) {
+        const x = min[0] + (index % size);
+        const y = min[1] + Math.floor(index / (size * size));
+        const z = min[2] + (Math.floor(index / size) % size);
+        cells[index] = this.isBlocking(x, y, z) ? 2 : 1;
+      }
+    }
+  }
+
+  private surfaceAt(point: Vec3, { min, size, cells }: LightMemo): boolean {
+    const x = Math.floor(point[0]) - min[0];
+    const y = Math.floor(point[1]) - min[1];
+    const z = Math.floor(point[2]) - min[2];
+    const index = x + size * (z + size * y);
     return (
-      !isBlocking(x, y, z) &&
-      (isBlocking(x - 1, y, z) ||
-        isBlocking(x + 1, y, z) ||
-        isBlocking(x, y - 1, z) ||
-        isBlocking(x, y + 1, z) ||
-        isBlocking(x, y, z - 1) ||
-        isBlocking(x, y, z + 1))
+      cells[index] === 1 &&
+      (cells[index - 1] === 2 ||
+        cells[index + 1] === 2 ||
+        cells[index - size] === 2 ||
+        cells[index + size] === 2 ||
+        cells[index - size * size] === 2 ||
+        cells[index + size * size] === 2)
     );
   }
 
@@ -343,6 +362,8 @@ export class LampReachCache {
     const min = light.pos.map((value) => Math.floor(value - range) - 1) as Vec3;
     const extent = Math.ceil(2 * range) + 3;
     const blocking = new Uint8Array(extent ** 3);
+    const memo = { min, size: extent, cells: blocking };
+    this.fillBlocking(memo, surface);
     const isBlocking: SolidAt = (x, y, z) => {
       const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
       let value = blocking[index]!;
@@ -358,18 +379,17 @@ export class LampReachCache {
       centre[0] = (origin[0] + (index % size) + 0.5) * cellBlocks;
       centre[1] = (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks;
       centre[2] = (origin[2] + (Math.floor(index / size) % size) + 0.5) * cellBlocks;
-      const distance = Math.hypot(centre[0] - light.pos[0], centre[1] - light.pos[1], centre[2] - light.pos[2]);
+      const dx = centre[0] - light.pos[0];
+      const dy = centre[1] - light.pos[1];
+      const dz = centre[2] - light.pos[2];
       // Fixture masks retain their outside-range default; surface grids contain only tested receivers.
-      if (distance > range) {
+      if (dx * dx + dy * dy + dz * dz > range * range) {
         continue;
       }
-      if (surface) {
-        if (this.surfaceAt(Math.floor(centre[0]), Math.floor(centre[1]), Math.floor(centre[2]), isBlocking)) {
-          cells[index] = Number(reaches(light.pos, centre, isBlocking, light.body));
-        }
-      } else if (!reaches(light.pos, centre, isBlocking, light.body)) {
-        cells[index] = 0;
+      if (surface && !this.surfaceAt(centre, memo)) {
+        continue;
       }
+      cells[index] = Number(reaches(light.pos, centre, isBlocking, light.body));
     }
     return {
       origin,

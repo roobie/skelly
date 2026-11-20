@@ -1,10 +1,13 @@
+import { type LightMemo, withLightVehicles, worldLightBlocking } from '@skelly/engine/internal/core/collision.ts';
 import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { raycast, type SolidAt } from '@skelly/engine/internal/core/raycast.ts';
 import type { PoweredLight } from '@skelly/engine/internal/core/sitePower.ts';
+import { NOT_LOADED, type TerrainRead } from '@skelly/engine/internal/core/terrainRead.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { VehicleOccupancy } from '@skelly/engine/vehicles';
 import { BlockEntities, CHUNK, Chunk, sitePalette, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { registry, scale } from './snapshotTestSupport.ts';
+import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const TUNING = { cellBlocks: 1, rangeMetres: 8 };
 const wall = sitePalette(registry).paving;
@@ -60,6 +63,93 @@ const referenceReaches = (light: PoweredLight, to: Vec3, solid: SolidAt): boolea
 };
 
 describe('lamp reach', () => {
+  it('bulk light answers match cell queries for terrain, unknown chunks, furniture and changing vehicles', () => {
+    const base = registry.blocks.find((block) => block.solid)!;
+    const transparent = registry.blocks.length;
+    const opaque = transparent + 1;
+    const windowDef = [...registry.furniture.values()].find((definition) => definition.window)!;
+    const fixtureRegistry = {
+      ...registry,
+      blocks: [
+        ...registry.blocks,
+        { ...base, id: 'memo_glass', opaque: false },
+        { ...base, id: 'memo_foliage', solid: false, opaque: true },
+      ],
+      furniture: new Map(registry.furniture).set('memo_window', { ...windowDef, id: 'memo_window' }).set('memo_door', {
+        id: 'memo_door',
+        name: 'Fixture door',
+        color: '#777777',
+        size: [1, 3, 2],
+        material: 'reach_fixture_material',
+        breach: { minimumStrength: 1, durability: 10 },
+        door: { methods: {}, handlingSimSeconds: simSeconds(1) },
+      }),
+    };
+    const world = new World();
+    world.addChunk(new Chunk(-1, -1, -1, opaque));
+    world.setBlock(0, 0, 0, transparent);
+    world.setBlock(-1, 0, 0, opaque);
+    const source: TerrainRead = {
+      version: 0,
+      getChunk: (cx, cy, cz) => (cx === 1 ? NOT_LOADED : world.getChunk(cx, cy, cz)),
+      getBlock: (x, y, z) => (Math.floor(x / CHUNK) === 1 ? NOT_LOADED : world.getBlock(x, y, z)),
+      watchChunks: world.watchChunks.bind(world),
+    };
+    const entities = new BlockEntities(fixtureRegistry);
+    const door = entities.add({ type: 'memo_door', pos: [-1, 1, 2], size: [1, 3, 2], facing: 'n' })!;
+    const window = entities.add({ type: 'memo_window', pos: [2, 1, 0], size: [...windowDef.size], facing: 'n' })!;
+    const { inventory } = createRuntime();
+    const id = inventory.registerVehicle({
+      placementKey: 'memo_vehicle',
+      blueprint: 'hatchback',
+      origin: [12, 1, 8],
+      facing: 'w',
+    });
+    const opening = inventory.vehicles
+      .get(id)!
+      .fittings.find(({ item }) => registry.items.get(item.type)?.vehicle?.opening)!;
+    const direct = worldLightBlocking(source, fixtureRegistry, entities, {
+      vehicles: inventory.vehicles,
+      blockSize: scale.blockSize,
+    });
+    const furnitureOnly = worldLightBlocking(source, fixtureRegistry, entities);
+    const light = withLightVehicles(
+      furnitureOnly,
+      new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light'),
+    );
+    const makeMemo = (): LightMemo => ({ min: [-2, -2, -2], size: CHUNK + 4, cells: new Uint8Array((CHUNK + 4) ** 3) });
+    const check = () => {
+      const memo = makeMemo();
+      light.fill!(memo);
+      const expected = Uint8Array.from(memo.cells, (_, index) => {
+        const x = memo.min[0] + (index % memo.size);
+        const y = memo.min[1] + Math.floor(index / memo.size ** 2);
+        const z = memo.min[2] + (Math.floor(index / memo.size) % memo.size);
+        return direct(x, y, z) ? 2 : 1;
+      });
+      expect(memo.cells).toEqual(expected);
+      const directMemo = makeMemo();
+      direct.fill!(directMemo);
+      expect(directMemo.cells).toEqual(expected);
+      expect(expected).toContain(1);
+      expect(expected).toContain(2);
+      const withoutVehicle = makeMemo();
+      furnitureOnly.fill!(withoutVehicle);
+      expect(memo.cells.some((value, index) => value !== withoutVehicle.cells[index])).toBe(true);
+    };
+    check();
+    expect(entities.setOpen(door, true)).toBeUndefined();
+    const from: Vec3 = [
+      window.pos[0] + window.size[0] / 2,
+      window.pos[1] + window.size[1] / 2,
+      window.pos[2] + window.size[2] / 2 + (windowDef.window!.inside === 'front' ? -2 : 2),
+    ];
+    expect(entities.operateWindow(window, 'unlatch', from, [])).toBeUndefined();
+    expect(entities.operateWindow(window, 'open', from, [])).toBeUndefined();
+    inventory.vehicles.setOpen(registry, id, opening.id, true);
+    check();
+  });
+
   it.each([
     { cellBlocks: 1, pos: [-1.5, 2.5, -0.5] as Vec3 },
     { cellBlocks: 2, pos: [-2.25, 2, -0.25] as Vec3 },
