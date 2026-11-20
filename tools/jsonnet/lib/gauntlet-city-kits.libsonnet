@@ -105,23 +105,31 @@ local lowerSlots = [
   slot('floor_shell', 'gauntlet_city_floor_shell', [0, 8, 0], [18, 1, 16]),
   slot('floor_inside', 'gauntlet_city_floor_lower', [1, 8, 3], [14, 1, 12]),
 ];
-local roofDeck = function(id, material) {
-  id: id, size: [18, 1, 16], style: 'brick_townhouse',
-  lootContext: context, palette: palette + { r: { role: 'interior_floor', material: material } },
-  layers: [[
-    '..................', '..................', '################..', '#rrrrrrrrrrrrrr#..',
-    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
-    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..',
-    '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '#rrrrrrrrrrrrrr#..', '################..',
-  ]],
-  ownership: { layers: [[
-    'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-    'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
-  ]] },
-  anchors: {}, ports: [],
-};
+// The walls rise through the deck, so one covering course over both hides their tops. Where the
+// shell carries the roof ladder, the ladder rises through the deck course too, so its top stays a
+// step below the covering.
+local roofDeck = function(id, covering, ladder)
+  local rung(z) = ladder && (z == 10 || z == 11);
+  local street(z) = z < 2;
+  local deckRow(z) = (if z == 2 || z == 15 then '################' else '#dddddddddddddd#') + (if rung(z) then 'H.' else '..');
+  local claimRow(z, side) = if street(z) then 'AAAAAAAAAAAAAAAAAA' else 'SSSSSSSSSSSSSSSS' + side;
+  {
+    id: id, size: [18, 2, 16], style: 'brick_townhouse',
+    lootContext: context,
+    palette: palette + {
+      d: { role: 'interior_floor', material: 'roof_deck' },
+      r: { role: 'roof', material: covering },
+    },
+    layers: [
+      [if street(z) then '..................' else deckRow(z) for z in std.range(0, 15)],
+      [if street(z) then '..................' else 'rrrrrrrrrrrrrrrr..' for z in std.range(0, 15)],
+    ],
+    ownership: { layers: [
+      [claimRow(z, if rung(z) then 'SA' else 'AA') for z in std.range(0, 15)],
+      [claimRow(z, 'AA') for z in std.range(0, 15)],
+    ] },
+    anchors: {}, ports: [],
+  };
 local kit = {
   scenes: scenes,
   loot: scenes.loot,
@@ -194,16 +202,18 @@ local kit = {
       ] },
       anchors: {}, ports: [],
     },
-    roofDeck('gauntlet_city_roof_sheet', 'roofing_sheet'),
-    roofDeck('gauntlet_city_roof_slab', 'roofing_slab'),
+    roofDeck('gauntlet_city_roof_sheet', 'roofing_sheet', true),
+    roofDeck('gauntlet_city_roof_slab', 'roofing_felt', true),
+    roofDeck('gauntlet_city_store_roof_sheet', 'roofing_sheet', false),
+    roofDeck('gauntlet_city_store_roof_slab', 'roofing_felt', false),
   ],
   mapAssemblies: [
     {
-      id: 'gauntlet_city_2', size: [18, 17, 16], lootContext: context,
+      id: 'gauntlet_city_2', size: [18, 18, 16], lootContext: context,
       slots: lowerSlots + [
         slot('upper_shell', 'gauntlet_city_upper_shell', [0, 9, 0], [18, 7, 16]),
         roomSlot('upper_room', [1, 9, 3], 'room'),
-        slot('roof', 'gauntlet_city_roof_sheet', [0, 16, 0], [18, 1, 16]),
+        slot('roof', 'gauntlet_city_roof_sheet', [0, 16, 0], [18, 2, 16]),
       ],
       joins: [], ports: [],
       anchors: { entry: { kind: 'standing', at: [8, 1, 8] }, upper: { kind: 'standing', at: [11, 9, 6] } },
@@ -211,7 +221,7 @@ local kit = {
         storeys: [{ id: 'floor_0', floor: 1 }, { id: 'floor_1', floor: 9 }], stairs: [] },
     },
     {
-      id: 'gauntlet_city_3', size: [18, 25, 16], lootContext: context,
+      id: 'gauntlet_city_3', size: [18, 26, 16], lootContext: context,
       slots: lowerSlots + [
         slot('middle_shell', 'gauntlet_city_upper_shell', [0, 9, 0], [18, 7, 16]),
         roomSlot('middle_room', [1, 9, 3], 'middle'),
@@ -220,7 +230,7 @@ local kit = {
         slot('middle_floor_inside', 'gauntlet_city_floor_middle', [1, 16, 3], [14, 1, 12]),
         slot('upper_shell', 'gauntlet_city_upper_shell', [0, 17, 0], [18, 7, 16]),
         roomSlot('upper_room', [1, 17, 3], 'room'),
-        slot('roof', 'gauntlet_city_roof_sheet', [0, 24, 0], [18, 1, 16]),
+        slot('roof', 'gauntlet_city_roof_sheet', [0, 24, 0], [18, 2, 16]),
       ],
       joins: [], ports: [],
       anchors: { entry: { kind: 'standing', at: [8, 1, 8] },
@@ -229,7 +239,7 @@ local kit = {
         { id: 'floor_0', floor: 1 }, { id: 'floor_1', floor: 9 }, { id: 'floor_2', floor: 17 },
       ], stairs: [] },
     }, {
-    id: 'gauntlet_city_1', size: [18, 9, 16], lootContext: context,
+    id: 'gauntlet_city_1', size: [18, 10, 16], lootContext: context,
     slots: [
       { id: 'ground', at: [0, 0, 0], size: [18, 1, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_ground' }, weight: 1 }] },
@@ -237,7 +247,7 @@ local kit = {
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_shell' }, weight: 1 }] },
       doors.slot([7, 1, 2]),
       scenes.slot('room', [1, 1, 3], 'room'),
-      { id: 'roof', at: [0, 8, 0], size: [18, 1, 16], turn: 0,
+      { id: 'roof', at: [0, 8, 0], size: [18, 2, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_roof_sheet' }, weight: 1 }] },
     ],
     joins: [], ports: [],
