@@ -1,5 +1,5 @@
 {
-  "doorBoardings": [
+  "boardings": [
     {
       "boards": [
         {
@@ -18,6 +18,30 @@
       "color": "#a0763f",
       "id": "wood_door_boarding",
       "name": "Wooden door boarding",
+      "thicknessBlocks": 0.12
+    },
+    {
+      "boards": [
+        {
+          "from": 0.059999999999999998,
+          "height": 0.16
+        },
+        {
+          "from": 0.29999999999999999,
+          "height": 0.16
+        },
+        {
+          "from": 0.54000000000000004,
+          "height": 0.16
+        },
+        {
+          "from": 0.78000000000000003,
+          "height": 0.16
+        }
+      ],
+      "color": "#a0763f",
+      "id": "wood_window_boarding",
+      "name": "Wooden window boarding",
       "thicknessBlocks": 0.12
     }
   ],

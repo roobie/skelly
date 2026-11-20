@@ -2278,6 +2278,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_west",
@@ -2300,6 +2307,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_east",
@@ -2322,6 +2336,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back_west",
@@ -2344,6 +2365,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back_east",
@@ -2394,6 +2422,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_west",
@@ -2416,6 +2451,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_east",
@@ -2438,6 +2480,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back_west",
@@ -2460,6 +2509,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back_east",
@@ -10137,6 +10193,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "ground_front_west",
@@ -10159,6 +10222,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "ground_front_east",
@@ -10181,6 +10251,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "ground_back_west",
@@ -10203,6 +10280,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "ground_east",
@@ -10225,6 +10309,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "upper_front_west",
@@ -10247,6 +10338,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "upper_front_east",
@@ -10269,6 +10367,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "upper_back",
@@ -10291,6 +10396,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "upper_east_front",
@@ -10313,6 +10425,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "upper_east_back",
@@ -14342,6 +14461,32 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_city_window_n_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_city_window_s_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -14375,6 +14520,32 @@
       },
       "palette": {
         "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_window_s_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "s",
           "fixed": true,
           "furniture": "broken_casement_window"
@@ -39884,6 +40055,32 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_villa_window_n_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_villa_window_s_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -39928,6 +40125,32 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_villa_window_s_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_villa_window_e_clear",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
       "lootContext": {
@@ -39961,6 +40184,32 @@
       },
       "palette": {
         "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_window_e_boarded",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "e",
           "fixed": true,
           "furniture": "broken_casement_window"

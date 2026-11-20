@@ -164,7 +164,7 @@ import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
-import { strikeWindowPane } from '../core/windowImpact.ts';
+import { blowLandsOnPane, strikeWindowPane } from '../core/windowImpact.ts';
 import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { wornSoleLiftMetres } from '../core/wornFigure.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
@@ -1662,7 +1662,7 @@ export const createSession = (options: SessionOptions) => {
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
   const bashPiece = (target: BlockEntity | undefined, strength: number, part?: FurniturePart): boolean => {
-    if (target?.window && (part === 'pane' || (part === undefined && target.window.pane === 'intact'))) {
+    if (target && blowLandsOnPane(target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
         {

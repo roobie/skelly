@@ -317,7 +317,7 @@ const doorContent = (): Partial<ContentFile> => {
         key: { lock: 'fixture_lock' },
       },
     ],
-    doorBoardings: [
+    boardings: [
       {
         id: 'fixture_boards',
         name: 'Boards',
