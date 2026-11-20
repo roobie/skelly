@@ -1,6 +1,6 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
-import type { DestructibleHit } from './destructibleHit.ts';
+import type { DestructibleHit, DestructibleOutcome } from './destructibleHit.ts';
 import type { FurniturePart } from './furniturePick.ts';
 
 export interface WindowImpactWorld {
@@ -23,10 +23,10 @@ export const strikeWindowPane = (
   entity: BlockEntity,
   hit: DestructibleHit,
   position: Vec3,
-): boolean => {
+): DestructibleOutcome | undefined => {
   const result = world.entities.hitWindowPane(entity, hit);
   if (!result) {
-    return false;
+    return undefined;
   }
   const spec = world.entities.defOf(entity).window!;
   world.sound(result.outcome === 'broken' ? spec.shatterSound : spec.impactSound, position);
@@ -36,5 +36,5 @@ export const strikeWindowPane = (
       world.emitItem(spec.shards.item, Math.min(left, stack), position);
     }
   }
-  return true;
+  return result.outcome;
 };

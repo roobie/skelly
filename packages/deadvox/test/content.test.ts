@@ -2948,6 +2948,12 @@ describe('content references', () => {
               stimulusMemorySimSeconds: 1,
               sightCone: 60,
               hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
+              hordeStrayRadiusMetres: 6,
+              hordeArrivalRadiusMetres: 30,
+              hordeArrivalStallSimSeconds: 10,
+              hordeArrivalProgressMetres: 0.5,
+              hordeResistedBashHoldSimSeconds: 30,
+              hordeHabituationCoolOffSimSeconds: 300,
               hearing: 1,
               hearingRange: { walk: 3, jog: 8, sprint: 15 },
               hearingModel: {

@@ -157,20 +157,20 @@ describe('fitted windows', () => {
         { force: pane.breakForce, continuation: 0 },
         floor,
       );
-    expect(strike()).toBe(true);
+    expect(strike()).toBe('broken');
     expect(inventory.entities.byUid(entity.uid)).toBe(entity);
     expect(entity.window).toMatchObject({ pane: 'missing', frameRemnants: true, open: false });
     const glass = structuredClone(inventory.snapshotState().piles);
     expect(inventory.piles.get(floor.join(','))?.items.length).toBeGreaterThan(0);
     expect(sound).toHaveBeenCalledOnce();
-    expect(strike()).toBe(false);
+    expect(strike()).toBeUndefined();
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
       version: formatVersion,
       contentLookup: (...query) => contentLookup(registry, ...query),
     });
     inventory = Inventory.restoreState(registry, decoded.snapshot.character.inventory);
     entity = inventory.entities.byUid(entity.uid)!;
-    expect(strike()).toBe(false);
+    expect(strike()).toBeUndefined();
     expect(sound).toHaveBeenCalledOnce();
     expect(inventory.snapshotState().piles).toEqual(glass);
     inventory.entities.destroy(entity);

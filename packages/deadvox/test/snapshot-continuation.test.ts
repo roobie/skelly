@@ -86,30 +86,19 @@ describe('fixture save/load continuation', () => {
     advance(source, 97);
     const state = source.zombies.snapshotState();
     expect(state.hordes[0]?.mode).toBe('noise');
+    expect(state.hordes[0]?.heard).toBeDefined();
     expect(state.hordes[0]?.lastNoiseId).toBeGreaterThan(0);
-    const stimulusAt = state.hordes[0]?.stimulusAt;
-    if (stimulusAt === undefined) {
-      throw new Error('Horde save fixture did not record the sound time');
-    }
 
-    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const savedNoise = capture(source);
+    expect(plainDataTree(savedNoise)).toBe(true);
+    const decoded = await decodeSave(await encodeFixture(savedNoise), { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.world.actors).toEqual(savedNoise.world.actors);
     const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
     const continuationFrames = BACKGROUND_ACTOR_SLICE_COUNT + 1;
     advance(source, continuationFrames);
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.actors.get('shambler')!.agent!.stimulusMemorySimSeconds;
-    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ACTOR_SLICE_COUNT);
-    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
-    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ACTOR_SLICE_COUNT);
-    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
-
-    const forgottenNoiseSave = capture(loaded);
-    expect(plainDataTree(forgottenNoiseSave)).toBe(true);
-    const forgottenNoiseBytes = await encodeFixture(forgottenNoiseSave);
-    const forgottenNoiseDecoded = await decodeSave(forgottenNoiseBytes, { version: formatVersion, contentLookup });
-    expect(forgottenNoiseDecoded.snapshot.world.actors).toEqual(forgottenNoiseSave.world.actors);
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {

@@ -473,6 +473,7 @@ const makeActor = (
       obstacleWanderRemaining: 0,
       wayAroundProbeWait: 0,
       obstacleSlideSide: 0,
+      bashResisted: false,
       bodyLookTarget: 0,
       headYawTarget: 0,
       lookTimer: 0,

@@ -161,7 +161,7 @@ describe('sun-owned day phases', () => {
   it('roams hordes exactly from sunset through dawn to sunrise', () => {
     for (const time of phaseSamples()) {
       const state = dayPhaseAt(cycle, time);
-      expect(hordeModeAt(time), `horde at ${time}`).toBe(state.phase === 'day' ? 'home' : 'roam');
+      expect(hordeModeAt(time), `horde at ${time}`).toBe(state.phase === 'day' ? 'stray' : 'roam');
     }
   });
 });

@@ -153,11 +153,66 @@ the arrival of groups. Already-alerted groups continue toward the last-known spo
 This lets quiet operation matter without erasing a threat that has already noticed its
 target. The plant's detectable emissions must make that cause understandable in the
 world. Far noise is required alongside near noise: imprecise perception over long
-ranges lets distant activity draw attention without revealing an exact target. World
-noise sources need their own loudness, rather than treating all noise as the player's
-signature. Extend the perception tiers in `packages/engine/src/core/agentPerception.ts`,
-`hearingTier` and `farBearingTarget`. How plant output affects its noise, and how waves
-outside hearing range retain a target, remain P2 choices.
+ranges lets distant activity draw attention without revealing an exact target.
+
+Hordes hear a list of world sources, the player's own sound among them, through the one
+set of perception tiers. A plant that sounds all the time has no place in a model where
+hordes hear only the player's latest one-off noise, and a second hearing path would let
+the two disagree. See `packages/engine/src/core/agentPerception.ts`, `soundTier` and
+`farBearingTarget`.
+
+Each producing module makes its own authored loudness, a synthesized hum, whatever its
+output, so the plant's noise follows the modules the player runs: more modules, more
+sources, and a module that stops producing falls silent at once. A running module's
+output never varies, so deriving loudness from it would compute one constant from
+another; authoring it on the module is the honest model with one value. See
+`packages/engine/src/core/sitePower.ts`, `SitePower.sounds`.
+
+Only hearing gives a wave a plant target. A heard target is kept through silence until
+the group arrives, and hearing the same source near again refines it; at a waypoint
+with nothing new, the group strays around it as below. This fits the horde's existing target and
+mode. A wave does not take a plant target from a hearing owner kept from before its
+release, because no such owner exists, and a separate uncertainty state is not needed
+yet. Far hearing does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
+so a far wave walks that stretch and must hear the plant again to close in. A quiet
+plant therefore loses distant waves and a running one pulls them in step by step, which
+is how going quiet matters without an extra rule.
+
+A wave keeps its target unless a surer sound arrives: a near sound replaces a far
+target, and another far sound does not divert it. So a far gunshot on a supply run does
+not pull a wave already committed to the plant. Surer means the near or far tier, so the
+rule needs no loudness strength the tiers do not produce. A group following nothing
+picks among what it hears by the same rule. See
+`packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and
+`packages/engine/src/core/agentPerception.ts`, `surerHearing`.
+
+A group arrives at a sound only when it is within its arrival radius and can get no
+closer: it reached the source, or it gained no ground for the stall time. So a source
+heard from inside the radius still draws the group in, and an unreachable source still
+ends the commitment. A member bashing its way through counts as ground gained, because
+bashing is attacking and the pause between blows is no sign the way is shut. A group at
+something it cannot break gives up after a while instead of bashing forever, while one
+breaking through stays committed: blows that do no harm count only for a capped time,
+and a harmful blow or real ground gained renews it. A bash is loud too: its noise draws
+groups like any one-off noise the player makes. See
+`packages/engine/src/core/agentHorde.ts`, `arrivedAtSound`; and
+`packages/engine/src/game/session.ts`, `playNoisyWorldSound`.
+
+A group that arrives at a source it heard near gets used to it: that source no longer
+draws it, so a constant hum stops pulling the group rather than holding it in place, and
+the group strays around where its last attention was until another sound or a sighting
+draws it. Only a real source is got used to. The player's one-off noise never is, and a
+far waypoint ends the commitment without getting used to anything, because far hearing
+never found the source, so the wave walks on by hearing again. Getting used to a source
+fades once it has been silent for the cool-off, so a restarted source catches attention
+again.
+
+A group has no home: its home is where its last attention was, and by night it roams. A
+member's sighting is attention too: it ends any sound the group followed, without getting
+used to it, and once sight is lost the group strays where it last saw its prey, not back
+at the sound. With several members in sight, the latest sighting counts. The arrival
+radius, stall time, resisted-blow cap, cool-off and how far the group strays are content; see
+`packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and

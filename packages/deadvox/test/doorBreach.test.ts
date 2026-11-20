@@ -99,7 +99,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const leaf = entities.pieceTouching(ahead);
-      return leaf !== undefined && entities.bash(leaf, bash) !== undefined;
+      return leaf && entities.bash(leaf, bash);
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });

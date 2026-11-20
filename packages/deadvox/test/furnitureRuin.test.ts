@@ -267,7 +267,7 @@ it('cancels the work that names a ruined piece', () => {
   expect(session.search(target)).toBeUndefined();
   expect(session.queue.jobs.length).toBeGreaterThan(0);
 
-  expect(session.bashFurniture(target, BREACH.durability)).toBe(true);
+  expect(session.bashFurniture(target, BREACH.durability)).toBe('ruined');
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(session.queue.jobs).toEqual([]);
@@ -304,7 +304,7 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
   ]) {
     runtime.world.setBlock(x!, 0, z!, floor);
   }
-  expect(session.bashFurniture(target, BREACH.minimumStrength)).toBe(true);
+  expect(session.bashFurniture(target, BREACH.minimumStrength)).toBe('ruined');
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
@@ -328,7 +328,7 @@ it("lays a ruined housing's fitted and baseline parts on piles, keeping identity
     inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: 'spare', itemUid: spare.uid }),
   ).toBeUndefined();
 
-  expect(session.bashFurniture(housing, BREACH.durability)).toBe(true);
+  expect(session.bashFurniture(housing, BREACH.durability)).toBe('ruined');
 
   expect(inventory.entities.byUid(housing.uid)).toBeUndefined();
   const parts = (owner: Inventory) =>

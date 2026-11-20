@@ -1,3 +1,4 @@
+import type { ContinuousSound } from './actorSense.ts';
 import { BatteryChargers, type ChargerEndpoint } from './batteryChargers.ts';
 import type { BlockEntity, EntitySpec } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
@@ -13,6 +14,7 @@ import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { POWER_SWITCH_PART } from './plantInstruments.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
+import type { SoundId } from './soundEvents.ts';
 import { type Placement, placedPieces } from './templates.ts';
 import { type SimTimestamp, simTimestamp } from './time.ts';
 
@@ -31,6 +33,11 @@ export interface PoweredLight {
   readonly radius: number;
   /** The cells of the fixture's own body, which never stop its light (`illumination.ts`, `reaches`). */
   readonly body?: { readonly min: Vec3; readonly max: Vec3 };
+}
+
+/** A producing module's hum, standing at its housing's footprint centre: what actors hear and what audio loops. */
+export interface PoweredSound extends ContinuousSound {
+  readonly sound: SoundId;
 }
 
 const identity = ({ type, pos }: PlacedPowerDevice): string => `${type}:${pos.join(',')}`;
@@ -60,6 +67,7 @@ export class SitePower {
   private readonly chargerIds = new Map<number, string>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
   private readonly runLamps: { id: string; light: PoweredLight }[] = [];
+  private readonly hums: PoweredSound[] = [];
   private readonly inventory: Inventory | undefined;
   private readonly arrived: ((origin: Readonly<Vec3>) => boolean) | undefined;
   /** Each source with required parts, by device id; its housing is the piece standing at the device's origin. */
@@ -105,6 +113,13 @@ export class SitePower {
         const size = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
         const body = { min: device.pos, max: device.pos.map((value, axis) => value + size[axis]!) as Vec3 };
         this.lamps.push({ id, light: { pos: emitterOf(device, def.size, offset), body, ...shine } });
+      }
+      const source = registry.powerDevices.get(spec.device)!;
+      if (source.kind === 'inexhaustible' && source.hum) {
+        const [width, , depth] = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
+        const [x, y, z] = device.pos;
+        const pos: Vec3 = [x + width / 2, y, z + depth / 2];
+        this.hums.push({ key: id, pos, radiusMetres: source.hum.radiusMetres, sound: source.hum.sound });
       }
       return {
         id,
@@ -331,5 +346,10 @@ export class SitePower {
       ...this.lamps.filter(({ id }) => this.network.isPowered(id)),
       ...this.runLamps.filter(({ id }) => this.network.isProducing(id)),
     ].map(({ light }) => light);
+  }
+
+  /** One hum per module that produces now, so a switched-off, serviced or failed module is silent at that boundary. */
+  sounds(): PoweredSound[] {
+    return this.hums.filter(({ key }) => this.network.isProducing(key));
   }
 }
