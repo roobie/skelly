@@ -101,6 +101,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
       const leaf = entities.pieceTouching(ahead);
       return leaf !== undefined && entities.bash(leaf, bash) !== undefined;
     },
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
   const id = system.add({ ...SHAMBLER, strength }, [5, 1, 6], [0, 0, -1]);
   let reachedBehind = false;

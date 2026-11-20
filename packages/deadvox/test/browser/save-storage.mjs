@@ -89,6 +89,8 @@ const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
 const navigationOnly = process.env.SAVE_NAVIGATION_ONLY === '1';
 const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
+const replacementTitleOnly = autosaveOnly && autosaveScenario === 'replacement-title';
+const replacementRecoveryOnly = autosaveOnly && autosaveScenario === 'replacement-recovery';
 const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
 const productionBundleStage =
   navigationOnly ||
@@ -100,7 +102,7 @@ const continueBundleStageId =
   browserName === 'chromium' ? 'save-storage-opfs-continue' : 'save-storage-indexeddb-continue';
 const productionBundleStageId = navigationOnly ? 'save-storage-navigation' : continueBundleStageId;
 const stageId = productionBundleStage ? productionBundleStageId : 'save-storage';
-if (!['continue', 'replacement', 'busy-lock'].includes(autosaveScenario)) {
+if (!['continue', 'replacement', 'replacement-title', 'replacement-recovery', 'busy-lock'].includes(autosaveScenario)) {
   throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
 }
 if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosaveBackend)) {
@@ -958,70 +960,80 @@ try {
       }
       return restored.world.id;
     });
-    const originalViewport = page.viewportSize();
-    assert(originalViewport, `${backend} stage contexts have a fixed viewport`);
-    await page.setViewportSize({ width: 1159, height: 414 });
-    const choice = await page.evaluate(() => {
-      const card = document.querySelector('#title-choice');
-      const menuCard = document.querySelector('#overlay .card');
-      if (!(card && menuCard)) {
-        throw new Error('The title choice or its menu card is not on the page');
-      }
-      const bounds = card.getBoundingClientRect();
-      const controls = ['continue', 'go'].map((id) => {
-        const element = document.getElementById(id);
-        if (!element) {
-          throw new Error(`The title choice lacks #${id}`);
-        }
-        const rect = element.getBoundingClientRect();
-        return (
-          !element.hidden &&
-          rect.width > 0 &&
-          rect.height > 0 &&
-          rect.top >= 0 &&
-          rect.bottom <= innerHeight &&
-          rect.left >= 0 &&
-          rect.right <= innerWidth
-        );
-      });
-      return {
-        controls,
-        centred: Math.abs((bounds.left + bounds.right) / 2 - innerWidth / 2) < 1,
-        scrollTop: menuCard.scrollTop,
-      };
-    });
-    assert.deepEqual(choice.controls, [true, true], `${backend} title choices must be visible without scrolling`);
-    assert.equal(choice.centred, true, `${backend} saved-world choice must be centred`);
-    assert.equal(choice.scrollTop, 0, `${backend} title choice must not need menu scrolling`);
-    await page.locator('#overlay').click({ position: { x: 1, y: 1 } });
-    assert.equal(
-      await page.locator('#save-confirmation').isVisible(),
-      false,
-      `${backend} a title background click must not choose replacement`,
-    );
-    await page.setViewportSize(originalViewport);
     const beforeContinue = await readGeneration('before Continue');
     assert(Number.isInteger(beforeContinue), `${backend} Continue check needs a committed generation`);
     if (beforeContinue < firstGeneration) {
       throw new Error(`${backend} refreshed save regressed its generation`);
     }
-    await page.evaluate(() => {
-      globalThis.dispatchEvent(new Event('pagehide'));
-      const { writing, queued } = globalThis.skellySaveTest.saveState();
-      if (writing || queued !== undefined) {
-        throw new Error('title-screen pagehide queued a save');
+    if (!replacementRecoveryOnly) {
+      const originalViewport = page.viewportSize();
+      assert(originalViewport, `${backend} stage contexts have a fixed viewport`);
+      await page.setViewportSize({ width: 1159, height: 414 });
+      const choice = await page.evaluate(() => {
+        const card = document.querySelector('#title-choice');
+        const menuCard = document.querySelector('#overlay .card');
+        if (!(card && menuCard)) {
+          throw new Error('The title choice or its menu card is not on the page');
+        }
+        const bounds = card.getBoundingClientRect();
+        const controls = ['continue', 'go'].map((id) => {
+          const element = document.getElementById(id);
+          if (!element) {
+            throw new Error(`The title choice lacks #${id}`);
+          }
+          const rect = element.getBoundingClientRect();
+          return (
+            !element.hidden &&
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.top >= 0 &&
+            rect.bottom <= innerHeight &&
+            rect.left >= 0 &&
+            rect.right <= innerWidth
+          );
+        });
+        return {
+          controls,
+          centred: Math.abs((bounds.left + bounds.right) / 2 - innerWidth / 2) < 1,
+          scrollTop: menuCard.scrollTop,
+        };
+      });
+      assert.deepEqual(choice.controls, [true, true], `${backend} title choices must be visible without scrolling`);
+      assert.equal(choice.centred, true, `${backend} saved-world choice must be centred`);
+      assert.equal(choice.scrollTop, 0, `${backend} title choice must not need menu scrolling`);
+      await page.locator('#overlay').click({ position: { x: 1, y: 1 } });
+      assert.equal(
+        await page.locator('#save-confirmation').isVisible(),
+        false,
+        `${backend} a title background click must not choose replacement`,
+      );
+      await page.setViewportSize(originalViewport);
+      await page.evaluate(() => {
+        globalThis.dispatchEvent(new Event('pagehide'));
+        const { writing, queued } = globalThis.skellySaveTest.saveState();
+        if (writing || queued !== undefined) {
+          throw new Error('title-screen pagehide queued a save');
+        }
+      });
+      if ((await readGeneration('after title-screen pagehide')) !== beforeContinue) {
+        throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
       }
-    });
-    if ((await readGeneration('after title-screen pagehide')) !== beforeContinue) {
-      throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
+      await navigatePage('reload after title-pagehide check', () =>
+        page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+      );
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
+      if (replacementTitleOnly) {
+        assert.equal(
+          await page.locator('#continue').isEnabled(),
+          true,
+          `${backend} title-pagehide kept Continue enabled`,
+        );
+        return { backend, titlePagehideRetainedGeneration: true };
+      }
     }
-    await navigatePage('reload after title-pagehide check', () =>
-      page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
-    );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     if (autosaveScenario === 'continue') {
       await navigatePage('continue from restored title screen', () =>
         Promise.all([

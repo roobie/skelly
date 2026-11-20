@@ -405,6 +405,9 @@ export class BlockEntities {
   private worldSeed: number | undefined;
   private windowLightAt = -1;
   private readonly windowLightCells = new Set<string>();
+  /** Derived, never saved: the standing windows under each world column, so `windowNear` need not scan cells. */
+  private windowIndexAt = -1;
+  private readonly windowColumns = new Map<string, BlockEntity[]>();
   /**
    * Derived, never saved: the piece each `standing` step after `journalFrom` changed, oldest first, so a view can
    * redraw only those (`standingChangesSince`).
@@ -1248,6 +1251,56 @@ export class BlockEntities {
   windowCollisionAt(x: number, y: number, z: number): BlockEntity | undefined {
     const entity = this.doorways.get(key(x, y, z));
     return entity?.window && this.windowBlocksCell(entity, x, y, z) ? entity : undefined;
+  }
+
+  /**
+   * Whether any window's own box reaches a box of blocks grown by `margin` on every side, so a caller scanning
+   * cells can skip clean areas without walking them (#1957). The answer is conservative: a window whose box overlaps
+   * may still block no cell in the box, while a window the cell scan would find always overlaps, because its cell
+   * lies inside its box. Derived from the standing pieces, so it rebuilds only when `standing` moves, not when a
+   * sash turns.
+   */
+  windowNear(low: Readonly<Vec3>, high: Readonly<Vec3>, margin = 0): boolean {
+    if (this.windowIndexAt !== this.standing) {
+      this.rebuildWindowColumns();
+    }
+    for (let cx = toChunk(Math.floor(low[0] - margin)); cx <= toChunk(Math.floor(high[0] + margin)); cx++) {
+      for (let cz = toChunk(Math.floor(low[2] - margin)); cz <= toChunk(Math.floor(high[2] + margin)); cz++) {
+        for (const entity of this.windowColumns.get(columnKey(cx, cz)) ?? []) {
+          if (this.windowOverlaps(entity, low, high, margin)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private rebuildWindowColumns(): void {
+    this.windowColumns.clear();
+    for (const entity of this.all) {
+      if (!entity.window) {
+        continue;
+      }
+      for (let cx = toChunk(entity.pos[0]); cx <= toChunk(entity.pos[0] + entity.size[0] - 1); cx++) {
+        for (let cz = toChunk(entity.pos[2]); cz <= toChunk(entity.pos[2] + entity.size[2] - 1); cz++) {
+          const column = columnKey(cx, cz);
+          (this.windowColumns.get(column) ?? this.windowColumns.set(column, []).get(column)!).push(entity);
+        }
+      }
+    }
+    this.windowIndexAt = this.standing;
+  }
+
+  private windowOverlaps(entity: BlockEntity, low: Readonly<Vec3>, high: Readonly<Vec3>, margin: number): boolean {
+    return (
+      entity.pos[0] < high[0] + margin &&
+      entity.pos[0] + entity.size[0] > low[0] - margin &&
+      entity.pos[1] < high[1] + margin &&
+      entity.pos[1] + entity.size[1] > low[1] - margin &&
+      entity.pos[2] < high[2] + margin &&
+      entity.pos[2] + entity.size[2] > low[2] - margin
+    );
   }
 
   private windowBlocksCell(entity: BlockEntity, x: number, y: number, z: number): boolean {

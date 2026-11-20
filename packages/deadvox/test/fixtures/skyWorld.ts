@@ -46,11 +46,10 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
             terrain: baseSite.terrain,
             vegetation: {
               ...baseSite.vegetation,
-              woodlandEdgeWavelengthMetres: 1,
-              woodlandEdgeVariation: 0,
+              regionProfiles: {},
+              crownMarginMetres: 0,
               openDensity: 0,
               obstacleMarginMetres: 0,
-              treeMix: ['broadleaf'],
             },
             palette: {
               terrain: {

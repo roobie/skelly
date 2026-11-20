@@ -1,15 +1,15 @@
 // Tiled is build-time only. This Site consumes validated layout JSON and existing ASCII templates.
-import { inPolygon } from './authoredLayout.ts';
 import { blocks, buildingFootprint, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
-import { LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
+import { LOT_APRON_M, lotOf, polylineDistance } from './authoredTerrain.mjs';
 import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrainEvaluator.ts';
+import { createBaselineCover } from './baselineCover.ts';
 import { claimed, claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
-import { Rng, simplexNoise2 } from './random.ts';
+import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
@@ -38,7 +38,7 @@ import {
 import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedPieces, placedSpawns } from './templates.ts';
 import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
-import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
+import { type TreePlacement, vegetationPlacements } from './vegetation.ts';
 
 const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
   const { showroom } = layout;
@@ -167,54 +167,22 @@ export class AuthoredSite implements Site {
       })),
     };
     const ground = createAuthoredGround(groundData);
-    const { height, sandy } = ground;
+    const { height } = ground;
     const player = blocks(layout.player.position);
     const reserved = [
       ...(catalogue ? [catalogue.rect] : []),
       ...lots.map((lot) => lot.apron),
       { x0: player[0] - 3 / s, x1: player[0] + 3 / s, z0: player[2] - 3 / s, z1: player[2] + 3 / s },
     ];
-    const woodlandDensityAt = (x: number, z: number): number => {
-      const vegetationTuning = tuning.vegetation;
-      const edgeNoise =
-        simplexNoise2(
-          seed + 0x71_3b,
-          x / vegetationTuning.woodlandEdgeWavelengthMetres,
-          z / vegetationTuning.woodlandEdgeWavelengthMetres,
-        ) *
-        vegetationTuning.woodlandEdgeVariation *
-        vegetationTuning.woodlandEdgeWavelengthMetres;
-      return Math.max(
-        0,
-        ...layout.woodlands
-          .filter((wood) => {
-            const closed = [...wood.polygon, wood.polygon[0]!];
-            const inside = inPolygon([x, z], wood.polygon);
-            const edgeDistance = polylineDistance([x, z], closed);
-            return (inside ? edgeDistance : -edgeDistance) + edgeNoise >= 0;
-          })
-          .map((wood) => wood.density),
-      );
-    };
+    const cover = { regions: layout.woodlands, vegetation: tuning.vegetation };
+    const baseline = createBaselineCover({ ...cover, ground: groundData });
     const candidates = vegetationPlacements({
       seed,
       registry,
       scale,
       area,
-      // Density is a multiplier on 2.13's unchanged seeded field, not a second tree generator.
-      density: (x, z) => {
-        const margin = tuning.vegetation.obstacleMarginMetres;
-        if (
-          sandy(Math.floor(x / s), Math.floor(z / s)) ||
-          protectedBuildings.some((rect) => rectDistance(rect, x, z, s) <= margin) ||
-          layout.tracks.some((track) => polylineDistance([x, z], track.points) <= track.width / 2 + margin) ||
-          spawnPoints.some(([spawnX, spawnZ]) => Math.hypot(x - spawnX!, z - spawnZ!) <= margin)
-        ) {
-          return 0;
-        }
-        return Math.max(tuning.vegetation.openDensity, woodlandDensityAt(x, z)) * forestDensityAt(registry, seed, x, z);
-      },
-      shapeMix: (x, z) => (woodlandDensityAt(x, z) > 0 ? tuning.vegetation.treeMix : ['young']),
+      density: baseline.densityAt,
+      shapeMix: baseline.treeMixAt,
       ground: (x, z) => height(x, z, layout.ground / s),
       reserved: [
         ...reserved,
@@ -242,6 +210,7 @@ export class AuthoredSite implements Site {
     this.terrain = {
       kind: 'authored',
       ground: groundData,
+      cover,
       data: { catalogue: catalogue?.terrain, trees, litter, sand: terrain.sand },
       placements: terrainPlacements(this.placements),
     };

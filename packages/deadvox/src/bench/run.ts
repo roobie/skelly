@@ -201,7 +201,7 @@ export const forestWorkload = (registry: Registry, seed: number, density: number
     densityField: density === null ? vegetation.forestDensityField : null,
     extentMetres: 2 * vegetation.forestHalfExtentMetres,
     cellMetres: vegetation.treeCellMetres,
-    shapeMix: vegetation.treeMix,
+    shapeMix: vegetation.forestTreeMix,
     foliage: 'passable-opaque' as const,
     routes: {
       heading: HEADING,

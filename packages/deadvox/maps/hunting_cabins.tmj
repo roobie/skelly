@@ -69,10 +69,10 @@
       "objects": [
         {"id": 9, "name": "Western slope woodland", "type": "woodland", "x": 12, "y": 60, "rotation": 0, "visible": true,
           "polygon": [{"x": 0, "y": 0}, {"x": 24, "y": 0}, {"x": 24, "y": 59}, {"x": 0, "y": 59}],
-          "properties": [{"name": "density", "type": "float", "value": 1}]},
+          "properties": [{"name": "profile", "type": "string", "value": "woodland"}]},
         {"id": 10, "name": "Eastern and northern treeline", "type": "woodland", "x": 36, "y": 62, "rotation": 0, "visible": true,
           "polygon": [{"x": 59, "y": 0}, {"x": 82, "y": 0}, {"x": 82, "y": 62}, {"x": 0, "y": 62}, {"x": 0, "y": 46}, {"x": 59, "y": 46}],
-          "properties": [{"name": "density", "type": "float", "value": 1}]}
+          "properties": [{"name": "profile", "type": "string", "value": "woodland"}]}
       ]
     },
     {
