@@ -22,7 +22,9 @@ the lamp.
 1. Hum: the player starts at the plant's door with the module running and the lamp beside it lit. Walk to the module:
    the hum grows louder. Step back out of the door and around the wall: it fades and muffles. The sound log shows the
    hum started.
-2. Drawn wave: wait inside the plant. The wave appears at the edge of the site and walks to the plant.
+2. Drawn wave: wait inside the plant. The wave appears at the edge of the site and walks to the plant. Once there it
+   mills around the plant while the hum plays instead of leaving, whether by day or by night; switching the module
+   off, as in step 3, releases it.
 3. Committed approach: while the wave is still walking in, aim at the lever below the module's dial and press F. The
    lever drops to OFF, the lamp goes dark and the hum stops. The wave keeps coming to
    the spot it last heard.

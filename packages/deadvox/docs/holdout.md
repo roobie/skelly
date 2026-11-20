@@ -160,12 +160,11 @@ another; authoring it on the module is the honest model with one value. See
 `packages/engine/src/core/sitePower.ts`, `SitePower.sounds`.
 
 Only hearing gives a wave a plant target. A heard target is kept through silence until
-the group reaches it, and hearing the same source near again refines it; at the target
+the group reaches it, and hearing the same source near again refines it; at a waypoint
 with nothing new, the group roams as usual. This fits the horde's existing target and
 mode. A wave does not take a plant target from a hearing owner kept from before its
 release, because no such owner exists, and a separate uncertainty state is not needed
-yet. Far hearing
-does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
+yet. Far hearing does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
 so a far wave walks that stretch and must hear the plant again to close in. A quiet
 plant therefore loses distant waves and a running one pulls them in step by step, which
 is how going quiet matters without an extra rule.
@@ -177,6 +176,13 @@ rule needs no loudness strength the tiers do not produce. A group following noth
 picks among what it hears by the same rule. See
 `packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and
 `packages/engine/src/core/agentPerception.ts`, `surerHearing`.
+
+A group that reaches a source it still hears stays there while it sounds, milling around
+it, and only silence releases it: by day it goes home, by night it roams. Leaving for
+home while the plant hums would only walk the group out of reach and back in on the next
+hearing, so it shuttles without pressing; staying keeps the siege on the plant, and
+switching the plant off is the player's way to lift it. How far the group mills is
+content; see `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and
