@@ -1,0 +1,15 @@
+{
+  "dependencies": ["skelly.manufactured-blocks", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "roads.json"
+    }
+  ],
+  "id": "skelly.deadvox.roads",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

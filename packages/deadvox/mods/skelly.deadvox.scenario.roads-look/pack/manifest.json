@@ -1,0 +1,26 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.body",
+    "skelly.deadvox.roads",
+    "skelly.deadvox.site-generation",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "roads-look.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.roads-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

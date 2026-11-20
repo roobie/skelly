@@ -1,6 +1,7 @@
 ---
 read_if:
   - you add a composed-site ask, anchor, landscape cover or population mechanism
+  - you add or change a link that joins two asks with a road
   - you decide whether a world feature belongs in the city planner or authored layout
   - you change supply guarantees or the boundary between wave content and runtime events
   - you change Holdout's starting building or decide whether it should force a base location
@@ -45,6 +46,22 @@ See `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`;
 
 > A wave effect names an anchor (or a list of them to draw
 > from), never a cell.
+
+A link joins two placed asks with one authored road: each end names a walk gate whose
+`type` names one shared road profile, and a transition assembly docks on each gate, its
+route bending the road between them and oriented gate-to-outward however it was
+authored. A candidate placement counts only once the road fits — gates mated,
+transitions clear of the bounds, the buildings and every unrelated reservation — and the
+ask the road leaves is retried too, because no later placement can unblock a gate that
+cannot host its transition or lead the road away. Refusals name the link, both ports,
+the profile and the transition, so a blocked road is attributable rather than silently
+dropped. The site's start stands just outside its start ask's outgoing road gate, facing
+along the road, so the player opens the game standing on it. The transitions are
+authored pieces and the stretch between them is a layout track, so terrain, vegetation
+and paper maps treat the whole road as one surface. See
+`packages/engine/src/core/schema/scenarios.ts`, `SiteLinkSchema`;
+`packages/engine/src/core/composeLayout.ts`, `planLink`, `fromExitFits` and
+`linkDiagnostic`; and `packages/engine/src/core/templates.ts`, `portsMate`.
 
 Composed population does not inherit city street pressure: local occupants belong to
 the authored sites, not an unrelated street population. Holdout PoIs admit their own

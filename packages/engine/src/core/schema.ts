@@ -81,6 +81,6 @@ export type { PerimeterCrossingDef } from './schema/layouts.ts';
 export type { CompassDial, HandsModelDef } from './schema/models.ts';
 export { ModelSchema } from './schema/models.ts';
 export type { EventRuleDef } from './schema/scenarios.ts';
-export type { DecalDef, GroundLootSupply } from './schema/templates.ts';
+export type { DecalDef, GroundLootSupply, RoadProfileDef } from './schema/templates.ts';
 export { DecalSchema } from './schema/templates.ts';
 export type { ScreenText } from './schema/ui.ts';
