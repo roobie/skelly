@@ -408,7 +408,8 @@ export interface ActorSystemOptions {
    * The world's chunk watcher (`src/core/world.ts`, `watchChunks`), the owner the lamp view cache and the sky
    * field also read: it reports each chunk whose blocks changed — a block placed or dug, or terrain streamed in —
    * and collision reads terrain independently of the piece journal, so a held-up actor's way-past probe wait ends
-   * near those chunks too (#1957).
+   * near those chunks too (#1957). Notifications coalesce per chunk, so a freeze or any drain-less stretch holds
+   * at most one pending entry per distinct changed chunk.
    */
   watchChunks?: (changed: (cx: number, cy: number, cz: number) => void) => () => void;
   /**
@@ -704,7 +705,7 @@ export class ActorSystem {
       holdSpitGround,
     });
     this.options.watchChunks?.((cx, cy, cz) => {
-      this.changedChunks.push([cx, cy, cz]);
+      this.changedChunks.set(`${cx},${cy},${cz}`, [cx, cy, cz]);
     });
   }
 
@@ -713,6 +714,11 @@ export class ActorSystem {
   /** How many way-past probes every held-up actor has run, so a debug readout or test can count their rate (#1957). */
   wayAroundProbeCount(): number {
     return this.agent.wayAroundProbeCount();
+  }
+
+  /** Chunks awaiting the next obstruction sync, so a test can check pending invalidation stays bounded (#1957). */
+  pendingChunkChanges(): number {
+    return this.changedChunks.size;
   }
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
@@ -1451,12 +1457,13 @@ export class ActorSystem {
     if (!this.options.watchChunks) {
       return;
     }
-    for (const [cx, cy, cz] of this.changedChunks.splice(0)) {
+    for (const [cx, cy, cz] of this.changedChunks.values()) {
       boxes.push({
         min: [cx * CHUNK, cy * CHUNK, cz * CHUNK],
         max: [(cx + 1) * CHUNK, (cy + 1) * CHUNK, (cz + 1) * CHUNK],
       });
     }
+    this.changedChunks.clear();
   }
 
   /** Boxes of vehicle obstruction that appeared or vanished since the collection's revision last moved. */
@@ -1528,7 +1535,8 @@ export class ActorSystem {
   private standingAt: number | undefined;
   private vehiclesAt: number | undefined;
   private vehicleBoxes = new Set<string>();
-  private readonly changedChunks: Vec3[] = [];
+  /** Chunk coordinates awaiting the next obstruction sync, keyed by chunk: repeats coalesce to one entry. */
+  private readonly changedChunks = new Map<string, Vec3>();
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;

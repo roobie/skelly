@@ -356,3 +356,75 @@ it('keeps a chaser brushing a passable piece on one probe per interval through c
   expect(system.wayAroundProbeCount()).toBeGreaterThan(0);
   expect(system.wayAroundProbeCount()).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
 });
+
+it('coalesces chunk changes per chunk while actors are frozen and ends a nearby wait after the freeze lifts', () => {
+  const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
+  const interval = cooldown * 3;
+  const entities = new BlockEntities(registry);
+  entities.add({ type: 'probe_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' });
+  const solid: SolidAt = (x, y, z) =>
+    FLOOR(x, y, z) || (z >= 0 && z <= 1 && y >= 1 && y <= 4 && !(x >= 6 && x <= 7)) || entities.isSolid(x, y, z);
+  let chunk: ((cx: number, cy: number, cz: number) => void) | undefined;
+  const target: Vec3 = [6.5, 1, -3];
+  const sense = (): PlayerSense => ({
+    pos: target,
+    facing: [0, 0, 1],
+    movement: 'sprinting',
+    lit: false,
+    lightSeenFrom: 40,
+    eyeHeightMetres: 1.3,
+    stance: 'standing',
+  });
+  const type = {
+    ...SHAMBLER,
+    agent: {
+      ...SHAMBLER.agent!,
+      wander: {
+        ...SHAMBLER.agent!.wander,
+        wayAroundProbeIntervalSimSeconds: simSeconds(interval),
+        obstacleWanderChance: 0,
+      },
+    },
+  };
+  const system = new ActorSystem({
+    player: sense,
+    isSolid: solid,
+    isOpaque: solid,
+    dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
+    blockSize: SCALE.blockSize,
+    physics: physicsFor(SCALE),
+    tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
+    hurtPlayer: () => undefined,
+    bashObstacle: () => false,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    standingChanges: {
+      mark: () => entities.standing,
+      changesSince: (mark) => entities.standingChangesSince(mark),
+    },
+    watchChunks: (changed) => {
+      chunk = changed;
+      return () => undefined;
+    },
+  });
+  system.add(type, [5, 1, 6], [0, 0, -1]);
+  // Run until the first probe has armed the wait at the piece, then freeze the actors mid-wait.
+  for (let frame = 0; frame < 600 && system.wayAroundProbeCount() === 0; frame++) {
+    system.tick(1 / 60);
+  }
+  expect(system.wayAroundProbeCount()).toBeGreaterThan(0);
+  const probesAtFreeze = system.wayAroundProbeCount();
+  system.setFrozen(true);
+  // Many terrain edits across two chunks while frozen: pending work stays bounded per distinct chunk.
+  for (let edit = 0; edit < 600; edit++) {
+    chunk!(0, 0, 0);
+    chunk!(1, 0, 0);
+  }
+  expect(system.pendingChunkChanges()).toBeLessThanOrEqual(2);
+  // The freeze ends into an unfrozen tick: the queue drains and the nearby change ends the wait, so the held-up
+  // actor probes again this tick instead of waiting out the interval.
+  system.setFrozen(false);
+  system.tick(1 / 60);
+  expect(system.pendingChunkChanges()).toBe(0);
+  expect(system.wayAroundProbeCount()).toBeGreaterThan(probesAtFreeze);
+});
