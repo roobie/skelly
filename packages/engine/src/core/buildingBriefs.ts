@@ -129,13 +129,13 @@ const declaredFitIssues = (
       report('plot', assembly.eligibility?.settlementKinds.includes(kind) ? '.size' : '.eligibility', reason);
     }
   }
-  const storeys = assembly.access?.storeys.length ?? 0;
+  const cellars = cellarFloors(assembly);
+  const storeys = (assembly.access?.storeys.length ?? 0) - cellars.length;
   const [fewest, most] = brief.storeys;
   if (storeys < fewest || storeys > most) {
-    report('storeys', '.access.storeys', `declares ${storeys} storeys, outside ${fewest} to ${most}`);
+    report('storeys', '.access.storeys', `declares ${storeys} storeys over its cellars, outside ${fewest} to ${most}`);
   }
   styleFitIssues(registry, assembly, brief, report);
-  const cellars = cellarFloors(assembly);
   for (const [room, { cellar }] of carriedRooms(assembly, brief)) {
     const anchor = assembly.anchors[room];
     if (anchor?.kind !== 'standing') {

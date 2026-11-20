@@ -71,7 +71,8 @@ The fit check reads:
   style an answer can build in must be among them.
 - **`storeys`** is a range over the storeys an answer declares in `access.storeys`
   (`packages/engine/src/core/schema/templates.ts`, `TemplateAccessSchema`), not a height,
-  because declared storeys are what the engine knows and checks.
+  because declared storeys are what the engine knows and checks. Cellar storeys are left out
+  of the count, so a house over a cellar answers the brief its cellarless twin answers.
 - **`program`** keys are room names, each a standing anchor the answer must carry
   (`packages/engine/src/core/schema/templates.ts`, `KitAnchorSchema`), so a room is a place a
   body can stand and walk to from the entrance, not a label. A **`cellar`** room is asked only
@@ -160,8 +161,8 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **plot**: the footprint and settlement kinds go through admission's own test
   (`packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`), so passing the
   brief and being admitted to a lot of the plot's size cannot disagree.
-- **storeys**: the count of declared `access.storeys`, because those are the storeys the
-  engine knows. Whether they are well formed stays with the map kit check
+- **storeys**: the count of declared `access.storeys` from the ground storey up, because those
+  are the storeys the engine knows, and a cellar is asked for by the brief's cellar rooms. Whether they are well formed stays with the map kit check
   (`packages/engine/src/core/templateSpatial.ts`, `templateStoreyIssues`).
 - **styles**: every style a piece can be built in, through any slot variant, seam or styled
   outer ref, must be in the brief's set, because a style decides materials and any variant
