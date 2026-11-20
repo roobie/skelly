@@ -434,5 +434,17 @@ local unshaped = [
         { from: 0.75, height: 0.1 },
       ],
     },
+    {
+      id: 'wood_window_boarding',
+      name: 'Wooden window boarding',
+      color: '#a0763f',
+      thicknessBlocks: 0.12,
+      boards: [
+        { from: 0.06, height: 0.16 },
+        { from: 0.3, height: 0.16 },
+        { from: 0.54, height: 0.16 },
+        { from: 0.78, height: 0.16 },
+      ],
+    },
   ],
 }
