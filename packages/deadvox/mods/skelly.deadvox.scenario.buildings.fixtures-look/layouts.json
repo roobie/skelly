@@ -10,7 +10,7 @@
       },
       "buildings": [
         {
-          "position": [-26, 21, 0],
+          "position": [-30, 21, 0],
           "rotation": 0,
           "template": "fixtures_look_row"
         }

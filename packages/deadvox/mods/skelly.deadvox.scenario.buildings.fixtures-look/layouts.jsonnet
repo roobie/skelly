@@ -8,7 +8,7 @@
     ground: 21,
     terrain: [],
     tracks: [],
-    buildings: [{ template: 'fixtures_look_row', position: [-26, 21, 0], rotation: 0 }],
+    buildings: [{ template: 'fixtures_look_row', position: [-30, 21, 0], rotation: 0 }],
     player: { position: [0.5, 21.5, -8], bearing: 180 },
     actors: [],
     woodlands: [],

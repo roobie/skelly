@@ -1512,7 +1512,7 @@
   "assets/models/rusted_plate_armour.glb": { "materials": ["iron-dull", "steel-bright", "rust-red", "leather-tan"] },
   "assets/models/rusty_mail_chausses.glb": { "materials": ["steel-mail", "scrap-rusted", "leather-brown"] },
   "assets/models/rusty_mail_vest.glb": { "materials": ["steel-mail", "leather-tan", "iron-dull", "rust-red"] },
-  "assets/models/sabaton.glb": { "materials": ["steel-grey", "leather-brown", "brass-dull"] },
+  "assets/models/sabaton.glb": { "materials": ["steel-grey", "leather-black", "leather-brown", "brass-dull"] },
   "assets/models/sabre_fencing_jacket.glb": { "materials": ["cloth-shimmer", "cloth-cream", "steel-bright"] },
   "assets/models/safety_glasses.glb": { "materials": ["plastic-clear", "plastic-blue"] },
   "assets/models/samghati.glb": { "materials": ["cloth-crimson", "velvet-red", "leather-oxblood", "cord-cotton"] },

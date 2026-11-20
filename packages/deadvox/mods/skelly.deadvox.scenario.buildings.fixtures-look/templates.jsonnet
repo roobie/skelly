@@ -1,11 +1,13 @@
 // Every shared household fixture stands in one row against a back wall, fronts to the open side, so the look
 // judges each against its neighbours at one scale. A bay groups what a house stands together: the cabinet hangs
-// over the washbasin, chairs face the table, and the coal hatch sits in the wall it is cut through.
-// The fronts face north, the side the building sheet calls its front.
+// over the washbasin, chairs face the table, the coal hatch sits in the wall it is cut through, and each light hangs
+// under a slab of ceiling at cellar height. The fronts face north, the side the building sheet calls its front.
 local gap = 1;
 local back = 4;
+local ceiling = 5;
 local piece(glyph, at, size) = { glyph: glyph, at: at, size: size };
 local stood(glyph, width, height, depth) = piece(glyph, [0, 1, back - depth], [width, height, depth]);
+local hung(glyph) = [piece(glyph, [1, ceiling - 1, 2], [1, 1, 1]), piece('#', [0, ceiling, 1], [3, 1, back - 1])];
 local bays = [
   [stood('u', 2, 2, 2)],
   [stood('t', 2, 2, 2)],
@@ -22,6 +24,8 @@ local bays = [
   [stood('J', 3, 6, 2)],
   [stood('v', 3, 2, 2)],
   [piece('H', [0, 1, back], [2, 2, 1])],
+  hung('L'),
+  hung('l'),
 ];
 local widthOf(bay) = std.foldl(std.max, [p.at[0] + p.size[0] for p in bay], 0);
 local starts = std.foldl(function(xs, bay) xs + [xs[std.length(xs) - 1] + widthOf(bay) + gap], bays, [gap]);
@@ -59,6 +63,8 @@ local cell(x, y, z) =
       J: { furniture: 'solid_fuel_boiler' },
       v: { furniture: 'coal_bin' },
       H: { furniture: 'coal_hatch' },
+      L: { furniture: 'bare_bulb' },
+      l: { furniture: 'ceiling_lamp' },
     },
     layers: [
       [std.join('', [cell(x, y, z) for x in std.range(0, size[0] - 1)]) for z in std.range(0, size[2] - 1)]

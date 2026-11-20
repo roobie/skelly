@@ -3333,9 +3333,36 @@ describe('templates', () => {
     expect(
       validateContent({
         source: plaques.source,
-        data: { furniture: [{ ...plaques.data.furniture[0], mount: 'ceiling' }] },
+        data: { furniture: [{ ...plaques.data.furniture[0], mount: 'floor' }] },
       }),
     ).toContainEqual(expect.objectContaining({ path: 'furniture[0].mount' }));
+  });
+
+  it('requires a solid host above every ceiling mount', () => {
+    const lamps = {
+      source: 'ceiling-mount-fixture.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_lamp',
+            name: 'Fixture lamp',
+            size: [1, 1, 1],
+            color: '#e7e2d2',
+            mount: 'ceiling',
+            solid: false,
+            shape: [{ position: [0.4, 0.5, 0.4], size: [0.2, 0.5, 0.2] }],
+          },
+        ],
+      },
+    };
+    const t = template([['.L.'], ['.#.']], { '.': 'air', '#': 'brick', L: { furniture: 'fixture_lamp' } }, [3, 2, 1]);
+    expect(buildRegistry([...templateBase, lamps, t]).issues).toEqual([]);
+    t.data.templates[0]!.palette['#'] = 'air';
+    expect(buildRegistry([...templateBase, lamps, t]).issues).toContainEqual({
+      source: t.source,
+      path: 'templates[0].palette["L"].furniture',
+      message: 'ceiling mount at [1, 0, 0] needs a solid block above it',
+    });
   });
 
   it('needs every furniture mark to belong to a whole piece', () => {

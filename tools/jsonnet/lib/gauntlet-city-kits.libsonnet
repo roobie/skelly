@@ -40,29 +40,30 @@ local doorWallMask = [
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSSSSSSSSSSSSAA',
 ];
+// Window bays are holes the shell leaves unclaimed, so each storey's window slots fill them.
 local doorWindows = [
-  '..................', '..................', '####..#..#..####..', '#..............#..',
+  '..................', '..................', '###...#..#...###..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#H.', '#..............#H.',
   '#..............#..', '#..............#..', '#..............#..', '#####......#####..',
 ];
 local doorWindowMask = [
-  '..................', '..................', 'SSSSAAS..SAASSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSS...S..S...SSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
-  'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSAAAAAASSSSSAA',
+  'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSS......SSSSSAA',
 ];
 local windows = [
-  '..................', '..................', '####..####..####..', '#..............#..',
+  '..................', '..................', '###...####...###..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#..', '#..............#..',
   '#..............#..', '#..............#..', '#..............#H.', '#..............#H.',
   '#..............#..', '#..............#..', '#..............#..', '#####......#####..',
 ];
 local windowClaims = [
-  '..................', '..................', 'SSSSAASSSSAASSSSAA', 'S..............SAA',
+  '..................', '..................', 'SSS...SSSS...SSSAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SAA', 'S..............SAA',
   'S..............SAA', 'S..............SAA', 'S..............SSA', 'S..............SSA',
-  'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSSAAAAAASSSSSAA',
+  'S..............SAA', 'S..............SAA', 'S..............SAA', 'SSSSS......SSSSSAA',
 ];
 local closed = [
   '..................', '..................', '################..', '#..............#..',
@@ -94,11 +95,29 @@ local slot = function(id, piece, at, size, turn=0) {
   id: id, at: at, size: size, turn: turn,
   choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
+local casements = (import 'tools/jsonnet/lib/window-slots.libsonnet')(
+  'gauntlet_city_window', { style: 'brick_townhouse', lootContext: context }, ['n', 's']);
+// A storey's walls with a casement in each bay, so a house that swaps a storey's walls swaps its
+// windows with them.
+local shell = function(id, walls) {
+  id: id, size: [18, 7, 16], lootContext: context,
+  slots: [
+    slot('walls', walls, [0, 0, 0], [18, 7, 16]),
+    casements.slot('front_west', [3, 2, 2], 'n'),
+    casements.slot('front_east', [10, 2, 2], 'n'),
+    casements.slot('back_west', [5, 2, 15], 's'),
+    casements.slot('back_east', [8, 2, 15], 's'),
+  ],
+  joins: [], ports: [], anchors: {},
+};
+local shellSlot = function(id, shellId, at) slot(id, shellId, at, [18, 7, 16]) + {
+  choices: [{ ref: { kind: 'assembly', id: shellId }, weight: 1 }],
+};
 local scenes = (import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-scenes.libsonnet')(palette, context);
 local roomSlot = scenes.slot;
 local lowerSlots = [
   slot('ground', 'gauntlet_city_ground', [0, 0, 0], [18, 1, 16]),
-  slot('shell', 'gauntlet_city_shell', [0, 1, 0], [18, 7, 16]),
+  shellSlot('shell', 'gauntlet_city_shell', [0, 1, 0]),
   doors.slot([7, 1, 2]),
   roomSlot('room', [1, 1, 3], 'lower'),
   slot('stairs', 'gauntlet_city_stairs_east', [1, 1, 5], [11, 8, 2]),
@@ -133,21 +152,25 @@ local roofDeck = function(id, covering, ladder)
 local kit = {
   scenes: scenes,
   loot: scenes.loot,
-  mapPieces: doors.mapPieces + scenes.mapPieces + [
+  shells: [
+    shell('gauntlet_city_shell', 'gauntlet_city_shell_walls'),
+    shell('gauntlet_city_upper_shell', 'gauntlet_city_upper_shell_walls'),
+  ],
+  mapPieces: doors.mapPieces + scenes.mapPieces + casements.mapPieces + [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette, layers: [footing], ownership: { layers: [solid] },
       anchors: {}, ports: [],
     },
     {
-      id: 'gauntlet_city_shell', size: [18, 7, 16], style: 'brick_townhouse',
+      id: 'gauntlet_city_shell_walls', size: [18, 7, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
       layers: [doorWall, doorWall, doorWindows, doorWindows, windows, closed, closed],
       ownership: { layers: [doorWallMask, doorWallMask, doorWindowMask, doorWindowMask, windowClaims, doorMask, doorMask] },
       anchors: {}, ports: [],
     },
     {
-      id: 'gauntlet_city_upper_shell', size: [18, 7, 16], style: 'brick_townhouse',
+      id: 'gauntlet_city_upper_shell_walls', size: [18, 7, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
       layers: [closed, closed, windows, windows, windows, closed, closed],
       ownership: { layers: [doorMask, doorMask, windowClaims, windowClaims, windowClaims, doorMask, doorMask] },
@@ -211,7 +234,7 @@ local kit = {
     {
       id: 'gauntlet_city_2', size: [18, 18, 16], lootContext: context,
       slots: lowerSlots + [
-        slot('upper_shell', 'gauntlet_city_upper_shell', [0, 9, 0], [18, 7, 16]),
+        shellSlot('upper_shell', 'gauntlet_city_upper_shell', [0, 9, 0]),
         roomSlot('upper_room', [1, 9, 3], 'room'),
         slot('roof', 'gauntlet_city_roof_sheet', [0, 16, 0], [18, 2, 16]),
       ],
@@ -223,12 +246,12 @@ local kit = {
     {
       id: 'gauntlet_city_3', size: [18, 26, 16], lootContext: context,
       slots: lowerSlots + [
-        slot('middle_shell', 'gauntlet_city_upper_shell', [0, 9, 0], [18, 7, 16]),
+        shellSlot('middle_shell', 'gauntlet_city_upper_shell', [0, 9, 0]),
         roomSlot('middle_room', [1, 9, 3], 'middle'),
         slot('middle_stairs', 'gauntlet_city_stairs_west', [1, 9, 11], [11, 8, 2]),
         slot('middle_floor_shell', 'gauntlet_city_floor_shell', [0, 16, 0], [18, 1, 16]),
         slot('middle_floor_inside', 'gauntlet_city_floor_middle', [1, 16, 3], [14, 1, 12]),
-        slot('upper_shell', 'gauntlet_city_upper_shell', [0, 17, 0], [18, 7, 16]),
+        shellSlot('upper_shell', 'gauntlet_city_upper_shell', [0, 17, 0]),
         roomSlot('upper_room', [1, 17, 3], 'room'),
         slot('roof', 'gauntlet_city_roof_sheet', [0, 24, 0], [18, 2, 16]),
       ],
@@ -243,8 +266,7 @@ local kit = {
     slots: [
       { id: 'ground', at: [0, 0, 0], size: [18, 1, 16], turn: 0,
         choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_ground' }, weight: 1 }] },
-      { id: 'shell', at: [0, 1, 0], size: [18, 7, 16], turn: 0,
-        choices: [{ ref: { kind: 'piece', id: 'gauntlet_city_shell' }, weight: 1 }] },
+      shellSlot('shell', 'gauntlet_city_shell', [0, 1, 0]),
       doors.slot([7, 1, 2]),
       scenes.slot('room', [1, 1, 3], 'room'),
       { id: 'roof', at: [0, 8, 0], size: [18, 2, 16], turn: 0,
