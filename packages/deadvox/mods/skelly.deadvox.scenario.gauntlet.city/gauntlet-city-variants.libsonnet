@@ -36,7 +36,9 @@ local stairwell = flight + {
 // kitchen. The street storey's room gives way to the stairwell down, as the room under a stair does.
 local storey = 8;
 local up = function(at, by) [at[0], at[1] + by, at[2]];
-local withCellar = function(building) building + {
+// A house whose own rooms already hold the building beat cap gets a quiet cellar, so the cellar adds no beat.
+local quietCellar = kit.scenes.quiet('cellar', '_quiet');
+local withCellar = function(building, quiet=false) building + {
   id: building.id + '_cellar',
   size: up(building.size, storey),
   slots: [
@@ -50,7 +52,7 @@ local withCellar = function(building) building + {
     else [{ id: 'stairs', at: [1, storey + 1, 5], size: stairwell.size, turn: 0, choices: only(stairwell.id) }]
   ) + [
     { id: 'cellar_shell', at: [0, 1, 0], size: [18, 7, 16], turn: 0, choices: only('gauntlet_city_cellar_shell') },
-    kit.scenes.slot('cellar_room', [1, 1, 3], 'cellar'),
+    if quiet then quietCellar.slot('cellar_room', [1, 1, 3]) else kit.scenes.slot('cellar_room', [1, 1, 3], 'cellar'),
     { id: 'cellar_stairs', at: [1, 1, 5], size: cellarFlight.size, turn: 0, choices: only(cellarFlight.id) },
     { id: 'street_course', at: [0, storey, 0], size: [18, 1, 16], turn: 0, choices: only('gauntlet_city_street_course') },
     { id: 'cellar_ceiling', at: [1, storey, 3], size: [14, 1, 12], turn: 0, choices: only('gauntlet_city_floor_lower') },
@@ -67,7 +69,7 @@ local withCellar = function(building) building + {
   },
 };
 local townhouse = function(id) find(id, kit.mapAssemblies);
-local cellared = [withCellar(townhouse(id)) for id in ['gauntlet_city_1', 'gauntlet_city_2', 'gauntlet_city_3']];
+local cellared = [withCellar(townhouse('gauntlet_city_1')), withCellar(townhouse('gauntlet_city_2')), withCellar(townhouse('gauntlet_city_3'), quiet=true)];
 local cellarHouse = cellared[0];
 // The cellar house raised over its sub-cellar, whose layers set the depth.
 local subCellar = std.filter(function(piece) piece.id == 'gauntlet_city_sub_cellar', cellars.mapPieces)[0];
@@ -111,7 +113,7 @@ local dressed = function(building) building + {
   loot: kit.loot,
   mapPools: decor.mapPools,
   furniture: decor.furniture + yards.furniture,
-  mapPieces: kit.mapPieces + [cellarFlight, openFlight, stairwell] + cellars.mapPieces + noted.mapPieces + rugged.mapPieces + decor.mapPieces + yards.mapPieces,
+  mapPieces: kit.mapPieces + [cellarFlight, openFlight, stairwell] + cellars.mapPieces + noted.mapPieces + rugged.mapPieces + quietCellar.mapPieces + decor.mapPieces + yards.mapPieces,
   // The secret house answers no brief: it is the scenario's one-off stash, placed once and in brick
   // only, not a pathway building.
   mapAssemblies: decor.mapAssemblies + kit.shells

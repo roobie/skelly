@@ -156,6 +156,8 @@ local hasDesk(scene) = std.length([1 for thing in scene.things if thing.furnitur
     things: [if thing.furniture == 'desk' then thing + { items: items } else thing for thing in scene.things],
   }),
   // Every scene of the level, with `furniture` lying at (x, z).
+  // The level's scenes that hold no beat, for a room whose house already holds the building cap.
+  quiet(level, suffix): variant(level, suffix, function(scene) scene.beats == 0, function(scene) scene),
   lying(level, suffix, furniture, x, z): variant(level, suffix, function(scene) true, function(scene) scene + {
     things: scene.things + [at(furniture, x, z)],
   }),
