@@ -2254,7 +2254,7 @@ and of each other, standing or crouched; swinging limbs are excluded because the
 already pass through the body. A worn item keeps its fitted parts, including their
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
-`packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Footwear stands the wearer on its soles, because a sole lies under the bare foot
@@ -2278,7 +2278,7 @@ Vests and carry shells have a fit per under-layer, selected by the torso garment
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
 not gear layered above it. See `packages/presentation/src/render/wornModels.ts`, `WornModels`, and
-`packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
@@ -3541,7 +3541,7 @@ to make a part a support, without giving `structure` a second meaning. See
 `packages/engine/src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
 forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
-`packages/skelly-assets/models/vehicle-parts.libsonnet`, `mounting_plate`.
+`packages/skelly-assets/models/kits/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `packages/engine/src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `packages/engine/src/core/vehicleWork.ts`,
