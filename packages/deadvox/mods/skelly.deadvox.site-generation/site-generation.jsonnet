@@ -52,6 +52,7 @@
           },
         },
         forestHalfExtentMetres: 384,
+        forestTreeMix: ['broadleaf', 'broadleaf', 'conifer', 'young'],
         forestDensityField: {
           wavelengthMetres: 128,
           seedSalt: 137,

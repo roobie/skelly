@@ -45,6 +45,7 @@
           "wavelengthMetres": 128
         },
         "forestHalfExtentMetres": 384,
+        "forestTreeMix": ["broadleaf", "broadleaf", "conifer", "young"],
         "obstacleMarginMetres": 1,
         "openDensity": 0.035000000000000003,
         "openTreeMix": ["young"],

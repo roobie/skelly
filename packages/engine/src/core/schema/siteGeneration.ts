@@ -96,6 +96,7 @@ export const SiteGenerationSchema = strictObject({
     treeJitterMetres: NonNegative,
     trees: TreesSchema,
     forestHalfExtentMetres: PositiveMetres,
+    forestTreeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     forestDensityField: strictObject({
       wavelengthMetres: PositiveMetres,
       seedSalt: Count,

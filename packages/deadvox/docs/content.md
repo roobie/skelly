@@ -1,7 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
-  - you change ordered landscape cover, density profiles or baseline map-tone tuning
+  - you change ordered landscape cover, forest tree mixes, density profiles or baseline map-tone tuning
   - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
@@ -288,6 +288,11 @@ See `packages/engine/src/core/schema/layouts.ts`, `SiteLayoutSchema`;
 Generation tuning is required content so mods reshape terrain and vegetation without
 code changes or stale fallbacks; see `packages/engine/src/core/schema/siteGeneration.ts`,
 `SiteGenerationSchema`, and `packages/engine/src/core/sitePalette.ts`, `terrainShapeOf`.
+Forest sites own a required tree mix independently of authored open-ground and region
+mixes, so tuning sparse growth cannot change a forest's character or benchmark workload.
+Every vegetation placer caller supplies its mix explicitly; see
+`packages/engine/src/core/forest.ts`, `Forest`, and
+`packages/engine/src/core/vegetation.ts`, `vegetationPlacements`.
 The baseline plan carries the same density inputs to terrain consumers as tree placement.
 Presentation content owns area sampling and tone, not another landscape field. A
 world-anchored coarse grid shares density evaluations between overlapping footprints;

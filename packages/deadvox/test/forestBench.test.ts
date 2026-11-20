@@ -130,7 +130,7 @@ describe('forest benchmark workload identity', () => {
       extentMetres: 2 * vegetation.forestHalfExtentMetres,
       cellMetres: vegetation.treeCellMetres,
       foliage: 'passable-opaque',
-      shapeMix: vegetation.openTreeMix,
+      shapeMix: vegetation.forestTreeMix,
     });
     const route = json.forest!.routes;
     const distance = route.jogSeconds * route.jogMetresPerSecond + route.sprintSeconds * route.sprintMetresPerSecond;
