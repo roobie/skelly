@@ -47,7 +47,10 @@ export const startKitOrder = (
 };
 
 const createStartItem = (inventory: Inventory, entry: StartKitEntry): Item => {
-  const item = inventory.create(entry.item, entry.count, entry.condition);
+  const item = inventory.factory.create(inventory.registry, entry.item, entry.count, {
+    condition: entry.condition ?? 1,
+    ...(entry.paperMap === undefined ? {} : { paperMap: entry.paperMap }),
+  });
   if (entry.cartridges !== undefined) {
     item.cartridges = [...entry.cartridges];
   }
