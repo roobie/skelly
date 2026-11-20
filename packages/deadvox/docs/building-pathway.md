@@ -372,6 +372,16 @@ so the house needs no new setting.
 **One storey.** The references are low houses, and one declared storey keeps every program
 room on the ground floor the entrance walk starts from.
 
+**A cellar from the yard.** Each house has a twin over a cellar, raised a storey so its
+ground floor keeps the road's level. Its cellar is entered by an area stair sunk along the
+back wall, not through the floor, because the references reach a country cellar from the
+yard. The walk from the porch crosses the kitchen to the back door and down the stair, so
+the kitchen keeps that lane clear in every house. The cellar answers the house's own brief,
+whose cellar room is asked only of an answer with a cellar storey, and its fitted corner and
+stores are the town cellar's, shared rather than copied; see
+`tools/jsonnet/lib/cellar-plant.libsonnet`. The cellar door, room and corner are slots, so a
+twist can restock the cellar or reach it another way.
+
 **Doors on the routes.** Every doorway is a doorway slot ([Doorways](#doorways)): solid
 wood at the front and back, flimsy leaves inside, any of them possibly gone. The entrance
 stands one row inside the front door, because an entrance needs a reserved body and the
@@ -394,7 +404,7 @@ shell's ownership.
 **Placed by a site, not a city.** No city plan runs rural, so the house reaches the world
 through a site, on its plot (below), and its eligibility passes the same admission test a
 city lot applies. The look fixture sets the bare house beside `small_house`, the hand-drawn
-baseline it is judged against; see
+baseline it is judged against, and each house's cellar twin behind them; see
 `mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet`.
 
 **The entrance rule's turn.** Holdout and the look fixture turn the house by their own
@@ -446,7 +456,10 @@ house pack already depends on, so the next plot reuses them rather than drawing 
 log pile is shared furniture beside the other fittings.
 
 **Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,
-since nearly every yard had them; the outhouse and the garage vary with the pool.
+since nearly every yard had them; the outhouse, the garage and the cellar vary with the pool.
+A third of each kind of plot sets its house over a cellar, so a cellar is a find in most
+villages without changing the mix of yards. The plot's brief carries the cellar room for the
+same reason the house's does.
 
 **The coop waits for its model.** The chicken coop will be an authored model that BR
 approves, so its slot claims nothing and the yard shows through until then.
@@ -456,8 +469,8 @@ with it to any plot ([Doorways](#doorways)). Its seat fills the floor behind the
 leaves no reserved cell inside to stand in, so the privy's anchor stands on the path at the
 door, and the services walk crosses the doorway to the seat.
 
-**Seen through its look fixture.** Every plot the pool can draw stands along one road, so one
-walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
+**Seen through its look fixture.** Every plot the pool can draw stands along two roads, each
+plot's cellar twin behind it, so one walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
 
 ## Worked example: village shop
 
