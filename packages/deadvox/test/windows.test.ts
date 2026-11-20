@@ -8,11 +8,12 @@ import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { rotatedSize, rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.js';
 import { furnitureBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
-import { strikeWindowPane } from '@skelly/engine/internal/core/windowImpact.ts';
+import { blowLandsOnPane, strikeWindowPane } from '@skelly/engine/internal/core/windowImpact.ts';
 import { windowParts } from '@skelly/engine/internal/core/windowParts.ts';
 import { registerWindowAction, WINDOW_ACTION } from '@skelly/engine/internal/game/windowAction.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
+import { coreMessage } from '@skelly/engine/text';
 import { BlockEntities, type BlockEntity, CONTACT_SKIN, type Facing, type Vec3, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { castsAndReceives } from '@skelly/presentation/internal/render/shadowFlags.ts';
@@ -70,9 +71,22 @@ const { registry, issues } = buildFixtureRegistry([
           window: { ...pane, hinge, inside },
         })),
       ),
+      boardings: [
+        {
+          id: 'window_test_boards',
+          name: 'Test boards',
+          color: '#806040',
+          thicknessBlocks: 0.1,
+          boards: [
+            { from: 0.1, height: 0.35 },
+            { from: 0.55, height: 0.35 },
+          ],
+        },
+      ],
     },
   },
 ]);
+const BOARDING = { type: 'window_test_boards', side: 'front' } as const;
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
@@ -80,6 +94,13 @@ const make = (facing: Facing = 'n', hinge = 'low', inside = 'back', inventory = 
   const type = `window_test_${hinge}_${inside}`;
   const size = rotatedSize(registry.furniture.get(type)!.size, rotationOf({ facing }));
   const entity = inventory.entities.add({ type, pos: [0, 0, 0], size, facing, fixed: true })!;
+  return { inventory, entities: inventory.entities, entity };
+};
+/** A north-facing window authored with `BOARDING` on its front, the street face. */
+const boarded = (inventory = new Inventory(registry)) => {
+  const type = 'window_test_low_back';
+  const size = [...registry.furniture.get(type)!.size] as Vec3;
+  const entity = inventory.entities.add({ type, pos: [0, 0, 0], size, facing: 'n', fixed: true, boarding: BOARDING })!;
   return { inventory, entities: inventory.entities, entity };
 };
 const beside = (entity: BlockEntity, face: 'front' | 'back'): Vec3 => {
@@ -104,11 +125,11 @@ describe('fitted windows', () => {
     expect(entities.operateWindow(entity, 'unlatch', other, [])).toBeDefined();
     expect(entities.operateWindow(entity, 'unlatch', from, [])).toBeUndefined();
     expect(entities.operateWindow(entity, 'open', other, [])).toBeUndefined();
-    const geometry = windowParts(entity, entities.defOf(entity), 0.5);
+    const geometry = windowParts(entity, entities.defOf(entity), 0.5, undefined);
     const restored = BlockEntities.restoreState(registry, structuredClone(entities.snapshotState()));
     const sash = restored.byUid(entity.uid)!;
     expect(sash.facing).toBe(facing);
-    expect(windowParts(sash, restored.defOf(sash), 0.5)).toEqual(geometry);
+    expect(windowParts(sash, restored.defOf(sash), 0.5, undefined)).toEqual(geometry);
     expect(restored.operateWindow(sash, 'close', other, [])).toBeUndefined();
     expect(restored.operateWindow(sash, 'latch', other, [])).toBeDefined();
     expect(breakPane(restored, sash)?.outcome).toBe('broken');
@@ -214,7 +235,7 @@ describe('fitted windows', () => {
     const from = beside(entity, 'back');
     entities.operateWindow(entity, 'unlatch', from, []);
     entities.operateWindow(entity, 'open', from, []);
-    const { box } = windowParts(entity, entities.defOf(entity), 1).find(({ kind }) => kind === 'pane')!;
+    const { box } = windowParts(entity, entities.defOf(entity), 1, undefined).find(({ kind }) => kind === 'pane')!;
     const c = Math.cos(box.rotationY);
     const s = Math.sin(box.rotationY);
     const center: Vec3 = [
@@ -318,9 +339,52 @@ describe('fitted windows', () => {
       expect(glass.length).toBeGreaterThan(0);
       expect(glass.every((part) => !part.castShadow)).toBe(true);
       breakPane(entities, entity);
-      expect(windowParts(entity, entities.defOf(entity), 0.5).some(({ kind }) => kind === 'pane')).toBe(false);
+      expect(windowParts(entity, entities.defOf(entity), 0.5, undefined).some(({ kind }) => kind === 'pane')).toBe(
+        false,
+      );
     } finally {
       meshes.dispose();
     }
+  });
+});
+
+describe('boarded windows', () => {
+  it('keeps boards over a broken pane through a save file, shut from both faces and closing the hole', async () => {
+    const runtime = createRuntime(undefined, false, undefined, { registry });
+    const made = boarded(runtime.inventory);
+    breakPane(made.entities, made.entity);
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
+      version: formatVersion,
+      contentLookup: (...query) => contentLookup(registry, ...query),
+    });
+    const { entities } = Inventory.restoreState(registry, decoded.snapshot.character.inventory);
+    const entity = entities.byUid(made.entity.uid)!;
+    expect(entity).toMatchObject({ boarding: BOARDING, window: { pane: 'missing', open: false } });
+    const boardedUp = coreMessage(registry, 'boardedUp');
+    expect(entities.windowRefusal(entity, 'open', beside(entity, 'front'))).toBe(boardedUp);
+    expect(entities.windowRefusal(entity, 'open', beside(entity, 'back'))).toBe(boardedUp);
+    const world = new World();
+    expect(worldSolid(world, registry, entities)(2, 2, 0)).toBe(true);
+    expect(worldLightBlocking(world, registry, entities)(2, 2, 0)).toBe(true);
+  });
+
+  it('lands unaimed blows on the boards as the window’s own damage, while aimed glass still breaks', () => {
+    const plain = make().entity;
+    const { entities, entity } = boarded();
+    expect(blowLandsOnPane(plain, undefined)).toBe(true);
+    expect(blowLandsOnPane(entity, undefined)).toBe(false);
+    expect(blowLandsOnPane(entity, 'board')).toBe(false);
+    expect(blowLandsOnPane(entity, 'pane')).toBe(true);
+    expect(entities.bash(entity, entities.defOf(entity).breach.durability)).toBe('ruined');
+  });
+
+  it('refuses boards saved on an open window, since the boards hold its sash shut', () => {
+    const { entities, entity } = make();
+    const from = beside(entity, 'back');
+    entities.operateWindow(entity, 'unlatch', from, []);
+    entities.operateWindow(entity, 'open', from, []);
+    const state = structuredClone(entities.snapshotState());
+    state.entities[0]!.boarding = BOARDING;
+    expect(() => BlockEntities.restoreState(registry, state)).toThrow('Invalid boarding');
   });
 });

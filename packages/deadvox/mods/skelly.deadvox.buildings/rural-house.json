@@ -230,6 +230,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_west",
@@ -252,6 +259,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_east",
@@ -274,6 +288,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back",
@@ -296,6 +317,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "west_front",
@@ -318,6 +346,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "west_back",
@@ -340,6 +375,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "east_front",
@@ -362,6 +404,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "east_back",
@@ -672,6 +721,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_west",
@@ -694,6 +750,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "front_east",
@@ -716,6 +779,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "back",
@@ -738,6 +808,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "west_front",
@@ -760,6 +837,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "west_back",
@@ -782,6 +866,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "east_front",
@@ -804,6 +895,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "east_back",
@@ -2704,6 +2802,32 @@
     },
     {
       "anchors": {},
+      "id": "rural_flat_house_window_n_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
       "id": "rural_flat_house_window_s_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -2737,6 +2861,32 @@
       },
       "palette": {
         "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_window_s_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "s",
           "fixed": true,
           "furniture": "broken_casement_window"
@@ -2792,6 +2942,32 @@
     },
     {
       "anchors": {},
+      "id": "rural_flat_house_window_e_boarded",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "e",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
       "id": "rural_flat_house_window_w_clear",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
       "lootContext": {
@@ -2825,6 +3001,32 @@
       },
       "palette": {
         "W": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_window_w_boarded",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "w",
           "fixed": true,
           "furniture": "broken_casement_window"

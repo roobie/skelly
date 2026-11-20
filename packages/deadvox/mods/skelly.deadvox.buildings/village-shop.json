@@ -261,6 +261,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_shopfront_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "shopfront",
@@ -283,6 +290,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "hall",
@@ -305,6 +319,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "shop_east",
@@ -327,6 +348,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "store_back",
@@ -531,6 +559,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "living_front",
@@ -553,6 +588,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "kitchen_front",
@@ -575,6 +617,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "living_west",
@@ -597,6 +646,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "bathroom_back",
@@ -619,6 +675,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "bedroom_back",
@@ -641,6 +704,13 @@
                 "kind": "piece"
               },
               "weight": 2
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
             }
           ],
           "id": "bedroom_east",
@@ -2889,6 +2959,32 @@
     },
     {
       "anchors": {},
+      "id": "village_shop_window_n_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
       "id": "village_shop_window_s_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -2922,6 +3018,32 @@
       },
       "palette": {
         "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_s_boarded",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "s",
           "fixed": true,
           "furniture": "broken_casement_window"
@@ -2977,6 +3099,32 @@
     },
     {
       "anchors": {},
+      "id": "village_shop_window_e_boarded",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "e",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
       "id": "village_shop_window_w_clear",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
       "lootContext": {
@@ -3021,6 +3169,32 @@
     },
     {
       "anchors": {},
+      "id": "village_shop_window_w_boarded",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
+          "facing": "w",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
       "id": "village_shop_shopfront_n_clear",
       "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
       "lootContext": {
@@ -3054,6 +3228,32 @@
       },
       "palette": {
         "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_hinged_window"
+        }
+      },
+      "ports": [],
+      "size": [4, 5, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_shopfront_n_boarded",
+      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+      },
+      "palette": {
+        "W": {
+          "boarding": {
+            "side": "front",
+            "type": "wood_window_boarding"
+          },
           "facing": "n",
           "fixed": true,
           "furniture": "broken_hinged_window"
