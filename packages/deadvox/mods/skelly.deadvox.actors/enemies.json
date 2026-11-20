@@ -33,11 +33,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -402,11 +402,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -771,11 +771,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -1140,11 +1140,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -1509,11 +1509,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -1878,11 +1878,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -2244,11 +2244,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -2608,11 +2608,11 @@
           "sprint": 9,
           "walk": 2
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -2939,11 +2939,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,
@@ -3271,11 +3271,11 @@
           "sprint": 15,
           "walk": 3
         },
-        "hordeMillRadiusMetres": 6,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
         },
+        "hordeStrayRadiusMetres": 6,
         "idleSound": {
           "density": {
             "penaltyPerNeighbour": 0.25,

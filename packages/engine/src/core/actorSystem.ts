@@ -1099,11 +1099,12 @@ export class ActorSystem {
         state: {
           id: horde.id,
           type: horde.type,
-          home: [...horde.home],
+          attention: [...horde.attention],
           target: [...horde.target],
           mode: horde.mode,
           roamTimer: horde.roamTimer,
           ...(horde.heard === undefined ? {} : { heard: { ...horde.heard } }),
+          habituated: [...horde.habituated],
           lastNoiseId: horde.lastNoiseId,
         },
         rng: new Rng(horde.rng),
@@ -1233,10 +1234,11 @@ export class ActorSystem {
     const state = {
       id,
       type: type.id,
-      home: copy(center),
+      attention: copy(center),
       target: copy(center),
-      mode: 'home' as const,
+      mode: 'stray' as const,
       roamTimer: 0,
+      habituated: [],
       lastNoiseId: 0,
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
@@ -1259,11 +1261,11 @@ export class ActorSystem {
     }
   }
 
-  /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
+  /** A horde sent from `center` to `target`, which also becomes its last attention. */
   releaseHorde(id: string, type: ActorDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
     this.addHorde(id, type, center, count);
     const horde = this.agentHorde.hordes.get(id)!.state;
-    horde.home = copy(target);
+    horde.attention = copy(target);
     horde.target = copy(target);
     horde.mode = 'release';
   }

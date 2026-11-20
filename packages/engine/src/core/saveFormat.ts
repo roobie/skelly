@@ -748,11 +748,12 @@ const handling = obj({ jobs: arr(anyJson) });
 const horde = obj({
   id: str({ nonEmpty: true }),
   type: str({ id: true }),
-  home: vec3,
+  attention: vec3,
   target: vec3,
   mode: enumeration(HORDE_MODES),
   roamTimer: nonNegative,
   heard: opt(obj({ tier: enumeration(['near', 'far']), source: str({ nonEmpty: true }) })),
+  habituated: arr(str({ nonEmpty: true })),
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
