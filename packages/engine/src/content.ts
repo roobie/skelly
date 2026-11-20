@@ -24,6 +24,7 @@ export { CastRuleError, type CastRuleEvent, type ProjectileVolleyRequest, resolv
 export {
   type ActorDef,
   actorFigureFileIssues,
+  authoringIssues,
   blockColors,
   blockId,
   buildRegistry,
