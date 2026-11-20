@@ -1022,13 +1022,13 @@ try {
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await page.evaluate(async () => {
-    const [{ GameAudio }, { buildBundledContent }, { claimed }] = await Promise.all([
+    const [{ GameAudio }, { productContent }, { claimed }] = await Promise.all([
       import('/@stage/@skelly/presentation/audio'),
       import('/src/product/content.ts'),
       import('/@stage/@skelly/engine/inventory'),
     ]);
     // Without sounds the fresh instance loads no files; it only reads the persisted volumes.
-    const { registry } = buildBundledContent();
+    const { registry } = productContent.buildBundledContent();
     const tuning = claimed(registry.senses, 'player');
     if (!tuning) {
       throw new Error('The bundled content has no player sense tuning');

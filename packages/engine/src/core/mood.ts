@@ -47,6 +47,12 @@ export const TONE_KEYS = ['none', 'agx', 'aces', 'neutral', AUTO_TONE] as const;
  * weather's fogginess (core/weather.ts).
  */
 export type LookDefaults = Omit<LookState & MoodState, 'bloomClip'> & {
+  readonly mapCover: {
+    readonly footprintMetres: number;
+    readonly samplesPerAxis: number;
+    readonly color: readonly [number, number, number];
+    readonly strength: number;
+  };
   readonly heightFog: { readonly baseMetres: number; readonly scaleMetres: number };
   readonly painCue: {
     readonly pulseRiseRealSeconds: number;

@@ -1,4 +1,5 @@
 import type { AuthoredGroundData, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
+import type { BaselineCoverData } from './baselineCover.ts';
 import type { CityPlan } from './cityPlan.ts';
 import type { Vec3 } from './coords.ts';
 import type { createForestTerrain } from './forestTerrainEvaluator.ts';
@@ -43,6 +44,7 @@ type SiteTerrainMechanism =
   | {
       readonly kind: 'authored';
       readonly ground: AuthoredGroundData;
+      readonly cover?: Omit<BaselineCoverData, 'ground'>;
       readonly data: Omit<Parameters<typeof createAuthoredTerrain>[0], 'ground' | 'placements'>;
       readonly placements: readonly TerrainPlacement[];
     }

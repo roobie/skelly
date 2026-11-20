@@ -278,6 +278,7 @@ export const ComposedSiteSchema = strictObject({
   ground: SiteLayoutSchema.entries.ground,
   lootContext: SiteLayoutSchema.entries.lootContext,
   settlementKind: Id,
+  woodlands: optional(SiteLayoutSchema.entries.woodlands, []),
   start: strictObject({ ask: Id }),
   placement: strictObject({
     apronMetres: NonnegativeFinite,

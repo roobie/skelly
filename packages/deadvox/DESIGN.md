@@ -17,7 +17,8 @@ read_if:
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
-  - you change regional paper-map coverage, item ownership or persistence
+  - you change regional paper-map coverage, item ownership, baseline ground-cover tone or persistence
+  - you change landscape region precedence, edge profiles or Holdout meadow scope
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
@@ -3816,11 +3817,14 @@ play, not only decorate it.
     still hide you. Author concealing overgrowth as passable opaque blocks;
     vegetation takes its movement and visibility rules from content properties,
     not its name or appearance.
-  - **Placement:** authored sites default to light growth, weeds and a few
-    shrubs, which keeps them legible and their paths clear; heavier growth is
-    left for sites that should feel abandoned. Whether hiding growth stands near
-    a gate is each site's own content choice, because no project-wide rule
-    exists yet.
+  - **Placement:** authored sites default to light growth so places stay legible
+    and paths stay clear. Landscape content selects region edges and orders overlapping
+    cover. A later qualifying region wins even with lower density, so land use can
+    clear woodland and the open-ground floor. Units contribute exclusions rather
+    than generating or deleting their own trees. See
+    `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+    Holdout's agricultural ground is meadow or fallow pasture, not crop rows:
+    cultivation is outside its scope, not prohibited for later farming packs or scenarios.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
@@ -4049,6 +4053,12 @@ contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
 `packages/presentation/src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+Woodland is a shaded ground-cover tone in that terrain layer, area-sampled from
+baseline density, never a public feature, individual tree symbols or live damage.
+The query shares vegetation's generation owner, avoiding drift, speckle and sheet
+chunk generation; see `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+The development preview shows these shared samples; carried-paper painting remains
+#1483, so printable data is not a finished reading surface.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,

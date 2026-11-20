@@ -1,4 +1,4 @@
-import { maxValue, minValue, number, picklist, pipe, strictObject, boolean as vBoolean } from 'valibot';
+import { integer, maxValue, minValue, number, picklist, pipe, strictObject, tuple, boolean as vBoolean } from 'valibot';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from '../mood.ts';
 /** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
 import { capabilityField } from './capability.ts';
@@ -21,6 +21,16 @@ export const LookDefaultsSchema = strictObject({
   bloom: vBoolean(),
   film: vBoolean(),
   grade: Fraction,
+  mapCover: strictObject({
+    footprintMetres: Positive,
+    samplesPerAxis: pipe(number(), integer(), minValue(1)),
+    color: tuple([
+      pipe(number(), minValue(0), maxValue(255)),
+      pipe(number(), minValue(0), maxValue(255)),
+      pipe(number(), minValue(0), maxValue(255)),
+    ]),
+    strength: Fraction,
+  }),
   heightFog: strictObject({ baseMetres: NonNegative, scaleMetres: Positive }),
   painCue: strictObject({
     pulseRiseRealSeconds: PositiveRealSeconds,

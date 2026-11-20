@@ -1229,6 +1229,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/start-grants.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.woods-tone-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.json"
     },

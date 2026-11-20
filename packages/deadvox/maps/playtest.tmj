@@ -2367,9 +2367,9 @@
           ],
           "properties": [
             {
-              "name": "density",
-              "type": "float",
-              "value": 0.9
+              "name": "profile",
+              "type": "string",
+              "value": "woodland"
             }
           ]
         },
@@ -2403,9 +2403,9 @@
           ],
           "properties": [
             {
-              "name": "density",
-              "type": "float",
-              "value": 0.9
+              "name": "profile",
+              "type": "string",
+              "value": "woodland"
             }
           ]
         },
@@ -2439,9 +2439,9 @@
           ],
           "properties": [
             {
-              "name": "density",
-              "type": "float",
-              "value": 0.9
+              "name": "profile",
+              "type": "string",
+              "value": "woodland"
             }
           ]
         }

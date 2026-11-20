@@ -35,7 +35,7 @@
       "woodlands": [
         {
           "polygon": [[35, 25], [80, 25], [80, 48], [35, 48]],
-          "density": 1
+          "profile": "woodland"
         }
       ],
       "tracks": [

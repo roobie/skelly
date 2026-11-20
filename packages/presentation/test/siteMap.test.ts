@@ -1,6 +1,27 @@
 import { yawFromBearing } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { marchingSquares, siteMapWorldToRaster } from '../src/siteMap.ts';
+import { marchingSquares, siteMapPixels, siteMapWorldToRaster } from '../src/siteMap.ts';
+
+it('shades topographic ground cover as a continuous tone without altering satellite block colors', () => {
+  const inputs = {
+    heights: [0, 0, 0],
+    blockIds: [0, 0, 0],
+    blockColors: new Uint8Array([120, 150, 110]),
+    shades: [1, 1, 1],
+    width: 3,
+    height: 1,
+  };
+  const cover = { groundCover: [0, 0.5, 1], coverTone: { color: [20, 40, 20] as const, strength: 1 } };
+  const pixels = siteMapPixels({ ...inputs, ...cover, view: 'topographic' });
+  const open = siteMapPixels({ ...inputs, view: 'topographic' });
+  expect(pixels.slice(0, 4)).toEqual(open.slice(0, 4));
+  expect(pixels[4]).toBeLessThan(pixels[0]!);
+  expect(pixels[8]).toBeLessThan(pixels[4]!);
+  expect([...pixels.slice(8, 11)]).toEqual([...cover.coverTone.color]);
+  expect(siteMapPixels({ ...inputs, ...cover, view: 'satellite' })).toEqual(
+    siteMapPixels({ ...inputs, view: 'satellite' }),
+  );
+});
 
 const forwardFromBearing = (bearing: number): [number, number] => {
   const yaw = yawFromBearing(bearing);
