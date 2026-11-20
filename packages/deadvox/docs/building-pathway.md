@@ -9,6 +9,7 @@ read_if:
   - you want a worked example of a brief and the curated assembly that answers it
   - you set a house on a plot with outbuildings, or decide how often a site draws each variant
   - a building needs a door, window or fitting, and you decide whether it is shared or its own
+  - you tune how often a building's windows are whole, broken or boarded
   - you hang a door on a briefed building's walk, or decide what a doorway slot may hold
 ---
 
@@ -251,7 +252,11 @@ Window bays repeat that small piece in every house, so one helper builds them: a
 names its bays and the wall each faces, and every bay draws the same shared window whole,
 broken or boarded over. The piece takes its size from the window, so a bay cannot disagree with
 the glass it holds, and the boarded window's reasons live with the door variants'
-(`docs/aftermath.md`, "Window variants"). See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
+(`docs/aftermath.md`, "Window variants"). How often a bay draws each variant belongs to the
+building, not the helper: the odds tell the building's story, so a shop the looters stripped and a
+house someone held should differ, and a mod retunes one building's windows by overriding that
+building, without touching every other house that shares the helper. See
+`tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
 assembly that carries its own bays, so a house that swaps a storey's walls, as the cellar
 houses do, swaps its windows with them; see
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `cellarHouse`.
