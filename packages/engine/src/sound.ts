@@ -16,5 +16,5 @@ export {
   heartbeatForStamina,
   playerHeartbeat,
 } from './game/audioPresentation.ts';
-export { type HeardSound, Hearing } from './game/hearing.ts';
+export { type Audibility, type HeardSound, Hearing } from './game/hearing.ts';
 export { VoiceCaps } from './game/voiceCaps.ts';

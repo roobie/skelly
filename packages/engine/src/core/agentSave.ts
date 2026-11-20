@@ -23,7 +23,8 @@ export const validObstacleWanderState = (actor: ActorState): boolean =>
         actor.agent.obstacleWanderHeading.every(Number.isFinite))) &&
     (actor.agent.obstacleSlideSide === -1 ||
       actor.agent.obstacleSlideSide === 0 ||
-      actor.agent.obstacleSlideSide === 1));
+      actor.agent.obstacleSlideSide === 1) &&
+    typeof actor.agent.bashResisted === 'boolean');
 export const validActorEventState = (actor: ActorState): boolean =>
   actor.agent === undefined ||
   ((actor.agent.hesitationFrom === undefined ||
@@ -74,6 +75,7 @@ const agentSnapshotProjectors = {
   obstacleWanderRemaining: (actor) => actor.obstacleWanderRemaining,
   wayAroundProbeWait: (actor) => actor.wayAroundProbeWait,
   obstacleSlideSide: (actor) => actor.obstacleSlideSide,
+  bashResisted: (actor) => actor.bashResisted,
   bodyLookTarget: (actor) => actor.bodyLookTarget,
   headYawTarget: (actor) => actor.headYawTarget,
   lookTimer: (actor) => actor.lookTimer,

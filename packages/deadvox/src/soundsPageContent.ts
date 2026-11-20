@@ -17,6 +17,7 @@ const soundFiles = import.meta.glob<unknown>(
     '../../mods/skelly.melee-classes/melee-sounds.json',
     '../../mods/skelly.body/body-sounds.json',
     '../../mods/skelly.body/body-synth-sounds.json',
+    '../../mods/skelly.electric-power/electric-power-sounds.json',
     '../../mods/skelly.natural-world/natural-sounds.json',
     '../../mods/skelly.natural-world/sounds-furniture.json',
     '../../mods/skelly.structures/structures-sounds.json',

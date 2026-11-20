@@ -572,6 +572,10 @@
   ],
   "powerDevices": [
     {
+      "hum": {
+        "radiusMetres": 30,
+        "sound": "plant_module_hum"
+      },
       "id": "turbo_generator",
       "kind": "inexhaustible",
       "outputWatts": 25000,
