@@ -2375,11 +2375,13 @@ describe('shambler scenarios', () => {
     expect(system.store.get(id)!.agent!.mode).toBe('chase');
     const lastSeen = [...system.store.get(id)!.agent!.lastPerceived!] as Vec3;
     expect(metres(lastSeen, hum.pos)).toBeGreaterThan(2 * hordeStrayRadiusMetres);
-    background();
 
+    // Sight is lost before any horde update, so only a sighting recorded as it is seen can reach the horde.
     target = player([1000, 1, 1000]);
     system.tick(1 / 60);
     expect(system.store.get(id)!.agent!.mode).not.toBe('chase');
+    const followed = system.store.get(id)!.agent!.lastPerceived!;
+    expect(metres(followed, lastSeen)).toBeLessThan(metres(followed, hum.pos));
     background();
     expect(horde().attention).toEqual(lastSeen);
     expect(metres(horde().target, lastSeen)).toBeLessThanOrEqual(hordeStrayRadiusMetres);

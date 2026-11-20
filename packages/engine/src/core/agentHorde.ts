@@ -180,19 +180,24 @@ export class AgentHorde {
     return soundTier({ def, from, source, blockSize, isSolid, tuning });
   }
 
-  /** Where a chasing member last saw its prey; with several chasing, the latest sighting is the horde's last attention. */
-  private latestSighting(horde: Omit<HordeState, 'rng'>): Vec3 | undefined {
-    let latest: { at: number; pos: Vec3 } | undefined;
-    for (const [, { agent }] of this.store.entries()) {
-      if (agent?.hordeId !== horde.id || agent.mode !== 'chase' || !agent.lastPerceived) {
-        continue;
-      }
-      const at = agent.stimulusAt ?? Number.NEGATIVE_INFINITY;
-      if (!latest || at > latest.at) {
-        latest = { at, pos: agent.lastPerceived };
-      }
+  /**
+   * A member's sighting becomes its horde's last attention the moment it is seen, replacing any sound or release the
+   * horde followed, so losing sight before the next horde update still leaves the group where it last saw its prey.
+   */
+  attendSighting(actor: Actor, seen: Vec3, dayPhase: DayPhase): void {
+    const horde = actor.agent?.hordeId === undefined ? undefined : this.hordes.get(actor.agent.hordeId)?.state;
+    if (!horde) {
+      return;
     }
-    return latest?.pos;
+    horde.attention = copy(seen);
+    horde.target = copy(seen);
+    horde.heard = undefined;
+    horde.mode = dayPhase === 'day' ? 'stray' : 'roam';
+    horde.roamTimer = 0;
+  }
+
+  private chasing(horde: Omit<HordeState, 'rng'>): boolean {
+    return [...this.store.entries()].some(([, { agent }]) => agent?.hordeId === horde.id && agent.mode === 'chase');
   }
 
   /**
@@ -258,6 +263,10 @@ export class AgentHorde {
       if (!(center && member?.type.agent)) {
         continue;
       }
+      // A chase holds the sighting `attendSighting` recorded; no sound or wander may move it until sight is lost.
+      if (this.chasing(horde)) {
+        continue;
+      }
       const def = member.type;
       const heard = this.surestHeard({ horde, rng, def, from: center, nowSimSeconds: time, player });
       if (heard) {
@@ -267,16 +276,6 @@ export class AgentHorde {
         horde.attention = copy(heard.target);
       }
       const night = dayPhase !== 'day';
-      const sighted = this.latestSighting(horde);
-      if (sighted) {
-        // Prey in sight replaces any sound or release it followed, so losing sight leaves the group where it last saw it.
-        horde.attention = copy(sighted);
-        horde.target = copy(sighted);
-        horde.heard = undefined;
-        horde.mode = night ? 'roam' : 'stray';
-        horde.roamTimer = 0;
-        continue;
-      }
       const arrived = reached(center, horde.target, blockSize);
       if (horde.mode === 'noise' && arrived) {
         const { tier, source } = horde.heard!;

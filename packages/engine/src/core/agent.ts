@@ -280,6 +280,7 @@ export class AgentController {
       actor.agent!.searchTimer = 0;
       actor.agent!.searchStrolling = false;
       actor.agent!.lastPerceived = copy(player.pos);
+      this.agentHorde.attendSighting(actor, player.pos, scratch.dayState.phase);
     } else if (tier === 'near') {
       actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
