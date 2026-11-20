@@ -5,6 +5,7 @@ import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrain
 import { createBaselineCover } from './baselineCover.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
+import { snapToPlacementGrid } from './placementGrid.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { MapPoolDef, SiteLayoutDef } from './schema.ts';
@@ -303,7 +304,7 @@ const askBuilding = (seed: number, registry: Registry, scenario: ComposedSiteDef
   return { template, ...(style ? { style } : {}) };
 };
 
-/** One try at where an ask's building stands: around the ask it keeps its distance from, else anywhere in bounds. */
+/** One try at where an ask's building stands: its fixed spot, else around the ask it keeps its distance from, else anywhere in bounds. */
 const askCandidate = (
   rng: Rng,
   ask: Ask,
@@ -312,7 +313,9 @@ const askCandidate = (
 ): Pick<LayoutBuilding, 'position' | 'rotation'> => {
   let x: number;
   let z: number;
-  if (ask.distance) {
+  if (ask.at) {
+    [x, z] = ask.at;
+  } else if (ask.distance) {
     const from = placements.get(ask.distance.from)!;
     const radius = weightedRadius(rng, ask.distance.curve);
     const angle = rng.next() * Math.PI * 2;
@@ -323,7 +326,7 @@ const askCandidate = (
     z = rng.range(scenario.bounds.z0, scenario.bounds.z1);
   }
   return {
-    position: [Math.round(x * 2) / 2, scenario.ground, Math.round(z * 2) / 2],
+    position: [snapToPlacementGrid(x), scenario.ground, snapToPlacementGrid(z)],
     rotation: (rng.int(0, 3) * 90) as 0 | 90 | 180 | 270,
   };
 };

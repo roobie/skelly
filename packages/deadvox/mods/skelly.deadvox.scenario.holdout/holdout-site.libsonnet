@@ -1,6 +1,10 @@
 local waves = import 'waves.libsonnet';
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
+// The bounds are centred on a paper-map sheet centre, see `packages/engine/src/core/paperMap.ts`, `paperMapBounds`;
+// the shelter, the hub every other ask is placed from, stands at that centre.
+local bounds = { x0: -244, z0: -244, x1: 756, z1: 756 };
+local shelterAt = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
 local house = import 'holdout-house.libsonnet';
 local plant = import 'holdout-plant.libsonnet';
 local stockpile = function(id, items) {
@@ -51,7 +55,7 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     decalLimit: 48,
     body: 'player',
     compression: 'player',
-    bounds: { x0: -500, z0: -500, x1: 500, z1: 500 },
+    bounds: bounds,
     ground: 21,
     lootContext: context,
     settlementKind: 'rural',
@@ -64,7 +68,7 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     start: { ask: 'shelter' },
     placement: { apronMetres: 2, attempts: 1000 },
     asks: [
-      { kind: 'place', id: 'shelter', template: house.id },
+      { kind: 'place', id: 'shelter', template: house.id, at: shelterAt },
       {
         kind: 'place', id: 'starter_stockpile', template: starterStockpile.id, supplies: ['building_materials'],
         distance: { from: 'shelter', curve: [[0, 8], [80, 8], [180, 1], [260, 0]] },
@@ -104,5 +108,14 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     ]),
   },
   // A plant hand: enough mechanics to know the spares and fit any part the plant can fail on.
-  start: kit.common + { id: 'holdout', site: 'holdout', skills: { mechanics: 1 } },
+  start: kit.common + {
+    id: 'holdout',
+    site: 'holdout',
+    skills: { mechanics: 1 },
+    kit+: [
+      { id: 'compass', item: 'compass', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
+      // The sheet holding the start: the sheet whose centre the shelter stands on, see `packages/engine/src/core/paperMap.ts`, `paperMapAt`.
+      { id: 'regional_map', item: 'regional_map', destination: { kind: 'pocket', parent: 'jeans', pocket: 1 }, paperMap: { x: 0, z: 0 } },
+    ],
+  },
 }
