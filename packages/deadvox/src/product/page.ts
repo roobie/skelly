@@ -57,12 +57,19 @@ export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }
 /** The game page. */
 export const playPage = (): PlayPage => {
   const { query, hash } = pageUrl();
+  const reviewMap = new URL('map.html', location.href);
+  for (const key of ['mods', 'start-mod']) {
+    const value = query.get(key);
+    if (value !== null) {
+      reviewMap.searchParams.set(key, value);
+    }
+  }
   return {
     debugError: query.get('debug-error') === '1',
     // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
     newWorld: (seed) => location.assign(newWorldHref(location.href, pageUrl().hash, seed)),
     reloadForReplay: () => location.assign(replayHref(location.href, pageUrl().hash)),
-    reviewMapHref: new URL('map.html', location.href).href,
+    reviewMapHref: reviewMap.href,
     probes: {
       torchspill: hash.torchspill,
       mannequin: hash.mannequin,

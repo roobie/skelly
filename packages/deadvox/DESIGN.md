@@ -17,7 +17,8 @@ read_if:
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
-  - you change regional paper-map coverage, item ownership or persistence
+  - you change regional paper-map coverage, item ownership, baseline ground-cover tone or persistence
+  - you change landscape region precedence, edge profiles or Holdout meadow scope
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
@@ -3424,6 +3425,23 @@ rule covers doors and furniture, and a zombie walks around clutter it can pass
 instead of wrecking it. While it bashes it stays at the piece instead of sliding
 or wandering along the wall. See `packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`.
 
+A held-up zombie looks for a way round only when a bashable piece is ahead,
+so a zombie at bare terrain never probes, and a zombie at a piece pays for
+one probe per `wayAroundProbeIntervalSimSeconds` from the agent's wander
+block, whatever the probe found. That wait gates only the probe: the blows
+keep their attack-cooldown cadence whatever the interval, and a change to the
+obstruction nearby — a piece placed, opened, closed, broken or removed, a
+terrain block placed or dug, or vehicle obstruction appearing or vanishing —
+ends the wait, so a route that closes delays no first blow, while contact
+alone, arriving or ending, never resets the clock. Each owner of collision
+reports its own changes: the standing-piece journal the lamp view cache also
+reads, the world's chunk watcher, and the solid boxes vehicle occupancy
+projects; an owner that loses its change history clears every wait once. See
+`mods/skelly.deadvox.actors/enemies.jsonnet`, `wander`;
+`packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`;
+`packages/engine/src/core/actorSystem.ts`, `ActorSystem.syncObstructionChanges`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.probe-crowd-look/README.md`.
+
 ### Models
 
 Blocky figures with rigid limbs and keyframed animation. This is where skelly's
@@ -3798,11 +3816,14 @@ play, not only decorate it.
     still hide you. Author concealing overgrowth as passable opaque blocks;
     vegetation takes its movement and visibility rules from content properties,
     not its name or appearance.
-  - **Placement:** authored sites default to light growth, weeds and a few
-    shrubs, which keeps them legible and their paths clear; heavier growth is
-    left for sites that should feel abandoned. Whether hiding growth stands near
-    a gate is each site's own content choice, because no project-wide rule
-    exists yet.
+  - **Placement:** authored sites default to light growth so places stay legible
+    and paths stay clear. Landscape content selects region edges and orders overlapping
+    cover. A later qualifying region wins even with lower density, so land use can
+    clear woodland and the open-ground floor. Units contribute exclusions rather
+    than generating or deleting their own trees. See
+    `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+    Holdout's agricultural ground is meadow or fallow pasture, not crop rows:
+    cultivation is outside its scope, not prohibited for later farming packs or scenarios.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
@@ -4031,6 +4052,12 @@ contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
 `packages/presentation/src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+Woodland is a shaded ground-cover tone in that terrain layer, area-sampled from
+baseline density, never a public feature, individual tree symbols or live damage.
+The query shares vegetation's generation owner, avoiding drift, speckle and sheet
+chunk generation; see `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+The development preview shows these shared samples; carried-paper painting remains
+#1483, so printable data is not a finished reading surface.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,

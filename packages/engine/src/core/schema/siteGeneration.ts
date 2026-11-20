@@ -3,12 +3,12 @@ import {
   check,
   integer,
   literal,
-  maxValue,
   minLength,
   minValue,
   number,
   picklist,
   pipe,
+  record,
   strictObject,
   tuple,
   variant,
@@ -78,17 +78,25 @@ export const SiteGenerationSchema = strictObject({
     check(({ minHeightMetres, maxHeightMetres }) => minHeightMetres < maxHeightMetres, 'min height must be below max'),
   ),
   vegetation: strictObject({
-    woodlandEdgeWavelengthMetres: PositiveMetres,
-    woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
+    regionProfiles: record(
+      Id,
+      strictObject({
+        density: Fraction,
+        edgeWavelengthMetres: PositiveMetres,
+        edgeVariationMetres: NonNegative,
+        treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
+      }),
+    ),
+    crownMarginMetres: NonNegative,
     openDensity: Fraction,
+    openTreeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     obstacleMarginMetres: NonNegative,
-    // One entry per draw, so repeating a shape weights it.
-    treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     treeCellMetres: PositiveMetres,
     /** How far a tree may stray from its cell's centre on each axis. */
     treeJitterMetres: NonNegative,
     trees: TreesSchema,
     forestHalfExtentMetres: PositiveMetres,
+    forestTreeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     forestDensityField: strictObject({
       wavelengthMetres: PositiveMetres,
       seedSalt: Count,

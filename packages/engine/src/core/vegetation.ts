@@ -16,14 +16,19 @@ export const forestDensityAt = (
   seed: number,
   x: number,
   z: number,
-): number => {
-  const field = siteGenerationOf(registry).vegetation.forestDensityField;
-  return Math.min(
+): number => densityFieldAt(siteGenerationOf(registry).vegetation.forestDensityField, seed, x, z);
+
+export const densityFieldAt = (
+  field: ReturnType<typeof siteGenerationOf>['vegetation']['forestDensityField'],
+  seed: number,
+  x: number,
+  z: number,
+): number =>
+  Math.min(
     field.ceiling,
     field.floor +
       field.gain * valueNoise2(seed + field.seedSalt, x / field.wavelengthMetres, z / field.wavelengthMetres),
   );
-};
 
 export interface TreePlacement {
   readonly shape: TreeShape;
@@ -126,10 +131,10 @@ export const vegetationPlacements = ({
   density: number | ((x: number, z: number) => number);
   ground: (x: number, z: number) => number;
   reserved: readonly Rect[];
-  shapeMix?: (x: number, z: number) => readonly TreeShape[];
+  shapeMix: (x: number, z: number) => readonly TreeShape[];
 }): TreePlacement[] => {
   const shapes = treeShapes(registry, scale);
-  const { treeCellMetres, treeJitterMetres, treeMix } = siteGenerationOf(registry).vegetation;
+  const { treeCellMetres, treeJitterMetres } = siteGenerationOf(registry).vegetation;
   const step = treeCellMetres / scale.blockSize;
   const jitter = Math.round(treeJitterMetres / scale.blockSize);
   const trees: TreePlacement[] = [];
@@ -143,7 +148,7 @@ export const vegetationPlacements = ({
       }
       const x = Math.floor((cx + 0.5) * step) + rng.int(-jitter, jitter);
       const z = Math.floor((cz + 0.5) * step) + rng.int(-jitter, jitter);
-      const mix = shapeMix?.((cx + 0.5) * treeCellMetres, (cz + 0.5) * treeCellMetres) ?? treeMix;
+      const mix = shapeMix((cx + 0.5) * treeCellMetres, (cz + 0.5) * treeCellMetres);
       const shape = mix[rng.int(0, mix.length - 1)]!;
       const tree = placeTree(shape, [x, ground(x, z) + 1, z], shapes[shape]);
       if (

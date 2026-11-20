@@ -26,7 +26,7 @@ import { buildingBounds, defaultFoundation, hasSegment, lotOf, standingHeight } 
  * @property {TerrainFeature[]} terrain
  * @property {SiteBuilding[]} buildings
  * @property {{ position: Vec3; bearing: number } | null} player
- * @property {{ polygon: Point[]; density: number }[]} woodlands
+ * @property {{ polygon: Point[]; profile: string }[]} woodlands
  * @property {{ points: Point[]; width: number; surface: string }[]} tracks
  * @property {unknown} [attemptPolicy]
  * @property {string} [startTimeGameTimeOfDay]
@@ -429,14 +429,14 @@ function areaPoints(object, info) {
 function addWoodland(object, info, { layout }) {
   const { name } = info;
   const points = areaPoints(object, info);
-  const density = finite(scalar(object, 'density'), `${name}.density`);
-  if (density < 0 || density > 1) {
-    throw new Error(`${name}: density must be 0..1`);
+  const profile = scalar(object, 'profile');
+  if (typeof profile !== 'string' || !profile) {
+    throw new Error(`${name}: missing cover profile`);
   }
   for (const point of points) {
     pointInside(layout, point, name);
   }
-  layout.woodlands.push({ polygon: points, density });
+  layout.woodlands.push({ polygon: points, profile });
 }
 /**
  * @param {MapObject} object
@@ -653,7 +653,7 @@ export function generatePropertyTypes() {
         member('window_to', 'string', ''),
       ],
     },
-    { name: 'woodland', members: [member('density', 'float', 1)] },
+    { name: 'woodland', members: [member('profile', 'string', 'woodland')] },
     { name: 'track', members: [member('width', 'float', 3), member('surface', 'string', 'dirt')] },
     { name: 'ridge', members: [member('rise', 'float', 10), member('width', 'float', 40)] },
     { name: 'hill', members: [member('rise', 'float', 4)] },

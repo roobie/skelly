@@ -16,14 +16,18 @@ import { couldFit } from '@skelly/engine/internal/core/items.ts';
 import { lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { siteGenerationOf } from '@skelly/engine/internal/core/sitePalette.ts';
 import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
 import { compileTemplate, placedBlockAt, placedSpawns } from '@skelly/engine/internal/core/templates.ts';
+// biome-ignore lint/performance/noNamespaceImport: spyOn must observe the real placement entry point.
+import * as vegetation from '@skelly/engine/internal/core/vegetation.ts';
 import { claimedId, ItemFactory } from '@skelly/engine/inventory';
 import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '@skelly/engine/terrain';
 import {
   CHUNK,
   compassBearing,
+  createTerrainEvaluator,
   footprint,
   HORDE_MEMBERS,
   makeScale,
@@ -32,7 +36,7 @@ import {
   type Vec3,
   World,
 } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
@@ -98,6 +102,27 @@ const layoutValidationBase = [
   {
     source: 'layout-validation-support.json',
     data: {
+      siteGeneration: [
+        {
+          ...siteGenerationOf(registry),
+          palette: {
+            terrain: {
+              grass: layout.tracks[0]!.surface,
+              dirt: layout.tracks[0]!.surface,
+              rock: layout.tracks[0]!.surface,
+              sand: layout.tracks[0]!.surface,
+              water: 'validation_water',
+            },
+            paving: layout.tracks[0]!.surface,
+            trees: {
+              trunk: layout.tracks[0]!.surface,
+              branch: layout.tracks[0]!.surface,
+              leaves: layout.tracks[0]!.surface,
+            },
+            leafLitter: layout.tracks[0]!.surface,
+          },
+        },
+      ],
       templates: [...layoutTemplateIds].map((id) => {
         const [width, height, depth] = registry.templates.get(id)!.size;
         return {
@@ -136,14 +161,24 @@ const layoutValidationBase = [
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
-      blocks: base
-        .filter(({ source }) => source === 'manufactured-blocks.json' || source === 'natural-blocks.json')
-        .flatMap(({ data }) => (data as { blocks: { id: string }[] }).blocks)
-        .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
-        .map(
-          ({ footsteps: _, material: _material, ...block }: { id: string; footsteps?: unknown; material?: unknown }) =>
-            block,
-        ),
+      blocks: [
+        ...base
+          .filter(({ source }) => source === 'manufactured-blocks.json' || source === 'natural-blocks.json')
+          .flatMap(({ data }) => (data as { blocks: { id: string }[] }).blocks)
+          .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
+          .map(
+            ({
+              footsteps: _,
+              material: _material,
+              ...block
+            }: {
+              id: string;
+              footsteps?: unknown;
+              material?: unknown;
+            }) => block,
+          ),
+        { id: 'validation_water', name: 'Water', color: '#123456', solid: false, opaque: false, liquid: true },
+      ],
       layouts: baseLayoutIds.map(validationLayout),
     },
   },
@@ -816,7 +851,7 @@ describe('authored layout acceptance', () => {
               [x1 + 1, z0],
               [x0, z1],
             ],
-            density: 1,
+            profile: 'woodland',
           },
         ],
       },
@@ -866,8 +901,8 @@ describe('authored layout acceptance', () => {
   it('rejects a non-quarter-turn building rotation', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], rotation: 45 }] }, 'quarter turn');
   });
-  it('rejects woodland density outside 0..1', () => {
-    invalid({ ...layout, woodlands: [{ ...layout.woodlands[0], density: 1.1 }] }, 'must be 0 to 1');
+  it('rejects an unknown cover profile', () => {
+    invalid({ ...layout, woodlands: [{ ...layout.woodlands[0], profile: 'constructor' }] }, 'no cover profile');
   });
   it('rejects shambler chance outside 0..1', () => {
     invalid({ ...layout, actors: [{ ...layout.actors[0], chance: 1.1 }] }, 'must be 0 to 1');
@@ -964,7 +999,7 @@ it('keeps trees out of an authored building covered by woodland', () => {
           [bounds.x1, bounds.z1],
           [bounds.x0, bounds.z1],
         ],
-        density: 1,
+        profile: 'woodland',
       },
     ],
   };
@@ -1120,7 +1155,7 @@ sweepGroup('on a ridge site', () => {
             [90, 82],
             [38, 82],
           ],
-          density: 1,
+          profile: 'woodland',
         },
       ],
     };
@@ -1253,4 +1288,91 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
   const optional = new AuthoredSite(1, registry, scale, optionalLayout);
   const optionalColumns = siteColumns(optional, optionalLayout);
   expect(optionalColumns.flatMap(([cx, cz]) => optional.actorsIn(cx, cz))).toEqual([]);
+});
+
+const coverFixture = () => {
+  const tuning = structuredClone(siteGenerationOf(registry));
+  tuning.topography.amplitudeMetres = 0;
+  tuning.vegetation.openDensity = 0.3;
+  tuning.vegetation.regionProfiles = {
+    forest: { density: 1, edgeWavelengthMetres: 8, edgeVariationMetres: 0, treeMix: ['broadleaf'] },
+    pasture: { density: 0.1, edgeWavelengthMetres: 8, edgeVariationMetres: 0, treeMix: ['young'] },
+  };
+  tuning.vegetation.forestDensityField = { wavelengthMetres: 8, seedSalt: 0, floor: 1, gain: 0, ceiling: 1 };
+  const local = { ...registry, siteGeneration: new Map([[tuning.id, tuning]]) };
+  const plot: SiteLayoutDef = {
+    ...validationLayout('cover-fixture'),
+    bounds: { x0: 0, z0: 0, x1: 96, z1: 96 },
+    ground: 20,
+    player: { position: [4, 20.5, 4], bearing: 0 },
+    tracks: [
+      {
+        points: [
+          [48, 0],
+          [48, 96],
+        ],
+        width: 4,
+        surface: tuning.palette.paving,
+      },
+    ],
+    woodlands: [
+      {
+        polygon: [
+          [0, 0],
+          [96, 0],
+          [96, 96],
+          [0, 96],
+        ],
+        profile: 'forest',
+      },
+      {
+        polygon: [
+          [60, 0],
+          [96, 0],
+          [96, 96],
+          [60, 96],
+        ],
+        profile: 'pasture',
+      },
+    ],
+  };
+  return { local, plot, tuning };
+};
+
+it('lets a later low-density field override woodland and the open-ground floor', () => {
+  const { local, plot, tuning } = coverFixture();
+  const original = new AuthoredSite(7, local, scale, plot);
+  const query = terrainFor(original, local, scale, 7).densityAt;
+  expect(query(76, 44)).toBe(tuning.vegetation.regionProfiles.pasture!.density);
+  expect(query(24, 44)).toBe(tuning.vegetation.regionProfiles.forest!.density);
+  const reversed = new AuthoredSite(7, local, scale, { ...plot, woodlands: [...plot.woodlands].reverse() });
+  expect(terrainFor(reversed, local, scale, 7).densityAt(76, 44)).toBe(
+    tuning.vegetation.regionProfiles.forest!.density,
+  );
+});
+
+it('uses the vegetation density query for cloneable baseline cover and mandatory clearances', () => {
+  const { local, plot } = coverFixture();
+  const spy = vi.spyOn(vegetation, 'vegetationPlacements');
+  try {
+    const site = new AuthoredSite(7, local, scale, plot);
+    const supplied = spy.mock.calls.at(-1)![0].density;
+    expect(typeof supplied).toBe('function');
+    const terrain = terrainFor(site, local, scale, 7);
+    const restored = createTerrainEvaluator(structuredClone(terrain.plan));
+    for (const [x, z] of [
+      [24, 44],
+      [76, 44],
+      [48, 44],
+      [4, 4],
+    ] as const) {
+      expect(terrain.densityAt(x, z)).toBe((supplied as (x: number, z: number) => number)(x, z));
+      expect(restored.densityAt(x, z)).toBe(terrain.densityAt(x, z));
+    }
+    expect(terrain.densityAt(48, 44)).toBe(0);
+    expect(terrain.densityAt(4, 4)).toBe(0);
+    expect(site.trees.length).toBeGreaterThan(0);
+  } finally {
+    spy.mockRestore();
+  }
 });

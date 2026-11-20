@@ -71,6 +71,8 @@ export interface AgentState {
   strollHeading: Vec3;
   obstacleWanderHeading?: Vec3 | undefined;
   obstacleWanderRemaining: number;
+  /** Sim seconds until the actor next probes for a way past what holds it, whatever the last probe found. */
+  wayAroundProbeWait: number;
   obstacleSlideSide: -1 | 0 | 1;
   bodyLookTarget: number;
   headYawTarget: number;
