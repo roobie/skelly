@@ -1742,6 +1742,67 @@
     {
       "entries": [
         {
+          "count": [1, 2],
+          "id": "canned_beans",
+          "item": "canned_beans",
+          "weight": 3
+        },
+        {
+          "count": [1, 2],
+          "id": "canned_soup",
+          "item": "canned_soup",
+          "weight": 3
+        },
+        {
+          "id": "water_bottle",
+          "item": "water_bottle",
+          "weight": 2
+        },
+        {
+          "id": "matches",
+          "item": "matches",
+          "weight": 1
+        },
+        {
+          "id": "wax",
+          "item": "wax",
+          "weight": 1
+        },
+        {
+          "count": [1, 3],
+          "id": "rag",
+          "item": "rag",
+          "weight": 2
+        },
+        {
+          "count": [5, 20],
+          "id": "nails",
+          "item": "nails",
+          "weight": 2
+        },
+        {
+          "id": "duct_tape",
+          "item": "duct_tape",
+          "weight": 1
+        },
+        {
+          "count": [1, 2],
+          "id": "aa_battery",
+          "item": "aa_battery",
+          "weight": 1
+        },
+        {
+          "id": "nothing",
+          "nothing": true,
+          "weight": 4
+        }
+      ],
+      "id": "gauntlet_cellar_storage",
+      "rolls": [1, 3]
+    },
+    {
+      "entries": [
+        {
           "id": "armoury_arms",
           "table": "armoury_arms",
           "weight": 1
@@ -4053,6 +4114,21 @@
           "turn": 0
         },
         {
+          "at": [9, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_cellar_plant",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "cellar_plant",
+          "size": [6, 7, 6],
+          "turn": 0
+        },
+        {
           "at": [0, 9, 0],
           "choices": [
             {
@@ -4431,6 +4507,21 @@
           ],
           "id": "roof",
           "size": [18, 6, 16],
+          "turn": 0
+        },
+        {
+          "at": [9, 7, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_cellar_plant",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "cellar_plant",
+          "size": [6, 7, 6],
           "turn": 0
         },
         {
@@ -10987,12 +11078,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSSSSAAARRRRRR",
-            "RASSSSAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSSSSAAA......",
+            "RASSSSAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11001,12 +11092,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSSSSAAARRRRRR",
-            "RASSSSAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSSSSAAA......",
+            "RASSSSAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11015,12 +11106,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11029,12 +11120,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11043,12 +11134,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11057,12 +11148,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11071,12 +11162,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -11250,12 +11341,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AASSSSSSRRRRRR",
-            "SSSSSSSSRRRRRR"
+            "RAAAAASS......",
+            "RAAAAASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AASSSSSS......",
+            "SSSSSSSS......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11264,12 +11355,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AASSAAAARRRRRR",
-            "SSSSAAAARRRRRR"
+            "RAAAAASS......",
+            "RAAAAASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AASSAAAA......",
+            "SSSSAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11278,12 +11369,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11292,12 +11383,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11306,12 +11397,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11320,12 +11411,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11334,12 +11425,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -11513,12 +11604,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSASSSSSRRRRRR",
-            "RSASSSSSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSASSSSARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSASSSSS......",
+            "RSASSSSS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSASSSSA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11527,12 +11618,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSASSSSARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSASSSSA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11541,12 +11632,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11555,12 +11646,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11569,12 +11660,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11583,12 +11674,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11597,12 +11688,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -11784,12 +11875,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RASSSSSSRRRRRR",
-            "RASSSSSSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAASSSSRRRRRR",
-            "SSSSSSSSRRRRRR"
+            "RASSSSSS......",
+            "RASSSSSS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAASSSS......",
+            "SSSSSSSS......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11798,12 +11889,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RASSSASSRRRRRR",
-            "RASSSASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSSSAAAARRRRRR"
+            "RASSSASS......",
+            "RASSSASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSSSAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11812,12 +11903,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11826,12 +11917,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11840,12 +11931,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11854,12 +11945,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -11868,12 +11959,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -12056,12 +12147,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSAAAAAARRRRRR",
-            "SSAAAASSRRRRRR"
+            "RAAAAASA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSAAAAAA......",
+            "SSAAAASS......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12070,12 +12161,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSAAAAAARRRRRR",
-            "SSAAAASSRRRRRR"
+            "RAAAAASA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSAAAAAA......",
+            "SSAAAASS......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12084,12 +12175,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12098,12 +12189,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12112,12 +12203,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12126,12 +12217,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRRRRR",
@@ -12140,12 +12231,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -18034,6 +18125,83 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_city_cellar_plant",
+      "layers": [
+        [",,,,,s", ",,,,,s", ",,,,,t", ",,,g,t", "cccBBB", "cccBBB"],
+        [",,,,,s", ",,,,,s", ",,,,,t", ",,,,,t", "cccBBB", "cccBBB"],
+        [",,,,,s", ",,,,,s", ",,,,,t", ",,,,,t", "...BBB", "...BBB"],
+        [",,,,,s", ",,,,,s", ",,,,,t", ",,,,,t", "...BBB", "...BBB"],
+        [",,,,,.", ",,,,,.", ",,,,,.", ",,,,,.", "...BBB", "...BBB"],
+        [",,,,,.", ",,,,,.", ",,,,,.", ",,,,,.", "...BBB", "...BBB"],
+        [",,,,,.", ",,,,,.", ",,L,,.", ",,,,,.", "......", "......"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["RRRRRS", "RRRRRS", "RRRRRS", "RRRSRS", "SSSSSS", "SSSSSS"],
+          ["RRRRRS", "RRRRRS", "RRRRRS", "RRRRRS", "SSSSSS", "SSSSSS"],
+          ["RRRRRS", "RRRRRS", "RRRRRS", "RRRRRS", "AAASSS", "AAASSS"],
+          ["RRRRRS", "RRRRRS", "RRRRRS", "RRRRRS", "AAASSS", "AAASSS"],
+          ["RRRRRA", "RRRRRA", "RRRRRA", "RRRRRA", "AAASSS", "AAASSS"],
+          ["RRRRRA", "RRRRRA", "RRRRRA", "RRRRRA", "AAASSS", "AAASSS"],
+          ["RRRRRA", "RRRRRA", "RRSRRA", "RRRRRA", "AAAAAA", "AAAAAA"]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "fixed": true,
+          "furniture": "solid_fuel_boiler"
+        },
+        "L": {
+          "fixed": true,
+          "furniture": "bare_bulb"
+        },
+        "c": {
+          "fixed": true,
+          "furniture": "coal_bin"
+        },
+        "g": {
+          "fixed": true,
+          "furniture": "floor_drain"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "s": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "shelf",
+          "loot": "gauntlet_cellar_storage"
+        },
+        "t": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "shelf",
+          "loot": "gauntlet_cellar_storage"
+        }
+      },
+      "ports": [],
+      "size": [6, 7, 6],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_city_window_n_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -21176,12 +21344,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSSSSAAARRRRRR",
-            "RASSSSAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSSSSAAA......",
+            "RASSSSAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21190,12 +21358,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSSSSAAARRRRRR",
-            "RASSSSAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSSSSAAA......",
+            "RASSSSAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21204,12 +21372,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21218,12 +21386,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21232,12 +21400,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21246,12 +21414,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21260,12 +21428,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -21442,12 +21610,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AASSSSSSRRRRRR",
-            "SSSSSSSSRRRRRR"
+            "RAAAAASS......",
+            "RAAAAASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AASSSSSS......",
+            "SSSSSSSS......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21456,12 +21624,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RAAAAASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AASSAAAARRRRRR",
-            "SSSSAAAARRRRRR"
+            "RAAAAASS......",
+            "RAAAAASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AASSAAAA......",
+            "SSSSAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21470,12 +21638,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21484,12 +21652,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21498,12 +21666,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21512,12 +21680,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21526,12 +21694,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -21708,12 +21876,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RSASSSSSRRRRRR",
-            "RSASSSSSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSASSSSARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RSASSSSS......",
+            "RSASSSSS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSASSSSA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21722,12 +21890,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSASSSSARRRRRR",
-            "SSAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSASSSSA......",
+            "SSAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21736,12 +21904,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21750,12 +21918,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21764,12 +21932,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21778,12 +21946,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21792,12 +21960,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -21982,12 +22150,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RASSSSSSRRRRRR",
-            "RASSSSSSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAASSSSRRRRRR",
-            "SSSSSSSSRRRRRR"
+            "RASSSSSS......",
+            "RASSSSSS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAASSSS......",
+            "SSSSSSSS......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -21996,12 +22164,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RASSSASSRRRRRR",
-            "RASSSASSRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "SSSSAAAARRRRRR"
+            "RASSSASS......",
+            "RASSSASS......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "SSSSAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22010,12 +22178,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22024,12 +22192,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22038,12 +22206,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22052,12 +22220,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22066,12 +22234,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },
@@ -22257,12 +22425,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSAAAAAARRRRRR",
-            "SSAAAASSRRRRRR"
+            "RAAAAASA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSAAAAAA......",
+            "SSAAAASS......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22271,12 +22439,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAASARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSAAAAAARRRRRR",
-            "SSAAAASSRRRRRR"
+            "RAAAAASA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "SSAAAAAA......",
+            "SSAAAASS......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22285,12 +22453,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22299,12 +22467,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22313,12 +22481,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22327,12 +22495,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ],
           [
             "RRRRRRRRRRAAAA",
@@ -22341,12 +22509,12 @@
             "...........RRR",
             "RRRRRRRRRRRRRR",
             "RRRRRRRRRRRRRR",
-            "RAAAAAAARRRRRR",
-            "RAAAAAAARRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "AAAAAAAARRRRRR",
-            "AAAAAAAARRRRRR"
+            "RAAAAAAA......",
+            "RAAAAAAA......",
+            "RRRRRRRR......",
+            "RRRRRRRR......",
+            "AAAAAAAA......",
+            "AAAAAAAA......"
           ]
         ]
       },

@@ -91,6 +91,11 @@
           "purpose": "A small bathroom behind the kitchen, off its back wall: toilet, washbasin and a cabinet over it.",
           "serves": ["toilet", "washing"]
         },
+        "cellar": {
+          "cellar": true,
+          "purpose": "A house built over a cellar keeps its plant and stores there: the boiler and its coal in the back corner under the kitchen, shelves of food put by, a drain in the floor and a bare bulb over it.",
+          "serves": ["heating", "storage", "drainage", "lighting"]
+        },
         "kitchen": {
           "purpose": "A kitchen corner at the back of the storey a body enters by: the sink on the side wall and the cooker against the bathroom.",
           "serves": ["cooking", "washing"]

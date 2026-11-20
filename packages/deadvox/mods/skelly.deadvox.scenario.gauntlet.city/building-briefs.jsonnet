@@ -79,6 +79,12 @@
           purpose: 'A small bathroom behind the kitchen, off its back wall: toilet, washbasin and a cabinet over it.',
           serves: ['toilet', 'washing'],
         },
+        cellar: {
+          purpose: 'A house built over a cellar keeps its plant and stores there: the boiler and its coal in the back ' +
+                   'corner under the kitchen, shelves of food put by, a drain in the floor and a bare bulb over it.',
+          serves: ['heating', 'storage', 'drainage', 'lighting'],
+          cellar: true,
+        },
       },
       references: [
         'Terraced and semi-detached town houses on 1960s to 1980s city streets in Central Europe: a narrow flat-roofed box ' +

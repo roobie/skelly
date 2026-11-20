@@ -318,6 +318,13 @@ pool's commonest building meets the same rules as the villa. See
   kind; on the cellar house they rise with the street storey. The room scenes keep out of
   that corner, which their own check guards, so no scene's furniture blocks the walk to a
   fixture.
+- **A cellar keeps the house's plant and stores.** The cellar room is asked only of a house
+  with a cellar, so the other heights stay valid while the cellar house must heat, store,
+  drain and light it. Its fitted corner is a fixed slot under the kitchen, which the cellar's
+  scenes leave free as the storey above leaves the kitchen's, and the rest of the cellar
+  stays a scene slot, so a twist can furnish it without touching the plant. The shelves draw
+  from a cellar table of their own, because a cellar holds what a house puts by, not what its
+  kitchen cupboard does. The secret house inherits the corner, which stays clear of its hatch.
 - **The bathroom door is a doorway slot.** It is the house's one closed room, so its leaf may
   be gone like the street door's ([Doorways](#doorways)).
 - **The roof drains on its open side.** A gutter runs along the eave the ladder stands on and
