@@ -124,6 +124,7 @@
     workNeedsBothHands: 'I need both hands for this',
     recipeUnknown: 'Recipe not known',
     placementTargetRequired: 'No building site selected',
+    placementUnsupported: 'Nothing there would hold it up',
     skillTooLow: 'Skill level too low',
     toolNotInReach: 'Required {quality} tool is not in reach',
     workstationNotInReach: 'Required workstation not in reach',

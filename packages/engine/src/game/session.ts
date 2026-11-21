@@ -2885,6 +2885,7 @@ export const createSession = (options: SessionOptions) => {
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     world.rubble.restoreState(restored.world.rubble, registry, options.onRestoreIssue);
+    world.support.restoreState(restored.world.support, registry, options.onRestoreIssue);
     actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
     playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);

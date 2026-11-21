@@ -449,6 +449,7 @@
         "partNeedsSupport": "Nothing holds it there",
         "partSupportsOthers": "Another part rests on it",
         "placementTargetRequired": "No building site selected",
+        "placementUnsupported": "Nothing there would hold it up",
         "pocketsFull": "My pockets are full",
         "preferredCompete": "Preferred alternatives compete for the same stock or would consume a required tool",
         "recipeUnknown": "Recipe not known",

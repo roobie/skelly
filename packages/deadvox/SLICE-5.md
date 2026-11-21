@@ -126,9 +126,21 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** persist authored support dependencies, so removal can resolve what
-  depends on a structure rather than forgetting support after placement. Prove
-  destructive cascades; physical stress simulation is not required.
+- **Support:** natural terrain holds. A structure cell, authored or placed, is held
+  when the solid cell under it holds, or when a straight sideways run of solid cells
+  reaches, within the cell's own material span, a cell that stands on a holding cell.
+  Only a standing cell anchors a run, so spans never chain into an endless cantilever.
+  Any solid structure cell holds any other, with span the only limit, and furniture
+  never holds terrain. These rules make no wall float and no floor hang in front of a
+  tester without simulating physical stress, and the material's span is what separates
+  a floor that bridges a gap from one that cannot.
+  Support is computed from the standing blocks, so untouched authored structure stays
+  computed and a save grows with changes, not exploration. The world saves only which
+  cells a player placed, because a placed block is structure even where it matches the
+  natural ground. Placement refuses a block that would not be held, with a reason the
+  placement preview shows. See `packages/engine/src/core/structureSupport.ts`,
+  `createSupport` and `SupportState`, and `packages/engine/src/core/worldPlacement.ts`,
+  `createWorldPlacement`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";

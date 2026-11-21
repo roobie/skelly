@@ -131,6 +131,7 @@ export const CORE_MESSAGE_SLOTS = {
   workNeedsBothHands: [],
   recipeUnknown: [],
   placementTargetRequired: [],
+  placementUnsupported: [],
   skillTooLow: [],
   toolNotInReach: ['quality'],
   workstationNotInReach: [],

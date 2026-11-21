@@ -146,6 +146,7 @@ interface WirePayload {
     rolledColumns: string[];
     blockDamage: SaveSnapshot['world']['blockDamage'];
     rubble: SaveSnapshot['world']['rubble'];
+    support: SaveSnapshot['world']['support'];
   };
   character: {
     id: string;
@@ -981,6 +982,10 @@ const rubbleSchema = obj({
   entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), epoch: safeInt })),
 });
 
+const supportSchema = obj({
+  placed: arr(tuple(safeInt, safeInt, safeInt)),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
@@ -1020,6 +1025,7 @@ const wirePayloadSchema = obj({
     rolledColumns: arr(str({ nonEmpty: true })),
     blockDamage: blockDamageSchema,
     rubble: rubbleSchema,
+    support: supportSchema,
   }),
   character: obj({
     id: str({ nonEmpty: true }),
@@ -1437,6 +1443,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       rolledColumns: [...snapshot.world.rolledColumns],
       blockDamage: structuredClone(snapshot.world.blockDamage),
       rubble: structuredClone(snapshot.world.rubble),
+      support: structuredClone(snapshot.world.support),
     },
     character: {
       id: snapshot.character.id,
@@ -1513,6 +1520,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
       rubble: structuredClone(wire.world.rubble),
+      support: structuredClone(wire.world.support),
     },
     character: {
       ...wire.character,
@@ -2084,6 +2092,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         rolledColumns: arr(str({ nonEmpty: true })),
         blockDamage: blockDamageSchema,
         rubble: rubbleSchema,
+        support: supportSchema,
       }),
       character: obj({
         id: str({ nonEmpty: true }),
