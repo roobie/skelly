@@ -2,6 +2,7 @@ import { type BlockEntity, boardable } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
 import { coreLabel } from '../core/coreText.ts';
 import { jobName } from '../core/craftCommands.ts';
+import { pieceRecoveryWork } from '../core/disassembly.ts';
 import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { repairCeiling } from '../core/items.ts';
@@ -41,7 +42,8 @@ export const furnitureActionsFor = (
   ) {
     actions.push({ id: 'repair', label: text.worldService.repair });
   }
-  if (registry.furniture.get(entity.type)?.takeApart) {
+  const takeApart = registry.furniture.get(entity.type)?.takeApart;
+  if (pieceRecoveryWork(registry, entity.type, entity.boarding?.type) || takeApart?.parts) {
     actions.push({ id: 'take_apart', label: text.worldService.takeApart });
   }
   // Ring entries come from recipe data, not recipe ids in code: every known recipe whose result boards a leaf or

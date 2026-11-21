@@ -1,7 +1,7 @@
 local manifest = import '../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 manifest(
   id='skelly.packaged-foods',
-  tier='core',
+  tier='theme',
   content=['packaged-foods-items'],
   dependencies=['skelly.basic-foods', 'skelly.hand-tools', 'skelly.inventory'],
 )

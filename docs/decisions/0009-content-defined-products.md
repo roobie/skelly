@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
-  - you classify mods, choose their ids or combine a theme with a product
+  - you classify mods using the consumer roster, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or package boundaries
   - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
   - you separate actor bodies from agent decisions, memory and save ownership
@@ -33,24 +33,32 @@ into content meant for other products.
 ## Mod identity and tiers
 
 `skelly.*` identifies first-party mods; third parties use their own prefix. Names
-say what content a mod holds. Core-tier examples use topic names such as
-`skelly.attributes`, never `skelly.core` or a catch-all core namespace. Theme names
-such as `skelly.magic` and `skelly.survival` identify reusable topics. Product-owned
+say what content a mod holds. Shared theme names such as `skelly.attributes`,
+`skelly.magic` and `skelly.survival` identify reusable topics. Product-owned
 content uses `skelly.PRODUCT.*`; scenario-owned content uses
 `skelly.PRODUCT.scenario.SCENARIO.*`, such as
 `skelly.deadvox.scenario.upheaval.points-of-interest`.
 
-The manifest declares the tier: **core**, **theme**, **product** or **scenario**.
+The manifest declares the tier: **theme**, **product** or **scenario**.
 An id is not a tier discriminator. The scope in a product or scenario name identifies
 its owner; the loader must not infer its tier from that spelling. Consumer judgments
 can change as products appear, and encoding the tier in identity would turn
 reclassification into dependency and save breakage. Theme and product names can also
 share one id shape and clash, so spelling cannot distinguish their tiers.
 
-Core-tier topics are useful across almost all products. Theme mods are reusable but
-not universal. Product mods own a setting's content and policy; scenario mods own a
-particular run, map or test flow. No tier grants protection or loader privilege.
-Each product chooses its dependencies rather than inheriting one mandatory core pack.
+Theme mods hold all shared topics, whether universal or specialised. Product mods own
+a setting's content and policy; scenario mods own a particular run, map or test flow.
+Dependencies follow theme < product < scenario, except for the product entry that
+selects its stack; see `packages/deadvox/test/shippedMods.test.ts`, `tierIssues`.
+No tier grants protection or loader privilege. Each product chooses its dependencies
+rather than inheriting a mandatory shared set.
+
+Universal usefulness is not a separate tier because it grants no loader behaviour.
+Each shared pack must load with only its own declared dependency closure, so a product
+can drop any pack it does not need. Checking each closure covers every shared pack,
+not just a pooled universal set. The accepted cost is that universal usefulness is
+not machine-readable and the tier guard cannot distinguish universal topics from
+specialised ones. See `packages/deadvox/docs/pack-split.md`, "Shared-pack closure validation".
 
 ## Definitions and distribution
 
@@ -95,11 +103,11 @@ evidence governs classification, not perfect adherence to the table.
 
 | Content | DV | MW | BL | EM | Ownership guide |
 |---|---|---|---|---|---|
-| Body, injuries, bleeding, needs, senses, player tuning | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Inventory, compression, saves, day cycle, controls, UI, graphics policy | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Natural blocks and vegetation | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Doors, locks, ladders, stairs, basic furniture | ✓ | ✓ | ✓ | ✓ | Core topics; appearance varies by era |
-| Creature senses, attention and attack tuning | ✓ | ✓ | ✓ | ✓ | Core topics; mechanisms stay in the engine |
+| Body, injuries, bleeding, needs, senses, player tuning | ✓ | ✓ | ✓ | ✓ | Theme |
+| Inventory, compression, saves, day cycle, controls, UI, graphics policy | ✓ | ✓ | ✓ | ✓ | Theme |
+| Natural blocks and vegetation | ✓ | ✓ | ✓ | ✓ | Theme |
+| Doors, locks, ladders, stairs, basic furniture | ✓ | ✓ | ✓ | ✓ | Theme; appearance varies by era |
+| Creature senses, attention and attack tuning | ✓ | ✓ | ✓ | ✓ | Theme; mechanisms stay in the engine |
 | Blades and blunt melee weapons | ✓ | ✓ | ✓ | · | Theme |
 | Hand tools | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
 | Food, wearables and readables | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
@@ -114,12 +122,15 @@ evidence governs classification, not perfect adherence to the table.
 | Zombie types, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
 | Gauntlet, tutorial, playtest and test house | ✓ | · | · | · | Scenario |
 
+A reusable definition belongs to a theme topic even if only one product uses it.
+Broad usefulness does not give a theme a different tier.
+
 Skills belong in theme topics; products select their available skills through ordinary
 mod dependencies, rather than a separate skill configuration or registry filter.
 
-The roster classifies content and tuning, not engine code. The open measurement on
-#1532 is when a topic mod becomes too large for products that use little of it.
-Measure that cost before splitting further; no size threshold is adopted here.
+Classify content and tuning, not engine code. The open measurement on #1532 is when a
+topic mod becomes too large for products that use little of it. Measure that cost before
+splitting further; no size threshold is adopted here.
 
 ## Starts and mixing
 

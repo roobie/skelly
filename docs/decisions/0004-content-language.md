@@ -7,7 +7,7 @@ read_if:
   - you're building the engine's CEL implementation
   - you're reviewing checked cast rules or their numeric and atomicity boundaries
   - "you're taking up the mod-content work in #313 or #393"
-  - you're asking why a mod may change a core tuning value
+  - you're asking why a mod may change a shared tuning value
   - you're designing mod triggers, randomness, effects, state, composition, field patches or UI
 tags: [deadvox, adr, content, mods, determinism]
 ---
@@ -20,7 +20,7 @@ Dynamic world events remain a design need in #313; #393 tracks extraction of Typ
 
 ## Decision
 
-Content and tuning belong in schema-validated mods, while exact mechanisms stay engine-owned. Core, theme, product and scenario ownership follows `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution"; no single core pack owns every shared value. The loader remains one authority for admission; see `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for authoring.
+Content and tuning belong in schema-validated mods, while exact mechanisms stay engine-owned. Theme, product and scenario ownership follows `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution"; no mandatory pack owns every shared value. The loader remains one authority for admission; see `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for authoring.
 
 Mod and event rules use restricted CEL inside a typed rule envelope, and no scripting language is admitted. The envelope is Jsonnet data: a trigger, an optional condition and a list of engine effects. CEL fills only the condition and the effect arguments. It cannot sequence, loop or mutate, so the engine keeps scheduling, state, randomness and effects, as the mod rules below require. A maintained runtime supplies parsing, type checking and evaluation without making a new language an engine maintenance obligation. A mod-facing rule may describe a consequence, but cannot mutate state outside the engine's validated boundary.
 
@@ -34,7 +34,7 @@ Purity should be enforced by the language or a sandbox, so composed content can 
 
 Module ordering and conflict policy stay simple and useful. A mod declares the packs it requires, because a mod written for one setting would otherwise fail confusingly under another. Declared dependencies also keep reuse from silently importing another product's assumptions; see `packages/deadvox/docs/pack-split.md`, "Layers". Composition and combining follow the mod rules below. The #393 migration goes incrementally in a low number of large steps, with the steps and boundaries set in #393. Weather simulation stays in code while mods configure it, so rules read weather rather than run it; its event contract belongs to #313.
 
-Every mod uses the same override rules, including core-tier providers. One rule for every pack is simpler than a privileged core. No tier grants protection or privilege, and the overriding mod owns the consequences. Modifier hooks remain a mechanism, not the only way to change tuning; their vocabulary and how several mods' modifiers stack remain open in #313. Restricted rules have no storage, credential or network access; see `docs/decisions/0009-content-defined-products.md`, "Remote intake".
+Every mod uses the same override rules, including shared providers. One rule for every pack avoids binding products to a privileged provider. No tier grants protection or privilege, and the overriding mod owns the consequences. Modifier hooks remain a mechanism, not the only way to change tuning; their vocabulary and how several mods' modifiers stack remain open in #313. Restricted rules have no storage, credential or network access; see `docs/decisions/0009-content-defined-products.md`, "Remote intake".
 
 The game and the modding framework own save compatibility, and a mod has no say in it, so a save whose mod state no longer matches is refused like any pack mismatch; see `packages/deadvox/docs/decisions/0002-saves.md`, "Compatibility".
 

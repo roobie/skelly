@@ -851,6 +851,7 @@
         "building_materials": 3,
         "plant_spares": 1
       },
+      "hordeCountBudget": 64,
       "id": "holdout",
       "kind": "composedSite",
       "lootContext": {

@@ -21,6 +21,6 @@
   "id": "skelly.inventory",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

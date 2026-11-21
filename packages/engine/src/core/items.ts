@@ -117,6 +117,8 @@ type CraftWork<Node> =
   | (WorkProgress<Node> & {
       kind: 'pieceDisassembly';
       furniture: string;
+      /** The boarding removed from the host, if the host itself remains. */
+      boarding?: string;
       skillLevel: number;
       toolLevels: Record<string, number>;
       outputs: { item: string; count: number }[];
