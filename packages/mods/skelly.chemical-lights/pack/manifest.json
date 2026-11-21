@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.light-sources"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "chemical-lights-items.json"
+    }
+  ],
+  "id": "skelly.chemical-lights",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

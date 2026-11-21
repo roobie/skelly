@@ -1,0 +1,55 @@
+{
+  "items": [
+    {
+      "category": "light",
+      "description": "A sealed chemical light.",
+      "id": "glowstick",
+      "light": {
+        "burnTimeGameHours": 8,
+        "burning": {
+          "douse": false,
+          "drop": "stay",
+          "ignition": "snap",
+          "relight": false,
+          "sprint": "stay",
+          "stow": "stay"
+        },
+        "color": "#62ff81",
+        "emissive": 0.80000000000000004,
+        "intensity": 0.46000000000000002,
+        "radius": 2,
+        "seenFrom": 15
+      },
+      "model": "glowstick",
+      "name": "Glowstick",
+      "size": [1, 2],
+      "weight": 30,
+      "workInProgress": false
+    },
+    {
+      "category": "light",
+      "description": "A road flare. It burns red and bright until it is spent.",
+      "id": "road_flare",
+      "light": {
+        "burnTimeGameHours": 1,
+        "burning": {
+          "douse": false,
+          "drop": "stay",
+          "ignition": "snap",
+          "relight": false,
+          "sprint": "stay",
+          "stow": "stay"
+        },
+        "color": "#ff3b24",
+        "emissive": 1,
+        "intensity": 1.6499999999999999,
+        "radius": 4,
+        "seenFrom": 40
+      },
+      "model": "road_flare",
+      "name": "Road flare",
+      "size": [1, 2],
+      "workInProgress": false
+    }
+  ]
+}

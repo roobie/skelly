@@ -26,6 +26,7 @@ import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
+import { templateDamageSource } from '../core/templateDamage.ts';
 import { createTerrainEvaluator, type TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
@@ -166,6 +167,7 @@ export function createWorldSetup(
   const { groundAt } = terrain;
   const simulationWorld = new SimulationTerrain(terrain);
   const canonicalTerrain = simulationWorld.canonical;
+  simulationWorld.blockDamage.bindGenerated(templateDamageSource(canonicalTerrain, registry, simulationWorld));
   simulationWorld.watchChunks((cx, _cy, cz) => {
     const state = canonicalTerrain.world;
     if (!state.isTouched(cx, cz)) {
