@@ -179,6 +179,7 @@ export interface SpawnMarker extends SpawnTimeWindowField {
 }
 
 export interface VoxelProvenance {
+  readonly condition?: TemplateDef['condition'];
   readonly owner: string;
   readonly source: string;
   readonly variant: string;
@@ -470,6 +471,7 @@ const compilePieceTemplate = (registry: Registry, piece: MapPieceDef, styleId: s
     lootContext: piece.lootContext,
     size: piece.size,
     layers: piece.layers,
+    ...(piece.condition ? { condition: piece.condition } : {}),
     ...(piece.decals ? { decals: piece.decals } : {}),
     palette,
     ownership: piece.ownership,
@@ -919,6 +921,13 @@ const composeAssemblyVoxels = (
       );
     };
     composePlacement(slot, placement, voxels, collide);
+  }
+  if (assembly.condition) {
+    for (const [index, entry] of voxels.provenance.entries()) {
+      if (entry && !entry.condition) {
+        voxels.provenance[index] = { ...entry, condition: assembly.condition };
+      }
+    }
   }
   const { size: _size, ...composed } = voxels;
   return composed;
