@@ -69,13 +69,18 @@ export type ReplayActionPayload =
     }
   | {
       kind: 'craft.repair-cell';
+      expected: Readonly<{ epoch: number }>;
       recipeId: string;
       cell: [number, number, number];
       preference: CraftPreference;
       sources?: CraftSources;
     }
   | { kind: 'craft.take-apart-entity'; entityUid: number }
-  | { kind: 'craft.take-apart-cell'; cell: [number, number, number] }
+  | {
+      kind: 'craft.take-apart-cell';
+      cell: [number, number, number];
+      expected: Readonly<{ block: string; epoch: number }>;
+    }
   | ({ kind: 'craft.service-part'; entityUid: number } & PartServiceRequest)
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
@@ -146,6 +151,18 @@ const PAYLOAD_KINDS = [
 type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
 export const REPLAY_PAYLOAD_KINDS: [MissingPayloadKind] extends [never] ? typeof PAYLOAD_KINDS : MissingPayloadKind =
   PAYLOAD_KINDS;
+
+const isCellExpected = (value: unknown, rubble: boolean): boolean => {
+  if (!value || typeof value !== 'object' || !('epoch' in value)) {
+    return false;
+  }
+  return (
+    Number.isSafeInteger(value.epoch) &&
+    (value.epoch as number) >= (rubble ? 0 : 1) &&
+    (!rubble || ('block' in value && typeof value.block === 'string' && value.block.length > 0)) &&
+    Object.keys(value).every((key) => key === 'epoch' || (rubble && key === 'block'))
+  );
+};
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
@@ -349,15 +366,22 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
       );
     case 'craft.repair-cell':
       return (
+        isCellExpected(payload.expected, false) &&
         isTriple(payload.cell, Number.isSafeInteger) &&
         payload.preference !== undefined &&
         isCraftStartPayload(payload) &&
-        Object.keys(payload).every((key) => ['kind', 'recipeId', 'cell', 'preference', 'sources'].includes(key))
+        Object.keys(payload).every((key) =>
+          ['kind', 'recipeId', 'cell', 'expected', 'preference', 'sources'].includes(key),
+        )
       );
     case 'craft.take-apart-entity':
       return isUid(payload.entityUid) && Object.keys(payload).length === 2;
     case 'craft.take-apart-cell':
-      return isTriple(payload.cell, Number.isSafeInteger) && Object.keys(payload).length === 2;
+      return (
+        isTriple(payload.cell, Number.isSafeInteger) &&
+        isCellExpected(payload.expected, true) &&
+        Object.keys(payload).length === 3
+      );
     case 'craft.service-part':
       return isServicePartPayload(payload);
     default:
@@ -575,13 +599,16 @@ export interface ReplayCommandOwners {
   craftRepairCell: (
     recipeId: string,
     cell: [number, number, number],
-    preference: CraftPreference,
-    sources?: CraftSources,
+    expected: Readonly<{ epoch: number }>,
+    options: { prefer: CraftPreference; sources: CraftSources | undefined },
   ) => string | undefined;
   /** Starts taking a world piece apart where it stands, as work hosted on the piece. */
   craftTakeApartEntity: (entityUid: number) => string | undefined;
   /** Starts clearing the rubble cell aimed at, as work held in the dominant hand; the command revalidates the cell. */
-  craftTakeApartCell: (cell: [number, number, number]) => string | undefined;
+  craftTakeApartCell: (
+    cell: [number, number, number],
+    expected: Readonly<{ block: string; epoch: number }>,
+  ) => string | undefined;
   /** Starts removing or fitting one housing slot's part, as work hosted on the piece; the command revalidates. */
   craftServicePart: (entityUid: number, request: PartServiceRequest) => string | undefined;
   craftContinue: () => string | undefined;
@@ -716,11 +743,14 @@ export const applyReplayActionPayload = (
     case 'craft.repair-entity':
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.repair-cell':
-      return owners.craftRepairCell(payload.recipeId, payload.cell, payload.preference, payload.sources);
+      return owners.craftRepairCell(payload.recipeId, payload.cell, payload.expected, {
+        prefer: payload.preference,
+        sources: payload.sources,
+      });
     case 'craft.take-apart-entity':
       return owners.craftTakeApartEntity(payload.entityUid);
     case 'craft.take-apart-cell':
-      return owners.craftTakeApartCell(payload.cell);
+      return owners.craftTakeApartCell(payload.cell, payload.expected);
     case 'craft.service-part':
       return owners.craftServicePart(payload.entityUid, servicePartRequest(payload));
     case 'craft.continue':

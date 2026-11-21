@@ -1,12 +1,8 @@
-local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
-// Rubble clearing by eye: the heap layout stands the tester beside a rubble row at eye height, and the start
-// ships every skill at the top level and nothing else staged, because clearing rubble needs no tool and no
-// recipe — the check is the heap at start, then the debug build tool and its take-apart key; rubble clearing
-// has no crafting view until the world-work view (#1699's shape).
+local repair = (import '../skelly.deadvox.scenario.test-house.cell-repair-look/starts.jsonnet').starts[0];
 {
-  starts: [kit.fixture + {
+  starts: [repair + {
     id: 'rubblelook',
     site: 'testHouseRubbleLook',
-    startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
+    blockDamage: [repair.blockDamage[0] + { cell: [-21, 45, 28] }],
   }],
 }

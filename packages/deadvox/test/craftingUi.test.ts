@@ -141,7 +141,7 @@ describe('crafting read-only presentation', () => {
         { start: vi.fn(), prefer: vi.fn(), source: vi.fn() },
         {
           text: craftingText(repairRegistry),
-          world: { heading: row.name, depicted: false },
+          world: { heading: row.name, depicted: false, turnable: true },
         },
       );
       // The bands show as blips alone: the band word belongs to the selected item's card.
@@ -154,6 +154,28 @@ describe('crafting read-only presentation', () => {
           blip.style.getPropertyValue('--blip'),
         ),
       ).toEqual([condition!.now.color, condition!.after.color]);
+    } finally {
+      root.remove();
+    }
+  });
+
+  it('keeps render-free furniture turn controls without inventing a pose for cell targets', () => {
+    const row = repairFixture()
+      .rows(true)
+      .find(({ id }) => id === ENTITY_REPAIR)!;
+    const root = document.createElement('section');
+    document.body.append(root);
+    const turn = vi.fn();
+    const actions = { start: vi.fn(), prefer: vi.fn(), source: vi.fn(), turn };
+    const text = craftingText(repairRegistry);
+    try {
+      renderCrafting(root, [row], actions, { text, world: { heading: row.name, depicted: false, turnable: true } });
+      expect(root.querySelector('canvas')).toBeNull();
+      root.querySelector<HTMLButtonElement>('[data-craft-turn="-1"]')!.click();
+      expect(turn).toHaveBeenCalledWith(-1);
+      renderCrafting(root, [row], actions, { text, world: { heading: row.name, depicted: false, turnable: false } });
+      expect(root.querySelector('.craft-target')).toBeNull();
+      expect(actions.start).not.toHaveBeenCalled();
     } finally {
       root.remove();
     }
@@ -193,6 +215,9 @@ describe('crafting read-only presentation', () => {
     const target = { uid: 1, type: furniture.id } as BlockEntity;
     const row = takeApartRow(registry, target, {
       previewTakeApartEntity: () => ({ plan: undefined, refusal: 'refused' }),
+      previewTakeApartCell: () => {
+        throw new Error('Unexpected cell preview');
+      },
     });
     expect(row.length).toBe(fillText(craftingText(registry).mins, { value: decimalText(gameSeconds / 60) }));
   });

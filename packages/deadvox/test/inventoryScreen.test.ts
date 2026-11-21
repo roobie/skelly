@@ -3,6 +3,7 @@ import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
+import { worldRubbleClearing } from '@skelly/engine/internal/core/rubble.ts';
 import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   attachmentWorkSkill,
@@ -28,6 +29,7 @@ import {
 } from '@skelly/engine/inventory';
 import { Body, bindReach, Character, PlayerTickActions, practiceForNextLevel, Survival } from '@skelly/engine/sim';
 import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text';
+import { World } from '@skelly/engine/world';
 import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
 import { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import { mountMenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
@@ -863,6 +865,31 @@ describe('inventory screen Lit rendering', () => {
     expect(screen.activeTab).toBe('items');
     expect(root.querySelector('[data-tab="repair"]')).toBeNull();
     expect(document.body.classList.contains('inventory-tab-repair')).toBe(false);
+    screen.close();
+  });
+
+  it('discards a cell review when replacement puts the same rubble kind back there', () => {
+    const { screen, inv } = setup();
+    const world = new World();
+    const cell: [number, number, number] = [0, 1, 0];
+    const material = [...registry.blockMaterials.values()].find(
+      (row) => registry.blocks[registry.blockIds.get(row.fallsTo)!]?.solid,
+    )!;
+    const rubble = registry.blockIds.get(material.fallsTo)!;
+    world.setBlock(...cell, rubble);
+    inv.rubble = worldRubbleClearing(world, registry);
+    screen.openCellWork(cell, 'take_apart');
+    expect(screen.activeTab).toBe('repair');
+    const review = screen.cellWork;
+    expect(review).toBeDefined();
+    expect(screen.repairTarget).toBeUndefined();
+    screen.update();
+    expect(screen.cellWork).toBe(review);
+    world.setBlock(...cell, 0);
+    world.setBlock(...cell, rubble);
+    screen.update();
+    expect(screen.cellWork).toBeUndefined();
+    expect(screen.activeTab).toBe('items');
     screen.close();
   });
 

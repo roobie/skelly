@@ -61,7 +61,7 @@ describe('F interaction target selection', () => {
     expect(pick()).toMatchObject({ kind: 'furniture', entity: can });
     for (const block of ['chain_link', 'leaves']) {
       world.setBlock(1, 0, 0, registry.blockIds.get(block)!);
-      expect(pick(), block).toBeUndefined();
+      expect(pick(), block).toMatchObject({ kind: 'cell' });
     }
   });
 
@@ -257,7 +257,7 @@ describe('F interaction target selection', () => {
     expect(
       pickInteractionTarget({ ...ray, vehicleParts, isSolid: (_x, _y, z) => z === 1 }),
       'a solid cell before the part hides it',
-    ).toBeUndefined();
+    ).toMatchObject({ kind: 'cell' });
   });
 
   it('lets furniture win when its face and a ground item start at the same ray distance', () => {
@@ -328,6 +328,6 @@ describe('F interaction target selection', () => {
     expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
 
     const target = pickInteractionTarget(options(inventory, [0.5, 2, 0.5], [0, -1, 0], (_x, y) => y === 1));
-    expect(target).toBeUndefined();
+    expect(target).toMatchObject({ kind: 'cell' });
   });
 });

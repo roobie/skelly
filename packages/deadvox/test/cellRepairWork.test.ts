@@ -250,7 +250,7 @@ const workUidOf = (job: Readonly<LongJob> | null | undefined): number => {
 };
 const start = (damage: number) => {
   const r = prepare(damage);
-  const refusal = r.commands.repairCell(RECIPE, CELL);
+  const refusal = r.commands.repairCell(RECIPE, CELL, r.commands.previewCellRepair(RECIPE, CELL).identity!);
   if (refusal) {
     throw new Error(refusal);
   }
@@ -275,7 +275,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     queue: new HandlingQueue(r.inventory),
     quickbar: { assign: unused },
     craftRepairEntity: unused,
-    craftRepairCell: (recipe, cell, preference, sources) => r.commands.repairCell(recipe, cell, preference, sources),
+    craftRepairCell: (recipe, cell, expected, options) => r.commands.repairCell(recipe, cell, expected, options),
     craftTakeApartCell: unused,
     craftTakeApartEntity: unused,
     craftServicePart: unused,
@@ -307,6 +307,23 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
   });
 };
 
+it('previews repair without writes and refuses a fresh damage episode at the reviewed cell', () => {
+  const r = prepare(AMOUNT + 7);
+  const before = r.world.blockDamage.snapshotState();
+  const inputs = r.inventory.snapshotState();
+  const reviewed = r.commands.previewCellRepair(RECIPE, CELL).identity!;
+  expect(reviewed).toBeDefined();
+  expect(r.commands.previewCellRepair(RECIPE, CELL).identity).toEqual(reviewed);
+  expect(r.world.blockDamage.snapshotState()).toEqual(before);
+  expect(r.inventory.snapshotState()).toEqual(inputs);
+  r.world.setBlock(...CELL, 0);
+  r.world.setBlock(...CELL, registry.blockIds.get(BLOCK)!);
+  r.world.blockDamage.record(terrainOf(r.world), registry, CELL, AMOUNT + 7);
+  expect(r.commands.repairCell(RECIPE, CELL, reviewed)).toBeDefined();
+  expect(r.inventory.snapshotState()).toEqual(inputs);
+  expect(r.sim.actions.job).toBeUndefined();
+});
+
 it('reduces retained cell damage by the repair amount and keeps the damage identity', () => {
   const r = start(AMOUNT + 7);
   const before = r.world.blockDamage.get(CELL)!;
@@ -319,7 +336,15 @@ it('reduces retained cell damage by the repair amount and keeps the damage ident
 
 it('clears fully mended cell damage through the replay command and consumes the inputs once', () => {
   const r = prepare(AMOUNT - 1);
-  expect(dispatch(r, { kind: 'craft.repair-cell', recipeId: RECIPE, cell: [...CELL], preference: {} })).toBeUndefined();
+  expect(
+    dispatch(r, {
+      kind: 'craft.repair-cell',
+      recipeId: RECIPE,
+      cell: [...CELL],
+      expected: r.commands.previewCellRepair(RECIPE, CELL).identity!,
+      preference: {},
+    }),
+  ).toBeUndefined();
   const uid = workUidOf(r.sim.actions.job);
   finish(r, uid);
   expect(r.world.blockDamage.get(CELL)).toBeUndefined();
@@ -336,7 +361,7 @@ it('stops a cell repair at the content default ceiling and refuses a cell standi
   const ceiling = repairCeiling(registry, registry.recipes.get(CEILED_RECIPE));
   expect(1 - damage / durability, 'the fixture cell starts below the ceiling').toBeLessThan(ceiling);
   expect(1 - (damage - AMOUNT) / durability, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
-  expect(s.commands.repairCell(CEILED_RECIPE, CELL)).toBeUndefined();
+  expect(s.commands.repairCell(CEILED_RECIPE, CELL, { epoch })).toBeUndefined();
   finish(s, workUidOf(s.sim.actions.job));
   const after = s.world.blockDamage.get(CELL)!.damage;
   expect(damage - after, 'the ceiling held back part of the amount').toBeLessThan(AMOUNT);
@@ -348,13 +373,14 @@ it('stops a cell repair at the content default ceiling and refuses a cell standi
 it('refuses cell repair of an undamaged cell, a missing block and an unreachable cell without taking inputs', () => {
   const r = prepare();
   const before = r.inventory.snapshotState();
-  expect(r.commands.repairCell(RECIPE, CELL)).toBeDefined();
-  expect(r.commands.repairCell(RECIPE, MISSING_CELL)).toBeDefined();
+  const stale = { epoch: 0 };
+  expect(r.commands.repairCell(RECIPE, CELL, stale)).toBeDefined();
+  expect(r.commands.repairCell(RECIPE, MISSING_CELL, stale)).toBeDefined();
   expect(r.inventory.snapshotState()).toEqual(before);
   expect(r.sim.actions.job).toBeUndefined();
   r.world.blockDamage.record(terrainOf(r.world), registry, CELL, AMOUNT);
   r.position[0] += 100;
-  expect(r.commands.repairCell(RECIPE, CELL)).toBeDefined();
+  expect(r.commands.repairCell(RECIPE, CELL, r.commands.previewCellRepair(RECIPE, CELL).identity!)).toBeDefined();
   expect(r.inventory.snapshotState()).toEqual(before);
 });
 
@@ -378,7 +404,7 @@ it.each([false, true])('saves mid-job repair of generated damage=%s and complete
   }
   const damage = f.world.blockDamage.get(WALL)!;
   expect(damage.damage).toBe(4);
-  expect(f.session.crafting.repairCell(RECIPE, WALL)).toBeUndefined();
+  expect(f.session.crafting.repairCell(RECIPE, WALL, { epoch: damage.epoch })).toBeUndefined();
   const uid = workUidOf(f.session.sim.actions.job);
   const work = f.session.inventory.itemByUid(uid)!.work!;
   expect(work.repairTarget).toEqual({ kind: 'cell', cell: [...WALL], epoch: damage.epoch });
