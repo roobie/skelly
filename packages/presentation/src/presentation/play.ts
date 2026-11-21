@@ -112,6 +112,7 @@ import {
   selectPrimaryAction,
   stageMarkArea,
   unarmedMeleeWeapon,
+  windowOperation,
 } from '@skelly/engine/sim';
 import {
   caseLandingCue,
@@ -2470,24 +2471,22 @@ const startPlayWith = (
       : fillHint(screenText.vehicle.inspect, { key, part, vehicle: name });
   };
 
-  const windowUseText = (entity: BlockEntity): HintText => {
-    const state = entity.window!;
-    let operation = coreLabel(registry, state.open ? 'close' : 'open');
-    if (state.latched) {
-      operation = coreLabel(registry, 'unlatch');
-    }
-    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+  type FurniturePart = Extract<InteractionTarget, { kind: 'furniture' }>['part'];
+  /** The window hint names what use and hold do to the aimed part, so aiming at the curtain cloth shows its toggle. */
+  const windowUseText = (entity: BlockEntity, part: FurniturePart | undefined): HintText => {
+    const operation = coreLabel(registry, windowOperation(entities, entity, false, part));
+    const held = coreLabel(registry, windowOperation(entities, entity, true, part));
     const key = keyCap(inputBindings, 'world.interact');
-    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: held })}`;
   };
 
-  /** Describes the displayed action for the selected target. */
-  const useText = (entity: BlockEntity): HintText => {
+  /** Describes the displayed action for the selected target, and for a window, its aimed part. */
+  const useText = (entity: BlockEntity, part?: FurniturePart): HintText => {
     if (session.isObjective(entity)) {
       return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
     }
     if (entity.window) {
-      return windowUseText(entity);
+      return windowUseText(entity, part);
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2524,12 +2523,19 @@ const startPlayWith = (
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
   };
+  /** A window's input carries the aimed curtain cloth, since aim decides whether it works the curtain or the window. */
+  const windowPayload = (entity: BlockEntity, part: FurniturePart, mode: 'pocket' | 'wield'): ReplayActionPayload => ({
+    kind: 'furniture.interact',
+    entityUid: entity.uid,
+    ...(mode === 'wield' ? { alternatives: true } : {}),
+    ...(part === 'curtain' ? { part } : {}),
+  });
   const furniturePayload = (
     { entity, part }: Extract<InteractionTarget, { kind: 'furniture' }>,
     mode: 'pocket' | 'wield',
   ): ReplayActionPayload | undefined => {
     if (entity.window) {
-      return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
+      return windowPayload(entity, part, mode);
     }
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
@@ -2784,10 +2790,13 @@ const startPlayWith = (
     const selected = actionMenu.choice(furnitureMenuEntries(entity));
     return selected ? html`${key}: ${selected.label} ${pieceName(entity)}` : useText(entity);
   };
-  const furnitureInteractionHint = (entity: BlockEntity): HintText => {
+  const furnitureInteractionHint = (entity: BlockEntity, part?: FurniturePart): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return openFurnitureMenuHint(entity, key);
+    }
+    if (entity.window) {
+      return useText(entity, part);
     }
     if (furnitureActions(entity).length > 0) {
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`;
@@ -2840,7 +2849,7 @@ const startPlayWith = (
       case 'item':
         return fillHint(lines.hints.groundItem, { key, item: inventory.name(target.item) });
       case 'furniture':
-        return powerControlHint(target) ?? furnitureInteractionHint(target.entity);
+        return powerControlHint(target) ?? furnitureInteractionHint(target.entity, target.part);
       case 'body':
         return downedBodyHint(target.id);
       case 'vehicle':

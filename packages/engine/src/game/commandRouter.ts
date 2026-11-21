@@ -58,7 +58,7 @@ import {
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import type { PlayerInputSample, Session, SessionControls } from './session.ts';
-import { WINDOW_ACTION, type WindowOperation } from './windowAction.ts';
+import { WINDOW_ACTION, windowHandlingSimSeconds, windowOperation } from './windowAction.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 
@@ -1030,16 +1030,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return undefined;
   }
 
-  function toggleWindow(entity: BlockEntity, latchOnly = false): void {
+  function toggleWindow(entity: BlockEntity, hold = false, part?: 'curtain'): void {
     const session = ports.session();
     const { inventory, entities, queue, sim } = session;
-    const state = entity.window!;
-    let operation: WindowOperation = state.open ? 'close' : 'open';
-    if (latchOnly) {
-      operation = state.latched ? 'unlatch' : 'latch';
-    } else if (state.latched) {
-      operation = 'unlatch';
-    }
+    const operation = windowOperation(entities, entity, hold, part);
     const from = inventory.actorPosition();
     const reason =
       entities.useRefusal(entity) ??
@@ -1053,7 +1047,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     queue.enqueueAction(
       WINDOW_ACTION,
       coreLabel(registry, operation),
-      entities.defOf(entity).window!.handlingSimSeconds,
+      windowHandlingSimSeconds(entities, entity, operation),
       { entityUid: entity.uid, operation },
     );
   }
@@ -1092,7 +1086,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     session.search(entity);
     presentation.openInventory('items');
   }
-  const interactFurniture = (uid: number, alternatives?: true): string | undefined => {
+  const interactFurniture = (uid: number, alternatives?: true, part?: 'curtain'): string | undefined => {
     const session = ports.session();
     const entity = session.entities.byUid(uid);
     if (!entity) {
@@ -1104,8 +1098,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (session.rest.action?.furnitureUid !== entity.uid && !keyAdmitted()) {
       return undefined;
     }
-    if (entity.window && alternatives) {
-      toggleWindow(entity, true);
+    if (entity.window) {
+      toggleWindow(entity, alternatives === true, part);
     } else if (alternatives && furnitureActions(entity).length > 0) {
       presentation.openFurnitureChoices(entity, furnitureActions(entity));
     } else {

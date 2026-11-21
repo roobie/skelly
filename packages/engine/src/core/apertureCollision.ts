@@ -60,7 +60,7 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
           const head = [...max] as Vec3;
           head[1] -= definition.window!.passageLeewayMetres / blockSize;
           return windowParts(entity, definition, 1, entities.boardingOf(entity)).some(({ kind, box }) => {
-            if (entity.window!.open && kind !== 'frame') {
+            if (kind === 'curtain' || (entity.window!.open && kind !== 'frame')) {
               return false;
             }
             const c = Math.cos(box.rotationY);

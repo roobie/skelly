@@ -18,6 +18,7 @@ const BOARDING = 'world_take_apart_boarding';
 registry.boardings.set(BOARDING, {
   id: BOARDING,
   name: 'Fixture boarding',
+  fits: 'door',
   color: '#888888',
   thicknessBlocks: 0.1,
   boards: [{ from: 0, height: 1 }],

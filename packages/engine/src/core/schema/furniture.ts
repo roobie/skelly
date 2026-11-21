@@ -67,29 +67,65 @@ export const FurnitureMaterialSchema = pipe(
   ),
 );
 
+const Share = pipe(Fraction, minValue(Number.EPSILON));
+
 /**
- * Boards nailed across a door leaf on one side (`packages/deadvox/docs/aftermath.md`, "Door variants"). They hang on the
- * leaf, so they fit any upright door and swing with it; their side is the look, while either face refuses opening.
+ * A cover on one face of a door leaf or a window frame (`packages/deadvox/docs/aftermath.md`, "Door variants", and
+ * `packages/deadvox/docs/aftermath.md`, "Window variants"). Door boards hang on the leaf and swing with it. A cover without `curtain` protects: either face
+ * refuses opening and it closes the opening to bodies. A `curtain` is textile: closed, it stops sight and light but
+ * not bodies, and it opens and closes.
  */
-export const BoardingSchema = strictObject({
-  id: Id,
-  name: Name,
-  color: Color,
-  /** How far each board stands proud of the leaf, in blocks. */
-  thicknessBlocks: pipe(Positive, maxValue(0.5)),
-  /** Each board's band up the leaf, as shares of the leaf's height. */
-  boards: pipe(
-    array(
-      pipe(
-        strictObject({ from: Fraction, height: pipe(Fraction, minValue(Number.EPSILON)) }),
-        check(({ from, height }) => from + height <= 1, 'a board stays within the leaf'),
+export const BoardingSchema = pipe(
+  strictObject({
+    id: Id,
+    name: Name,
+    /** The opening it goes on. */
+    fits: picklist(['door', 'window']),
+    color: Color,
+    /** How far each board stands proud of the leaf or frame, in blocks. */
+    thicknessBlocks: pipe(Positive, maxValue(0.5)),
+    /** Each board's band up the leaf or frame, as shares of its height. */
+    boards: pipe(
+      array(
+        pipe(
+          strictObject({ from: Fraction, height: Share }),
+          check(({ from, height }) => from + height <= 1, 'a board stays within the leaf'),
+        ),
       ),
+      nonEmpty('needs at least one board'),
     ),
-    nonEmpty('needs at least one board'),
+    /** Upright strips between the frame and the boards, as shares of the frame's width; the boards stand on them. */
+    battens: optional(
+      strictObject({
+        color: Color,
+        thicknessBlocks: pipe(Positive, maxValue(0.5)),
+        strips: pipe(
+          array(
+            pipe(
+              strictObject({ from: Fraction, width: Share }),
+              check(({ from, width }) => from + width <= 1, 'a batten stays within the frame'),
+            ),
+          ),
+          nonEmpty('needs at least one batten'),
+        ),
+      }),
+    ),
+    curtain: optional(
+      strictObject({
+        /** Each half, opened, gathers into this share of the frame's width at its own side. */
+        gatheredShare: pipe(Share, maxValue(0.5)),
+        handlingSimSeconds: SimSeconds,
+      }),
+    ),
+    /** The materials recovered when this boarding comes off its door or window. */
+    takeApart: optional(RecoveryWorkSchema),
+  }),
+  check(
+    ({ fits, battens, curtain }) => fits === 'window' || (battens === undefined && curtain === undefined),
+    'battens and curtains go on windows only',
   ),
-  /** The materials recovered when this boarding comes off its door or window. */
-  takeApart: optional(RecoveryWorkSchema),
-});
+  check(({ battens, curtain }) => !(battens && curtain), 'a curtain hangs without battens'),
+);
 
 const SeededPartSchema = strictObject({ item: Id, condition: range(Fraction) });
 

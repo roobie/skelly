@@ -1667,7 +1667,7 @@ export const createSession = (options: SessionOptions) => {
     strength: number,
     part?: FurniturePart,
   ): BashOutcome | undefined => {
-    if (target && blowLandsOnPane(target, part)) {
+    if (target && blowLandsOnPane(entities, target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
         {

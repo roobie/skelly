@@ -28,6 +28,9 @@ import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack
 import lookManifest from '../mods/skelly.deadvox.scenario.test-house.rubble-look/pack/manifest.json' with {
   type: 'json',
 };
+import windowKitLookManifest from '../mods/skelly.deadvox.scenario.test-house.window-kit-look/pack/manifest.json' with {
+  type: 'json',
+};
 import { bundledPackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
@@ -185,6 +188,45 @@ describe('authored debug scenario mod', () => {
           ok: false,
           reason: coreMessage(registry, 'boardedUp'),
         });
+      }
+    }
+  });
+
+  // The window-kit look's covers are template content carried to live windows, so its staging is checked as what the
+  // look compares: every protective cover refuses opening from either face, and the curtain hangs closed.
+  it('stages window-kit look covers that refuse opening, beside a closed curtain', () => {
+    const query = new URLSearchParams({ 'start-mod': windowKitLookManifest.id, mods: windowKitLookManifest.id });
+    const linked = withReusedBuilds(() =>
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], {
+        form: 'id',
+        id: windowKitLookManifest.id,
+      }),
+    );
+    expect(linked.issues).toEqual([]);
+    const { registry } = linked.content;
+    const layout = registry.layouts.get('testHouseWindowKitLook')!;
+    const room = layout.buildings.find(({ template }) => template === 'test_house_window_kit')!;
+    const placement = placementOf(registry, room, layout.lootContext);
+    const inventory = new Inventory(registry);
+    const columns = new Set(placedPieces(placement).map(({ pos }) => `${toChunk(pos[0])},${toChunk(pos[2])}`));
+    const windows = [...columns]
+      .flatMap((column) => furnitureOf({ seed: 1, registry }, placement, column.split(',').map(Number) as never, []))
+      .map(({ spec }) => inventory.entities.add(spec)!)
+      .filter((entity) => entity.window);
+    const { entities } = inventory;
+    const covers = windows.map((entity) => entities.boardingOf(entity));
+    expect(covers).toContain(undefined);
+    expect(covers.filter((cover) => cover?.curtain)).toHaveLength(1);
+    expect(covers.filter((cover) => cover?.battens)).toHaveLength(1);
+    const boardedUp = coreMessage(registry, 'boardedUp');
+    for (const window of windows) {
+      const faces = [-2, 2].map((offset): Vec3 => [window.pos[0] + 1, window.pos[1] + 1, window.pos[2] + offset]);
+      const refusals = faces.map((from) => entities.windowRefusal(window, 'open', from));
+      if (entities.boardedUp(window)) {
+        expect(refusals).toEqual([boardedUp, boardedUp]);
+      } else {
+        expect(refusals).not.toContain(boardedUp);
+        expect(entities.curtainClosed(window)).toBe(entities.boardingOf(window) !== undefined);
       }
     }
   });

@@ -25,7 +25,7 @@ export type ReplayActionPayload =
   | { kind: 'hand.action'; itemUid: number; actionId: string }
   | { kind: 'inventory.wield-or-pocket'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
-  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
+  | { kind: 'furniture.interact'; entityUid: number; alternatives?: true; part?: 'curtain' }
   | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
   | { kind: 'furniture.use'; entityUid: number }
   | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
@@ -257,7 +257,9 @@ const isSlidePayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && payload.way === 'push';
 
 const isInteractPayload = (payload: Record<string, unknown>): boolean =>
-  isUid(payload.entityUid) && (payload.alternatives === undefined || payload.alternatives === true);
+  isUid(payload.entityUid) &&
+  (payload.alternatives === undefined || payload.alternatives === true) &&
+  (payload.part === undefined || payload.part === 'curtain');
 
 const isLiftPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
@@ -334,7 +336,7 @@ const isWorldDestination = (destination: unknown): boolean => {
         ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
         fields === 3
       );
-    case 'door':
+    case 'opening':
       return (
         'uid' in destination &&
         isUid(destination.uid) &&
@@ -571,7 +573,8 @@ export interface ReplayCommandOwners {
   unloadBattery: (lightUid: number, target: TargetState) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
-  interact: (entityUid: number, alternatives?: true) => string | undefined;
+  /** Works a piece; `part` names the aimed part when it decides the action, such as a window's curtain cloth. */
+  interact: (entityUid: number, alternatives?: true, part?: 'curtain') => string | undefined;
   lift: (entityUid: number, floorLocked?: boolean) => string | undefined;
   useFurniture: (entityUid: number) => string | undefined;
   slide: (entityUid: number, way: 'push') => string | undefined;
@@ -680,7 +683,7 @@ export const applyReplayActionPayload = (
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
-      return owners.interact(payload.entityUid, payload.alternatives);
+      return owners.interact(payload.entityUid, payload.alternatives, payload.part);
     case 'furniture.lift':
       return owners.lift(payload.entityUid, payload.floorLocked);
     case 'furniture.use':
