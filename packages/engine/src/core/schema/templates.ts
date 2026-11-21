@@ -218,6 +218,8 @@ export const TemplateSchema = strictObject({
   eligibility: optional(BuildingEligibilitySchema),
   /** The most storeys the stress-test city stacks this template to; absent means no limit. */
   maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
+  /** Initial block and window-frame condition; panes below the authored threshold start missing. */
+  condition: optional(strictObject({ mean: Fraction, spread: Fraction, paneThreshold: Fraction })),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
