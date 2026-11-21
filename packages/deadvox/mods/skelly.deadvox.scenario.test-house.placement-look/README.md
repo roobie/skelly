@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you review placement picking: a spot's ghost, its refusal and its review's destination row
+  - "you review placement picking: a spot's ghost, its refusal and its review's destination row"
   - you review a placement recipe's two authored orders, spot-first and review-first
   - you review door boarding started from the door's hold ring
 ---

@@ -487,9 +487,10 @@ const placementFlow = async ({ page, url, output }) => {
         return item.work.destination;
       }
     }
+    return false;
   });
   const spot = await destination.jsonValue();
-  assert.ok(spot?.kind === 'entity', 'the fixture shelf has a pinned piece destination');
+  assert.ok(spot && spot.kind === 'entity', 'the fixture shelf has a pinned piece destination');
   process.stdout.write('placement: piece stands\n');
   await page.waitForFunction((dest) => {
     const { entities } = globalThis.skellyPlayTest.session.inventory;
