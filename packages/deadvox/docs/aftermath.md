@@ -126,7 +126,7 @@ every operation stays on the window's two inputs.
 See `tools/jsonnet/lib/window-slots.libsonnet`; `packages/engine/src/core/blockEntities.ts`,
 `boardingFits`, `boardingRefusal` and `windowRefusal`; `packages/engine/src/game/windowAction.ts`,
 `windowOperation`; `packages/engine/src/core/windowImpact.ts`, `blowLandsOnPane`; and
-`test/windows.test.ts`, "boarded windows" and "window curtains".
+`test/windows.test.ts`, "boarded windows", and `test/windows.test.ts`, "window curtains".
 
 ## Aftermath odds
 

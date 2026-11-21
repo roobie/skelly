@@ -70,8 +70,8 @@ export const FurnitureMaterialSchema = pipe(
 const Share = pipe(Fraction, minValue(Number.EPSILON));
 
 /**
- * A cover on one face of a door leaf or a window frame (`packages/deadvox/docs/aftermath.md`, "Door variants" and
- * "Window variants"). Door boards hang on the leaf and swing with it. A cover without `curtain` protects: either face
+ * A cover on one face of a door leaf or a window frame (`packages/deadvox/docs/aftermath.md`, "Door variants", and
+ * `packages/deadvox/docs/aftermath.md`, "Window variants"). Door boards hang on the leaf and swing with it. A cover without `curtain` protects: either face
  * refuses opening and it closes the opening to bodies. A `curtain` is textile: closed, it stops sight and light but
  * not bodies, and it opens and closes.
  */
