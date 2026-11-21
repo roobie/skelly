@@ -16,18 +16,19 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status. Built: the power network core, the placed-entity store, battery charging,
-world repair and take-apart with their review, world-destination crafting and
-placement picking with the timber kit, and the first wave rule. Open: support,
-window covers, structural collapse, fire and exposure, and the integration proofs.**
-See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+world repair and take-apart with their review, world-destination crafting and placement
+picking with the timber wall, floor, door, shelf, door boarding and the three window covers,
+and the first wave rule. Open: support, structural collapse, fire and exposure, and the
+integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
 and `CraftCommands.place`; `packages/presentation/src/ui/inventoryScreen.ts`,
 `InventoryScreen.openWorldWork`; and
-`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. Window covers
-have no recipes: among cover results, `packages/engine/src/core/schema/recipes.ts`,
-`RecipeSchema`, admits door boarding only. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. Door and
+window covers share one recipe result, a `boardings` cover attached to a standing opening; see
+`packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.board`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
 model exists in `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a
 base worth building and defending?**
 This plan separates settled intent from choices that must precede dependent work.
@@ -517,11 +518,12 @@ rounds are tracked under #1332.
   take-apart grown to terrain cells under "Rubble"
   (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartCell`), entered
   from the chosen rubble cell; buried contents follow collapse under "Destruction".
-  Placement is built in the engine for the wall, floor, door, shelf and door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
-  `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
-  the sheet panel and the curtain of "First build vocabulary" are not authored.
-  Player picking reaches the shared review through
-  `packages/presentation/src/presentation/play.ts`, `confirmPlacementPicking`.
+  Placement is built in the engine for the whole "First build vocabulary": the wall, floor,
+  door, shelf, door boarding, window boarding, the sheet panel on battens and the openable
+  curtain (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
+  `packages/engine/src/core/worldDestination.ts`, `WorldDestination`). How the window
+  covers behave is `docs/aftermath.md`, "Window variants". Player picking reaches the shared
+  review through `packages/presentation/src/presentation/play.ts`, `confirmPlacementPicking`.
   Support is unbuilt: nothing reads `packages/engine/src/core/schema/blocks.ts`,
   `BlockMaterialSchema.span`, and a placed cell may float. Its rule is "Support"; it
   precedes the first session because free-standing walls and floors are in it and a

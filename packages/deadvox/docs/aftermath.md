@@ -2,8 +2,8 @@
 read_if:
   - you author or change a townhouse scene, a scene slot, an aftermath pose or a room-purpose loot table
   - you author or change an exterior door variant or a window bay variant
-  - you change how boards close a window
-  - you change how a player boards up a door
+  - you change how boards, the sheet panel or a curtain cover a window
+  - you change how a player boards up a door or covers a window
   - you place furniture, disorder or shambler markers inside a Gauntlet townhouse room
   - you decide how long ago the chaos happened in a scenario
   - you tag a variant as aftermath or tune how often a place shows boarded, broken, dilapidated or messy variants
@@ -99,26 +99,42 @@ decides which face the planks show on.
 
 See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `mapPieces`;
 `packages/engine/src/core/blockEntities.ts`, `doorRefusal` and `boardableDoor`;
-`packages/engine/src/core/worldPlacement.ts`, `doorRefusal`; `test/locks.test.ts`, "boarded doors";
+`packages/engine/src/core/worldPlacement.ts`, `openingRefusal`; `test/locks.test.ts`, "boarded doors";
 and `test/cityKitPlan.test.ts`, "gauntlet door openings".
 
 ## Window variants
 
 A window bay draws its window whole, broken or boarded over from the street, so a street shows
-which houses someone held. Boarding a window is the same state as boarding a door, on the real
-window: one boardings content kind serves both, so a tuning of the boards or of the window
-reaches every bay that hangs it. The boarded variant hangs the broken window, since boards go up
-over glass that is already gone.
+which houses someone held. Covering a window is the same state as boarding a door, on the real
+window: one boardings content kind serves both, each cover naming the opening it fits, so a
+tuning of a cover or of the window reaches every bay that hangs it. The boarded variant hangs the
+broken window, since boards go up over glass that is already gone.
 
-Boards hold the sash shut and close the bay: a boarded window refuses opening from either face,
-and blocks passage, sight and light even with its pane gone, because the boards cover the frame.
-A blow aimed at the glass from inside still breaks it, but an unaimed blow, such as a shambler's,
-lands on the boards as the window's own damage, so a horde must beat the whole window down. A
-window beaten to its durability is ruined and leaves the bay open.
+A window takes one cover on one face, chosen by the builder as for a door: wooden boards, a sheet
+metal panel standing on timber battens, or a textile curtain. Boards and the panel protect: they
+hold the sash shut, so they go up only on a shut window, refuse opening from either face, and
+block passage, sight and light even with the pane gone, because they cover the frame. A blow aimed
+at the glass from inside still breaks it, but an unaimed blow, such as a shambler's, lands on the
+cover as the window's own damage, so a horde must beat the whole window down. A window beaten to
+its durability is ruined and leaves the bay open.
+
+A curtain only hides: closed, it stops sight and light through the frame but never a body, and it
+neither holds the sash nor takes a blow, so the defence choice between protection and darkness
+stays legible. It hangs on an open or shut window and starts closed.
+
+Aim decides what a window's inputs work. Use aimed at the curtain cloth opens or closes the
+curtain, and the held use there works the window as it would anywhere; aimed at the sash, frame or
+glass, use and the held use work the window. The thing the player looks at is the thing they work,
+and an action per part leaves room for shutters and other attachments. Glass stands between the
+cloth and the far face, so the curtain is worked from the face it hangs on, or through an open
+sash or a broken pane; its gathered halves stay as wide as content sets them, so an open curtain
+can still be aimed at and closed.
 
 See `tools/jsonnet/lib/window-slots.libsonnet`; `packages/engine/src/core/blockEntities.ts`,
-`boardable` and `windowRefusal`; `packages/engine/src/core/windowImpact.ts`, `blowLandsOnPane`;
-and `test/windows.test.ts`, "boarded windows".
+`boardingFits`, `boardingRefusal` and `windowRefusal`; `packages/engine/src/game/windowAction.ts`,
+`windowOperation`; `packages/engine/src/core/windowImpact.ts`, `blowLandsOnPane`; and
+`test/windows.test.ts`, "boarded windows", `test/windows.test.ts`, "window curtains", and
+`test/commandRouter.test.ts`, "command router window aim".
 
 ## Aftermath odds
 

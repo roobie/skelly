@@ -5,6 +5,7 @@ import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import type { Body } from '@skelly/engine/internal/core/physics.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { WorldDestination } from '@skelly/engine/internal/core/worldDestination.ts';
@@ -25,11 +26,16 @@ const PIECE = 'placement_piece';
 const CELL_RECIPE = 'placement_cell_recipe';
 const ENTITY_RECIPE = 'placement_entity_recipe';
 const BOARD_RECIPE = 'placement_board_recipe';
+const WINDOW_BOARD_RECIPE = 'placement_window_board_recipe';
+const CURTAIN_RECIPE = 'placement_curtain_recipe';
 const DOOR = 'placement_door';
 const BOARDING = 'placement_boarding';
 const CELL: WorldDestination = { kind: 'cell', pos: [1, 2, 0] };
 const SPOT: WorldDestination = { kind: 'entity', pos: [1.25, 2, 0.25], facing: 'e' };
 const registry = baseRegistry();
+const coverOf = (fits: 'door' | 'window', curtain: boolean) =>
+  [...registry.boardings.values()].find((def) => def.fits === fits && (def.curtain !== undefined) === curtain)!.id;
+const WINDOW = [...registry.furniture.values()].find((def) => def.window?.initialPane === 'intact')!.id;
 registry.items.set(STOCK, {
   id: STOCK,
   name: 'Fixture stock',
@@ -60,6 +66,7 @@ registry.furniture.set(DOOR, {
 registry.boardings.set(BOARDING, {
   id: BOARDING,
   name: 'Fixture boarding',
+  fits: 'door',
   color: '#888888',
   thicknessBlocks: 0.1,
   boards: [{ from: 0, height: 1 }],
@@ -72,7 +79,9 @@ registry.boardings.set(BOARDING, {
 for (const [id, result] of [
   [CELL_RECIPE, { block: BLOCK, count: 1 }],
   [ENTITY_RECIPE, { entity: PIECE, count: 1 }],
-  [BOARD_RECIPE, { doorBoarding: BOARDING, count: 1 }],
+  [BOARD_RECIPE, { boarding: BOARDING, count: 1 }],
+  [WINDOW_BOARD_RECIPE, { boarding: coverOf('window', false), count: 1 }],
+  [CURTAIN_RECIPE, { boarding: coverOf('window', true), count: 1 }],
 ] as const) {
   registry.recipes.set(id, {
     id,
@@ -107,7 +116,7 @@ const make = (saved?: Saved) => {
   }
   const terrain = new CanonicalTerrain(world, evaluator);
   const character = new Character(registry);
-  character.initializeProgression({}, [CELL_RECIPE, ENTITY_RECIPE, BOARD_RECIPE]);
+  character.initializeProgression({}, [CELL_RECIPE, ENTITY_RECIPE, BOARD_RECIPE, WINDOW_BOARD_RECIPE, CURTAIN_RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory, undefined, { character })
     : new Inventory(registry, undefined, undefined, character);
@@ -284,7 +293,7 @@ it.each(['front', 'back'] as const)(
   (side) => {
     const r = make();
     const door = withDoor(r);
-    const refusal = r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side });
+    const refusal = r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: door.uid, side });
     expect(refusal).toBeUndefined();
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
@@ -306,7 +315,7 @@ it.each(['front', 'back'] as const)(
 it('takes boarding apart from a door, opening it and landing the recovered materials', () => {
   const r = make();
   const door = withDoor(r);
-  expect(r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side: 'front' })).toBeUndefined();
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: door.uid, side: 'front' })).toBeUndefined();
   finish(r, r.inventory.hands.right!.uid);
   const { plan, refusal } = r.commands.previewTakeApartEntity(door.uid);
   expect(refusal).toBeUndefined();
@@ -322,25 +331,111 @@ it('takes boarding apart from a door, opening it and landing the recovered mater
 it('holds a door for one boarding job and refuses a second boarding before spending inputs', () => {
   const r = make();
   const door = withDoor(r);
-  expect(r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side: 'front' })).toBeUndefined();
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: door.uid, side: 'front' })).toBeUndefined();
   const { right: boarding } = r.inventory.hands;
   const { reserved } = claimed(registry.ui, 'interface')!.furnitureMoveMessages;
   const recipe = registry.recipes.get(BOARD_RECIPE)!;
-  expect(r.inventory.worldPlacement!.refusal(recipe, { kind: 'door', uid: door.uid, side: 'back' })).toBe(reserved);
+  expect(r.inventory.worldPlacement!.refusal(recipe, { kind: 'opening', uid: door.uid, side: 'back' })).toBe(reserved);
   finish(r, boarding!.uid);
   const before = save(r);
-  expect(r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side: 'back' })).toBe(
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: door.uid, side: 'back' })).toBe(
     coreMessage(registry, 'alreadyBoarded'),
   );
+  expect(save(r)).toEqual(before);
+});
+
+/** A shut, latched north-facing window beside the worker. */
+const withWindow = (r: ReturnType<typeof make>) => {
+  const size = [...registry.furniture.get(WINDOW)!.size] as Vec3;
+  const window = r.inventory.entities.add({ type: WINDOW, pos: [-2, 2, -2], size, facing: 'n', fixed: true });
+  if (!window) {
+    throw new Error('Fixture window did not fit');
+  }
+  return window;
+};
+const windowFace = (r: ReturnType<typeof make>, uid: number, face: 'front' | 'back'): Vec3 => {
+  const window = r.inventory.entities.byUid(uid)!;
+  const [, , normal] = rotationOf(window);
+  return window.pos.map(
+    (value, axis) => value + window.size[axis]! / 2 + normal[axis]! * (face === 'front' ? -2 : 2),
+  ) as Vec3;
+};
+const openWindow = (r: ReturnType<typeof make>, uid: number) => {
+  const { entities } = r.inventory;
+  const window = entities.byUid(uid)!;
+  const inside = windowFace(r, uid, entities.defOf(window).window!.inside);
+  const refusal =
+    entities.operateWindow(window, 'unlatch', inside, []) ?? entities.operateWindow(window, 'open', inside, []);
+  if (refusal) {
+    throw new Error(refusal);
+  }
+  return inside;
+};
+
+it.each([WINDOW_BOARD_RECIPE, CURTAIN_RECIPE])('covers a window through saved work with %s', (recipe) => {
+  const r = make();
+  const window = withWindow(r);
+  expect(r.commands.place(recipe, { kind: 'opening', uid: window.uid, side: 'front' })).toBeUndefined();
+  const work = r.inventory.hands.right!;
+  r.sim.actions.stop();
+  const restored = make(save(r));
+  expect(restored.inventory.entities.byUid(window.uid)!.boarding).toBeUndefined();
+  expect(restored.commands.act(work.uid, 'continue')).toBeUndefined();
+  finish(restored, work.uid);
+  const completed = make(save(restored));
+  const { entities } = completed.inventory;
+  const covered = entities.byUid(window.uid)!;
+  expect([...completed.inventory.items()].some(({ item }) => item.type === STOCK || item.work)).toBe(false);
+  expect(covered.boarding).toEqual({
+    side: 'front',
+    type: (registry.recipes.get(recipe)!.result as { boarding: string }).boarding,
+  });
+  const faces = (['front', 'back'] as const).map((face) => windowFace(completed, window.uid, face));
+  const boardedUp = coreMessage(registry, 'boardedUp');
+  if (recipe === CURTAIN_RECIPE) {
+    expect(faces.map((from) => entities.windowRefusal(covered, 'open', from))).not.toContain(boardedUp);
+    expect(entities.curtainClosed(covered)).toBe(true);
+    expect(entities.operateWindow(covered, 'openCurtain', faces[0]!, [])).toBeUndefined();
+    expect(entities.curtainClosed(make(save(completed)).inventory.entities.byUid(window.uid)!)).toBe(false);
+  } else {
+    expect(faces.map((from) => entities.windowRefusal(covered, 'open', from))).toEqual([boardedUp, boardedUp]);
+  }
+});
+
+it('revalidates a shut sash when boards finish, keeping the inputs until the window shuts again', () => {
+  const r = make();
+  const window = withWindow(r);
+  expect(r.commands.place(WINDOW_BOARD_RECIPE, { kind: 'opening', uid: window.uid, side: 'front' })).toBeUndefined();
+  const work = r.inventory.hands.right!;
+  r.hooks.advance(work.uid, work.work!.duration);
+  const inside = openWindow(r, window.uid);
+  expect(() => r.hooks.finish(work.uid)).toThrow();
+  expect(window.boarding).toBeUndefined();
+  expect(work.work!.components).toHaveLength(2);
+  r.sim.actions.stop();
+  expect(r.inventory.entities.operateWindow(window, 'close', inside, [])).toBeUndefined();
+  expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
+  finish(r, work.uid);
+  expect(window.boarding?.type).toBe(coverOf('window', false));
+});
+
+it('refuses a cover on an opening it does not fit before spending inputs', () => {
+  const r = make();
+  const door = withDoor(r);
+  const window = withWindow(r);
+  const before = save(r);
+  const cantBoard = coreMessage(registry, 'cantBoard');
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: window.uid, side: 'front' })).toBe(cantBoard);
+  expect(r.commands.place(CURTAIN_RECIPE, { kind: 'opening', uid: door.uid, side: 'front' })).toBe(cantBoard);
   expect(save(r)).toEqual(before);
 });
 
 it('records only finite explicit world destinations for replay', () => {
   const board = (destination: unknown) =>
     isReplayActionPayload({ kind: 'craft.place', recipeId: BOARD_RECIPE, destination });
-  expect(board({ kind: 'door', uid: 3, side: 'back' })).toBe(true);
-  expect(board({ kind: 'door', uid: 3, side: 'inside' })).toBe(false);
-  expect(board({ kind: 'door', uid: 3, side: 'back', pos: [0, 0, 0] })).toBe(false);
+  expect(board({ kind: 'opening', uid: 3, side: 'back' })).toBe(true);
+  expect(board({ kind: 'opening', uid: 3, side: 'inside' })).toBe(false);
+  expect(board({ kind: 'opening', uid: 3, side: 'back', pos: [0, 0, 0] })).toBe(false);
   expect(isReplayActionPayload({ kind: 'craft.place', recipeId: ENTITY_RECIPE, destination: SPOT })).toBe(true);
   expect(isReplayActionPayload({ kind: 'craft.place', recipeId: CELL_RECIPE, destination: CELL })).toBe(true);
   expect(

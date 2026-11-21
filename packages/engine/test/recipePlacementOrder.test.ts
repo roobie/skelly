@@ -33,6 +33,7 @@ const sources = (rows: object[]): ContentSource[] => [
         {
           id: 'fixture_boarding',
           name: 'Fixture boarding',
+          fits: 'door',
           color: '#a08060',
           thicknessBlocks: 0.125,
           boards: [{ from: 0, height: 1 }],
@@ -52,14 +53,14 @@ const orderIssues = (rows: object[]) => {
 describe('placement review order validation', () => {
   it('accepts a placement recipe that names its order', () => {
     const { issues, registry } = buildRegistry(
-      sources([recipe('fixture_board_row', { doorBoarding: 'fixture_boarding' }, 'review-first')]),
+      sources([recipe('fixture_board_row', { boarding: 'fixture_boarding' }, 'review-first')]),
     );
     expect(issues).toEqual([]);
     expect(registry.recipes.get('fixture_board_row')?.placementReviewOrder).toBe('review-first');
   });
 
   it('refuses a placement recipe missing the field', () => {
-    expect(orderIssues([recipe('fixture_board_row', { doorBoarding: 'fixture_boarding' })])).toEqual([
+    expect(orderIssues([recipe('fixture_board_row', { boarding: 'fixture_boarding' })])).toEqual([
       { source: 'fixture-recipes.json', path: 'recipes[0]', message: expect.stringContaining('placementReviewOrder') },
     ]);
   });

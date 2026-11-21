@@ -55,7 +55,8 @@ export const RecipeSchema = pipe(
       ItemCountSchema,
       strictObject({ block: Id, count: literal(1) }),
       strictObject({ entity: Id, count: literal(1) }),
-      strictObject({ doorBoarding: Id, count: literal(1) }),
+      /** A `boardings` cover attached to a standing door or window. */
+      strictObject({ boarding: Id, count: literal(1) }),
     ]),
     /** Which side of its review a placement recipe opens on; see `PLACEMENT_REVIEW_ORDERS`. */
     placementReviewOrder: optional(picklist(PLACEMENT_REVIEW_ORDERS)),
