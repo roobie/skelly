@@ -176,6 +176,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.salvageTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'recipes.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.takeApart.yield.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  { path: 'boardings.takeApart.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'partBlueprints[].slots[].service.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'blockMaterials.rubbleClearTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.door.methods.*.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

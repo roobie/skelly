@@ -87,6 +87,8 @@ export const BoardingSchema = strictObject({
     ),
     nonEmpty('needs at least one board'),
   ),
+  /** The materials recovered when this boarding comes off its door or window. */
+  takeApart: optional(RecoveryWorkSchema),
 });
 
 const SeededPartSchema = strictObject({ item: Id, condition: range(Fraction) });
