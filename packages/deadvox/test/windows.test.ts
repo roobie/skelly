@@ -10,7 +10,7 @@ import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.js';
 import { furnitureBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
 import { blowLandsOnPane, strikeWindowPane } from '@skelly/engine/internal/core/windowImpact.ts';
 import { windowParts } from '@skelly/engine/internal/core/windowParts.ts';
-import { registerWindowAction, WINDOW_ACTION, windowOperation } from '@skelly/engine/internal/game/windowAction.ts';
+import { registerWindowAction, WINDOW_ACTION } from '@skelly/engine/internal/game/windowAction.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { coreMessage } from '@skelly/engine/text';
@@ -452,18 +452,23 @@ describe('window curtains', () => {
     expect(entity.damage).toBeUndefined();
   });
 
-  it('opens a closed curtain on use and closes an open one on hold, leaving the sash and latch reachable', () => {
-    const { entities, entity } = make();
-    const from = beside(entity, 'back');
-    expect(entities.board(entity, CURTAIN.side, CURTAIN.type)).toBeUndefined();
-    expect(windowOperation(entities, entity, false)).toBe('openCurtain');
-    expect(windowOperation(entities, entity, true)).toBe('unlatch');
-    expect(entities.operateWindow(entity, 'unlatch', from, [])).toBeUndefined();
-    expect(entities.windowRefusal(entity, 'open', from)).toBeUndefined();
+  it('keeps an open curtain aimable where its halves gather, from the face it hangs on', () => {
+    const { entities, entity, from } = curtained();
     expect(entities.operateWindow(entity, 'openCurtain', from, [])).toBeUndefined();
-    expect(windowOperation(entities, entity, false)).toBe('open');
-    expect(windowOperation(entities, entity, true)).toBe('closeCurtain');
-    expect(entities.windowRefusal(entity, 'openCurtain', from)).toBe(coreMessage(registry, 'alreadyOpen'));
+    const half = windowParts(entity, entities.defOf(entity), 1, entities.boardingOf(entity)).find(
+      ({ kind }) => kind === 'curtain',
+    )!.box;
+    // The west half's middle, in world blocks; the window faces north, so its back is +z.
+    const across = half.pivot[0] + half.center[0];
+    const picked = pickFurnitureHit({
+      entities,
+      origin: [across, entity.pos[1] + entity.size[1] / 2, entity.pos[2] + 3],
+      direction: [0, 0, -1],
+      maxDistance: 4,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+    expect(picked).toMatchObject({ entity, part: 'curtain' });
   });
 
   it('hangs a curtain on an open window, whose sash boards would nail open', () => {

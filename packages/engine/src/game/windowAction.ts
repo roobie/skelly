@@ -1,5 +1,6 @@
 import type { BlockEntities, BlockEntity } from '../core/blockEntities.ts';
 import { coreMessage } from '../core/coreText.ts';
+import type { FurniturePart } from '../core/furniturePick.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
@@ -11,19 +12,19 @@ export const WINDOW_ACTION = 'furniture.window';
 const OPERATIONS: readonly WindowOperation[] = ['open', 'close', 'latch', 'unlatch', 'openCurtain', 'closeCurtain'];
 
 /**
- * What use (or, with `hold`, the held use) does to a window. On a curtained window, use opens a closed curtain and
- * then works the sash, while hold closes an open curtain and otherwise latches, so every operation stays reachable.
+ * What use (or, with `hold`, the held use) does to the aimed part of a window (`packages/deadvox/docs/aftermath.md`,
+ * "Window variants"). Use on the curtain cloth opens or closes the curtain; anywhere else, and held, it works the
+ * window.
  */
-export const windowOperation = (entities: BlockEntities, entity: BlockEntity, hold: boolean): WindowOperation => {
+export const windowOperation = (
+  entities: BlockEntities,
+  entity: BlockEntity,
+  hold: boolean,
+  part?: FurniturePart,
+): WindowOperation => {
   const state = entity.window!;
-  if (entities.boardingOf(entity)?.curtain) {
-    const closed = entities.curtainClosed(entity);
-    if (closed && !hold) {
-      return 'openCurtain';
-    }
-    if (!closed && hold) {
-      return 'closeCurtain';
-    }
+  if (part === 'curtain' && !hold && entities.boardingOf(entity)?.curtain) {
+    return entities.curtainClosed(entity) ? 'openCurtain' : 'closeCurtain';
   }
   if (hold || state.latched) {
     return state.latched ? 'unlatch' : 'latch';

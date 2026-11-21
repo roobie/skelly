@@ -119,14 +119,21 @@ its durability is ruined and leaves the bay open.
 
 A curtain only hides: closed, it stops sight and light through the frame but never a body, and it
 neither holds the sash nor takes a blow, so the defence choice between protection and darkness
-stays legible. It hangs on an open or shut window and starts closed. Use opens a closed curtain
-before it works the sash, and the held use closes an open curtain before it works the latch, so
-every operation stays on the window's two inputs.
+stays legible. It hangs on an open or shut window and starts closed.
+
+Aim decides what a window's inputs work. Use aimed at the curtain cloth opens or closes the
+curtain, and the held use there works the window as it would anywhere; aimed at the sash, frame or
+glass, use and the held use work the window. The thing the player looks at is the thing they work,
+and an action per part leaves room for shutters and other attachments. Glass stands between the
+cloth and the far face, so the curtain is worked from the face it hangs on, or through an open
+sash or a broken pane; its gathered halves stay as wide as content sets them, so an open curtain
+can still be aimed at and closed.
 
 See `tools/jsonnet/lib/window-slots.libsonnet`; `packages/engine/src/core/blockEntities.ts`,
 `boardingFits`, `boardingRefusal` and `windowRefusal`; `packages/engine/src/game/windowAction.ts`,
 `windowOperation`; `packages/engine/src/core/windowImpact.ts`, `blowLandsOnPane`; and
-`test/windows.test.ts`, "boarded windows", and `test/windows.test.ts`, "window curtains".
+`test/windows.test.ts`, "boarded windows", `test/windows.test.ts`, "window curtains", and
+`test/commandRouter.test.ts`, "command router window aim".
 
 ## Aftermath odds
 

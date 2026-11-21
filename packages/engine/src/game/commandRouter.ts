@@ -1030,10 +1030,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return undefined;
   }
 
-  function toggleWindow(entity: BlockEntity, hold = false): void {
+  function toggleWindow(entity: BlockEntity, hold = false, part?: 'curtain'): void {
     const session = ports.session();
     const { inventory, entities, queue, sim } = session;
-    const operation = windowOperation(entities, entity, hold);
+    const operation = windowOperation(entities, entity, hold, part);
     const from = inventory.actorPosition();
     const reason =
       entities.useRefusal(entity) ??
@@ -1086,7 +1086,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     session.search(entity);
     presentation.openInventory('items');
   }
-  const interactFurniture = (uid: number, alternatives?: true): string | undefined => {
+  const interactFurniture = (uid: number, alternatives?: true, part?: 'curtain'): string | undefined => {
     const session = ports.session();
     const entity = session.entities.byUid(uid);
     if (!entity) {
@@ -1098,8 +1098,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (session.rest.action?.furnitureUid !== entity.uid && !keyAdmitted()) {
       return undefined;
     }
-    if (entity.window && alternatives) {
-      toggleWindow(entity, true);
+    if (entity.window) {
+      toggleWindow(entity, alternatives === true, part);
     } else if (alternatives && furnitureActions(entity).length > 0) {
       presentation.openFurnitureChoices(entity, furnitureActions(entity));
     } else {

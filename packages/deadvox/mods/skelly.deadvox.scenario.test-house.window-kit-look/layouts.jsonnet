@@ -2,7 +2,8 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
 // The window covers side by side in one wall of a closed plank room, with a lamp lit inside and the spawn in the yard
 // outside: bare glass, wooden boards, the sheet panel on battens, and a closed curtain on the room side. At night the
 // lamp shows through the bare glass and through the curtain once it is opened, while boards and panel stay dark. The
-// tools and stock for every cover stand in the yard. Placing by play waits for the spot-picking work, so the covers
+// curtain hangs behind its glass, so it is aimed at and worked from the room, entered by its south door. The tools and
+// stock for every cover stand in the yard. Placing by play waits for the spot-picking work, so the covers
 // stand here already fitted.
 local air = '.................';
 local wall = 'ppppppppppppppppp';
