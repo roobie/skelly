@@ -141,7 +141,7 @@
     allKnown: 'All known recipes',
     startsFromItem: 'Started from the item itself, not from this list',
     startsFromPiece: 'Started from the piece it mends, not from this list',
-    startsNowhere: 'Terrain repair has no start in the game',
+    startsFromCell: 'Started from the cell it mends, not from this list',
     categoryFind: 'Find category',
     tagFind: 'Find tag',
     removeTag: 'Remove {tag}',

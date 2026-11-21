@@ -101,6 +101,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
   'engine/game/actionMenu.ts':
     'Live-input pointing and choice of the radial action menu; replay applies the recorded command, not the gesture.',
+  'engine/game/cellActions.ts':
+    'Live-input cell action projection; replay applies the recorded cell command, not the offered menu entries.',
   'engine/game/heldActionPress.ts':
     'Live-input tap-or-hold of a held use press; replay applies the recorded hand.action, not the press.',
   'engine/game/emotePress.ts':

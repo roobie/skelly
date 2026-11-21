@@ -1,19 +1,18 @@
 local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet').layouts[0];
-// The look's whole prop: a stepped rubble heap on the lot's open ground, its eye-height row beside the
-// spawn, so the reviewer only aims and clears. The heap is masonry rubble, the block a collapse leaves.
+// Rubble and brick share a reachable eye-height row so both world-work entries need no walk or setup.
 local air = ['.....', '.....', '.....', '.....', '.....'];
 {
   templates: [{
     id: 'test_house_rubble_heap',
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
     size: [5, 6, 5],
-    palette: { '.': 'air', k: 'concrete', r: 'masonry_rubble' },
+    palette: { '.': 'air', k: 'concrete', r: 'masonry_rubble', b: 'brick' },
     layers: [
       ['kkkkk', 'kkkkk', 'kkkkk', 'kkkkk', 'kkkkk'],
       ['rrrrr', 'rr...', '.....', '.....', '.....'],
       ['rrrrr', 'r....', '.....', '.....', '.....'],
       ['rrrrr', '.....', '.....', '.....', '.....'],
-      ['rrrrr', '.....', '.....', '.....', '.....'],
+      ['rrrbr', '.....', '.....', '.....', '.....'],
       air,
     ],
   }],

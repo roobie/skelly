@@ -2,6 +2,12 @@
   "starts": [
     {
       "allSkills": 10,
+      "blockDamage": [
+        {
+          "cell": [-21, 45, 28],
+          "damage": 240
+        }
+      ],
       "debugOnly": true,
       "defaultForSite": true,
       "density": null,
@@ -61,6 +67,41 @@
           },
           "id": "bandages",
           "item": "bandage"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "pack",
+          "item": "school_backpack"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "pack",
+            "pocket": 0
+          },
+          "id": "repair_kit",
+          "item": "repair_kit"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 0
+          },
+          "id": "scrap_1",
+          "item": "scrap_metal"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 1
+          },
+          "id": "scrap_2",
+          "item": "scrap_metal"
         }
       ],
       "recipes": [
@@ -93,7 +134,9 @@
         "grind_kabar",
         "hone_kabar",
         "grind_machete",
-        "hone_machete"
+        "hone_machete",
+        "repair_brick",
+        "repair_planks"
       ],
       "seed": 1,
       "site": "testHouseRubbleLook",

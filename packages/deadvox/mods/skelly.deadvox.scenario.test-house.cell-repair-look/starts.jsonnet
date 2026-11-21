@@ -1,9 +1,6 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
-// Cell repair by eye: the alcove layout stands the tester inside a brick alcove, facing its north wall, and
-// the start ships that wall's eye-height brick already cracked, so the look is the crack at start, then the
-// debug build tool and its repair key through the repair recipe the kit teaches; cell repair has no crafting
-// view until #1469. The damage amount is content here, not code: it leaves the brick in a low condition band, so one
-// repair lifts it to the repair ceiling, where it shows no crack (`packages/deadvox/DESIGN.md`, "Damaged terrain cracks").
+// One repair reaches the ceiling from this damage band, so the crack check needs no repeated work
+// (`packages/deadvox/DESIGN.md`, "Damaged terrain cracks").
 {
   starts: [kit.fixture + {
     id: 'cellrepairlook',

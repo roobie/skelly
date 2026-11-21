@@ -31,6 +31,8 @@ export interface CraftPanelActions {
 export interface CraftWorldView {
   heading: string;
   depicted: boolean;
+  /** Render-free furniture keeps observable turn controls; a cell has no pose to turn. */
+  turnable: boolean;
 }
 /** A parts review: the model's sites, the one shown, and its service the commitment strip commits. */
 export interface CraftPartsView {
@@ -128,13 +130,15 @@ const targetTemplate = (
   text: CraftingText,
   parts?: CraftPartsView,
 ) =>
-  html`<figure class="craft-target">
+  world.turnable
+    ? html`<figure class="craft-target">
     ${world.depicted ? html`<div class="craft-target-stage"><canvas class="craft-target-canvas" aria-hidden="true"></canvas>${parts ? socketPicks(parts, actions) : nothing}</div>` : nothing}
     <div class="craft-target-turn">
       <button type="button" data-craft-turn="-1" @click=${() => actions.turn?.(-1)}>${text.turnLeft}</button>
       <button type="button" data-craft-turn="1" @click=${() => actions.turn?.(1)}>${text.turnRight}</button>
     </div>
-  </figure>`;
+  </figure>`
+    : nothing;
 /** The Start button's verb for this review's kind; content owns each label. */
 const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
   switch (kind) {
