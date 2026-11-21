@@ -107,6 +107,20 @@
       },
     },
     {
+      id: 'wooden_plank',
+      name: 'Wooden plank',
+      category: 'material',
+      model: 'wooden_plank',
+      size: [2, 4],
+      // Only a stockpile container stacks them (its `maxCount` is the real limit); carried, they stay single.
+      stockpileStack: 99,
+      disassembly: {
+        timeGameMinutes: 4,
+        skill: 'crafting',
+        yields: [{ item: 'stick', count: 2, fractions: [0.5, 0.6, 0.7, 0.8, 0.9, 1], rounding: 'floor' }],
+      },
+    },
+    {
       id: 'wood_offcut',
       name: 'Wood offcut',
       category: 'material',

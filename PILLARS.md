@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing the repository's engineering or documentation principles
-  - you add or change a content mechanism or review its forward compatibility
+  - you add or change a content mechanism, its shared tuning ownership or its forward compatibility
   - you write or review a doc, a comment or a PR and need the reason behind zero drift
   - you're weighing a maintainable design against short-term churn
   - you add a TypeScript file outside a workspace's `tsconfig.json` includes, or change which files a typecheck reads
@@ -33,7 +33,7 @@ One named exception to "missing is an error" is a missing scarcity row: an item 
 
 Content identity is not a code selector: a new mechanism needs code, a new entry using it does not. Content owns kind-dependent rates, chances, weights and thresholds, including zero; code owns true state impossibilities, physics, geometry and save integrity. Content presentation belongs to content; UI chrome and engine-internal dispatch do not. Apply this rule to added or changed mechanisms across all subprojects, without opt-outs; generators without actor modifiers still follow the content, selection and validation requirements. Older code moves in bounded sweeps tracked by #393. The reason: a silent fallback hides missing content as a correctness risk, an id selector blocks mods, and agents copy the in-code patterns they find.
 
-Actor, body and action values use actor-carried modifiers; see `packages/engine/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for the core pack, but never assume a modified value cannot cross a threshold the core numbers do not cross.
+Actor, body and action values use actor-carried modifiers; see `packages/engine/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for shared baseline content, but never assume a modified value cannot cross a threshold the baseline numbers do not cross.
 
 ## Moddability
 

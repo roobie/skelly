@@ -23,7 +23,7 @@ const filePath = pipe(name, regex(/^(?!\/)(?!.*(?:^|\/)\.\.?(?:\/|$))[^\\?#:]+$/
 export const PackManifestSchema = strictObject({
   id: name,
   version: name,
-  tier: picklist(['core', 'theme', 'product', 'scenario']),
+  tier: picklist(['theme', 'product', 'scenario']),
   product: boolean(),
   defaultStart: optional(name),
   optIn: optional(literal(true)),

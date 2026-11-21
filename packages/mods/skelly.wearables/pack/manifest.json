@@ -309,6 +309,6 @@
   "id": "skelly.wearables",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

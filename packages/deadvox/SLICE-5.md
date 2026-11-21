@@ -288,8 +288,8 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   it stays as a safety bound, but as a per-pack budget beside the scenario's wave rows
   rather than a schema literal, chosen on its grading: each pack owns the ceiling it can
   afford and validate checks its rows against it; the negative space is no product-wide
-  bound. The per-pack budget is owed under #1332; until it lands the count carries a
-  schema bound. See `packages/engine/src/core/schema/scenarios.ts`, `HordeEffectSchema`.
+  bound. See `packages/engine/src/core/schema/scenarios.ts`, `CityScenarioSchema` and
+  `ComposedSiteSchema`, and `packages/engine/src/core/content.ts`, `checkEventRules`.
 - **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
   row as a plateau rather than endless growth. Actor content owns strength; selecting
   actor types avoids a second strength authority in wave effects. The engine receives
