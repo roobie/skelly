@@ -108,7 +108,7 @@ export interface CraftRow {
   /** A part service's slot and part: the band of the part leaving, or of the spare going in when one is in reach. */
   part?: { slot: string; condition?: ConditionBand };
   /** A placement recipe's review: its authored order and the pinned spot's name, none while no spot is pinned. */
-  placement?: { order: 'spot-first' | 'review-first'; spot?: string };
+  placement?: { order: 'spot-first' | 'review-first'; pinned: boolean; spot?: string };
   /** Where a fit's spare lies, worded. */
   where?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
@@ -249,11 +249,15 @@ const placementRow = (
   },
 ): { placement: NonNullable<CraftRow['placement']>; reason: string | undefined } | undefined => {
   const order = registry.recipes.get(id)?.placementReviewOrder;
-  if (!(order && preview)) {
+  if (!order) {
     return undefined;
   }
-  const placement = { order, ...(preview.spot === undefined ? {} : { spot: preview.spot }) };
-  if (placement.spot === undefined) {
+  const placement = {
+    order,
+    pinned: preview !== undefined,
+    ...(preview?.spot === undefined ? {} : { spot: preview.spot }),
+  };
+  if (!preview) {
     return { placement, reason: order === 'review-first' ? craftingText(registry).noSpotPicked : undefined };
   }
   return { placement, reason: preview.crafting.previewPlacement(id, preview.destination, prefer, sources).refusal };

@@ -1,6 +1,7 @@
 ---
 read_if:
   - 'you decide or implement the crafting and world-work layout for #1469'
+  - you implement placement picking, its ghost or its hold-ring entries
   - you implement the shared requirements rows, target review or world-work entry
   - you prepare a crafting or construction UI look fixture
   - you change recipe catalogue scale, search, category or tag filtering
@@ -260,24 +261,13 @@ chooser return and active-binding precedence.
 
 ### Order authored per placement recipe
 
-Placement picking under #1332 requires the placement engine, explicit Start
-after review, a destination pin without borrowing piece identity, and occupancy
-revalidation. Kit scope and the picking gesture remain construction decisions
-outside this layout.
-
-The recipe field `placementReviewOrder` selects `spot-first` or `review-first`;
-it is not derived from an ID, category or name. Spot-first enters picking before
-opening the pinned review. Review-first exposes a destination control in the
-review; Start stays refused until a valid pin exists, and picking returns for
-commitment.
-
-A Jsonnet authoring default supplies `review-first`, while validation requires
-the compiled field on every placement recipe. Missing metadata is an error,
-with no runtime fallback. Non-placement recipes get no order field. This is a
-placement contract to implement, not a claim that `RecipeSchema` already has
-it; see
-`packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
-`PILLARS.md`, "Content forward compatibility" (repo root).
+Placement order belongs to content rather than an ID, category or name in code:
+authors choose whether inspecting a spot or weighing requirements should come
+first. See `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
+`packages/mods/skelly.basic-recipes/basic-recipes-construction.jsonnet`, `placementOrder`.
+The authoring default keeps requirements inspectable before a location is chosen;
+the compiled contract stays explicit under `PILLARS.md`, "Content forward compatibility"
+(repo root).
 
 Spot-first suits fitting to an existing opening or gap: window boards, a door
 barricade or wall fill, where inspecting the place determines whether the work
@@ -288,13 +278,38 @@ the first-session kit. An author may choose either order for any placement
 recipe; review-first is the conservative authoring default because requirements
 remain inspectable without first committing to a location.
 
-The reason is that placement order depends on the recipe:
-
-> I think some recipes make sense for A and others for B
-
 Content selects between shared flow mechanisms rather than recipe-ID exceptions.
 The accepted cost is no universal order: authors must make the distinction
 sensible in play, and both paths need cancellation, pin and focus proofs.
+
+### The picking gesture
+
+Use one gesture for everything the crosshair places, so carried and newly built
+pieces do not teach competing controls. Keep the result see-through and tint its
+admission from content: the player must judge both the model and the occupied
+world behind it. Default fronts and boarding faces point toward the builder so
+aiming alone makes the ordinary choice without a separate facing or side control.
+See `packages/presentation/src/presentation/play.ts`, `placementDestination` and
+`drawPlacementGhost`; `packages/presentation/src/render/placementGhost.ts`, `PlacementGhost`.
+
+The refusal belongs to the placement engine, not a screen's copy of its rules,
+and lives in the prompt under the interaction-hint setting so a refused ghost
+explains itself without defeating the player's chosen hint visibility. See
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewPlacement`, and
+`packages/presentation/src/presentation/play.ts`, `interactionHintFor`.
+
+Boarding belongs on the door's or opening's hold ring as well as in crafting,
+because the opening is where the need becomes apparent. Entries derive from
+known recipes' boarding results so a pack reaches the ring without an engine
+edit; see `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`.
+
+A picked destination is not a piece identity: a free spot has no existing piece
+to name. Keep pin presence separate from its optional name, and revalidate at
+commitment rather than treating the ghost's answer as a reservation; see
+`packages/presentation/src/ui/craftReadout.ts`, `placementRow`, and
+`packages/presentation/src/ui/craftController.ts`, `placementStart`. One finished
+build is one and done so each build is a separate commitment, at the accepted
+cost of reopening the recipe instead of queuing spots from one review.
 
 ## Build slices after the decisions
 
@@ -325,5 +340,4 @@ This documentation plan itself changes no UI and needs no playable fixture.
   destination picking to the shared rows and commit shape. The fixture has a
   window, doorway, wall gap, kit and occupied destination. Include one recipe of
   each authored order and one using the authoring default. The picking gesture
-  remains a #1332 construction decision; see
-  `../SLICE-5.md`, "Lanes and the next rounds".
+  is settled in `crafting-layout.md`, "The picking gesture".

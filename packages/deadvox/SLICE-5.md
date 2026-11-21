@@ -14,9 +14,9 @@ read_if:
 
 **Status: the power network core, the placed-entity store, the first appliance
 process, world repair and take-apart, world-destination crafting and timber kit
-content, and the first wave rule are built; the player-facing placement and
-world-work view, opening covers, structural collapse, fire and exposure, and the
-integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+content, the first wave rule, and the player-facing world-work view and
+placement picking are built; opening covers, structural collapse, fire and
+exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and

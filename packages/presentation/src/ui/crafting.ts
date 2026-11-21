@@ -157,7 +157,7 @@ const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
   }
 };
 const commitLabel = (row: CraftRow, text: CraftingText) =>
-  row.placement && row.placement.spot === undefined && row.placement.order === 'spot-first'
+  row.placement && !row.placement.pinned && row.placement.order === 'spot-first'
     ? fillText(text.pickSpot, { item: row.itemName.toLowerCase() })
     : fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() });
 // A part shows its condition as the band's blip alone (`packages/deadvox/INTERFACE.md`, "Condition").
@@ -206,7 +206,7 @@ const spotRow = (row: CraftRow, actions: CraftPanelActions, text: CraftingText) 
         ? nothing
         : html`<span class="craft-spot-name">${fillText(text.spot, { spot: placement.spot })}</span>`
     }
-    <button type="button" class="craft-pick-spot" @click=${() => actions.pickSpot?.(row.id)}>${placement.spot === undefined ? text.chooseSpot : text.changeSpot}</button>
+    <button type="button" class="craft-pick-spot" @click=${() => actions.pickSpot?.(row.id)}>${placement.pinned ? text.changeSpot : text.chooseSpot}</button>
   </div>`;
 };
 /** The rows a review reads but never chooses: condition, progress, held inputs and yield. */

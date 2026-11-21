@@ -2567,6 +2567,17 @@ try {
         }),
         process.argv[5] ?? 'render-free',
       ),
+      // The placement look is its own world boot inside the same stage, so placement picking rides the crafting CI
+      // step rather than adding one.
+      placementUrl: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${serverPort}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.placement-look',
+          harness: { 'play-test': 1 },
+          hash: { debug: true, radius: 32 },
+        }),
+        process.argv[5] ?? 'render-free',
+      ),
     });
     process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
     logPhase('crafting catalogue, retained review and density');
