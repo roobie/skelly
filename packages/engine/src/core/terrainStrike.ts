@@ -1,8 +1,8 @@
 import { type BlockBlow, bashBlock } from './blockDamage.ts';
 import type { BlockEntity } from './blockEntities.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
-import type { createColumnSupply } from './columnSupply.ts';
 import { claimed } from './capabilities.ts';
+import type { createColumnSupply } from './columnSupply.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { commitRuin, type FurnitureMover, hungOnTerrain, planRuin } from './furnitureMove.ts';
@@ -39,35 +39,33 @@ const FACES: readonly Vec3[] = [
  * cells; one that runs out has not cleared the trunk, so it counts as carrying canopy.
  */
 const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>): boolean => {
-  const { scale } = terrain.terrain;
-  const maxY = (scale.maxCy + 1) * CHUNK;
-  const partAt = (x: number, y: number, z: number) => registry.blocks[terrain.getBlock(x, y, z)]?.tree;
-  if (partAt(...(cell as [number, number, number])) !== 'trunk') {
+  const partAt = (at: Readonly<Vec3>) => registry.blocks[terrain.getBlock(...at)]?.tree;
+  if (partAt(cell) !== 'trunk') {
     return false;
   }
   const tuning = claimed(registry.supportTuning, 'support');
   if (!tuning) {
     throw new Error('A trunk strike needs support tuning');
   }
-  let budget = tuning.trunkSearchCells;
+  const maxY = (terrain.terrain.scale.maxCy + 1) * CHUNK;
   const seen = new Set<string>([cell.join(',')]);
   const open: Vec3[] = [[...cell] as Vec3];
+  let reads = 0;
   for (let at = open.pop(); at; at = open.pop()) {
-    for (const [dx, dy, dz] of FACES) {
-      const next: Vec3 = [at[0] + dx, at[1] + dy, at[2] + dz];
-      const key = next.join(',');
-      if (next[1] < cell[1] || next[1] >= maxY || seen.has(key)) {
-        continue;
-      }
-      if (budget-- <= 0) {
+    const fresh = FACES.map(([dx, dy, dz]): Vec3 => [at[0] + dx, at[1] + dy, at[2] + dz]).filter(
+      (next) => next[1] >= cell[1] && next[1] < maxY && !seen.has(next.join(',')),
+    );
+    for (const next of fresh) {
+      reads += 1;
+      if (reads > tuning.trunkSearchCells) {
         return true;
       }
-      const part = partAt(...next);
+      const part = partAt(next);
       if (part === 'canopy') {
         return true;
       }
       if (part === 'trunk') {
-        seen.add(key);
+        seen.add(next.join(','));
         open.push(next);
       }
     }
