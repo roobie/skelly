@@ -8,6 +8,7 @@
             "gun": 0
           },
           "furniture": {
+            "board_up": 315,
             "continue": 135,
             "drag": 180,
             "lift": 225,
@@ -135,6 +136,7 @@
         },
         "hints": {
           "activate": "{key}: activate {name}",
+          "buildHere": "{key}: build {name} here",
           "cancel": "Cancel ({key})",
           "downedBody": "{key}: {finish} · {key} (hold): dismember",
           "downedBodyRefused": "{key}: {finish} · {key} (hold): dismember — {reason}",
@@ -570,7 +572,9 @@
           "alternatives": "{count} other options",
           "categories": "Categories",
           "categoryFind": "Find category",
+          "changeSpot": "Change spot",
           "cheapestAvailable": "Cheapest available",
+          "chooseSpot": "Choose a spot",
           "clearFind": "Clear find",
           "closeAlternatives": "Close alternatives",
           "continueWork": "Continue {item}",
@@ -593,7 +597,9 @@
           "noMatches": "No matches",
           "noPlan": "Automatic · no plan",
           "noRepairTarget": "No damaged repair target in reach",
+          "noSpotPicked": "No spot picked",
           "pagePosition": "{first}–{last} / {total}",
+          "pickSpot": "Pick a spot: {item}",
           "pickedSpareGone": "That part is out of reach",
           "previousPage": "Previous page",
           "quality": "{quality}: best {best} / needs {required}",
@@ -616,6 +622,7 @@
           "spareInHand": "in hand",
           "spareOnGround": "on the ground",
           "spareWorn": "worn",
+          "spot": "Spot: {spot}",
           "startsFromCell": "Started from the cell it mends, not from this list",
           "startsFromItem": "Started from the item itself, not from this list",
           "startsFromPiece": "Started from the piece it mends, not from this list",
@@ -1024,6 +1031,7 @@
           "reload": "Reload game"
         },
         "worldService": {
+          "boardUp": "Board up",
           "drag": "Drag",
           "lift": "Lift",
           "push": "Push",

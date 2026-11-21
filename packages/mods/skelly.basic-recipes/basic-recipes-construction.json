@@ -17,6 +17,7 @@
         ]
       ],
       "id": "build_plank_wall",
+      "placementReviewOrder": "spot-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -49,6 +50,7 @@
         ]
       ],
       "id": "build_plank_floor",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -87,6 +89,7 @@
         ]
       ],
       "id": "build_wood_door",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -119,6 +122,7 @@
         ]
       ],
       "id": "build_wood_shelf",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -151,6 +155,7 @@
         ]
       ],
       "id": "board_up_door",
+      "placementReviewOrder": "spot-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -183,6 +188,7 @@
         ]
       ],
       "id": "board_up_window",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -221,6 +227,7 @@
         ]
       ],
       "id": "panel_window",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -259,6 +266,7 @@
         ]
       ],
       "id": "hang_window_curtain",
+      "placementReviewOrder": "review-first",
       "qualities": {
         "hammering": 1
       },

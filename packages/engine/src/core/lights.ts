@@ -20,6 +20,7 @@ import { isInHeldItemSlotTree, itemRoots, type TreeEntry, walkItemTree } from '.
 import { vesselFillShare } from './liquids.ts';
 import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
+import type { PoweredLight } from './sitePower.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
@@ -86,6 +87,8 @@ export interface LightSenseSource {
   seenFrom: number;
   heightMetres: number;
   carried: boolean;
+  /** The fixture's own body, whose cells never stop the sense ray to its emitter. */
+  body?: { readonly min: Vec3; readonly max: Vec3 };
 }
 
 /** The light owner shared by the renderer and senses: only lit, exposed items illuminate the world. */
@@ -183,6 +186,21 @@ export const inventoryLightSources = (
   }
   return sources;
 };
+
+/**
+ * An operating fixed fixture as a sense source, from the one emitter position the renderer and the rules share;
+ * a light without authored reach lights the scene but draws no attention.
+ */
+export const fixedLightSenseSourceFor = (light: PoweredLight): LightSenseSource | undefined =>
+  light.seenFrom === undefined
+    ? undefined
+    : {
+        pos: [...light.pos],
+        seenFrom: light.seenFrom,
+        heightMetres: 0,
+        carried: false,
+        ...(light.body ? { body: light.body } : {}),
+      };
 
 /** Reuses the highest opaque block in each vertical column for the session's sun checks. */
 export class SunExposureCache {

@@ -115,6 +115,11 @@
         "reticleAntiAliasWidth": 0.5,
         "rimSoftness": 0.040000000000000001
       },
+      "placementGhost": {
+        "opacity": 0.45000000000000001,
+        "refusedTint": "#e2837c",
+        "validTint": "#9fd57a"
+      },
       "playerViewFovDegrees": 75,
       "readyRadiusM": 64,
       "renderScale": {

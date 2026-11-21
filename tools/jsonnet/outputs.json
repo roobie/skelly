@@ -917,6 +917,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/housing-slots.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/housing-slots.json"
     },
@@ -1023,6 +1035,22 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/placement.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/placement.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/pack/manifest.jsonnet",
@@ -1503,6 +1531,14 @@
     {
       "source": "packages/mods/skelly.building-blocks/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.building-blocks/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.chemical-lights/chemical-lights-items.jsonnet",
+      "output": "packages/mods/skelly.chemical-lights/chemical-lights-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.chemical-lights/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.chemical-lights/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.containers/assets/manifest.jsonnet",

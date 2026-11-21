@@ -98,7 +98,7 @@ import { climb, LadderHold } from '../core/ladders.ts';
 import { LampReachCache } from '../core/lampReach.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
-import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
+import { fixedLightSenseSourceFor, inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { type Modifier, modified, type SkilledActor } from '../core/modifiers.ts';
@@ -1582,7 +1582,14 @@ export const createSession = (options: SessionOptions) => {
     const { yaw } = sampledInput();
     const eyeHeightMetres = playerEyeHeightMetres();
     const hour = hourOfDay(sim.calendar);
-    const lightSources = inventoryLightSources(inventory, body.pos, eyeHeightMetres).map((source) => ({
+    const lightSources = [
+      ...inventoryLightSources(inventory, body.pos, eyeHeightMetres),
+      // Operating fixed lamps join the same sense, their switch and producing state already settled by the grid.
+      ...(power?.lights() ?? []).flatMap((light) => {
+        const source = fixedLightSenseSourceFor(light);
+        return source ? [source] : [];
+      }),
+    ].map((source) => ({
       ...source,
       sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
     }));

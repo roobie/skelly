@@ -36,7 +36,7 @@
       labelPaddingRem: 0.5,
       entryCap: 8,
       directions: {
-        furniture: { push: 0, drag: 180, lift: 225, repair: 90, continue: 135, take_apart: 270 },
+        furniture: { push: 0, drag: 180, lift: 225, repair: 90, continue: 135, take_apart: 270, board_up: 315 },
         held: { own: 0, sharpen: 45, 'open-can': 90, 'magazine:strip': 135, 'battery:unload': 180, 'continue-work': 225, treat: 270 },
         emote: { gun: 0 },
         gun: { 'press-check': 0 },

@@ -1711,8 +1711,8 @@ export class BlockEntities {
     return this.covered(above, [hatch.size[0], 1, hatch.size[2]]);
   }
 
-  /** Which face of a door a point is on: the facing side is the front. */
-  private sideOf(entity: BlockEntity, point: Vec3): 'front' | 'back' {
+  /** Which face of a door a point is on: the facing side is the front. Placement picking asks it for the side facing the builder. */
+  sideOf(entity: BlockEntity, point: Vec3): 'front' | 'back' {
     const alongX = entity.facing === 'e' || entity.facing === 'w';
     const axis = alongX ? 0 : 2;
     const offset = point[axis]! - (entity.pos[axis]! + entity.size[axis]! / 2);

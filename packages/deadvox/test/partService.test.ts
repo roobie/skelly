@@ -432,6 +432,7 @@ it('keeps a picked spare that leaves reach refused instead of starting another',
     dispatch,
     notice: vi.fn(),
     sites: housingSites(runtime.session),
+    pickSpot: vi.fn(),
   });
   const work = { target: piece, operation: 'take_apart' as const };
   const selectedService = () => root.querySelector<HTMLElement>('[data-craft-service][aria-pressed="true"]');
@@ -498,6 +499,7 @@ const review = (runtime: Runtime, piece: BlockEntity, view: Partial<TargetView> 
     notice: vi.fn(),
     sites: housingSites(runtime.session),
     targetView,
+    pickSpot: vi.fn(),
   });
   const update = () => controller.update(true, { target: piece, operation: 'take_apart' });
   update();
