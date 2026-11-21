@@ -12,18 +12,21 @@ read_if:
 
 # Slice 5 — Holding ground
 
-**Status: the power network core, the placed-entity store, the first appliance
-process, world repair and take-apart, world-destination crafting and timber kit
-content, and the first wave rule are built; the player-facing placement and
-world-work view, opening covers, structural collapse, fire and exposure, and the
-integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+**Status. Built: the power network core, the placed-entity store, battery charging,
+world repair and take-apart with their review, world-destination crafting with the
+timber wall, floor, door, shelf and door boarding, and the first wave rule. Open:
+placement picking, support, window covers, structural collapse, fire and exposure, and
+the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
-`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and
-`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
-built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
-`packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
-defending?**
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
+and `CraftCommands.place`; `packages/presentation/src/ui/inventoryScreen.ts`,
+`InventoryScreen.openWorldWork`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. Window covers
+have no recipes: among cover results, `packages/engine/src/core/schema/recipes.ts`,
+`RecipeSchema`, admits door boarding only. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
+model exists in `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a
+base worth building and defending?**
 This plan separates settled intent from choices that must precede dependent work.
 The slice process is in `EPIC.md`, "How each slice runs".
 
@@ -283,7 +286,8 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   it stays as a safety bound, but as a per-pack budget beside the scenario's wave rows
   rather than a schema literal, chosen on its grading: each pack owns the ceiling it can
   afford and validate checks its rows against it; the negative space is no product-wide
-  bound. See `packages/engine/src/core/schema/scenarios.ts`, `HordeEffectSchema`.
+  bound. The per-pack budget is owed under #1332; until it lands the count carries a
+  schema bound. See `packages/engine/src/core/schema/scenarios.ts`, `HordeEffectSchema`.
 - **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
   row as a plateau rather than endless growth. Actor content owns strength; selecting
   actor types avoids a second strength authority in wave effects. The engine receives
@@ -468,9 +472,11 @@ reason-doc updates, not a later save retrofit.
 6. **Fire, smoke and light.** Prove per-cell ignition and spread, material exhaustion,
    direct extinguishing, sight-blocking smoke, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
-   remains a prerequisite, not a source of free ignition. Lanterns and powered fixed
-   lamps expose light consistently to rendering and attention. Show a window cover
-   changing source visibility through the opening. BR approves flame/smoke readability and
+   remains a prerequisite, not a source of free ignition. Only item lights are stimuli
+   to attention (`packages/engine/src/core/agentPerception.ts`, `canSeeLight`); powered
+   fixed lamps light the scene (`packages/engine/src/core/sitePower.ts`, `SitePower.lights`)
+   and are not sensed until a round under #1332 feeds them to the same sense. Show a
+   window cover changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario waves and region integration.** #313's rules and their
    one-shot state are built; see `DESIGN.md`, "Scenario events". Holdout's expanded
@@ -490,37 +496,41 @@ reason-doc updates, not a later save retrofit.
 The open packages run as lanes, each one PR per round from main, ordered so the
 first base-building session under "Early session" arrives through the fewest rounds.
 Within a lane the order is a dependency; across lanes only the joins named here hold,
-so rounds in different lanes run in parallel. No BR choice blocks a round any more,
-and the rounds named as starting now need nothing that is not on main.
+so rounds in different lanes run in parallel. No BR choice blocks a round, and the
+rounds are tracked under #1332.
 
-- **Construction, engine.** Four rounds start now. Three of them in parallel: cell
-  repair, because the first thing a claimed shelter needs mended is a damaged wall
-  and repair reaches only pieces
-  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`); break
-  yields in content, because every material's rubble yield is empty, so tearing down
-  gives nothing and the slow fallback under "Break yields" does not exist
-  (`packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`); and bulk-stock
-  pieces that come apart over the existing command
-  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartEntity`),
-  because the site's supply asks need pieces to place. Rubble clearing is the fourth,
-  under "Rubble": take apart grows to terrain cells, and the round shows its yield
-  once break yields land, so it starts now and joins them to be checked by eye.
-  Placement follows cell repair and bulk stock: crafting gains a world destination,
-  and the whole kit's pieces and recipes land with it under "First build vocabulary"
-  and "Early session", because a placement round without content shows BR nothing.
-  Support follows placement under "Support", persisted dependencies and destructive
-  cascades, because free-standing walls and floors are in the first session and a
+- **Construction, engine.** Cell and piece repair share one review
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and
+  `CraftCommands.repairCell`); cell repair waits only on its player entry, under
+  "Construction, view". Every breakable material yields its rubble item, and yields and
+  clear times are content in `packages/mods/skelly.natural-world/block-materials.jsonnet`
+  (`packages/engine/src/core/content.ts`, `checkBlockMaterials` refuses a breakable
+  material without one), so the slow fallback under "Break yields" exists. Bulk stock
+  is taken out of containers, never taken apart, under "Bulk stock". Rubble clearing is
+  take-apart grown to terrain cells under "Rubble"
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartCell`); its
+  player entry follows cell repair's, and buried contents follow collapse under
+  "Destruction". Placement is built in the engine for the wall, floor, door, shelf and
+  door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
+  `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
+  the sheet panel and the curtain of "First build vocabulary" are not authored, and no
+  player can pick a destination until the picking round under "Construction, view".
+  Support is unbuilt: nothing reads `packages/engine/src/core/schema/blocks.ts`,
+  `BlockMaterialSchema.span`, and a placed cell may float. Its rule is "Support"; it
+  precedes the first session because free-standing walls and floors are in it and a
   wall that floats would be judged before the kit is.
-- **Construction, view.** Repair and take apart reach the engine but no player can
-  reach them: the hold menu offers only moving
-  (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`) and the
-  world-work view shares the #1469 layout (`DESIGN.md`, "World repair selection").
-  #1469 settles its layout first and both views ship together, chosen on its grading:
-  one owner for the rows pane and no second shape to replace, at the cost that the
-  first session waits on that layout. The layout is settled and owned by
+- **Construction, view.** The hold menu offers Repair and Work on, the ring's name for
+  take apart (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`), and opens the
+  pinned world-work review (`packages/presentation/src/ui/inventoryScreen.ts`,
+  `InventoryScreen.openWorldWork`), whose layout is owned by
   `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
-  it. The world-work view round starts now, and it is the first session's critical
-  path; picking a cell or spot for placement follows it and the placement round.
+  it. Two rounds remain under #1332, both extending that review rather than adding a
+  screen: cell work, which puts a looked-at damaged or rubble cell into the same review
+  (cell repair and rubble clearing reach players only through
+  `packages/presentation/src/presentation/debugInterface.ts` until then), and placement
+  picking, the first session's critical path, whose rulings are
+  `docs/crafting-layout.md`, "Order authored per placement recipe" and
+  `docs/crafting-layout.md`, "Build slices after the decisions".
 - **Playtest pack.** Author shelter and supply asks independently so each can be
   retuned without city-shape constraints; see
   `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
@@ -535,25 +545,31 @@ and the rounds named as starting now need nothing that is not on main.
   an enemy approaches the plant. Base-building usability remains the playtest's
   prerequisite, while target and unattended-defence work must preserve that contract.
 - **Destruction.** The first session does not need the lane, so it runs beside
-  construction without joining it. Zombies bash terrain by material
-  strength first, so the brute wrecks walls through its strength rather than an
-  identity flag and ordinary types break doors only because door pieces sit below
-  their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
-  support with surface ground follows, and until collapse lands live play refuses a
-  blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
-  in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
-  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies and
-  contents, and hurts every body, generating terrain on demand wherever it reaches, so
-  no region departure-and-return work precedes it; its PR reports collapse time at the
-  largest authored roof rather than gating on it. Taking rubble apart digs out buried
-  bodies too, one clearing verb for everything a cell buried, and ordinary strikes
-  never clear rubble. One verb and one rule let the player clear a heap one way and
-  find whatever is under it. Blast by share and breach charges follow, then furniture knock-out and
-  push-off, which replace the fall refusal with landing crush; see
-  `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
-- **Built systems.** Appliance controls and processes after placement; brute
-  knockback and displacement independently, since nothing above needs it; fire last,
-  under "Settled fire and exposure rules". None joins the first session.
+  construction without joining it. Actors bash pieces only
+  (`packages/engine/src/game/session.ts`, `bashObstacle`, through
+  `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`); terrain takes
+  blows only from the player, through `packages/engine/src/core/terrainStrike.ts`,
+  `strikeTerrain`. The lane's first round gives actors that terrain path by material
+  strength and the brute a higher authored strength, so the brute wrecks walls through
+  its strength rather than an identity flag and ordinary types break doors only because
+  door pieces sit below their strength. Span support with surface ground follows, and
+  until collapse lands live play refuses a blow whose ruin would leave a block
+  unsupported, a temporary gate whose reason goes in
+  `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse then
+  lands as a separate PR: rubble that
+  keeps its crack fraction, buries bodies and contents, and hurts every body, generating
+  terrain on demand wherever it reaches, so no region departure-and-return work precedes
+  it; its PR reports collapse time at the largest authored roof rather than gating on
+  it. Taking rubble apart digs out buried bodies too, one clearing verb for everything a
+  cell buried, and ordinary strikes never clear rubble. One verb and one rule let the
+  player clear a heap one way and find whatever is under it. Blast by share and breach
+  charges follow, then furniture knock-out and push-off, which replace the fall refusal
+  with landing crush; see `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
+- **Built systems.** Switch and charger controls exist
+  (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
+  process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and
+  displacement run independently, since nothing above needs them; fire last, under
+  "Settled fire and exposure rules". None joins the first session.
 
 ## State and technical proof
 
