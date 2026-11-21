@@ -136,18 +136,17 @@ unbuilt. Unanswered gates block only their dependent work.
   tester without simulating physical stress, and the material's span is what separates
   a floor that bridges a gap from one that cannot.
   Support is computed from the standing blocks, so untouched authored structure stays
-  computed and a save grows with changes, not exploration. The world saves only which
-  cells a player placed, because a placed block is structure even where it matches the
-  natural ground. Placement refuses a block that would not be held, with a reason the
-  placement preview shows. Breaking a cell, or clearing rubble, cascades: every
-  structure cell left unheld, authored or placed, falls into its material's rubble in
-  place, and pieces standing on it or hung under it are lost as they are under a broken
-  cell. Rubble neither buries nor harms here, so the collapse PR under "Lanes and the
-  next rounds" extends it rather than replacing it. A cascade judges a capped number of
-  cells per physics tick, the cap being content, and the rest continues on the next
-  tick, so a large collapse never stalls a tick and still ends with nothing unheld
-  standing. Its frontier is saved, so a reload resumes it. Cells are judged first in,
-  first out, in a fixed search order, so every peer gets the same cascade. See
+  computed and a save grows with changes, not exploration; only what play produces is
+  saved, a placed block among it, because a placed block is structure even where it
+  matches the natural ground. Placement refuses a block that would not be held, so the
+  player learns why before spending inputs. Breaking a cell, or clearing rubble,
+  cascades: every cell left unheld falls into its material's rubble in place, and the
+  pieces on or under it are lost as under a broken cell. Rubble neither buries nor
+  harms here, so the collapse PR under "Lanes and the next rounds" extends the cascade
+  rather than replacing it. A content cap bounds the work per tick so a large collapse
+  never stalls one; the rest continues later and survives a reload, so a cascade still
+  ends with no unheld cell standing other than rubble. Each cell is judged against the
+  blocks standing at that moment, so peers and batch sizes agree. See
   `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState`;
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`;
   `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`; and
