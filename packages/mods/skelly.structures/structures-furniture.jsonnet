@@ -438,7 +438,7 @@ local unshaped = [
         timeGameMinutes: 10,
         skill: 'crafting',
         yields: [
-          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'wood_offcut', count: 3, fractions: recovered, rounding: 'floor' },
           { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
         ],
       },
@@ -458,7 +458,7 @@ local unshaped = [
         timeGameMinutes: 10,
         skill: 'crafting',
         yields: [
-          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'wood_offcut', count: 3, fractions: recovered, rounding: 'floor' },
           { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
         ],
       },
