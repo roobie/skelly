@@ -7,7 +7,9 @@ import { litEnoughToRead, reaches } from '@skelly/engine/internal/core/illuminat
 import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { rotatedSize, rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.js';
+import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
 import { furnitureBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { blowLandsOnPane, strikeWindowPane } from '@skelly/engine/internal/core/windowImpact.ts';
 import { windowParts } from '@skelly/engine/internal/core/windowParts.ts';
 import { registerWindowAction, WINDOW_ACTION } from '@skelly/engine/internal/game/windowAction.ts';
@@ -146,6 +148,35 @@ const breakPane = (entities: BlockEntities, entity: BlockEntity) =>
   entities.hitWindowPane(entity, { force: registry.furniture.get(entity.type)!.window!.breakForce, continuation: 0 });
 
 describe('fitted windows', () => {
+  it('derives frame and pane damage from template condition while retaining the existing window save owner', () => {
+    for (const [value, paneThreshold] of [
+      [0, 0.5],
+      [0.25, 0.5],
+      [0.5, 0.5],
+      [1, 0.5],
+      [0, 0],
+      [1, 1],
+    ] as const) {
+      const template = compileTemplate(registry, {
+        id: 'condition_window_fixture',
+        lootContext: { usage: ['Residential'], tier: 'Tier1' },
+        condition: { mean: value, spread: 0, paneThreshold },
+        size: [4, 5, 1],
+        palette: { W: { furniture: 'window_test_low_back', fixed: true } },
+        layers: Array.from({ length: 5 }, () => ['WWWW']),
+      });
+      const [spawn] = furnitureOf({ seed: 7, registry }, { template, origin: [0, 0, 0], turn: 0 }, [0, 0], []);
+      expect(spawn).toBeDefined();
+      const entities = new BlockEntities(registry);
+      const frame = entities.add(spawn!.spec)!;
+      expect(entities.conditionOf(frame)).toBe(value);
+      expect(frame.window?.pane).toBe(value < paneThreshold ? 'missing' : 'intact');
+      expect(frame.window!.damage).toBe(value < paneThreshold ? pane.breakForce : (1 - value) * pane.breakForce);
+      const saved = BlockEntities.restoreState(registry, structuredClone(entities.snapshotState())).byUid(frame.uid)!;
+      expect(saved.window).toEqual(frame.window);
+      expect(saved.damage).toBe(frame.damage);
+    }
+  });
   it.each([
     ['n', 'low', 'back'],
     ['e', 'high', 'front'],
@@ -335,7 +366,7 @@ describe('fitted windows', () => {
     state.entities[0] = withoutPane;
     expect(() => BlockEntities.restoreState(registry, state)).toThrow('Invalid window state');
     const damaged = structuredClone(entities.snapshotState());
-    damaged.entities[0]!.window!.damage = pane.breakForce;
+    damaged.entities[0]!.window!.damage = pane.breakForce + 1;
     expect(() => BlockEntities.restoreState(registry, damaged)).toThrow('Invalid window state');
   });
 
