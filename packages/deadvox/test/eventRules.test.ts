@@ -150,6 +150,44 @@ describe('scenario event rules', () => {
   });
 
   it.each([
+    ['below', 1, true],
+    ['at', 2, true],
+    ['above', 3, false],
+  ] as const)('accepts a horde count %s its scenario pack budget', (_label, count, accepted) => {
+    const scenario = fixtureScenario();
+    const sources = fixtureScenarioSources(scenario);
+    const data = sources[0]!.data as { scenarios: unknown[] };
+    data.scenarios = [
+      {
+        ...scenario,
+        hordeCountBudget: 2,
+        eventRules: [
+          {
+            id: 'fixture_rule',
+            trigger: { kind: 'elapsed', afterGameHours: 1 },
+            effects: [{ kind: 'releaseHorde', actor: 'fixture_settlement_actor', count, at: [0, 1, 0] }],
+          },
+        ],
+      },
+    ];
+    const result = buildRegistry(sources);
+    expect(result.registry.scenarios.has(scenario.id)).toBe(accepted);
+    expect(result.issues.some((issue) => issue.path.endsWith('.eventRules[0].effects[0].count'))).toBe(!accepted);
+  });
+
+  it('rejects an invalid horde count budget in the scenario content', () => {
+    const scenario = fixtureScenario();
+    const sources = fixtureScenarioSources(scenario);
+    const data = sources[0]!.data as { scenarios: unknown[] };
+    data.scenarios = [{ ...scenario, hordeCountBudget: 0 }];
+    const result = buildRegistry(sources);
+    expect(result.registry.scenarios.has(scenario.id)).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ source: 'scenario-fixture.json', path: 'scenarios[0].hordeCountBudget' }),
+    );
+  });
+
+  it.each([
     ['an unadmitted trigger kind', { trigger: { kind: 'area' } }, '.trigger.kind', 'elapsed'],
     ['a missing actor type', {}, '.actor', 'no actor type'],
     ['a duplicate id', 'duplicate', '.id', 'duplicate event rule'],

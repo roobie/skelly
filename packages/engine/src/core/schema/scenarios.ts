@@ -160,6 +160,8 @@ const CityScenarioSchema = strictObject({
     lower: CellPosition,
   }),
   eventRules: optional(array(EventRuleSchema), []),
+  /** Safety ceiling the scenario pack can afford for one released horde. */
+  hordeCountBudget: optional(pipe(Count, minValue(1))),
   /** The ordinary buildings' street pressure; authored markers are separate from it. */
   population: strictObject({
     settlementPressure: vBoolean(),
@@ -325,6 +327,8 @@ export const ComposedSiteSchema = strictObject({
   anchors: optional(array(AnchorSchema), []),
   population: strictObject({ authoredMarkers: vBoolean() }),
   eventRules: optional(array(AnchoredEventRuleSchema), []),
+  /** Safety ceiling the scenario pack can afford for one released horde. */
+  hordeCountBudget: optional(pipe(Count, minValue(1))),
 });
 
 export const ScenarioSchema = variant('kind', [CityScenarioSchema, ComposedSiteSchema]);
