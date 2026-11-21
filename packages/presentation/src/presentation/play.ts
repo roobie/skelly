@@ -2876,7 +2876,7 @@ const startPlayWith = (
 
   /**
    * Where the picked recipe would build now: the aimed cell with its ghost's front facing the builder, or the aimed
-   * boardable leaf with the face that faces the builder. An item result is no placement recipe, so its destination
+   * opening a cover fits, with the face that faces the builder. An item result is no placement recipe, so its destination
    * is the one the engine refuses as absent.
    */
   const placementDestination = (recipe: RecipeDef, turns: number): WorldDestination => {
@@ -2987,7 +2987,7 @@ const startPlayWith = (
         : { boxes: ghostBoxes(pick.recipe, pick.destination), valid };
     view.placementGhost.update(draw);
   };
-  /** The destination's footprint in blocks: the piece's turned size, the aimed cell, or the boarded leaf itself. */
+  /** The destination's footprint in blocks: the piece's turned size, the aimed cell, or the covered opening itself. */
   const placementBounds = (pick: NonNullable<ReturnType<typeof placementPick>>): { pos: Vec3; size: Vec3 } => {
     const { destination } = pick;
     if (destination.kind === 'opening') {

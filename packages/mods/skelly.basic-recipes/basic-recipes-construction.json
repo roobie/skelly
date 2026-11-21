@@ -188,7 +188,7 @@
         ]
       ],
       "id": "board_up_window",
-      "placementReviewOrder": "review-first",
+      "placementReviewOrder": "spot-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -227,7 +227,7 @@
         ]
       ],
       "id": "panel_window",
-      "placementReviewOrder": "review-first",
+      "placementReviewOrder": "spot-first",
       "qualities": {
         "hammering": 1,
         "sawing": 1
@@ -266,7 +266,7 @@
         ]
       ],
       "id": "hang_window_curtain",
-      "placementReviewOrder": "review-first",
+      "placementReviewOrder": "spot-first",
       "qualities": {
         "hammering": 1
       },

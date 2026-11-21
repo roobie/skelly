@@ -47,7 +47,7 @@ describe('furniture service choices', () => {
   });
 
   it("offers a door's known boarding recipes as Board up ring entries carrying their recipe", () => {
-    const boarding = [...registry.boardings.keys()][0]!;
+    const boarding = [...registry.boardings.values()].find((def) => def.fits === 'door')!.id;
     const withBoarding = baseRegistryWith([
       ...worldRepairSources(),
       {
