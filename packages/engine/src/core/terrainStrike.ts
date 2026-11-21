@@ -38,9 +38,15 @@ const FACES: readonly Vec3[] = [
  * is a separate system, so until it exists such a trunk is not broken. The search reads at most the content budget of
  * cells; one that runs out has not cleared the trunk, so it counts as carrying canopy.
  */
-const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>): boolean => {
+const carriesCanopy = (
+  terrain: CanonicalTerrain,
+  registry: Registry,
+  cell: Readonly<Vec3>,
+  breakable: boolean,
+): boolean => {
   const partAt = (at: Readonly<Vec3>) => registry.blocks[terrain.getBlock(...at)]?.tree;
-  if (partAt(cell) !== 'trunk') {
+  // An unbreakable material resists every blow, so it needs no search, and a stack with no breakable material may omit support tuning.
+  if (!breakable || partAt(cell) !== 'trunk') {
     return false;
   }
   const tuning = claimed(registry.supportTuning, 'support');
@@ -139,8 +145,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     return undefined;
   }
   const material = registry.blockMaterials.get(block.material)!;
-  // An unbreakable material resists every blow, so no search is needed, and a stack with no breakable material may omit support tuning.
-  if (material.breakable && carriesCanopy(terrain, registry, cell)) {
+  if (carriesCanopy(terrain, registry, cell, material.breakable)) {
     return { outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] };
   }
   const bash = bashBlock({ material, damage: world.blockDamage.get(cell)?.damage ?? 0 }, blow);
