@@ -3,5 +3,5 @@ manifest(
   id='skelly.deadvox.woods',
   tier='product',
   content=['furniture', 'templates'],
-  dependencies=['skelly.deadvox.loot', 'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures'],
+  dependencies=['skelly.building-blocks', 'skelly.deadvox.loot', 'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures'],
 )
