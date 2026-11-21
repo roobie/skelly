@@ -1,3 +1,14 @@
+// Worn looks that other packs' items attach; the wearables pack owns and declares them.
+local wornLooks = [
+  'baseball_cap',
+  'school_backpack_worn',
+  'school_backpack_worn_jacket',
+  'hiking_backpack_worn',
+  'hiking_backpack_worn_jacket',
+  'fanny_pack_worn',
+  'fanny_pack_worn_jacket',
+];
+
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
   overrides={
@@ -41,5 +52,5 @@
   models: [
     { id: 'stab_vest', file: 'assets/models/stab_vest.glb' },
     { id: 'riot_helmet_view', file: 'assets/models/riot_helmet_view.glb' },
-  ] + ((import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.wearables/things/index.json', [import 'wearables-items.jsonnet', import 'packages/mods/skelly.containers/containers-items.jsonnet', import 'packages/deadvox/mods/skelly.deadvox.scenario.playtest/items-playtest.jsonnet'])),
+  ] + ((import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.wearables/things/index.json', [import 'wearables-items.jsonnet', { models: wornLooks }])),
 })
