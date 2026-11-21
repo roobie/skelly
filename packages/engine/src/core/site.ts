@@ -6,6 +6,7 @@
 import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
+import { templateCondition } from './conditionDistribution.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
@@ -250,6 +251,14 @@ export const furnitureOf = (
           ...(piece.lock ? { lock: piece.lock } : {}),
           ...(piece.boarding ? { boarding: { ...piece.boarding } } : {}),
           ...(piece.fixed ? { fixed: true as const } : {}),
+          ...(placement.template.condition && registry.furniture.get(piece.furniture)?.window
+            ? {
+                initialCondition: {
+                  value: templateCondition(seed, placement, piece.pos),
+                  paneThreshold: placement.template.condition.paneThreshold,
+                },
+              }
+            : {}),
         },
         ...(piece.wear === undefined ? {} : { wear: piece.wear }),
         loot: [],
@@ -271,7 +280,7 @@ export const fillFurnitureLoot = (
         .map((point) => rollLootParts(registry, point, lootPointStream(seed, point)));
     const container = items('container');
     const fixed = container.flatMap((part) => part.fixed);
-    const wear = spawn.wear ?? rollWear(registry, seed, spawn.spec);
+    const wear = spawn.spec.initialCondition ? undefined : (spawn.wear ?? rollWear(registry, seed, spawn.spec));
     return {
       ...spawn,
       ...(wear === undefined ? {} : { wear }),

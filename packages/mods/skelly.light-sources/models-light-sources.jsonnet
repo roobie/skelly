@@ -15,6 +15,6 @@ local tweaks = { flashlight: { grip: { at: [0, 0, 0.085] }, anchors: { lens: [0,
     { id: 'glowstick', file: 'assets/models/glowstick.glb', emissiveMaterial: 'chemical-light tube' },
   ] + [
     model + (if std.objectHas(tweaks, model.id) then tweaks[model.id] else {})
-    for model in (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.light-sources/things/index.json', [import 'light-sources-items.jsonnet', import 'packages/mods/skelly.electric-power/electric-power-items.jsonnet', import 'packages/mods/skelly.electronics/electronics-items.jsonnet'])
+    for model in (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.light-sources/things/index.json', [import 'light-sources-items.jsonnet', import 'packages/mods/skelly.chemical-lights/chemical-lights-items.jsonnet', import 'packages/mods/skelly.electric-power/electric-power-items.jsonnet', import 'packages/mods/skelly.electronics/electronics-items.jsonnet'])
   ],
 })
