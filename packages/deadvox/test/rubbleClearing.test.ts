@@ -145,7 +145,8 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
     });
     return decoded.snapshot;
   };
-  return { registry, world, session, inventory, rubble, snapshot, roundTrip, issues };
+  const takeApart = () => session.crafting.takeApartCell(cell, session.crafting.previewTakeApartCell(cell).identity!);
+  return { registry, world, session, inventory, rubble, snapshot, roundTrip, issues, takeApart };
 };
 
 const stockCount = (inventory: ReturnType<typeof fixture>['inventory']): number =>
@@ -163,19 +164,19 @@ it('clearing a rubble cell yields its material break yield and frees the cell', 
   // Rubble is a full solid cell until it is cleared: it blocks paths and sight like any wall.
   expect(f.world.getBlock(...cell)).toBe(f.rubble);
   expect(f.registry.blocks[f.rubble]!.solid).toBe(true);
-  expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
+  expect(f.takeApart()).toBeUndefined();
   const clear = handWork(f.inventory)!;
   expect(clear.kind).toBe('cellDisassembly');
   f.session.sim.scheduler.advance(Math.ceil(clear.duration / f.session.sim.clock.ratio) + 1);
   expect(f.world.getBlock(...cell)).toBe(0);
-  expect(f.world.rubble.snapshotState().entries).toEqual([]);
+  expect(f.inventory.rubble!.review(cell)).toBeUndefined();
   expect(stockCount(f.inventory)).toBe(work!.outputs.reduce((total, output) => total + output.count, 0));
   expect(handWork(f.inventory)).toBeUndefined();
 });
 
 it('keeps a clearing paused while something rests on the rubble', () => {
   const f = fixture();
-  expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
+  expect(f.takeApart()).toBeUndefined();
   const clear = handWork(f.inventory)!;
   const crate = f.inventory.furnish({ type: crateType, pos: [...above], size: [1, 1, 1], facing: 'n' });
   expect(crate).toBeDefined();
@@ -195,19 +196,20 @@ it('keeps a clearing paused while something rests on the rubble', () => {
 
 it('ends a pinned episode when any block change replaces the cell', () => {
   const f = fixture();
-  expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
+  const reviewed = f.session.crafting.previewTakeApartCell(cell).identity!;
+  expect(f.takeApart()).toBeUndefined();
   f.world.setBlock(cell[0], cell[1], cell[2], blockId(f.registry, wallType));
   const clear = handWork(f.inventory)!;
   f.session.sim.scheduler.advance(Math.ceil(clear.duration / f.session.sim.clock.ratio) + 1);
   // The wall that replaced the rubble is not rubble: the job's target is gone, and no new job starts on the wall.
   expect(f.world.getBlock(...cell)).toBe(blockId(f.registry, wallType));
   expect(handWork(f.inventory)).toBe(clear);
-  expect(f.session.crafting.takeApartCell(cell)).toBe(coreMessage(f.registry, 'rubbleGone'));
+  expect(f.session.crafting.takeApartCell(cell, reviewed)).toBe(coreMessage(f.registry, 'rubbleGone'));
 });
 
 it('restores a clearing job and its pinned episode through a save round-trip', async () => {
   const f = fixture();
-  expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
+  expect(f.takeApart()).toBeUndefined();
   const clear = handWork(f.inventory)!;
   f.session.sim.scheduler.advance(clear.duration / f.session.sim.clock.ratio / 2);
   const saved = await f.roundTrip();
@@ -221,17 +223,37 @@ it('restores a clearing job and its pinned episode through a save round-trip', a
   expect(stockCount(reloaded.inventory)).toBeGreaterThan(0);
 });
 
-it('drops restored rubble episodes that no longer stand on rubble', async () => {
+it('drops restored cell-change stamps outside the saved chunks', async () => {
   const f = fixture();
-  expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
+  expect(f.takeApart()).toBeUndefined();
   const saved = structuredClone(await f.roundTrip());
-  // The forged entry is corrupt only in where it stands: its epoch is valid and unused below `nextEpoch`,
-  // so the standing-rubble check is the only rule that can drop it.
-  saved.world.rubble = {
-    nextEpoch: saved.world.rubble.nextEpoch + 1,
-    entries: [...saved.world.rubble.entries, { cell: [cell[0], 5, cell[2]], epoch: saved.world.rubble.nextEpoch }],
-  };
-  const reloaded = fixture(saved);
-  expect(reloaded.world.rubble.snapshotState().entries).toEqual([{ cell: [...cell], epoch: 1 }]);
-  expect(reloaded.issues.some((issue) => issue.includes('rubble episode'))).toBe(true);
+  const valid = structuredClone(saved.world.rubble.entries);
+  saved.world.rubble.entries.push({
+    cell: [cell[0] + CHUNK * 100, cell[1], cell[2]],
+    epoch: saved.world.rubble.nextEpoch,
+  });
+  saved.world.rubble.nextEpoch += 1;
+  const restored = fixture(saved);
+  expect(restored.world.rubble.snapshotState().entries).toEqual(valid);
+  expect(restored.issues.length).toBeGreaterThan(0);
+});
+
+it('reads rubble review identity without pinning and refuses replacement even before the first job', async () => {
+  const f = fixture();
+  const before = f.snapshot();
+  const reviewed = f.session.crafting.previewTakeApartCell(cell).identity!;
+  expect(reviewed).toBeDefined();
+  expect(f.session.crafting.previewTakeApartCell(cell).identity).toEqual(reviewed);
+  expect(f.snapshot()).toEqual(before);
+  f.world.setBlock(...cell, 0);
+  const reloaded = fixture(await f.roundTrip());
+  reloaded.world.setBlock(...cell, reloaded.rubble);
+  const replacement = reloaded.session.crafting.previewTakeApartCell(cell).identity!;
+  expect(replacement.block).toBe(reviewed.block);
+  expect(replacement.epoch).not.toBe(reviewed.epoch);
+  const inventoryBefore = reloaded.inventory.snapshotState();
+  expect(reloaded.session.crafting.takeApartCell(cell, reviewed)).toBe(coreMessage(reloaded.registry, 'rubbleGone'));
+  expect(reloaded.inventory.snapshotState()).toEqual(inventoryBefore);
+  expect(handWork(reloaded.inventory)).toBeUndefined();
+  expect(reloaded.issues).toEqual([]);
 });

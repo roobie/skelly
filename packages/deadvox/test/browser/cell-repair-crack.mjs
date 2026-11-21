@@ -9,7 +9,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, minimumViewRadiusM, stageLookBaseline } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -21,7 +21,6 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(projectRoot, process.env.CELL_REPAIR_CRACK_ARTIFACT_DIR ?? 'test-results/cell-repair-crack');
 
-// The damaged cell's on-screen box and the crack overlay's vertex count; the start ships exactly one damaged cell.
 const crackView = () => {
   const { engine } = globalThis.skellyPlayTest;
   const { entries } = engine.simulationWorld.blockDamage.snapshotState();
@@ -33,8 +32,8 @@ const crackView = () => {
   }
   const vertices = overlay.geometry.attributes.position?.count ?? 0;
   const [entry] = entries;
-  if (entries.length !== 1 || !entry) {
-    return { cell: entry?.cell, damaged: entries.length, vertices };
+  if (!entry) {
+    return { cell: undefined, damaged: entries.length, vertices };
   }
   const { cell } = entry;
   const view = document.querySelector('#view canvas');
@@ -193,7 +192,7 @@ try {
   await mkdir(artifacts, { recursive: true });
 
   const before = await page.evaluate(crackView);
-  assert.equal(before.damaged, 1, 'the start ships one damaged cell');
+  assert.ok(before.damaged > 0, 'the start has a damaged cell');
   const { cell: damagedCell, clip } = before;
   assert.ok(damagedCell && clip, 'the damaged cell has an on-screen box');
   assert.ok(clip.width > 0 && clip.height > 0, 'the damaged cell is on screen');
@@ -215,7 +214,9 @@ try {
   // condition from its damage and its material's durability.
   const recipe = await page.evaluate((cell) => {
     const { registry, world } = globalThis.skellyPlayTest.engine;
-    const repairBrick = registry.recipes.get('repair_brick');
+    const [x, y, z] = cell;
+    const block = registry.blocks[world.getBlock(x, y, z)];
+    const repairBrick = [...registry.recipes.values()].find((row) => row.repair?.block === block?.id);
     const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
     if (!(repairBrick?.repair && tuning)) {
       throw new Error('Content lacks the brick repair recipe or the player inventory tuning');
@@ -224,8 +225,6 @@ try {
     const ceilingWord = repairBrick.repair.ceiling ?? tuning.repairCeiling;
     const band = tuning.conditionBands.findIndex(({ word }) => word === ceilingWord);
     const ceilingBand = tuning.conditionBands[band];
-    const [x, y, z] = cell;
-    const block = registry.blocks[world.getBlock(x, y, z)];
     const material = block && registry.blockMaterials.get(block.material);
     if (!(ceilingBand && material)) {
       throw new Error('The repair ceiling or the damaged cell’s material is missing from content');
@@ -238,6 +237,13 @@ try {
         return component;
       }),
       qualities,
+      tools: [...globalThis.skellyPlayTest.session.inventory.carriedTree()]
+        .filter(({ item }) =>
+          Object.entries(qualities).some(
+            ([quality, level]) => (registry.items.get(item.type)?.tool?.qualities?.[quality] ?? 0) >= level,
+          ),
+        )
+        .map(({ item }) => item.type),
       timeGameMinutes,
       ceiling: band === tuning.conditionBands.length - 1 ? 1 : ceilingBand.from,
       durability: material.durability,
@@ -254,12 +260,31 @@ try {
       { at: target, points: durability },
     );
   const conditionBefore = await conditionOf(damagedCell, recipe.durability);
-  const tracked = [...new Set([...recipe.components.map(({ item }) => item), 'repair_kit'])];
+  const tracked = [...new Set([...recipe.components.map(({ item }) => item), ...recipe.tools])];
   const kitBefore = await page.evaluate(carriedCounts, tracked);
-  await pressAction(page, 'debug.build-toggle');
-  assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
-  await pressAction(page, 'debug.repair-cell');
+  phase('interaction-review');
+  const releaseInteract = await holdAction(page, 'world.interact');
+  try {
+    await page.waitForFunction(() => globalThis.skellyPlayTest.screen.isOpen);
+  } finally {
+    await releaseInteract();
+  }
+  assert.deepEqual(
+    await page.evaluate(() => globalThis.skellyPlayTest.screen.cellWork?.cell),
+    damagedCell,
+    'the review pins the aimed damaged cell',
+  );
+  assert.equal(await page.locator('#crafting .craft-start').count(), 1, 'the shared review offers commitment');
+  phase('review-start');
+  await page.locator('#crafting .craft-start').focus();
+  await page.keyboard.press('Enter');
+  phase('job-start');
   await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.actions.job?.jobType === 'craft');
+  assert.equal(
+    await page.evaluate(() => globalThis.skellyPlayTest.screen.isOpen),
+    false,
+    'world Start closes the review',
+  );
   await waitForSimulation(
     page,
     ({ cell, ceiling, durability }) => {
@@ -281,7 +306,6 @@ try {
       record: (line) => process.stdout.write(`CELL_REPAIR_CRACK ${line}\n`),
     },
   );
-  await pressAction(page, 'debug.build-toggle');
   await page.waitForFunction(() => {
     /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
     const isMesh = (object) => object?.type === 'Mesh';
@@ -301,7 +325,7 @@ try {
   process.stdout.write(
     `CELL_REPAIR_CRACK after ${JSON.stringify({ ...after, conditionBefore, conditionAfter, repaired, kitBefore, kitAfter })}\n`,
   );
-  await test('Repairing through the debug build keys mends the cell to its repair ceiling and spends its components', () => {
+  await test('Repairing through interaction and the shared review mends the cell and spends its components', () => {
     assert.ok(conditionBefore < recipe.ceiling, 'the start damages the brick below the repair ceiling');
     assert.ok(conditionAfter >= recipe.ceiling, 'one repair lifts the brick to the ceiling');
     if (recipe.ceiling < 1) {
@@ -312,7 +336,10 @@ try {
       assert.ok(carried !== undefined, `the kit counts track ${item}`);
       assert.equal(kitAfter[item], carried - count, `the repair spends its ${item}`);
     }
-    assert.equal(kitAfter.repair_kit, kitBefore.repair_kit, 'the repair kit is a tool, kept after the repair');
+    assert.ok(recipe.tools.length > 0, 'the check carries a qualifying tool');
+    for (const tool of recipe.tools) {
+      assert.equal(kitAfter[tool], kitBefore[tool], 'a repair tool is kept after the repair');
+    }
   });
   await test('The brick mended to its repair ceiling shows no crack', () => {
     assert.equal(after.vertices, 0, 'the crack overlay is empty');

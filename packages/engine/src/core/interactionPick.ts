@@ -14,6 +14,7 @@ import { PILE_DISPLAY_KIND } from './schema.ts';
 import type { VehiclePartProjection } from './vehicleProjection.ts';
 
 export type InteractionTarget =
+  | { readonly kind: 'cell'; readonly cell: Vec3; readonly distanceBlocks: number }
   | {
       readonly kind: 'furniture';
       readonly entity: BlockEntity;
@@ -264,7 +265,7 @@ const nearestVehiclePart = (
 
 /** Picks the nearest target for F, using its furniture ray and reach for loose ground items, downed bodies and vehicle parts too. */
 export const pickInteractionTarget = (options: InteractionPickOptions): InteractionTarget | undefined => {
-  const { furniture, obstructionDistanceBlocks } = pickFurnitureAndObstruction({
+  const { furniture, obstructionDistanceBlocks, cell } = pickFurnitureAndObstruction({
     ...options,
     isSolid: (x, y, z) => options.isSolid(x, y, z) || options.isOpaque(x, y, z),
   });
@@ -284,5 +285,7 @@ export const pickInteractionTarget = (options: InteractionPickOptions): Interact
   if (loose && (!furniture || loose.distanceBlocks < furniture.distanceBlocks)) {
     return loose;
   }
-  return furniture && { kind: 'furniture', ...furniture };
+  return furniture
+    ? { kind: 'furniture', ...furniture }
+    : cell && { kind: 'cell', cell: cell.block, distanceBlocks: cell.distance };
 };

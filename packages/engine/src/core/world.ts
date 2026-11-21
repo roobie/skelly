@@ -203,7 +203,7 @@ export class World {
     }
     if (chunk.get(toLocal(x), toLocal(y), toLocal(z)) !== id) {
       this.blockDamage.clear([x, y, z]);
-      this.rubble.clear([x, y, z]);
+      this.rubble.noteChange([x, y, z]);
       this.support.clear([x, y, z]);
       chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
       const column = columnKey(cx, cz);

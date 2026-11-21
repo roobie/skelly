@@ -11,7 +11,7 @@ read_if:
   - you change house supply, powered furnishings or player power controls
   - you add a feature's test prop to the showroom, or change range grading, staging, stock or catalogue admission
   - you use or change the focus hash key
-  - you decide whether a temporary repair preview belongs in the showroom
+  - you change the terrain repair and rubble-clearing review fixtures
 ---
 
 # Test house
@@ -115,10 +115,9 @@ ordinary authored spawning so admission and restoration share the same owner as 
 fixture supplies. See `mods/skelly.deadvox.scenario.test-house.debug/test-house-rack.libsonnet` and `DESIGN.md`,
 "Debug scenes".
 
-Repair looks wait for the crafting requirements view in #1469 rather than keeping a
-temporary showroom preview. A preview that names this scenario in runtime would put
-content identity back into game logic. Requirements keep their shared panel owner under
-`DESIGN.md`, "World repair selection".
+Repair looks use the ordinary world-work review rather than a scenario-specific
+preview: naming this scenario in runtime would put content identity back into game
+logic. See `DESIGN.md`, "World repair selection".
 
 The ragdoll sample requires explicit debug mod selection as well as debug tools because
 staged deaths are evaluation fixtures, not residents of the haven. Its viewer stands
@@ -136,11 +135,11 @@ and `mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet`,
 
 The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
 
-The cell-repair look start is staging for mending terrain by eye: it teaches the wall repair recipes and pockets a repair kit and scrap, and its own alcove stands the reviewer inside a brick wall whose eye-height brick the start ships already cracked through `blockDamage`, so the check is the crack at start, then the debug build tool and its repair key, because cell repair has no crafting view until #1469. The cracked brick and its damage amount are start content, never code, so the look keeps working when tuning moves. See `mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.jsonnet`, `test_house_repair_alcove`, and `mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.jsonnet`, `blockDamage`.
+The cell-repair look prepares a damaged wall within reach so the reviewer judges its crack and the ordinary interaction-to-review repair flow without setup. Damage and supplies belong to start content so tuning cannot leave a runtime fixture behind. See `mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.jsonnet`, `test_house_repair_alcove`, and `mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.jsonnet`, `blockDamage`.
 
 The build-kit look start stages the construction kit already placed, because placing by play waits for spot picking (#1332), and a debug placement path would be thrown away when that lands. Its door boarding is template content carried to the live piece, so the staging is checked as a property in `test/debugScenarioMod.test.ts`, not by eye. See `mods/skelly.deadvox.scenario.test-house.build-kit-look/layouts.jsonnet`, `test_house_build_kit`, and `mods/skelly.deadvox.scenario.test-house.build-kit-look/starts.jsonnet`, `buildkitlook`.
 
-The rubble look start is staging for clearing terrain by eye: its own heap stands a stepped row of masonry rubble in front of the spawn with its top at eye height, and the start ships nothing else staged, because clearing rubble needs no tool and no recipe — the check is the heap at start, then the debug build tool and its take-apart key, because rubble clearing reaches players with the world-work view, not a crafting view. The heap and its clear time are content, never code, so the look keeps working when tuning moves; its geometry is checked as a property in `test/debugScenarioMod.test.ts` — the start's own aim meets a supported rubble cell along a clear sight line, inside the reach the take-apart command admits — so the heap may move or be re-materialized without breaking the look. See `mods/skelly.deadvox.scenario.test-house.rubble-look/layouts.jsonnet`, `test_house_rubble_heap`, and `mods/skelly.deadvox.scenario.test-house.rubble-look/starts.jsonnet`, `starts`.
+The rubble look combines rubble and a cracked wall so one visit compares both cell-work entries through the same review. Its authored heap keeps a supported rubble cell within clear sight and admitted reach; the property check in `test/debugScenarioMod.test.ts` allows the heap to move or change material without losing that guarantee. See `mods/skelly.deadvox.scenario.test-house.rubble-look/README.md` for the by-eye checks and `mods/skelly.deadvox.scenario.test-house.rubble-look/layouts.jsonnet`, `test_house_rubble_heap`, for the staging owner.
 
 The support look start is staging for judging a support cascade by eye: its own free-standing post holds a beam run and a floor that reach out from its top, and the start puts a sledgehammer in hand, because breaking the post is the whole check and the debug build tool's destroy key is the fallback. The prop is template content, so it may move or change material; what must hold is checked as the start's own property in `test/debugScenarioMod.test.ts`: the start's first aim meets a post cell whose loss leaves both runs unheld. Its checks are in the mod's README. See `mods/skelly.deadvox.scenario.test-house.support-look/layouts.jsonnet`, `test_house_support_post`.
 

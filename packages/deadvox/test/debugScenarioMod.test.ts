@@ -98,7 +98,11 @@ const lookAim = async (id: string) => {
   return {
     registry,
     site,
+    eye,
+    standing,
     solid,
+    inventory,
+    start: registry.starts.get(config.startId)!,
     aimed: { cell: hit.block, block: standing(hit.block)! },
     reachable: inventory.canReachCell(hit.block),
   };
@@ -281,15 +285,29 @@ describe('authored debug scenario mod', () => {
     }
   });
 
-  // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
-  // own property — the aim meets clearable rubble the spawn can take apart — never as authored measurements.
-  it('aims the rubble look start at rubble the spawn can take apart', async () => {
-    const { registry, aimed, solid, reachable } = await lookAim(lookManifest.id);
+  // The rubble look's whole staging is the heap its start aims at and the cracked cells it ships, so its geometry is
+  // checked as the start's own property, never as authored measurements.
+  it('stages reachable rubble and cracked repair targets at the rubble look spawn', async () => {
+    const { registry, aimed, solid, reachable, eye, standing, inventory, start } = await lookAim(lookManifest.id);
+    // The first solid cell on the sight line is the rubble itself, and the heap keeps solid support below it.
     expect(rubbleBlockIds(registry).has(registry.blocks[aimed.block]!.id), registry.blocks[aimed.block]!.id).toBe(true);
     expect(solid(aimed.cell[0], aimed.cell[1] - 1, aimed.cell[2]), 'no solid support below the aimed rubble').toBe(
       true,
     );
     expect(reachable, 'aimed rubble out of reach').toBe(true);
+    const damaged = start.blockDamage ?? [];
+    expect(damaged.length).toBeGreaterThan(0);
+    for (const { cell, damage } of damaged) {
+      const block = registry.blocks[standing(cell)!]!;
+      expect(damage).toBeGreaterThan(0);
+      expect(registry.blockMaterials.get(block.material)?.durability).toBeGreaterThan(damage);
+      expect((start.recipes ?? []).some((id) => registry.recipes.get(id)?.repair?.block === block.id)).toBe(true);
+      expect(inventory.canReachCell(cell), 'cracked cell out of reach').toBe(true);
+      const direction = cell.map((value, axis) => value + 0.5 - eye[axis]!) as Vec3;
+      const distance = Math.hypot(...direction);
+      const sight = raycast(eye, direction.map((value) => value / distance) as Vec3, distance, solid);
+      expect(sight?.block, 'cracked cell is hidden').toEqual(cell);
+    }
   });
 
   // The support look's whole staging is the post its start aims at: breaking the aimed cell must leave both runs the
