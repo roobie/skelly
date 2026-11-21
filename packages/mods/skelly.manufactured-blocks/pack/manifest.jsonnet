@@ -3,5 +3,5 @@ manifest(
   id='skelly.manufactured-blocks',
   tier='theme',
   content=['manufactured-blocks'],
-  dependencies=['skelly.natural-world'],
+  dependencies=['skelly.natural-world', 'skelly.building-blocks'],
 )

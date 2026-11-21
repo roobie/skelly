@@ -29,6 +29,7 @@
     "skelly.attributes",
     "skelly.progression",
     "skelly.crafting",
+    "skelly.building-blocks",
     "skelly.manufactured-blocks",
     "skelly.fuel",
     "skelly.containers",

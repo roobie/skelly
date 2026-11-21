@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
+    "skelly.building-blocks",
     "skelly.deadvox.site-generation",
     "skelly.inventory",
     "skelly.keys",

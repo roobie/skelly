@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.manufactured-blocks", "skelly.natural-world"],
+  "dependencies": ["skelly.building-blocks", "skelly.manufactured-blocks", "skelly.natural-world"],
   "files": [
     {
       "kind": "content",

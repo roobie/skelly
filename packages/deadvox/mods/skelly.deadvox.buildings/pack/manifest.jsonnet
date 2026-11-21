@@ -10,7 +10,7 @@ manifest(
   assets=assets,
   json=['assets/manifest.json'],
   dependencies=[
-    'skelly.basic-recipes', 'skelly.body', 'skelly.deadvox.actors', 'skelly.deadvox.loot',
+    'skelly.basic-recipes', 'skelly.body', 'skelly.building-blocks', 'skelly.deadvox.actors', 'skelly.deadvox.loot',
     'skelly.household-electrical', 'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures',
   ],
 )
