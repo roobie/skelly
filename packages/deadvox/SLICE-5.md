@@ -7,6 +7,7 @@ read_if:
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
   - you're relating the construction playtest to Holdout's world and power-plant design
   - you're changing stockpile pockets, capacity or their inventory presentation
+  - you're changing where Holdout players find building tools or fasteners
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
 ---
@@ -311,7 +312,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
-  supply random; distant stockpiles give excursions a deliberate target.
+  supply random; distant stockpiles give excursions a deliberate target. Building
+  tools and fasteners are found by looting POIs, not carried at start, so obtaining
+  the means to build gives excursions a purpose. See
+  `mods/skelly.deadvox.loot/loot.jsonnet`, `building_tools` and `building_materials`.
 - **Supply sites:** #1332 adds independently authored asks for supply affordances,
   rather than a fixed ring of POIs. Redundant sources keep imperfect seeds playable;
   guarantee only source counts, not routes or distances. See
