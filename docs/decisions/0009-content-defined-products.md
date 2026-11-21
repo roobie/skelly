@@ -33,24 +33,32 @@ into content meant for other products.
 ## Mod identity and tiers
 
 `skelly.*` identifies first-party mods; third parties use their own prefix. Names
-say what content a mod holds. Core-tier examples use topic names such as
-`skelly.attributes`, never `skelly.core` or a catch-all core namespace. Theme names
-such as `skelly.magic` and `skelly.survival` identify reusable topics. Product-owned
+say what content a mod holds. Shared theme names such as `skelly.attributes`,
+`skelly.magic` and `skelly.survival` identify reusable topics. Product-owned
 content uses `skelly.PRODUCT.*`; scenario-owned content uses
 `skelly.PRODUCT.scenario.SCENARIO.*`, such as
 `skelly.deadvox.scenario.upheaval.points-of-interest`.
 
-The manifest declares the tier: **core**, **theme**, **product** or **scenario**.
+The manifest declares the tier: **theme**, **product** or **scenario**.
 An id is not a tier discriminator. The scope in a product or scenario name identifies
 its owner; the loader must not infer its tier from that spelling. Consumer judgments
 can change as products appear, and encoding the tier in identity would turn
 reclassification into dependency and save breakage. Theme and product names can also
 share one id shape and clash, so spelling cannot distinguish their tiers.
 
-Core-tier topics are useful across almost all products. Theme mods are reusable but
-not universal. Product mods own a setting's content and policy; scenario mods own a
-particular run, map or test flow. No tier grants protection or loader privilege.
-Each product chooses its dependencies rather than inheriting one mandatory core pack.
+Theme mods hold all shared topics, whether universal or specialised. Product mods own
+a setting's content and policy; scenario mods own a particular run, map or test flow.
+Dependencies follow theme < product < scenario, except for the product entry that
+selects its stack; see `packages/deadvox/test/shippedMods.test.ts`, `tierIssues`.
+No tier grants protection or loader privilege. Each product chooses its dependencies
+rather than inheriting a mandatory shared set.
+
+Universal usefulness is not a separate tier because it grants no loader behaviour.
+Each shared pack must load with only its own declared dependency closure, so a product
+can drop any pack it does not need. Checking each closure covers every shared pack,
+not just a pooled universal set. The accepted cost is that universal usefulness is
+not machine-readable and the tier guard cannot distinguish universal topics from
+specialised ones. See `packages/deadvox/docs/pack-split.md`, "Shared-pack closure validation".
 
 ## Definitions and distribution
 
@@ -86,40 +94,19 @@ product or scenario that distributes them; consumer wiring declares its dependen
 
 ### Classification guide
 
-This roster is a starting guide, not a content contract or a promise of implemented
-mechanisms. The other products are hypothetical consumers: MW is Morrowind-inspired,
-BL is Bannerlord-inspired and EM is Empyrion-inspired. DV is Deadvox, a real-time 3D
-voxel take on CDDA, possibly multiplayer later. All use the same engine. A check means
-expected use, a tilde means possible use, and a dot means no expected use. Consumer
-evidence governs classification, not perfect adherence to the table.
-
-| Content | DV | MW | BL | EM | Ownership guide |
-|---|---|---|---|---|---|
-| Body, injuries, bleeding, needs, senses, player tuning | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Inventory, compression, saves, day cycle, controls, UI, graphics policy | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Natural blocks and vegetation | ✓ | ✓ | ✓ | ✓ | Core topics |
-| Doors, locks, ladders, stairs, basic furniture | ✓ | ✓ | ✓ | ✓ | Core topics; appearance varies by era |
-| Creature senses, attention and attack tuning | ✓ | ✓ | ✓ | ✓ | Core topics; mechanisms stay in the engine |
-| Blades and blunt melee weapons | ✓ | ✓ | ✓ | · | Theme |
-| Hand tools | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
-| Food, wearables and readables | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
-| Firearms, ammunition, attachments and gun parts | ✓ | · | · | ~ | Theme; also useful to an 80s Miami police product |
-| Explosives | ✓ | · | · | ✓ | Theme |
-| Manufactured blocks (concrete, asphalt, steel) | ✓ | · | · | ✓ | Theme |
-| Electric power content | ✓ | · | · | ✓ | Theme |
-| Ground motor vehicles | ✓ | · | · | · | Theme; also useful to an 80s Miami police product |
-| Magic | Opt-in | ✓ | · | · | Theme; #1528 is a reference consumer |
-| Mounts, armies and factions | · | ~ | ✓ | · | Theme direction, not delivered mechanisms |
-| Ships and space | · | · | · | ✓ | Deferred theme direction |
-| Zombie types, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
-| Gauntlet, tutorial, playtest and test house | ✓ | · | · | · | Scenario |
+Consumer evidence governs ownership. A reusable definition belongs to a theme topic,
+even if only one product uses it; a setting's distribution and policy belong to that
+product, and a particular run's wiring belongs to its scenario. Broad usefulness does
+not give a theme a different tier. Creature mechanisms stay in the engine while
+reusable tuning belongs in themes and setting-specific creature types belong to the
+product. Topic definitions may mix eras; distribution decides what appears.
 
 Skills belong in theme topics; products select their available skills through ordinary
 mod dependencies, rather than a separate skill configuration or registry filter.
 
-The roster classifies content and tuning, not engine code. The open measurement on
-#1532 is when a topic mod becomes too large for products that use little of it.
-Measure that cost before splitting further; no size threshold is adopted here.
+Classify content and tuning, not engine code. The open measurement on #1532 is when a
+topic mod becomes too large for products that use little of it. Measure that cost before
+splitting further; no size threshold is adopted here.
 
 ## Starts and mixing
 
