@@ -106,6 +106,8 @@ export const SupportTuningSchema = strictObject({
   capability: capabilityField('supportTuning'),
   /** Most cascade cells judged in one physics tick; the rest wait for the next tick, so a cascade never stalls a tick. */
   cascadeCellsPerTick: pipe(Count, minValue(1)),
+  /** Most cells one strike visits when looking for canopy on a trunk; a search that runs out refuses the blow. */
+  trunkSearchCells: pipe(Count, minValue(1)),
 });
 
 export const BlockSchema = strictObject({

@@ -2,6 +2,7 @@ import { type BlockBlow, bashBlock } from './blockDamage.ts';
 import type { BlockEntity } from './blockEntities.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { createColumnSupply } from './columnSupply.ts';
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { commitRuin, type FurnitureMover, hungOnTerrain, planRuin } from './furnitureMove.ts';
@@ -34,7 +35,8 @@ const FACES: readonly Vec3[] = [
 
 /**
  * Whether a tree trunk cell carries canopy: a canopy block at or above its row joins it through tree blocks. Felling
- * is a separate system, so until it exists such a trunk is not broken.
+ * is a separate system, so until it exists such a trunk is not broken. The search reads at most the content budget of
+ * cells; one that runs out has not cleared the trunk, so it counts as carrying canopy.
  */
 const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>): boolean => {
   const { scale } = terrain.terrain;
@@ -43,6 +45,11 @@ const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Read
   if (partAt(...(cell as [number, number, number])) !== 'trunk') {
     return false;
   }
+  const tuning = claimed(registry.supportTuning, 'support');
+  if (!tuning) {
+    throw new Error('A trunk strike needs support tuning');
+  }
+  let budget = tuning.trunkSearchCells;
   const seen = new Set<string>([cell.join(',')]);
   const open: Vec3[] = [[...cell] as Vec3];
   for (let at = open.pop(); at; at = open.pop()) {
@@ -51,6 +58,9 @@ const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Read
       const key = next.join(',');
       if (next[1] < cell[1] || next[1] >= maxY || seen.has(key)) {
         continue;
+      }
+      if (budget-- <= 0) {
+        return true;
       }
       const part = partAt(...next);
       if (part === 'canopy') {

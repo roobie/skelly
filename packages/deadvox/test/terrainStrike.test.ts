@@ -649,6 +649,17 @@ describe('supply-aware terrain destruction', () => {
       expect(f.world.support.cascading).toBe(false);
       expect(owners(f)).toEqual(before);
     });
+    it('refuses a trunk whose canopy search runs out of budget before clearing it', () => {
+      const { f } = tree(false);
+      const [tuning] = f.registry.supportTuning.values();
+      f.registry.supportTuning.set(tuning!.id, { ...tuning!, trunkSearchCells: 3 });
+      const before = owners(f);
+      const struck = f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2);
+      expect(struck).toEqual({ outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] });
+      expect(f.canonical.getBlock(...cell)).toBe(f.floor);
+      expect(f.world.blockDamage.get(cell)).toBeUndefined();
+      expect(owners(f)).toEqual(before);
+    });
     it('breaks a trunk that carries no canopy like any other block', () => {
       const { f } = tree(false);
       expect(f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2)?.outcome).toBe('broken');

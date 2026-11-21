@@ -3,7 +3,8 @@
     {
       "capability": "support",
       "cascadeCellsPerTick": 64,
-      "id": "support"
+      "id": "support",
+      "trunkSearchCells": 4096
     }
   ]
 }
