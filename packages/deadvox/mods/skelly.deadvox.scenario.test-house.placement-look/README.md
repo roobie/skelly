@@ -15,6 +15,8 @@ occupied spot (the shelf) refuses a ghost. Reachable stock at the builder's feet
 before the check. The start knows the fixture's quick recipes (`placement.jsonnet`, `work`) and the real construction
 kit, so both orders can be driven as the player meets them. The real plank floor recipe exercises the authoring
 default; see `packages/mods/skelly.basic-recipes/basic-recipes-construction.jsonnet`, `placementOrder`.
+The fixture shortens the real kit's boarding recipe instead of adding a twin, so the ring has one entry and its
+build finishes without waiting. Opening a screen ends picking without confirming a spot.
 
 1. **Spot-first from the crafting tab:** select the quick plank wall in the crafting tab; its Start reads
    "Pick a spot" and closes the screen. Aim at the wall gap: the see-through wall stands at the aimed cell tinted
@@ -25,6 +27,7 @@ default; see `packages/mods/skelly.basic-recipes/basic-recipes-construction.json
 2. **Review-first from the crafting tab:** select the quick shelf; its review opens with a "Choose a spot" row and a
    refused Start. Choosing a spot enters picking; the ghost's front faces the builder and the turn key turns it. A
    confirmed free spot needs no existing piece's name beside "Change spot", and Start commits on the pinned spot alone.
-3. **Boarding from the door's ring:** hold the use key on the doorway's leaf; its ring offers Board up. The ghost
+3. **Boarding from the door's ring:** hold the use key on the doorway's leaf; its Board up entry starts
+   `board_up_door`, shortened by `placement.jsonnet`, `recipes`. The ghost
    draws the boards on the face that faces the player, the turn key flips the face, and the refusal comes from the
    engine. Confirm, then Start, and the leaf carries its boards on the chosen side.

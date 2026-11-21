@@ -154,6 +154,7 @@ import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
+import { placementPieceGhost } from '../render/placementGhost.ts';
 import { housingFrame } from '../render/plantInstruments.ts';
 import { createPlayView, type PlayCameraFrame, type PlayHeldFrame, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
@@ -2887,24 +2888,7 @@ const startPlayWith = (
   /** The ghost's result model stood at its destination, for a recipe whose result is a piece. */
   const ghostPiece = (entityId: string, destination: Extract<WorldDestination, { kind: 'entity' }>, valid: boolean) => {
     const def = registry.furniture.get(entityId)!;
-    return {
-      entity: {
-        spec: {
-          uid: 0,
-          type: def.id,
-          origin: destination.pos,
-          pos: destination.pos,
-          size: def.size,
-          facing: destination.facing,
-          carried: false,
-          searched: true,
-          open: false,
-        },
-        def,
-      },
-      boxes: [] as { center: Vec3; size: Vec3 }[],
-      valid,
-    };
+    return placementPieceGhost(def, destination, valid);
   };
 
   /** The ghost's boxes in view metres: a block result's aimed cell, or a boarding's boards on their leaf. */

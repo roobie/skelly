@@ -20,6 +20,10 @@ local work(id, result, order, minutes, components) = {
     // The kit's own shelf recipe's four planks: a cheaper twin would return more material than it consumes
     // (`checkMaterialCycles`).
     work('placement_look_shelf', { entity: 'shelf' }, 'review-first', 0.5, [plank(4), nails(8)]),
-    work('placement_look_board', { doorBoarding: 'wood_door_boarding' }, 'spot-first', 0.5, [plank(1), nails(2)]),
+  ] + [
+    // Keep the real boarding recipe's one ring identity, but make its by-play check finish without waiting.
+    recipe + { timeGameMinutes: 0.5 }
+    for recipe in (import 'packages/mods/skelly.basic-recipes/basic-recipes-construction.jsonnet').recipes
+    if recipe.id == 'board_up_door'
   ],
 }

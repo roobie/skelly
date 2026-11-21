@@ -1,5 +1,5 @@
 import type { FurnitureDef } from '@skelly/engine/content';
-import type { BlockEntity, Vec3 } from '@skelly/engine/world';
+import { type BlockEntity, type Facing, rotatedSize, rotationOf, type Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, Group, type Material, Mesh, MeshLambertMaterial, type Object3D } from 'three';
 
 /** The see-through result placement picking holds, from `graphics` tuning. */
@@ -104,4 +104,30 @@ export class PlacementGhost {
       material.dispose();
     }
   }
+}
+
+/** @internal The builder centres on world extents, just as it does for a standing piece. */
+export function placementPieceGhost(
+  def: FurnitureDef,
+  destination: { kind: 'entity'; pos: Vec3; facing: Facing },
+  valid: boolean,
+): PlacementGhostDraw {
+  return {
+    entity: {
+      spec: {
+        uid: 0,
+        type: def.id,
+        origin: destination.pos,
+        pos: destination.pos,
+        size: rotatedSize(def.size, rotationOf(destination)),
+        facing: destination.facing,
+        carried: false,
+        searched: true,
+        open: false,
+      },
+      def,
+    },
+    boxes: [] as { center: Vec3; size: Vec3 }[],
+    valid,
+  };
 }

@@ -128,8 +128,7 @@
         "grind_machete",
         "hone_machete",
         "placement_look_wall",
-        "placement_look_shelf",
-        "placement_look_board"
+        "placement_look_shelf"
       ],
       "seed": 1,
       "site": "testHousePlacementLook",

@@ -7,7 +7,7 @@ local placement = import 'placement.jsonnet';
     id: 'placementlook',
     site: 'testHousePlacementLook',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    recipes+: [recipe.id for recipe in placement.recipes],
+    recipes+: [recipe.id for recipe in placement.recipes if !std.member(kit.common.recipes, recipe.id)],
     kit+: [
       { id: 'placement_planks', item: 'wooden_plank', count: 18, destination: { kind: 'pile', pos: [-20, 42, 32] } },
       { id: 'placement_nails', item: 'nails', count: 100, destination: { kind: 'pile', pos: [-20, 42, 32] } },

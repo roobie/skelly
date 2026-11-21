@@ -61,26 +61,31 @@
       "components": [
         [
           {
-            "count": 1,
+            "count": 3,
             "item": "wooden_plank"
           }
         ],
         [
           {
-            "count": 2,
+            "count": 12,
             "item": "nails"
           }
         ]
       ],
-      "id": "placement_look_board",
+      "id": "board_up_door",
       "placementReviewOrder": "spot-first",
-      "qualities": {},
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
       "result": {
         "count": 1,
         "doorBoarding": "wood_door_boarding"
       },
       "searchTerms": ["build", "fortify"],
-      "skills": {},
+      "skills": {
+        "crafting": 0
+      },
       "tags": ["wood"],
       "timeGameMinutes": 0.5
     }

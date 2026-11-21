@@ -28,7 +28,12 @@
   ],
   "id": "skelly.deadvox.scenario.test-house.placement-look",
   "optIn": true,
-  "overrides": [],
+  "overrides": [
+    {
+      "entry": "recipes:board_up_door",
+      "pack": "skelly.basic-recipes"
+    }
+  ],
   "product": false,
   "tier": "scenario",
   "version": "1"
