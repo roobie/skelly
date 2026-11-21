@@ -88,9 +88,10 @@ leaf does, and the doorways rule can trust the way through it. A boarded door re
 from either face with the ordinary boarded-up refusal. Boards nailed across a doorway hold its
 leaf shut from both sides; a door that must still open is fortified instead, a later feature.
 The boards belong to the leaf and swing with it, so their explicit side remains its look rather
-than an opening rule. Breaking the leaf with blows opens the way, and the broken leaf keeps its
-boards (`packages/deadvox/DESIGN.md`, "Breach by strength"). Boards are door state beside the
-lock, so a save keeps them.
+than an opening rule. Because boarding is state on the leaf, removing it is a job on the piece
+that leaves the piece; see `packages/engine/src/core/disassembly.ts`, `pieceRecoveryWork`. Breaking
+the leaf with blows opens the way, and the broken leaf keeps its boards (`packages/deadvox/DESIGN.md`,
+"Breach by strength"). Boards are door state beside the lock, so a save keeps them.
 
 Authored and player-built boarding obey that one rule. A door has one boarded side and no bar
 beside it, and player boarding work names its side explicitly, so where the builder stands never

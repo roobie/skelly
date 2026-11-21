@@ -206,9 +206,17 @@ export const pieceTakeApartRefusal = (
   inventory: Inventory,
   entity: BlockEntity | undefined,
   pieces: PieceRemoval | undefined,
-  work?: Item,
-): string | undefined =>
-  pieceJobRefusal(inventory, entity, { work }) ?? (pieces ? pieces.removalRefusal(entity!) : 'No piece remover');
+  { work, boarding }: { work?: Item | undefined; boarding?: string | undefined } = {},
+): string | undefined => {
+  const refusal = pieceJobRefusal(inventory, entity, { work });
+  if (refusal) {
+    return refusal;
+  }
+  if (boarding) {
+    return entity!.boarding?.type === boarding ? undefined : coreMessage(inventory.registry, 'yieldChanged');
+  }
+  return pieces ? pieces.removalRefusal(entity!) : 'No piece remover';
+};
 
 /**
  * Why a job on a piece can't run now: the piece stands, both hands are free for it but for the `taken` item Start
@@ -358,11 +366,21 @@ const finishPieceTakeApart = (
   pieces: PieceRemoval | undefined,
   release: { feet: () => Vec3; calendar: () => number },
 ): void => {
-  const blocked = pieceTakeApartRefusal(inventory, hostOf(inventory, item), pieces, item);
-  if (blocked || !pieces) {
+  const boarding = item.work?.kind === 'pieceDisassembly' ? item.work.boarding : undefined;
+  const blocked = pieceTakeApartRefusal(inventory, hostOf(inventory, item), pieces, { work: item, boarding });
+  if (blocked || !(boarding || pieces)) {
     throw new Error(blocked);
   }
-  inventory.releaseWork(item, true, { feet: release.feet(), calendar: release.calendar(), retirePiece: pieces.remove });
+  inventory.releaseWork(item, true, {
+    feet: release.feet(),
+    calendar: release.calendar(),
+    ...(boarding
+      ? {
+          removeBoarding: (entity, type) =>
+            inventory.entities.unboard(entity, type) ? undefined : coreMessage(inventory.registry, 'yieldChanged'),
+        }
+      : { retirePiece: pieces!.remove }),
+  });
 };
 
 /** A finished craft, disassembly or repair: a gone repair target only drops the job; practice pays the maker. */
@@ -435,7 +453,7 @@ export const craftActionHooks = (
     if (plan.kind === 'pieceDisassembly') {
       const current = planPieceDisassembly(plan.entity, snapshot, character);
       return (
-        pieceTakeApartRefusal(inventory, plan.entity, pieces) ??
+        pieceTakeApartRefusal(inventory, plan.entity, pieces, { boarding: plan.boarding }) ??
         (current && samePieceDisassembly(current, plan) ? undefined : coreMessage(inventory.registry, 'yieldChanged'))
       );
     }
@@ -460,7 +478,7 @@ export const craftActionHooks = (
     }
     const host = hostOf(inventory, item);
     if (work.kind === 'pieceDisassembly') {
-      return pieceTakeApartRefusal(inventory, host, pieces, item);
+      return pieceTakeApartRefusal(inventory, host, pieces, { work: item, boarding: work.boarding });
     }
     if (work.kind === 'partService') {
       return partServiceWorkRefusal(inventory, item, work, { snapshot: reach(), character });

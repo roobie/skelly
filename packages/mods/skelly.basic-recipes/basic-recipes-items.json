@@ -1,27 +1,6 @@
 {
   "items": [
     {
-      "category": "material",
-      "disassembly": {
-        "skill": "crafting",
-        "timeGameMinutes": 4,
-        "yields": [
-          {
-            "count": 2,
-            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
-            "item": "stick",
-            "rounding": "floor"
-          }
-        ]
-      },
-      "id": "wooden_plank",
-      "model": "wooden_plank",
-      "name": "Wooden plank",
-      "size": [2, 4],
-      "stockpileStack": 99,
-      "workInProgress": false
-    },
-    {
       "category": "tool",
       "description": "A length of timber that drops across a shut door and bars it from the other side.",
       "disassembly": {

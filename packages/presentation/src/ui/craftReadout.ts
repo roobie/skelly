@@ -180,11 +180,18 @@ export const takeApartRow = (
   const projection = cell ? crafting.previewTakeApartCell(target.cell) : crafting.previewTakeApartEntity(target.uid);
   const plan = 'plan' in projection ? projection.plan : projection.work;
   const { refusal } = projection;
-  const itemName = cell
-    ? registry.blocks[registry.blockIds.get(target.block)!]!.name
-    : registry.furniture.get(target.type)!.name;
-  const gameSeconds =
-    plan?.timeGameMinutes ?? (cell ? 0 : pieceRecoveryWork(registry, target.type)?.timeGameMinutes) ?? 0;
+  let itemName: string;
+  let gameSeconds: number;
+  if (cell) {
+    itemName = registry.blocks[registry.blockIds.get(target.block)!]!.name;
+    gameSeconds = plan?.timeGameMinutes ?? 0;
+  } else {
+    itemName = target.boarding
+      ? registry.boardings.get(target.boarding.type)!.name
+      : registry.furniture.get(target.type)!.name;
+    gameSeconds =
+      plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type, target.boarding?.type)?.timeGameMinutes ?? 0;
+  }
   return {
     id: `take_apart:${cell ? target.cell.join(',') : target.uid}`,
     name: fillText(text.takeApartName, { item: itemName }),

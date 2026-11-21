@@ -1,5 +1,6 @@
 import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
 import { dropSpots, type Item } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import type { BlockEntity, Vec3 } from '@skelly/engine/world';
@@ -12,6 +13,20 @@ const registry = baseRegistry();
 const ROUTED = [...registry.furniture.values()].find((def) => def.takeApart?.yield && !def.container)!.id;
 const POCKETED = [...registry.furniture.values()].find((def) => def.takeApart?.yield && def.container)!.id;
 const UNROUTED = [...registry.furniture.values()].find((def) => !(def.takeApart || def.door))!.id;
+const DOOR = [...registry.furniture.values()].find((def) => def.door)!.id;
+const BOARDING = 'world_take_apart_boarding';
+registry.boardings.set(BOARDING, {
+  id: BOARDING,
+  name: 'Fixture boarding',
+  color: '#888888',
+  thicknessBlocks: 0.1,
+  boards: [{ from: 0, height: 1 }],
+  takeApart: {
+    timeGameMinutes: gameMinutes(1),
+    skill: 'crafting',
+    yields: [{ item: 'rag', count: 1, fractions: [1], rounding: 'floor' }],
+  },
+});
 const messages = () => claimed(registry.ui, 'interface')!.furnitureMoveMessages;
 
 const placeFloor = (runtime: Runtime) => {
@@ -190,6 +205,32 @@ it.each(['running', 'paused'] as const)('cancelling a %s job gives no yield and 
   expect(piece.work).toBeUndefined();
   expect(runtime.entities.useRefusal(piece)).toBeUndefined();
   expect([...uids(runtime)].filter((uid) => !before.has(uid))).toEqual([]);
+});
+
+it('keeps a paused boarding removal on its piece through a save', async () => {
+  const { runtime, piece } = site(DOOR);
+  expect(runtime.entities.board(piece, 'front', BOARDING)).toBeUndefined();
+  expect(runtime.session.crafting.takeApartEntity(piece.uid)).toBeUndefined();
+  const work = piece.work!;
+  runtime.sim.scheduler.advance(work.work!.duration / runtime.sim.clock.ratio / 3);
+  runtime.sim.actions.stop();
+
+  const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
+    version: formatVersion,
+    contentLookup: (...query) => contentLookup(registry, ...query),
+  });
+  const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
+  placeFloor(loaded);
+  const restored = loaded.entities.byUid(piece.uid)!;
+  expect(restored.boarding?.type).toBe(BOARDING);
+  expect(restored.work?.work).toEqual(work.work);
+
+  const before = uids(loaded);
+  expect(loaded.session.crafting.act(work.uid, 'continue')).toBeUndefined();
+  finish(loaded, restored);
+  expect(loaded.entities.byUid(piece.uid)).toBe(restored);
+  expect(restored.boarding).toBeUndefined();
+  expect(landedYield(loaded, before)).toEqual({ totals: jobYield(work), elsewhere: 0 });
 });
 
 it('keeps a paused job on its piece through a save, and the loaded job completes with one yield', async () => {
