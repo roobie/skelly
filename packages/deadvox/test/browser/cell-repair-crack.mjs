@@ -21,7 +21,6 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(projectRoot, process.env.CELL_REPAIR_CRACK_ARTIFACT_DIR ?? 'test-results/cell-repair-crack');
 
-// The damaged cell's on-screen box and the crack overlay's vertex count; the start ships exactly one damaged cell.
 const crackView = () => {
   const { engine } = globalThis.skellyPlayTest;
   const { entries } = engine.simulationWorld.blockDamage.snapshotState();
@@ -34,7 +33,7 @@ const crackView = () => {
   const vertices = overlay.geometry.attributes.position?.count ?? 0;
   const [entry] = entries;
   if (!entry) {
-    return { cell: entry?.cell, damaged: entries.length, vertices };
+    return { cell: undefined, damaged: entries.length, vertices };
   }
   const { cell } = entry;
   const view = document.querySelector('#view canvas');

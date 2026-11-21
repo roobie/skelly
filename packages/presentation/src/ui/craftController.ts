@@ -336,6 +336,7 @@ export const mountCraftPanel = (
           world: {
             heading: reviewHeading(),
             depicted: world !== undefined && controls.targetView !== undefined,
+            turnable: world !== undefined,
           },
         }
       : { catalogue: catalogue! }),
