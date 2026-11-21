@@ -1,4 +1,4 @@
-// Which sound the product's actors make on which block; a core or theme block names only the player's own step.
+// Product footsteps live here so shared blocks need no dependency on the actors that walk them.
 local rows(family, blocksBySound) = [
   { id: std.length(family) + '_' + family + '_' + block, family: family, block: block, sound: sound }
   for sound in std.objectFields(blocksBySound)

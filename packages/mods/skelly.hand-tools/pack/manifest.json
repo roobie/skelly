@@ -161,6 +161,6 @@
   "id": "skelly.hand-tools",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

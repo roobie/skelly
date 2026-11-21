@@ -178,27 +178,34 @@ const withMultiRootFixture = async (check: (root: string) => void | Promise<void
     mkdirSync(join(root, 'src/config'), { recursive: true });
     const definitions = join(root, 'mods/fixture.definitions');
     mkdirSync(join(definitions, 'pack'), { recursive: true });
-    // The shipped core tier carries the content every stack requires, so it stands in for the whole stack.
-    const shipped = JSON.parse(readFileSync('mods/skelly.deadvox/pack/manifest.json', 'utf8'));
-    const core = (shipped.dependencies as string[]).filter((dependency) => {
-      const manifest = join(
-        existsSync(resolve('../mods', dependency)) ? '../mods' : 'mods',
-        dependency,
-        'pack/manifest.json',
-      );
-      return JSON.parse(readFileSync(manifest, 'utf8')).tier === 'core';
-    });
+    const providers = [
+      'skelly.body',
+      'skelly.inventory',
+      'skelly.melee-classes',
+      'skelly.saves',
+      'skelly.senses',
+      'skelly.ui',
+      'skelly.graphics',
+      'skelly.weathering',
+      'skelly.day-cycle',
+      'skelly.controls',
+    ];
+    const dependencies = [
+      ...new Set(providers.flatMap((id) => readBundledPacks('.', id).map(({ manifest }) => manifest.id))),
+    ];
     writeFileSync(
       join(definitions, 'pack/manifest.json'),
       JSON.stringify({
-        ...shipped,
         id: 'fixture.definitions',
+        version: '1',
+        tier: 'theme',
         product: false,
-        defaultStart: undefined,
-        dependencies: core,
+        dependencies,
+        overrides: [],
+        files: [],
       }),
     );
-    for (const dependency of core) {
+    for (const dependency of dependencies) {
       const modRoot = existsSync(resolve('../mods', dependency)) ? '../mods' : 'mods';
       symlinkSync(resolve(modRoot, dependency), join(root, modRoot, dependency), 'dir');
     }

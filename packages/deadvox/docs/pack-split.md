@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you split Deadvox content into core, theme, product and scenario mods (#637)
+  - you split Deadvox content into theme, product and scenario mods (#637)
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
@@ -13,8 +13,8 @@ read_if:
   - you validate one pack while iterating on it, or change which selection that checks
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan SkellyEngine runtime and content extraction
-  - you place a recipe, power tuning, a manual or a household electrical device in a mod
-  - you change when a stack needs site generation or what core-alone validation requires
+  - you place a recipe or its category, a key model, power tuning, a manual or a household electrical device in a mod
+  - you change when a stack needs site generation or how shared-pack closures validate
 ---
 
 # Product and shared content packs
@@ -27,7 +27,7 @@ product's distribution policy.
 
 ## Layers
 
-The engine holds mechanisms and no content. Core and theme mods provide reusable
+The engine holds mechanisms and no content. Theme mods provide reusable
 content by topic; product mods provide the setting's own content and policy; scenario
 mods provide a run, map or test flow. Deadvox is the product/setting, and Upheaval is
 its sandbox campaign scenario. An ordinary top-level entry pack declares the product's
@@ -53,36 +53,37 @@ entry is the one pack whose dependencies may sit in a higher tier than its own: 
 selects the stack rather than defining reusable content.
 
 First-party ids use `skelly.*`, named for their content. The manifest, not the id,
-declares core, theme, product or scenario tier; see
+declares theme, product or scenario tier; see
 `docs/decisions/0009-content-defined-products.md`, "Mod identity and tiers".
-There is no catch-all core pack and no shared-scenario pack. Content reused by several
+There is no mandatory shared pack and no shared-scenario pack. Content reused by several
 scenarios moves into product topic mods; content reusable across products belongs in
 shared topics rather than a product namespace.
 
-**No privileged core.** A stack may replace shared providers when its dependencies
-supply every required capability. Core-tier content has neither protection nor
-special override rights. One rule for all mods avoids binding products to a particular
-provider's identity. One rule for every pack is simpler than a privileged core.
+**No privileged shared providers.** A stack may replace shared providers when its
+dependencies supply every required capability. One override rule for all mods avoids
+binding products to a particular provider's identity; no tier grants protection or
+loader privilege.
 
 **Dependencies follow ownership.** Reusable definitions reference their own or lower
 layers, never the products or scenarios that distribute them. Consumer wiring declares
 the packs it uses; the entry pack selects the stack. A mod declares every mod its own rows
-reference, a tool quality a recipe needs included, so its closure builds alone; only a
-missing core capability may wait for the rest of core. An engine mechanism references no
-content id. These directions keep a theme usable without importing a product's starts
-or loot and keep load order out of filename conventions. Admission must refuse missing
+reference, a tool quality a recipe needs included, so its closure builds alone. Each
+shared pack must load on its own declared closure so a product can drop any pack it
+does not need. An engine mechanism references no content id. These directions keep a
+theme usable without importing a product's starts or loot and keep load order out of
+filename conventions. Admission must refuse missing
 dependencies and undeclared overrides through the shared loader; see
 `docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 
 ## Classification rule
 
 Classify entries, not files. Split a mixed file rather than moving its dependencies
-upward by accident. The consumer roster in
+upward by accident. Consumer evidence under
 `docs/decisions/0009-content-defined-products.md`, "Classification guide",
-is guidance, not a permanent whitelist.
+guides ownership rather than imposing a permanent whitelist.
 
 **Definitions and distribution have different owners.** A reusable item's definition
-belongs to a core or theme topic even when Deadvox first uses it. Loot, shops, sites,
+belongs to a theme topic even when Deadvox first uses it. Loot, shops, sites,
 prices and recipe availability belong to a product or scenario. Topic definitions may
 mix eras; player-facing lists filter to the product's used content rather than exposing
 every definition. Editing rows out of an included mod waits for #1544's typed
@@ -115,13 +116,12 @@ The shipped-mod dependency test enforces tier direction without granting the loa
 privilege; see `test/shippedMods.test.ts`. Outside mods remain unguarded by this
 repository-only check, an accepted trade-off for a privilege-free loader.
 
-**Skill entries are never core content.** Skills belong in theme topics. A product
-chooses available skills through its dependencies, as for any content: the registry
-is the plain sum of loaded mods, with no separate skill list. Core rows cannot name
-a skill id because skills are never core content; mechanism roles keep those rows
-valid with zero skills. A role with no provider adds no requirement. Theme rows may
-name skill ids through declared dependencies, so admission checks those references
-at load. Referencing a role does not provide its skill or take over its provider.
+**Skill providers.** Skills belong in theme topics. A product chooses available skills
+through its dependencies, as for any content: the registry is the plain sum of loaded
+mods, with no separate skill list. Mechanism roles keep shared rows valid with zero
+skills: a role with no provider adds no requirement. Rows naming skill ids need declared
+dependencies, so admission checks those references at load. Referencing a role does not
+provide its skill or take over its provider.
 See `packages/engine/src/core/recipeSkills.ts`, `recipeSkillRequirements`; `packages/engine/src/core/disassembly.ts`,
 `planDisassembly`; `packages/engine/src/core/prying.ts`, `pryPlan`; and `packages/engine/src/core/capabilities.ts`,
 `CONTENT_CAPABILITIES`.
@@ -211,16 +211,20 @@ vessel. The release ships the packaged foods' models in the `skelly.basic-foods`
 `skelly.packaged-foods` also depends on it; `skelly.basic-foods` never depends on hand tools.
 See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
 
-**Keys.** A key is content of whichever pack holds its lock-bearing door, not of core
-structures. Validation requires every key to name a lock some door in the same stack carries,
-so a core key whose door sits in a scenario template would fail the core stack alone. The core
-key box is a generic container and names no key. Key models are one release pack, so they live in the
-product mod `skelly.keys` and each key's pack depends on it; see
-`packages/deadvox/mods/skelly.keys/models-keys.jsonnet` and `packages/engine/src/core/content.ts`, `checkKeys`.
+**Keys.** A key belongs with its lock-bearing door, not with shared structures whose
+closure cannot supply that lock. Key models live in the product-tier pack `skelly.keys`,
+so each key's pack depends on it; see
+`packages/deadvox/mods/skelly.keys/pack/manifest.jsonnet`, `dependencies`;
+`packages/deadvox/mods/skelly.keys/models-keys.jsonnet`; and `packages/engine/src/core/content.ts`, `checkKeys`.
 
 **Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `packages/engine/src/core/liquids.ts`, `vesselAccepts`.
 
-**Recipes.** A recipe goes with its output's mod, and a recipe whose output is in core goes to `skelly.basic-recipes`, so one rule places every recipe. The cost is that `skelly.basic-recipes` grows and a recipe spanning two topics makes its mod depend on the other.
+**Recipes.** A recipe lives in its output's pack when that pack's declared closure
+supplies its inputs, tool qualities, workstation and recipe category. Otherwise it
+goes in `skelly.basic-recipes`, which sits above the topics it combines to avoid
+dependency cycles. Recipe categories belong to `skelly.crafting`; see
+`packages/mods/skelly.crafting/crafting.jsonnet`, `recipeCategories`, and
+`packages/mods/skelly.basic-recipes/pack/manifest.jsonnet`, `dependencies`.
 
 **Manuals.** A manual's id names what it is, a manual; its player-visible title stays as authored and need not say "Manual". Every manual sits in one theme mod, `skelly.manuals`, so loading it pulls in each topic its manuals teach. See `packages/mods/skelly.manuals/manuals-items.jsonnet`, `book`.
 
@@ -243,7 +247,7 @@ so the player keeps a working cursor and the log names the mod. See
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
 sounds with the product. A block names only the player's own footstep; other footsteps
-live in a product section keyed by family and block, because a core block cannot name a
+live in a product section keyed by family and block, because a shared block cannot name a
 product's actor. A block-adding mod must add rows for every family a loaded actor walks
 with, because a silent footstep is a bug that must be refused at load; a block that authors
 no footsteps and a family no loaded actor uses need none. Rows merge across mods, and a
@@ -315,8 +319,8 @@ Aim feel that applies to everyone is product policy, so each product sets its ow
 Skills modify that policy; a product can use it without a skill system. Expert endpoints belong to skills because
 those are what the skills reach; policy owns the unskilled baseline, so a product
 without skills needs no ceiling. See `packages/engine/src/core/skillTraining.ts`, `firearmsCombatTuning`
-and `meleeCombatTuning`; `packages/engine/src/core/aim.ts`, `playerAimTuning`. A core-only validation
-stack has no modifiers and does not imply a playable product.
+and `meleeCombatTuning`; `packages/engine/src/core/aim.ts`, `playerAimTuning`.
+A shared pack's dependency closure need not be a playable product.
 
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
 panel, because hiding the Skills tab would hide health information. The panel
@@ -351,19 +355,21 @@ extraction. Debug kits use the spawn menu or mod-owned start rows; see `docs/url
 scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 "Vocabulary". #393 owns the bounded tunables inventory, not a parallel list here.
 
-## Core-alone validation
+## Shared-pack closure validation
 
-Validate a stack of every core-tier mod alone, without skills, actors or
-scenario content. It must report zero issues from both
-`packages/engine/src/core/content.ts`, `buildRegistry` and `requiredContentIssues`: registry
-construction can discard broken files, so a registry existing is not proof of
-validity. This check keeps upward references out of shared content.
+Each shared pack must validate with only its own declared dependency closure, so a
+product can drop any pack it does not need. Pooling supposedly universal providers
+hides undeclared dependencies; checking each closure covers every shared pack.
+Universality grants no loader behaviour, so it is not a separate tier. The accepted
+cost is that universal usefulness is not machine-readable and the direction guard
+only separates theme, product and scenario ownership.
 
-Do not boot or play the core-only stack. It intentionally lacks a scenario and start;
-adding them merely to test core would reintroduce consumer dependencies.
-`test/coreOnly.test.ts` picks the core-tier mods by manifest tier, so a new one needs
-no test edit. Manifest, model and sound checks apply per pack; static reachability
-applies to playable stacks (`docs/content.md`, "Static reachability").
+Require zero admission and registry issues, not just a constructed registry:
+`packages/engine/src/core/content.ts`, `buildRegistry`, can discard broken files.
+Full-game required providers belong to playable-stack validation, not an isolated
+shared definition pack. Do not add a scenario or start merely to boot such a closure;
+that would reintroduce consumer dependencies. Manifest, model and sound checks apply
+per pack; static reachability applies to playable stacks (`docs/content.md`, "Static reachability").
 
 ## Package workstreams
 
@@ -387,7 +393,7 @@ These workstreams preserve #637's proof obligations:
   not per-kit base content.
 - **Skill providers:** shared mechanisms must work without skills; products choose
   their skill topics through dependencies rather than a second availability list.
-- **Core extraction:** shared content must validate independently of product entries,
+- **Shared extraction:** shared content must validate independently of product entries,
   so lower-layer reuse cannot silently depend on a particular product.
 - **Theme extraction:** product flavour stays product-owned rather than becoming a
   prerequisite for shared mechanisms.
@@ -437,7 +443,7 @@ See `tools/readBundledPacks.ts`, `bundledPackDefines`.
 Each scenario's debug mod depends only on that scenario and the tiers below, so none but
 the test house's may override the test-house layout. A scenario split into city and start
 mods keeps one debug mod that depends on both halves, as the gauntlet's does. Furniture
-owned by product, theme or core mods belongs to no scenario, so its debug rows live in one
+owned by product or theme mods belongs to no scenario, so its debug rows live in one
 product debug mod, `skelly.deadvox.scenario.debug`. It depends on product mods and below
 only; its tier is scenario because it is a test flow, although its id names no scenario.
 

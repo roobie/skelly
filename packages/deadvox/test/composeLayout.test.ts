@@ -67,6 +67,7 @@ const scenarioFixture = (): ComposedSiteDef => {
       },
     ],
     guarantee: { timber: 2 },
+    hordeCountBudget: 1,
     population: { authoredMarkers: false },
   });
 };

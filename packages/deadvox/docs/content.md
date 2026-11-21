@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you author or change Deadvox content sources, shared versus product ownership, pack file names or their build pipeline
   - you author road gates, road profiles or a site link joining two asks
   - you change ordered landscape cover, forest tree mixes, density profiles or baseline map-tone tuning
   - you author or change how a creature type's body falls when it dies
@@ -89,7 +89,7 @@ A bundled mod ships with the game but is applied only when asked, with `?mods=` 
 a comma-separated list of ids; `?mods=1` is the separate mods panel. Each one goes through
 the same intake as a player mod, so an unknown id is refused at startup with the usual
 diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
-rows from core content at build time, so its transformation remains beside its content.
+rows from its dependencies at build time, so its transformation remains beside its content.
 A bundled mod's file name matches its mod id, so the file is found by id. See
 `src/config/bundled/skelly.deadvox.beginner.jsonnet` and `packages/engine/src/game/bundledMods.ts`, `selectBundledMods`.
 The same parameter names an opt-in folder mod, which joins through pack admission with its
@@ -114,14 +114,14 @@ beginner-mode world is stored apart from a normal one. The URL alone decides the
 no menu switch exists for it: a world loads only when started with the same `?mods=`. See
 `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity`.
 
-## Core-pack integrity
+## Pack integrity
 
 Bundled packs use the common manifest contract so dependency ownership and deliberate
 entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
 winner between packs. The tier grants no privilege. A pack owns its definitions and
-names other packs' content only through declared dependencies, and core stays
-independent of theme-owned content. See `packages/engine/src/core/packAdmission.ts`,
+names other packs' content only through declared dependencies. Shared theme topics
+stay independent of product and scenario content. See `packages/engine/src/core/packAdmission.ts`,
 `PackManifestSchema` and `admitPacks`, and `packages/engine/src/game/bundledContent.ts`, `createBundledContent`.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See
@@ -164,17 +164,16 @@ A check that does both splits: the part the game reads stays in the build. See
 
 ## Graphics policy
 
-Graphics defaults and allowed ranges or options belong to the core mod so mods can tune
-quality without changing engine mechanics. Reject an inverted range, a default outside
-its range, or toggle choices that exclude their default. Require the core policy row at
-playable-pack admission rather than inventing missing policy in a renderer. See
+Graphics policy belongs to shared content so mods can tune quality without changing
+engine mechanics. A renderer must not invent missing policy: a playable stack supplies
+a provider whose defaults and choices are consistent. See
 `packages/mods/skelly.graphics/graphics.jsonnet`, `packages/engine/src/core/graphics.ts`, `GraphicsOptionsSchema`, and
 `packages/engine/src/core/content.ts`, `requiredContentIssues`.
 
 ## Inventory action tunables and labels
 
 Inventory action timing and throw shape are tuning of the player's inventory row, and
-the label of an item action is player-facing text in the core ui row.
+the label of an item action is player-facing text in the shared UI row.
 Keeping them in content lets a mod retune or reword them without a code change. The schema
 requires every field, so a pack that omits one fails validation instead of silently
 inheriting a code default. Readers take the values from the registry. See
@@ -185,7 +184,7 @@ inheriting a code default. Readers take the values from the registry. See
 
 What core says to the player, its refusals, notices and option labels, is mod content
 like any other text (#393, #456), so a mod can reword or translate it without a code
-change. It lives in the core ui row, in its own file so other text tables can grow beside
+change. It lives in the shared UI row, in its own file so other text tables can grow beside
 it without touching the same lines. See `packages/mods/skelly.ui/ui-core-text.libsonnet`.
 
 - **Read by key.** Code names each message by a stable key and never compares or matches
@@ -561,7 +560,7 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   alone cannot protect it from furnishings or later stamping. See
   `packages/engine/src/core/scenarioComposition.ts`, `composeScenario`, and
   `packages/engine/src/core/scenarioCertificate.ts`, `scenarioCertificate`.
-- **Goal text.** The words the goal shows when it refuses live in a shared core-pack text
+- **Goal text.** The words the goal shows when it refuses live in a shared-pack text
   table (#456), not on the scenario row. Player-facing wording belongs to the mod, and the
   same line copied to every place that shows it is debt. For that reason the refusals the
   goal shares with other actions move to the table in the same #393 step as the goal's
@@ -599,7 +598,7 @@ Severed parts come from the asset release, which cuts each zombie type at its bo
 
 ## Loot economy descriptions
 
-Scarcity lives in the product's `itemEconomy` section, keyed by item id, not on item rows: what an object is belongs to the theme tier, while how scarce it is belongs to the product or scenario using it. Keeping rows apart from the item fragments means moving a definition to a shared topic does not carry its scarcity along. Deadvox's rows for core and theme items live in `skelly.deadvox.loot` with the loot tables, so one mod owns both what spawns and how scarce it is; a separate scarcity mod would let loot validate alone yet spawn nothing. A row naming an unloaded item is an error, so a product's or scenario's own items take their rows from the mod that loads them. See `packages/engine/src/core/loot.ts`, `ItemScarcitySchema`; `packages/engine/src/core/content.ts`, `checkItemEconomyRows`; and `mods/skelly.deadvox.loot/item-economy.jsonnet`, `itemEconomy`.
+Scarcity lives in the product's `itemEconomy` section, keyed by item id, not on item rows: what an object is belongs to the theme tier, while how scarce it is belongs to the product or scenario using it. Keeping rows apart from the item fragments means moving a definition to a shared topic does not carry its scarcity along. Deadvox's rows for shared theme items live in `skelly.deadvox.loot` with the loot tables, so one mod owns both what spawns and how scarce it is; a separate scarcity mod would let loot validate alone yet spawn nothing. A row naming an unloaded item is an error, so a product's or scenario's own items take their rows from the mod that loads them. See `packages/engine/src/core/loot.ts`, `ItemScarcitySchema`; `packages/engine/src/core/content.ts`, `checkItemEconomyRows`; and `mods/skelly.deadvox.loot/item-economy.jsonnet`, `itemEconomy`.
 
 An item with no row never spawns randomly, and hand placement still admits it. A fitted child goes through the same admission, so a child with no row also keeps its host out of random loot. This is the named exception in `PILLARS.md`, "Content forward compatibility". Template and layout source contexts are not part of this section.
 
