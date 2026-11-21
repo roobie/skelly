@@ -48,7 +48,13 @@ export const mountCraftPanel = (
   session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
     crafting: Pick<
       Session['crafting'],
-      'startReason' | 'previewEntityRepair' | 'previewPlacement' | 'previewTakeApartEntity' | 'previewPieceWork'
+      | 'startReason'
+      | 'previewEntityRepair'
+      | 'previewPlacement'
+      | 'previewTakeApartEntity'
+      | 'previewPieceWork'
+      | 'previewCellRepair'
+      | 'previewTakeApartCell'
     >;
   },
   controls: {
@@ -69,6 +75,13 @@ export const mountCraftPanel = (
   const tuning = claimed(registry.ui, 'interface')!.crafting;
   const { itemViewer: viewTuning, siteMark } = claimed(registry.graphics, 'graphics')!;
   let world: { target: BlockEntity; operation: WorldOperation } | undefined;
+  let cellWorld: import('./cellWork.ts').CellWorldWork | undefined;
+  const targetName = () => {
+    if (cellWorld) {
+      return registry.blocks[registry.blockIds.get(cellWorld.block)!]!.name;
+    }
+    return world ? session.inventory.entities.defOf(world.target).name : text.heading;
+  };
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
@@ -146,23 +159,41 @@ export const mountCraftPanel = (
       controls.pickSpot(id);
     }
   };
+  const startPayload = (id: string): ReplayActionPayload | undefined => {
+    if (cellWorld?.operation === 'take_apart') {
+      return {
+        kind: 'craft.take-apart-cell',
+        cell: cellWorld.cell,
+        expected: { block: cellWorld.block, epoch: cellWorld.epoch },
+      };
+    }
+    if (cellWorld) {
+      return {
+        kind: 'craft.repair-cell',
+        recipeId: id,
+        cell: cellWorld.cell,
+        expected: { epoch: cellWorld.epoch },
+        preference: preferences[id] ?? {},
+        ...(sources[id] ? { sources: sources[id] } : {}),
+      };
+    }
+    if (world) {
+      return worldStart(world, id);
+    }
+    return {
+      kind: 'craft.start',
+      recipeId: id,
+      ...(preferences[id] ? { preference: preferences[id] } : {}),
+      ...(sources[id] ? { sources: sources[id] } : {}),
+    };
+  };
   const actions: CraftPanelActions = {
     start: (id) => {
-      if (registry.recipes.get(id)?.placementReviewOrder !== undefined) {
+      if (!(world || cellWorld) && registry.recipes.get(id)?.placementReviewOrder !== undefined) {
         placementStart(id);
         return;
       }
-      const preference = preferences[id];
-      dispatch(
-        world
-          ? worldStart(world, id)
-          : {
-              kind: 'craft.start',
-              recipeId: id,
-              ...(preference ? { preference } : {}),
-              ...(sources[id] ? { sources: sources[id] } : {}),
-            },
-      );
+      dispatch(startPayload(id));
     },
     pickSpot: (id) => {
       if (registry.recipes.get(id)?.placementReviewOrder !== undefined) {
@@ -323,15 +354,28 @@ export const mountCraftPanel = (
     }
     return operation === 'take_apart' ? text.takeApartName : text.repairName;
   };
+  const reviewHeading = () => {
+    if (cellWorld) {
+      return fillText(cellWorld.operation === 'repair' ? text.repairName : text.takeApartName, { item: targetName() });
+    }
+    return fillText(headingOperation(world!), { item: targetName() });
+  };
+  const rowContext = () => {
+    if (cellWorld) {
+      return { cellRepair: { target: cellWorld, crafting: session.crafting } };
+    }
+    return world
+      ? { entityRepair: { target: world.target, crafting: session.crafting } }
+      : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown };
+  };
   const reviewOptions = () => ({
     text,
-    ...(world
+    ...(world || cellWorld
       ? {
           world: {
-            heading: fillText(headingOperation(world), {
-              item: session.inventory.entities.defOf(world.target).name,
-            }),
-            depicted: controls.targetView !== undefined,
+            heading: reviewHeading(),
+            depicted: world !== undefined && controls.targetView !== undefined,
+            turnable: world !== undefined,
           },
         }
       : { catalogue: catalogue! }),
@@ -339,6 +383,9 @@ export const mountCraftPanel = (
   });
   const rows = (reach: ReturnType<Session['reach']>): CraftRow[] => {
     requests = new Map();
+    if (cellWorld?.operation === 'take_apart') {
+      return [takeApartRow(registry, cellWorld, session.crafting)];
+    }
     if (world?.operation === 'continue') {
       const owned = pieceWorkRow(registry, world.target, session.crafting);
       if (!owned) {
@@ -357,12 +404,10 @@ export const mountCraftPanel = (
       preferences,
       sources,
       startReason: session.crafting.startReason(),
-      ...(placement && placement.recipeId === state.selected
+      ...(!(world || cellWorld) && placement && placement.recipeId === state.selected
         ? { placementPreview: { ...placement, crafting: session.crafting } }
         : {}),
-      ...(world
-        ? { entityRepair: { target: world.target, crafting: session.crafting } }
-        : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
+      ...rowContext(),
     });
   };
   /**
@@ -420,6 +465,11 @@ export const mountCraftPanel = (
       skills,
       revision,
       world?.target.uid,
+      cellWorld,
+      cellWorld &&
+        (cellWorld.operation === 'repair'
+          ? session.inventory.cellRepair?.state(cellWorld.cell)
+          : session.crafting.previewTakeApartCell(cellWorld.cell)),
       world?.operation,
       world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
@@ -445,18 +495,27 @@ export const mountCraftPanel = (
     if (reach === lastReach && drawKey(knowledge, skills) === drawn) {
       return;
     }
-    if (!world) {
+    if (!(world || cellWorld)) {
       updateCatalogue(reach, knowledge, skills);
     }
-    panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
+    panel.setAttribute('aria-label', targetName());
     render(reach);
     drawTarget();
-    if (focusStart && (world ? world.operation !== 'repair' : placement !== undefined)) {
+    if (focusStart && (world || cellWorld || placement)) {
       focusStart = false;
       panel.querySelector<HTMLElement>('.craft-start')?.focus();
     }
     lastReach = reach;
     drawn = drawKey(knowledge, skills);
+  };
+  const updateWorldData = () => {
+    if (world || cellWorld) {
+      panel.dataset.worldTarget = cellWorld ? cellWorld.cell.join(',') : String(world!.target.uid);
+      panel.dataset.worldOperation = cellWorld?.operation ?? world!.operation;
+    } else {
+      Reflect.deleteProperty(panel.dataset, 'worldTarget');
+      Reflect.deleteProperty(panel.dataset, 'worldOperation');
+    }
   };
   return {
     /** Pins a spot a placement recipe's picking confirmed, and points the review at its recipe. */
@@ -469,25 +528,24 @@ export const mountCraftPanel = (
         refresh();
       }
     },
-    update: (isOpen: boolean, work?: { target: BlockEntity; operation: WorldOperation }) => {
+    update: (
+      isOpen: boolean,
+      work?: { target: BlockEntity; operation: WorldOperation },
+      cellWork?: import('./cellWork.ts').CellWorldWork,
+    ) => {
       open = isOpen;
-      if (work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {
+      if (cellWork !== cellWorld || work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {
         openGroup = undefined;
         shownSlot = undefined;
         pickedService = undefined;
         turns = 0;
         drawn = '';
-        focusStart = open && work !== undefined && work.operation !== 'repair';
+        focusStart = open && (cellWork !== undefined || (work !== undefined && work.operation !== 'repair'));
       }
       world = open ? work : undefined;
+      cellWorld = open ? cellWork : undefined;
       panel.hidden = !open;
-      if (work && open) {
-        panel.dataset.worldTarget = String(work.target.uid);
-        panel.dataset.worldOperation = work.operation;
-      } else {
-        Reflect.deleteProperty(panel.dataset, 'worldTarget');
-        Reflect.deleteProperty(panel.dataset, 'worldOperation');
-      }
+      updateWorldData();
       if (!open) {
         drawn = '';
       }

@@ -1444,10 +1444,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         session.crafting.place(recipeId, destination, preference, sources),
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
-      craftRepairCell: (recipeId, cell, preference, sources) =>
-        session.crafting.repairCell(recipeId, cell, preference, sources),
+      craftRepairCell: (recipeId, cell, expected, options) =>
+        session.crafting.repairCell(recipeId, cell, expected, options),
       craftTakeApartEntity: (entityUid) => session.crafting.takeApartEntity(entityUid),
-      craftTakeApartCell: (cell) => session.crafting.takeApartCell(cell),
+      craftTakeApartCell: (cell, expected) => session.crafting.takeApartCell(cell, expected),
       craftServicePart: (entityUid, request) => session.crafting.servicePart(entityUid, request),
       craftContinue: () => {
         continueAction();

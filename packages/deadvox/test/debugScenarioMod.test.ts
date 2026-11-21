@@ -189,9 +189,7 @@ describe('authored debug scenario mod', () => {
     }
   });
 
-  // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
-  // own property — the aim meets clearable rubble the spawn can take apart — never as authored measurements.
-  it('aims the rubble look start at rubble the spawn can take apart', async () => {
+  it('stages reachable rubble and cracked repair targets at the rubble look spawn', async () => {
     const { configFromUrl } = await import('@skelly/engine/session');
     const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
     const query = new URLSearchParams({ 'start-mod': lookManifest.id, mods: lookManifest.id });
@@ -244,6 +242,20 @@ describe('authored debug scenario mod', () => {
       clock: { ratio: requireDayCycle(registry).clockRatio, start: 0 },
     });
     expect(inventory.canReachCell(hit!.block), 'aimed rubble out of reach').toBe(true);
+    const start = registry.starts.get(config.startId)!;
+    const damaged = start.blockDamage ?? [];
+    expect(damaged.length).toBeGreaterThan(0);
+    for (const { cell, damage } of damaged) {
+      const block = registry.blocks[standing(cell)!]!;
+      expect(damage).toBeGreaterThan(0);
+      expect(registry.blockMaterials.get(block.material)?.durability).toBeGreaterThan(damage);
+      expect((start.recipes ?? []).some((id) => registry.recipes.get(id)?.repair?.block === block.id)).toBe(true);
+      expect(inventory.canReachCell(cell), 'cracked cell out of reach').toBe(true);
+      const direction = cell.map((value, axis) => value + 0.5 - eye[axis]!) as Vec3;
+      const distance = Math.hypot(...direction);
+      const sight = raycast(eye, direction.map((value) => value / distance) as Vec3, distance, solid);
+      expect(sight?.block, 'cracked cell is hidden').toEqual(cell);
+    }
   });
 
   it('stays out of the default packs and content unless selected', () => {

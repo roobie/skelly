@@ -80,6 +80,7 @@ import {
   type Actor,
   applyStartState,
   type BodyRegion,
+  cellActionsFor,
   clearedBore,
   crosshairTarget,
   discoveryForPlan,
@@ -1609,6 +1610,14 @@ const startPlayWith = (
     pickSpot: (recipeId) => enterPlacementPicking(recipeId),
   });
 
+  const syncCraftPanel = () => {
+    const reviewing = screen.activeTab === 'repair';
+    craftPanel.update(
+      screen.isOpen && !sim.dead,
+      reviewing ? screen.worldWork : undefined,
+      reviewing ? screen.cellWork : undefined,
+    );
+  };
   let revealActors = false;
   const recording = createAttemptRecording(
     engine.attemptPolicy,
@@ -1920,7 +1929,6 @@ const startPlayWith = (
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
-    // A look reaches cell repair with no player-facing view: the trigger is the known recipe naming the aimed block.
     repairCell: (cell) => {
       if (replayPlayer) {
         return 'Input replay owns this run';
@@ -1933,18 +1941,27 @@ const startPlayWith = (
       if (!(block && recipe)) {
         return `No known repair recipe for ${block?.name ?? 'that block'}`;
       }
+      const preview = session.crafting.previewCellRepair(recipe.id, cell);
+      if (!preview.identity) {
+        return preview.refusal;
+      }
       return router.dispatchScreenCommand({
         kind: 'craft.repair-cell',
+        expected: preview.identity,
         recipeId: recipe.id,
         cell: [cell[0], cell[1], cell[2]],
         preference: {},
       });
     },
-    // A look reaches rubble clearing with no player-facing view: the trigger is the aimed rubble cell itself.
-    takeApartCell: (cell) =>
-      replayPlayer
-        ? 'Input replay owns this run'
-        : router.dispatchScreenCommand({ kind: 'craft.take-apart-cell', cell: [cell[0], cell[1], cell[2]] }),
+    takeApartCell: (cell) => {
+      if (replayPlayer) {
+        return 'Input replay owns this run';
+      }
+      const preview = session.crafting.previewTakeApartCell(cell);
+      return preview.identity
+        ? router.dispatchScreenCommand({ kind: 'craft.take-apart-cell', cell: [...cell], expected: preview.identity })
+        : preview.refusal;
+    },
     compress: () => router.compress(),
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {
@@ -2580,6 +2597,24 @@ const startPlayWith = (
     switch (target.kind) {
       case 'item':
         return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
+      case 'cell': {
+        if (mode !== 'wield') {
+          return undefined;
+        }
+        const actions = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        const selected = actionMenu.open(
+          'furniture',
+          undefined,
+          radialEntries(actions, actionMenuTuning.directions.furniture),
+        );
+        if (selected?.id === 'repair' || selected?.id === 'take_apart') {
+          quickbarInput.cancel();
+          screen.openCellWork(target.cell, selected.id);
+          mainMenuOpen = false;
+          syncMenuState();
+        }
+        return undefined;
+      }
       case 'body':
         return { kind: 'actor.downed', actorId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
@@ -3075,6 +3110,12 @@ const startPlayWith = (
         return downedBodyHint(target.id);
       case 'vehicle':
         return vehiclePartHint(key, target);
+      case 'cell': {
+        const [action] = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        return action
+          ? html`${blockHint()} · ${fillHint(screenText.interaction.hold, { key, action: action.label })}`
+          : blockHint();
+      }
       default:
         return blockHint();
     }
@@ -3785,7 +3826,7 @@ const startPlayWith = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.worldWork : undefined);
+    syncCraftPanel();
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     // A press check shows its own progress, and the label would cover the ejection port it shows.

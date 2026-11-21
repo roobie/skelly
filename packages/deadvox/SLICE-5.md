@@ -9,6 +9,7 @@ read_if:
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing where Holdout players find building tools or fasteners
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
+  - you're integrating terrain repair or rubble clearing with the shared world-work review
 ---
 
 # Slice 5 — Holding ground
@@ -505,17 +506,16 @@ rounds are tracked under #1332.
 
 - **Construction, engine.** Cell and piece repair share one review
   (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and
-  `CraftCommands.repairCell`); cell repair waits only on its player entry, under
+  `CraftCommands.repairCell`), entered from the chosen piece or damaged cell under
   "Construction, view". Every breakable material yields its rubble item, and yields and
   clear times are content in `packages/mods/skelly.natural-world/block-materials.jsonnet`
   (`packages/engine/src/core/content.ts`, `checkBlockMaterials` refuses a breakable
   material without one), so the slow fallback under "Break yields" exists. Bulk stock
   is taken out of containers, never taken apart, under "Bulk stock". Rubble clearing is
   take-apart grown to terrain cells under "Rubble"
-  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartCell`); its
-  player entry follows cell repair's, and buried contents follow collapse under
-  "Destruction". Placement is built in the engine for the wall, floor, door, shelf and
-  door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartCell`), entered
+  from the chosen rubble cell; buried contents follow collapse under "Destruction".
+  Placement is built in the engine for the wall, floor, door, shelf and door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
   `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
   the sheet panel and the curtain of "First build vocabulary" are not authored.
   Player picking reaches the shared review through
@@ -529,12 +529,12 @@ rounds are tracked under #1332.
   pinned world-work review (`packages/presentation/src/ui/inventoryScreen.ts`,
   `InventoryScreen.openWorldWork`), whose layout is owned by
   `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
-  it. Placement picking shares that review, with its reasons in
-  `docs/crafting-layout.md`, "The picking gesture". Cell work remains under #1332:
-  extend the same review for a looked-at damaged or rubble cell rather than adding
-  a screen or borrowing a piece identity. Cell repair and rubble clearing reach
-  players only through `packages/presentation/src/presentation/debugInterface.ts`
-  until that entry lands.
+  it. Terrain repair and rubble clearing enter that same target-bound review from the
+  interaction ring, preserving one surface without disguising cells as pieces. See
+  `packages/engine/src/game/cellActions.ts`, `cellActionsFor`, and
+  `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openCellWork`.
+  Placement picking shares that review rather than adding a screen, with its reasons
+  in `docs/crafting-layout.md`, "The picking gesture".
 - **Playtest pack.** Author shelter and supply asks independently so each can be
   retuned without city-shape constraints; see
   `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
