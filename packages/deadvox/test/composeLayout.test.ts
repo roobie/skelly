@@ -501,7 +501,6 @@ const LANE: ComposedSiteDef['links'] = [
     from: { ask: 'homestead', port: 'gate' },
     to: { ask: 'barn', port: 'gate' },
     transition: { assembly: 'fixture_corner', gate: 'gate', outward: 'outward' },
-    surface: 'fixture_floor',
   },
 ];
 const roadFixture = () => {
@@ -959,4 +958,42 @@ it('rejects a transition with no route through it', () => {
     '.links[0].transition',
     'transition "fixture_homestead" needs a route between ports "gate" and "gate"',
   ]);
+});
+
+/** The fixture kit with every road port of the named pieces moved to another road profile. */
+const kitsOnProfile = (pieceIds: string[], profile: string): ContentFile => {
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  for (const piece of kits.mapPieces!.filter(({ id }) => pieceIds.includes(id))) {
+    for (const port of piece.ports) {
+      port.type = profile;
+    }
+  }
+  return kits;
+};
+
+it("lays the track in the road profile's surface, not one the link names", () => {
+  const scenario = roadScenario(LANE);
+  const kits = kitsOnProfile(['road_yard_e', 'road_yard_w', 'road_bend'], 'fixture_other_road');
+  const { registry } = composeRoads(scenario, true, kits);
+  const { layout } = composeLayout(11, registry, scenario);
+  expect(layout.tracks[0]!.surface).toBe(registry.roadProfiles.get('fixture_other_road')!.surface);
+  expect(layout.tracks[0]!.surface).not.toBe(registry.roadProfiles.get('fixture_road')!.surface);
+});
+
+it('refuses a link whose gates sit on road profiles of different surfaces', () => {
+  const scenario = roadScenario(LANE);
+  const kits = kitsOnProfile(['road_yard_w'], 'fixture_other_road');
+  const { registry } = composeRoads(scenario, false, kits);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].transition',
+    'link "lane" joins road profiles of different surfaces through transition "fixture_corner", which does not change surface',
+  ]);
+});
+
+it('refuses a road profile whose surface names no block', () => {
+  const scenario = roadScenario(LANE);
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  kits.roadProfiles![0]!.surface = 'no_such_block';
+  const { issues } = load(scenario, undefined, false, kits);
+  expect(issues).toContainEqual(expect.objectContaining({ path: expect.stringContaining('.surface') }));
 });

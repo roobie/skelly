@@ -29,7 +29,7 @@ import {
 } from './templates.ts';
 
 export interface MapKitIssue {
-  section: 'mapStyles' | 'mapPieces' | 'mapAssemblies' | 'mapSites';
+  section: 'mapStyles' | 'roadProfiles' | 'mapPieces' | 'mapAssemblies' | 'mapSites';
   id: string;
   path: string;
   message: string;
@@ -270,6 +270,16 @@ const slotSourceIssues = (registry: Registry, assembly: MapAssemblyDef): MapKitI
     }
   });
 
+const roadProfileIssues = (registry: Registry): MapKitIssue[] =>
+  [...registry.roadProfiles.values()]
+    .filter((profile) => !registry.blockIds.has(profile.surface))
+    .map((profile) => ({
+      section: 'roadProfiles',
+      id: profile.id,
+      path: '.surface',
+      message: `no block "${profile.surface}"`,
+    }));
+
 export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
   const issues: MapKitIssue[] = [];
   for (const style of registry.mapStyles.values()) {
@@ -286,6 +296,7 @@ export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
       }
     }
   }
+  issues.push(...roadProfileIssues(registry));
   const check = (
     section: 'mapPieces' | 'mapAssemblies' | 'mapSites',
     id: string,

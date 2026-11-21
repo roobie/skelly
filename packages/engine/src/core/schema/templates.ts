@@ -274,11 +274,13 @@ export const KitPortSchema = strictObject({
 });
 
 /**
- * A named road profile: the one width authority for every port whose `type` names it and every track it composes.
- * Whether class or surface join matching stays with exact `type` identity; a profile fixes width only.
+ * A named road profile: the one width and surface authority for every port whose `type` names it and every track
+ * it composes. A track has exactly these two fields, and no road class exists until something reads one.
  */
 export const RoadProfileSchema = strictObject({
   id: Id,
+  /** The block the road's track surface is made of. */
+  surface: Id,
   /** Metres, so track widths read in the same unit; on the half-metre grid so a port aperture can check against it. */
   widthMetres: pipe(
     Positive,

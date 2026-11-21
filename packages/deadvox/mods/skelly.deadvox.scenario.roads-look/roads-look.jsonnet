@@ -28,7 +28,6 @@ local context = { usage: ['Residential'], tier: 'Tier1' };
       from: { ask: 'homestead', port: 'gate' },
       to: { ask: 'barn', port: 'gate' },
       transition: { assembly: 'roads_corner', gate: 'gate', outward: 'outward' },
-      surface: 'dirt',
     }],
     guarantee: {},
     population: { authoredMarkers: false },

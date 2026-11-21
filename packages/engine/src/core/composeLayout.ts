@@ -226,7 +226,18 @@ const transitionIssues = (
     ];
   }
   const issues: Issue[] = [];
-  if (
+  const surfaceOf = (type: string): string | undefined => registry.roadProfiles.get(type)?.surface;
+  const surfaces = new Set(
+    [...gates.map((contract) => contract.type), gate.type, outward.type]
+      .map(surfaceOf)
+      .filter((surface) => surface !== undefined),
+  );
+  if (surfaces.size > 1) {
+    issues.push([
+      `${path}.transition`,
+      `link "${link.id}" joins road profiles of different surfaces through transition "${link.transition.assembly}", which does not change surface`,
+    ]);
+  } else if (
     [gate, outward].some((port) => port.traversal !== 'walk' || !horizontalPort(port)) ||
     gate.type !== outward.type ||
     gate.aperture.some((value, axis) => value !== outward.aperture[axis]) ||
@@ -250,9 +261,6 @@ const transitionIssues = (
       `${path}.transition`,
       `transition "${link.transition.assembly}" needs a route between ports "${link.transition.gate}" and "${link.transition.outward}"`,
     ]);
-  }
-  if (!registry.blockIds.has(link.surface)) {
-    issues.push([`${path}.surface`, `no block "${link.surface}"`]);
   }
   return issues;
 };
@@ -913,7 +921,7 @@ const planLink = (
       ...[...transitions[1]!.route].reverse().map((point) => metres(point)),
     ],
     width: profile.widthMetres,
-    surface: link.surface,
+    surface: profile.surface,
   };
   return { road: { link, transitions, corridor: corridor.rect, track } };
 };

@@ -286,8 +286,6 @@ const SiteLinkSchema = strictObject({
   to: strictObject({ ask: Id, port: Id }),
   /** The transition assembly mated to both gates: `gate` docks with the compound, `outward` faces the track. */
   transition: strictObject({ assembly: Id, gate: Id, outward: Id }),
-  /** The block the between-transition track surface is made of. */
-  surface: Id,
 });
 
 export const ComposedSiteSchema = strictObject({

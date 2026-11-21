@@ -87,7 +87,6 @@ const joinedRoad = (
     }
     return (point[0] - a[0]) * (b[1] - point[1]) - (point[1] - a[1]) * (b[0] - point[0]) !== 0;
   });
-  const [link] = scenario.links;
   return {
     layout,
     compoundCount: compounds.length,
@@ -97,7 +96,6 @@ const joinedRoad = (
     mouthsMatch,
     bends,
     profile: gates[0] ? registry.roadProfiles.get(gates[0].type) : undefined,
-    surface: link?.surface,
     startGate: gates[0],
   };
 };
@@ -108,10 +106,10 @@ it('composes the shipped roads look with its link fulfilled and its ground loada
   expect(joined.compoundCount).toBe(2);
   expect(joined.transitions).toHaveLength(2);
   expect(joined.mated).toBe(true);
-  // The track's width and surface come from the shipped profile and link, not literals.
+  // The track's width and surface come from the shipped profile, not literals.
   expect(joined.profile?.widthMetres).toBeDefined();
   expect(joined.track?.width).toBe(joined.profile?.widthMetres);
-  expect(joined.track?.surface).toBe(joined.surface);
+  expect(joined.track?.surface).toBe(joined.profile?.surface);
   expect(joined.mouthsMatch).toBe(true);
   expect(joined.bends).toBe(true);
   // The start stands just outside its compound's gate, facing along the road.
@@ -137,7 +135,7 @@ sweepGroup('roads links across seeds', () => {
       expect(joined.transitions).toHaveLength(2);
       expect(joined.mated).toBe(true);
       expect(joined.track?.width).toBe(joined.profile?.widthMetres);
-      expect(joined.track?.surface).toBe(joined.surface);
+      expect(joined.track?.surface).toBe(joined.profile?.surface);
       expect(joined.mouthsMatch).toBe(true);
       expect(joined.bends).toBe(true);
       for (const transition of joined.transitions) {

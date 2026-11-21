@@ -712,6 +712,7 @@
   "roadProfiles": [
     {
       "id": "dirt_road",
+      "surface": "dirt",
       "widthMetres": 2.5
     }
   ]
