@@ -22,12 +22,19 @@ const seed = start.seed!;
 const stage = () => {
   const site = new AuthoredSite(seed, registry, makeScale(0.5), layout);
   const inventory = new Inventory(registry, undefined, new BlockEntities(registry, seed));
-  const pieces = slotProps(registry, layout.showroom!).map((prop) => {
-    const spawn = site
-      .furnitureIn(toChunk(prop.pos[0]), toChunk(prop.pos[2]))
-      .find(({ spec }) => spec.type === prop.furniture && spec.pos.join() === prop.pos.join())!;
-    return inventory.furnishSpawn(spawn)!;
-  });
+  const props = slotProps(registry, layout.showroom!);
+  const columns = new Map(
+    props.map(({ pos }) => {
+      const column = [toChunk(pos[0]), toChunk(pos[2])] as const;
+      return [column.join(','), column];
+    }),
+  );
+  for (const [cx, cz] of columns.values()) {
+    for (const spawn of site.furnitureIn(cx, cz)) {
+      inventory.furnishSpawn(spawn);
+    }
+  }
+  const pieces = props.map(({ pos }) => inventory.entities.atOrigin(pos)!);
   const housings = pieces.filter((piece) => inventory.entities.housingView(piece).length > 0);
   const full = pieces.find((piece) => piece.pockets?.flat().length)!;
   const held = (id: string) => {
@@ -38,7 +45,7 @@ const stage = () => {
     }
     return item;
   };
-  return { inventory, housings, full, held, site };
+  return { inventory, housings, full, held, site, columns };
 };
 
 it('stages fixed housings, a full destination, and a spare that fits where the odd part does not', () => {
@@ -75,7 +82,7 @@ it('stages fixed housings, a full destination, and a spare that fits where the o
 });
 
 /** The stage's bus, with the modules and the lamp they light; `now` is the time a parts change settles at. */
-const plant = ({ inventory, site }: ReturnType<typeof stage>) => {
+const plant = ({ inventory, site, columns }: ReturnType<typeof stage>) => {
   const devices = placedPowerDevices(registry, site.authoredPlacements);
   const modules = devices.filter((device) => registry.furniture.get(device.type)!.power!.requires);
   const lamp = devices.find((device) => registry.furniture.get(device.type)!.power!.light)!;
@@ -84,8 +91,8 @@ const plant = ({ inventory, site }: ReturnType<typeof stage>) => {
     const power = new SitePower({
       registry,
       inventory: owner,
-      // The stage furnished every showroom piece, as the deck column's arrival does.
-      arrived: () => true,
+      // Only the columns whose complete furniture supply the stage furnished have arrived.
+      arrived: (origin) => columns.has([toChunk(origin[0]), toChunk(origin[2])].join(',')),
       devices,
       clock: BASE_CLOCK,
       cycle: BASE_DAY_CYCLE,
