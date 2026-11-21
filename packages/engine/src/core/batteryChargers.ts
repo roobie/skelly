@@ -11,14 +11,15 @@ type StartResult = { ok: true } | { ok: false; reason: string };
 
 export interface ChargerEndpoint {
   readonly consumerId: string;
-  readonly entityUid: number;
+  /** A placed endpoint resolves its stable UID only after its column furnishes the whole piece. */
+  readonly entityUid: number | undefined;
 }
 
 /** Item effects belong here; dispatch and elapsed-service boundaries belong to PowerNetwork. */
 export class BatteryChargers implements PowerWork {
   readonly network: PowerNetwork;
   private atGameMilliseconds: number;
-  private readonly endpoints = new Map<string, number>();
+  private readonly endpoints = new Map<string, ChargerEndpoint>();
   private readonly inventory: Inventory;
 
   constructor(
@@ -30,37 +31,48 @@ export class BatteryChargers implements PowerWork {
     this.inventory = inventory;
     this.atGameMilliseconds = state.atGameMilliseconds;
     const uids = new Set<number>();
-    for (const { consumerId, entityUid } of endpoints) {
-      const entity = inventory.entities.byUid(entityUid);
-      const furniture = entity && inventory.registry.furniture.get(entity.type);
+    for (const endpoint of endpoints) {
+      const { consumerId, entityUid } = endpoint;
+      const entity = entityUid === undefined ? undefined : inventory.entities.byUid(entityUid);
       const device = state.devices.find(({ id }) => id === consumerId);
+      const invalidEntity =
+        entityUid !== undefined && (!this.matchesEndpoint(entity, device?.type) || uids.has(entityUid));
       if (
-        !(entity && furniture?.charger && device) ||
-        device.type !== furniture.power?.device ||
+        !device ||
         environment.registry.powerDevices.get(device.type)?.kind !== 'consumer' ||
-        this.endpoints.has(consumerId) ||
-        uids.has(entityUid)
+        invalidEntity ||
+        this.endpoints.has(consumerId)
       ) {
         throw new Error('Invalid charger endpoint');
       }
-      this.endpoints.set(consumerId, entityUid);
-      uids.add(entityUid);
+      this.endpoints.set(consumerId, endpoint);
+      if (entityUid !== undefined) {
+        uids.add(entityUid);
+      }
     }
     for (const entity of inventory.entities.records) {
-      if (
-        entity.charging &&
-        (!uids.has(entity.uid) ||
-          entity.charging.atGameMilliseconds !== this.atGameMilliseconds ||
-          this.remaining(entity) <= 0)
-      ) {
+      if (entity.charging && !this.activeBoundary(entity, uids)) {
         throw new Error('Saved charger and power must share an active settlement boundary');
       }
     }
     this.network = new PowerNetwork(environment, state, this);
   }
 
+  private matchesEndpoint(entity: BlockEntity | undefined, deviceType: string | undefined): boolean {
+    const furniture = entity && this.inventory.registry.furniture.get(entity.type);
+    return Boolean(furniture?.charger && deviceType === furniture.power?.device);
+  }
+
+  private activeBoundary(entity: BlockEntity, uids: ReadonlySet<number>): boolean {
+    return (
+      uids.has(entity.uid) &&
+      entity.charging?.atGameMilliseconds === this.atGameMilliseconds &&
+      this.remaining(entity) > 0
+    );
+  }
+
   private entity(consumerId: string): BlockEntity | undefined {
-    const uid = this.endpoints.get(consumerId);
+    const uid = this.endpoints.get(consumerId)?.entityUid;
     return uid === undefined ? undefined : this.inventory.entities.byUid(uid);
   }
 

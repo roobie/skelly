@@ -77,9 +77,7 @@ const fixture = (start = 0, restore?: SaveSnapshot, far = false) => {
   });
   if (!restore) {
     for (const device of devices) {
-      if (!base.furniture.get(device.type)!.charger) {
-        session.entities.add(device.entitySpec!);
-      }
+      session.inventory.furnishSpawn({ spec: device.entitySpec!, loot: [] });
     }
   }
   session.sim.paused = false;
