@@ -179,7 +179,8 @@ export const cascadeSupport = (
   const { registry } = mover.inventory;
   const state = terrain.world.support;
   const view = terrainSupportView(terrain);
-  const support = createSupport(registry, view);
+  // A judgement holds only while the blocks it read stand, so every fall starts a fresh one.
+  let support = createSupport(registry, view);
   const rubbleIds = rubbleBlockIds(registry);
   const destroyed: BlockEntity[] = [];
   const edited: Vec3[] = [];
@@ -202,6 +203,7 @@ export const cascadeSupport = (
       const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
       destroyed.push(...fell.destroyed);
       edited.push(...fell.edited);
+      support = createSupport(registry, view);
     }
     return true;
   };

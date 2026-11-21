@@ -64,16 +64,25 @@ const row = (x0: number, x1: number, y: number, block: number): BlockBox => ({
 });
 
 /**
- * Natural ground fills y = 0. Post A stands at x = 2 and holds beams at y = 3 out to x = 4. Post Q stands at x = 10;
- * post R stands at x = 11 under the beam run at y = 3 from x = 11 to 13, whose far end is anchored only by R.
+ * Natural ground fills y = 0. Post A stands at x = 2 and holds beams at y = 3 out to x = 4. Post Q stands at x = 9;
+ * post R stands at x = 11 under the beam run at y = 3 from x = 10 to 13, whose far end is anchored only by R. Posts
+ * fall into span-2 rubble, and no cell beside R's top is solid, so R's rubble holds nothing.
  */
-const structures = (registry: ReturnType<typeof fixtureRegistry>): BlockBox[] => {
+const structures = (registry: ReturnType<typeof fixtureRegistry>, neighbour: boolean): BlockBox[] => {
   const post = registry.blockIds.get(POST)!;
   const beam = registry.blockIds.get(BEAM)!;
-  return [column(2, 3, post), row(3, 4, 3, beam), column(10, 3, post), column(11, 2, post), row(11, 13, 3, beam)];
+  return [
+    column(2, 3, post),
+    row(3, 4, 3, beam),
+    column(9, 3, post),
+    column(11, 2, post),
+    row(10, 13, 3, beam),
+    // A grounded column beside post A: rubble of span 2 next to it is held, though the post it fell from was not.
+    ...(neighbour ? [column(3, 2, post)] : []),
+  ];
 };
 
-const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>) => {
+const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>, neighbour = false) => {
   const registry = fixtureRegistry(cascadeCellsPerTick);
   const world = new World();
   const ground = registry.blockIds.get(GROUND)!;
@@ -100,7 +109,7 @@ const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>
         structures: [],
       },
     },
-    structures: structures(registry),
+    structures: structures(registry, neighbour),
   };
   const canonical = new CanonicalTerrain(world, createTerrainEvaluator(terrain));
   const source: ColumnSource = {
@@ -156,13 +165,17 @@ const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>
 };
 type Fixture = ReturnType<typeof fixture>;
 
-const reload = async (f: Fixture, cascadeCellsPerTick?: number) => {
+const reload = async (f: Fixture, cascadeCellsPerTick?: number, neighbour = false) => {
   const decoded = await decodeSave(await encodeFixture(f.snapshot()), {
     version: formatVersion,
     contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
-  return fixture(cascadeCellsPerTick, decoded.snapshot);
+  return fixture(cascadeCellsPerTick, decoded.snapshot, neighbour);
 };
+
+/** The fixture row's blocks, so two runs can be compared cell by cell. */
+const rowBlocks = (f: Fixture) =>
+  Array.from({ length: 7 }, (_row, y) => Array.from({ length: 16 }, (_cell, x) => f.block([x, y + 1, Z])));
 
 /** Ticks until the cascade ends; the bound only stops a cascade that never would. */
 const settle = (f: Fixture) => {
@@ -188,7 +201,7 @@ describe('support cascade', () => {
       expect(f.block(cell)).toBe(RUBBLE);
     }
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
-    expect(f.block([10, 3, Z])).toBe(POST);
+    expect(f.block([9, 3, Z])).toBe(POST);
   });
 
   it('drops a run whose only anchor stays up but no longer stands', () => {
@@ -199,6 +212,26 @@ describe('support cascade', () => {
     expect(f.block([11, 3, Z])).toBe(BEAM);
     expect(f.block([13, 3, Z])).toBe(RUBBLE);
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
+  });
+
+  it('judges each cell by the blocks standing after earlier falls, so the batch size never changes the outcome', async () => {
+    const run = async (cap: number | undefined, reloadAfterFirstTick: boolean) => {
+      let f = fixture(cap, undefined, true);
+      expect(f.strike([2, 1, Z])).toBe(true);
+      f.tick();
+      if (reloadAfterFirstTick) {
+        f = await reload(f, cap, true);
+      }
+      settle(f);
+      return f;
+    };
+    const batch = await run(undefined, false);
+    // The span-0 post over the break falls into span-2 rubble, which the neighbouring column holds sideways.
+    expect(batch.block([2, 2, Z])).toBe(RUBBLE);
+    expect(batch.block([2, 3, Z])).toBe(POST);
+    for (const other of await Promise.all([run(1, false), run(1, true)])) {
+      expect(rowBlocks(other)).toEqual(rowBlocks(batch));
+    }
   });
 
   it('stops at its per-tick cap and continues on the next tick', () => {
