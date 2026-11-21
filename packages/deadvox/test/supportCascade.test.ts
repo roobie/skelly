@@ -66,7 +66,7 @@ const row = (x0: number, x1: number, y: number, block: number): BlockBox => ({
 /**
  * Natural ground fills y = 0. Post A stands at x = 2 and holds beams at y = 3 out to x = 4. Post Q stands at x = 9;
  * post R stands at x = 11 under the beam run at y = 3 from x = 10 to 13, whose far end is anchored only by R. Posts
- * fall into span-2 rubble, and no cell beside R's top is solid, so R's rubble holds nothing.
+ * drop into rubble below their old position, so losing R's standing top removes its sideways anchor.
  */
 const structures = (registry: ReturnType<typeof fixtureRegistry>, neighbour: boolean): BlockBox[] => {
   const post = registry.blockIds.get(POST)!;
@@ -188,17 +188,24 @@ const settle = (f: Fixture) => {
 };
 
 describe('support cascade', () => {
-  it('drops every dependant of a broken post into rubble in place and leaves nothing unheld standing', () => {
+  it('drops broken dependants onto the first solid below instead of leaving rubble suspended', () => {
     const f = fixture();
     expect(f.strike([2, 1, Z])).toBe(true);
     settle(f);
     for (const cell of [
+      [2, 1, Z],
       [2, 2, Z],
+      [3, 1, Z],
+      [4, 1, Z],
+    ] as Vec3[]) {
+      expect(f.block(cell)).toBe(RUBBLE);
+    }
+    for (const cell of [
       [2, 3, Z],
       [3, 3, Z],
       [4, 3, Z],
     ] as Vec3[]) {
-      expect(f.block(cell)).toBe(RUBBLE);
+      expect(f.canonical.getBlock(...cell)).toBe(0);
     }
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
     expect(f.block([9, 3, Z])).toBe(POST);
@@ -210,7 +217,8 @@ describe('support cascade', () => {
     settle(f);
     // The beam over the broken post is still held sideways by post Q, yet it anchors nothing now.
     expect(f.block([11, 3, Z])).toBe(BEAM);
-    expect(f.block([13, 3, Z])).toBe(RUBBLE);
+    expect(f.block([13, 1, Z])).toBe(RUBBLE);
+    expect(f.canonical.getBlock(13, 3, Z)).toBe(0);
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
   });
 
@@ -226,9 +234,8 @@ describe('support cascade', () => {
       return f;
     };
     const batch = await run(undefined, false);
-    // The span-0 post over the break falls into span-2 rubble, which the neighbouring column holds sideways.
     expect(batch.block([2, 2, Z])).toBe(RUBBLE);
-    expect(batch.block([2, 3, Z])).toBe(POST);
+    expect(batch.canonical.getBlock(2, 3, Z)).toBe(0);
     for (const other of await Promise.all([run(1, false), run(1, true)])) {
       expect(rowBlocks(other)).toEqual(rowBlocks(batch));
     }
@@ -237,10 +244,10 @@ describe('support cascade', () => {
   it('stops at its per-tick cap and continues on the next tick', () => {
     const f = fixture(1);
     expect(f.strike([2, 1, Z])).toBe(true);
-    const fallen = () => [2, 3, 4].filter((x) => f.block([x, 3, Z]) === RUBBLE).length;
+    const fallen = () => [2, 3, 4].filter((x) => f.block([x, 1, Z]) === RUBBLE).length;
     f.tick();
-    expect(f.block([2, 2, Z])).toBe(RUBBLE);
-    expect(fallen()).toBe(0);
+    expect(f.block([2, 1, Z])).toBe(RUBBLE);
+    expect(fallen()).toBe(1);
     expect(f.world.support.cascading).toBe(true);
     settle(f);
     expect(fallen()).toBe(3);

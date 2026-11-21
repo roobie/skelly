@@ -189,12 +189,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
   }
 };
 
-/**
- * An unheld cell falls into its material's rubble in place. Pieces standing on it or hung under it lose it as they
- * would lose a broken cell, so the loss roots are judged with the cell cleared; their debris lands with the rubble
- * standing, so nothing lands inside it. Debris with no room leaves its piece standing on the rubble, since a fall
- * cannot be refused the way a blow is.
- */
+/** An instant drop: furniture loses the source cell, and its debris plans around the landed rubble. */
 const fallCell = (
   context: TerrainStrike,
   cell: Vec3,
@@ -207,17 +202,34 @@ const fallCell = (
     const { revision } = supply;
     try {
       const clearing = provisionalMover(context, cell);
+      const landing: Vec3 = [...cell];
+      const minY = terrain.terrain.scale.minCy * CHUNK;
+      while (
+        landing[1] > minY &&
+        !mover.inventory.registry.blocks[terrain.getBlock(landing[0], landing[1] - 1, landing[2])]!.solid
+      ) {
+        landing[1] -= 1;
+      }
       const roots = [
         ...floorLossRoots(clearing, [cell[0], cell[1] + 1, cell[2]]),
         ...hostLossRoots(clearing, [cell[0], cell[1] - 1, cell[2]]),
       ];
-      const plan = roots.length > 0 ? planRuin(provisionalMover(context), roots, [], []) : undefined;
+      const landed = provisionalMover(
+        {
+          ...context,
+          obstructed: (x, y, z) =>
+            (x === landing[0] && y === landing[1] && z === landing[2]) || context.obstructed?.(x, y, z) === true,
+        },
+        cell,
+      );
+      const plan = roots.length > 0 ? planRuin(landed, roots, [], []) : undefined;
       let destroyed: BlockEntity[] = [];
       let edited: Vec3[] = [];
       supply.publish(revision, ensure, (live) => {
         terrain.ensureCell(...cell);
         destroyed = plan ? commitRuin({ ...mover, inventory: live }, plan) : [];
-        edited = terrain.world.setBlock(...cell, rubble);
+        edited = terrain.world.setBlock(...cell, 0);
+        edited.push(...terrain.world.setBlock(...landing, rubble));
       });
       return { destroyed, edited };
     } catch (error) {

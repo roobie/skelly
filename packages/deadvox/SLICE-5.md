@@ -10,6 +10,7 @@ read_if:
   - you're changing where Holdout players find building tools or fasteners
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
+  - you're changing structure support, cascade landing or its placement refusal
 ---
 
 # Slice 5 — Holding ground
@@ -132,38 +133,30 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** natural terrain holds. A structure cell, authored or placed, is held
-  when the solid cell under it holds, or when a straight sideways run of solid cells
-  reaches, within the cell's own material span, a cell that stands on a holding cell.
-  Only a standing cell or natural ground anchors a run; a held beam never anchors the
-  next, because chained beams would cantilever without end and span would stop being a
-  limit. A tree trunk that carries canopy refuses a blow, with no damage and no cascade,
-  until felling exists: canopy falling to rubble reads wrong, canopy left floating reads
-  wrong, and refusing keeps a real felling system, with logs and timber yield, fully open.
-  Content marks tree parts and the refusal text is content; a trunk with no canopy on it
-  breaks like any block. The canopy search reads at most a content-set number of cells,
-  the trunk cell included, and one that runs out refuses the blow, since it never cleared
-  the trunk. An unbreakable material resists before any search. See `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`,
-  and `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
-  Any solid structure cell holds any other, with span the only limit, and furniture
-  never holds terrain. These rules make no wall float and no floor hang in front of a
-  tester without simulating physical stress, and the material's span is what separates
-  a floor that bridges a gap from one that cannot.
-  Support is computed from the standing blocks, so untouched authored structure stays
-  computed and a save grows with changes, not exploration; only what play produces is
-  saved, a placed block among it, because a placed block is structure even where it
-  matches the natural ground. Placement refuses a block that would not be held, so the
-  player learns why before spending inputs. Breaking a cell, or clearing rubble,
-  cascades: every cell left unheld falls into its material's rubble in place, and the
-  pieces on or under it are lost as under a broken cell. Rubble neither buries nor
-  harms here, so the collapse PR under "Lanes and the next rounds" extends the cascade
-  rather than replacing it. A content cap bounds the work per tick so a large collapse
-  never stalls one; the rest continues later and survives a reload, so a cascade still
-  ends with no unheld cell standing other than rubble. Each cell is judged against the
-  blocks standing at that moment, so peers and batch sizes agree. See
-  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState`;
-  `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`;
-  `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`; and
+- **Support:** natural terrain anchors structure; material span limits sideways reach.
+  A held beam cannot anchor the next run, because chained beams would cantilever without
+  end and span would stop being a limit. Furniture never holds terrain. This avoids
+  floating walls without simulating physical stress; see
+  `packages/engine/src/core/structureSupport.ts`, `createSupport`.
+  A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
+  or left floating both read wrong, and refusal keeps timber yield open. An exhausted
+  search has not cleared the trunk, so it refuses too; see
+  `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
+  Authored support stays derived so saves grow with play, not exploration. Player-placed
+  blocks need provenance even when they match natural ground; see
+  `packages/engine/src/core/structureSupport.ts`, `SupportState`. Placement refuses an
+  unheld block before spending inputs so the player learns why first; see
+  `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
+  Cascade-broken cells drop straight down instantly and land as rubble on the first
+  solid terrain below. Rubble left where structure stood hides the collapse from the
+  player; falling rubble reads as a collapse. Landed rubble is solid terrain for later
+  drops. Furniture is not a terrain landing surface. Burial and impact harm remain
+  outside this cascade; see `SLICE-5.md`, "Lanes and the next rounds". See
+  `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
+  Judgements use the blocks standing after earlier falls so peers and batch sizes agree.
+  A content-owned cell cap spreads work across ticks, rather than promising a time bound;
+  saving the frontier lets interrupted cascades finish after reload. See
+  `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
   `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".

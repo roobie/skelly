@@ -2,7 +2,7 @@ import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
-import { createWorldSetup, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
+import { CHUNK, createWorldSetup, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { ChunkMeshes } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
 import supportLookManifest from '../mods/skelly.deadvox.scenario.test-house.support-look/pack/manifest.json' with {
@@ -93,12 +93,28 @@ const playLook = () => {
     frames(60);
   };
   const block = (cell: Vec3) => registry.blocks[canonical.getBlock(...cell)]!;
-  return { registry, simulation, rendered, aimed, block, frames, swing };
+  return { registry, simulation, rendered, aimed, block, frames, swing, minY: config.scale.minCy * CHUNK };
+};
+
+const expectedLandings = (look: ReturnType<typeof playLook>, falling: Vec3[]) => {
+  const removed = new Set([...falling, look.aimed.block].map((cell) => cell.join(',')));
+  const destinations = new Map<string, Vec3>();
+  const solidAfterBreak = (cell: Vec3) =>
+    destinations.has(cell.join(',')) || (look.block(cell).solid && !removed.has(cell.join(',')));
+  for (const source of [...falling].sort((a, b) => a[1] - b[1])) {
+    const destination: Vec3 = [...source];
+    while (destination[1] > look.minY && !solidAfterBreak([destination[0], destination[1] - 1, destination[2]])) {
+      destination[1] -= 1;
+    }
+    destinations.set(destination.join(','), destination);
+  }
+  return destinations;
 };
 
 describe('support look as played', () => {
-  it('turns the post top, beam run and floor to rubble in place when blows break the aimed post cell, keeping the stub', () => {
-    const { registry, simulation, rendered, aimed, block, frames, swing } = playLook();
+  it('drops the post top, beam run and floor onto solid terrain when blows break the aimed post cell, keeping the stub', () => {
+    const look = playLook();
+    const { registry, simulation, rendered, aimed, block, frames, swing } = look;
     const rubble = rubbleBlockIds(registry);
     const [x, y, z] = aimed.block;
     // The prop is the plank structure around the aimed cell; it is read before the first blow.
@@ -110,15 +126,23 @@ describe('support look as played', () => {
     const stub = prop.filter((cell) => cell[1] < y && cell[0] === x && cell[2] === z);
     expect(held.length).toBeGreaterThan(1);
     expect(stub.length).toBeGreaterThan(0);
-    for (let blows = 0; blows < 60 && block(aimed.block).solid; blows++) {
+    const landing = expectedLandings(look, held);
+    const aimedId = block(aimed.block).id;
+    for (let blows = 0; blows < 60 && block(aimed.block).id === aimedId; blows++) {
       swing();
     }
-    expect(block(aimed.block).solid, 'aimed cell never broke').toBe(false);
+    expect(block(aimed.block).id, 'aimed cell never broke').not.toBe(aimedId);
     frames(600);
     expect(simulation.support.cascading).toBe(false);
-    for (const cell of held) {
-      expect(rubble.has(block(cell).id), `${cell} stays ${block(cell).id}`).toBe(true);
+    expect(landing.size).toBe(held.length);
+    for (const cell of landing.values()) {
+      expect(rubble.has(block(cell).id), `${cell} is ${block(cell).id}`).toBe(true);
+      expect(block([cell[0], cell[1] - 1, cell[2]]).solid).toBe(true);
       expect(registry.blocks[rendered.getBlock(...cell)]!.id).toBe(block(cell).id);
+    }
+    for (const cell of held.filter((source) => !landing.has(source.join(',')))) {
+      expect(block(cell).solid).toBe(false);
+      expect(registry.blocks[rendered.getBlock(...cell)]!.solid).toBe(false);
     }
     for (const cell of stub) {
       expect(block(cell).id.startsWith('plank_')).toBe(true);

@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you check structure support and its cascade by eye (#1332)
+  - you check structure support, rubble landing and its cascade by eye (#1332)
   - you change `packages/engine/src/core/structureSupport.ts`, `createSupport`, or `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`
   - you change the fixture's post, beam run or floor
 ---
@@ -22,7 +22,8 @@ aim meets the post's eye-height cell, below both runs. The rule the look checks 
 2. Without turning, break the aimed post cell: swing the sledgehammer at it until it breaks, or toggle the debug
    build tool and use its destroy key on it (`packages/mods/skelly.controls/controls.jsonnet`, "debug.build-toggle",
    and `packages/mods/skelly.controls/controls.jsonnet`, "debug.build-destroy").
-3. The broken cell is gone. Within a moment the post's top cell above the gap, the whole beam run and the whole
-   floor turn into plank rubble where they stood. The rubble stays in place: it neither drops nor hurts anyone.
+3. Stop swinging when the post breaks: its top drops into the gap as rubble, onto the standing stub. The beam
+   run and floor drop straight down onto the pad as rubble, leaving their old positions empty. The drop is instant,
+   not animated; rubble must not hang in the air. Stop before another swing hits the landed rubble.
 4. The post cells below the gap stay standing on the pad, and the pad and the lot are unchanged.
 5. Save, reload and look again: the rubble and the standing stub are as they were.
