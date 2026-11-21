@@ -306,6 +306,7 @@ local pills(weight, least, parts, of) =
         item('baseball_bat', 1, condition=[0.4, 1]),
         item('hand_saw', 2, condition=[0.4, 1]),
         item('hacksaw', 1.5, condition=[0.4, 1]),
+        item('repair_kit', 2, condition=[0.4, 1]),
         item('screwdriver', 2, condition=[0.4, 1]),
         item('wrench', 2, condition=[0.4, 1]),
         item('adjustable_pliers', 1, condition=[0.4, 1]),
