@@ -22,6 +22,7 @@
       "eventRules": [],
       "ground": 21,
       "guarantee": {},
+      "hordeCountBudget": 64,
       "id": "holdout_condition_look",
       "kind": "composedSite",
       "lootContext": {
