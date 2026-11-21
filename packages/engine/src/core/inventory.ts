@@ -3586,7 +3586,7 @@ const validWorkTarget = (
       target.cell.length === 3 &&
       target.cell.every(Number.isSafeInteger) &&
       Number.isSafeInteger(target.epoch) &&
-      target.epoch >= 1 &&
+      target.epoch >= 0 &&
       recipe?.repair?.block !== undefined
     );
   }

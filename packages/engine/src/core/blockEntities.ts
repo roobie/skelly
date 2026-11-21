@@ -146,6 +146,8 @@ export interface BlockEntitiesState {
 }
 
 export interface EntitySpec {
+  /** Generated placement input only; the window and frame remain the sole live damage owners. */
+  initialCondition?: { readonly value: number; readonly paneThreshold: number };
   lock?: DoorLockDef;
   /** Boards an authored door starts with, as if a player had nailed them on that side. */
   boarding?: Boarding;
@@ -156,6 +158,22 @@ export interface EntitySpec {
   facing: Facing;
   tip?: Tip;
 }
+
+const initialFrameDamage = (spec: EntitySpec, def: FurnitureDef): number | undefined => {
+  const initial = spec.initialCondition;
+  if (!initial) {
+    return;
+  }
+  if (
+    !(
+      def.window &&
+      [initial.value, initial.paneThreshold].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
+    )
+  ) {
+    throw new Error('Invalid initial window condition');
+  }
+  return initial.value === 1 ? undefined : (1 - initial.value) * def.breach.durability;
+};
 
 const DOOR_PANEL_THICKNESS = 0.06;
 const DOOR_FACE_CLEARANCE = 0.001;
@@ -862,7 +880,7 @@ export class BlockEntities {
         Number.isFinite(saved.damage) &&
         saved.damage >= 0 &&
         (saved.pane === 'intact'
-          ? saved.damage < spec.breakForce && !saved.frameRemnants
+          ? saved.damage <= spec.breakForce && !saved.frameRemnants
           : saved.damage === spec.breakForce) &&
         !(saved.open && saved.latched) &&
         !entity.open &&
@@ -966,6 +984,7 @@ export class BlockEntities {
       searched: false,
       open: false,
       window,
+      damage: initialFrameDamage(spec, def),
     };
     if (spec.lock) {
       if (!(def.door && spec.lock.id) || typeof spec.lock.locked !== 'boolean') {
@@ -996,12 +1015,14 @@ export class BlockEntities {
     ) {
       throw new Error('Invalid window aperture geometry');
     }
+    const initial = spec.initialCondition;
+    const missing = initial ? initial.value < initial.paneThreshold : def.window.initialPane === 'missing';
     return {
       open: false,
       latched: def.window.initialLatched,
-      pane: def.window.initialPane,
-      damage: def.window.initialPane === 'missing' ? def.window.breakForce : 0,
-      frameRemnants: def.window.initialPane === 'missing',
+      pane: missing ? 'missing' : 'intact',
+      damage: missing ? def.window.breakForce : (1 - (initial?.value ?? 1)) * def.window.breakForce,
+      frameRemnants: missing,
     };
   }
 

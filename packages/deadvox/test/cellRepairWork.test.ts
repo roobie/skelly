@@ -153,9 +153,20 @@ const sessionTerrain = (): TerrainPlan => ({
     { min: WALL, max: [WALL[0] + 1, WALL[1] + 2, WALL[2] + 1], block: sessionRegistry.blockIds.get(BLOCK)! },
   ],
 });
-const sessionFixture = (restored?: Readonly<SaveSnapshot>) => {
+const sessionFixture = (restored?: Readonly<SaveSnapshot>, generatedDamage = false) => {
   const world = new World();
   const canonical = new CanonicalTerrain(world, createTerrainEvaluator(sessionTerrain()));
+  if (generatedDamage) {
+    if (!restored) {
+      canonical.ensureCell(...WALL);
+    }
+    world.blockDamage.bindGenerated({
+      has: (cell) => cell.every((value, axis) => value === WALL[axis]),
+      get: (cell) => (cell.every((value, axis) => value === WALL[axis]) ? 4 : undefined),
+      cells: () => [WALL],
+      ensure: (cell) => canonical.ensureCell(...cell),
+    });
+  }
   const session = createSession({
     registry: sessionRegistry,
     actorFigureFiles: stackActorFigureFiles(registry),
@@ -353,8 +364,8 @@ const stockOf = (inventory: Inventory) =>
     .map(({ item }) => snapshotItem(item))
     .sort((a, b) => a.uid - b.uid);
 
-it('saves and loads a mid-job cell repair and completes it once without duplicate payout', async () => {
-  const f = sessionFixture();
+it.each([false, true])('saves mid-job repair of generated damage=%s and completes once', async (generatedDamage) => {
+  const f = sessionFixture(undefined, generatedDamage);
   f.session.character.initializeProgression({}, [RECIPE]);
   const inputs = [f.session.inventory.create(STOCK, 1, 0.7), f.session.inventory.create(STOCK, 1, 0.4)];
   for (const item of inputs) {
@@ -362,7 +373,9 @@ it('saves and loads a mid-job cell repair and completes it once without duplicat
       throw new Error('Fixture input did not fit');
     }
   }
-  f.session.damageTerrainCell(WALL, 4);
+  if (!generatedDamage) {
+    f.session.damageTerrainCell(WALL, 4);
+  }
   const damage = f.world.blockDamage.get(WALL)!;
   expect(damage.damage).toBe(4);
   expect(f.session.crafting.repairCell(RECIPE, WALL)).toBeUndefined();
@@ -377,7 +390,7 @@ it('saves and loads a mid-job cell repair and completes it once without duplicat
     version: formatVersion,
     contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
-  const { session, world, inventory } = sessionFixture(decoded.snapshot);
+  const { session, world, inventory } = sessionFixture(decoded.snapshot, generatedDamage);
   session.sim.paused = false;
   expect(world.blockDamage.get(WALL)).toEqual(damage);
   expect(inventory.itemByUid(uid)!.work).toEqual(work);

@@ -14,6 +14,7 @@ read_if:
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
   - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot, including authored liquid instance state
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
+  - you author template starting condition or its window pane threshold
   - you author standing water, basins or lots over water
   - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
@@ -321,6 +322,14 @@ Windowed template spawns use named game-clock boundaries. Keep their rule and re
 A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 
 An item's floor pad is either authored as part of the item's design (a water tank's concrete foundation is a block in its template) or takes the ground beneath it through a palette `ground` entry, which stamps nothing so the surface the site put there shows. A pad never restates a site's surface block, because a surface then has two homes and the patch returns when the site's surface changes or an item lands on a different one. See `packages/engine/src/core/templates.ts`, `stampPlacement`, and `test/streetCars.test.ts`.
+
+### Template condition
+
+A damaged building must offer standing material to mend rather than turn every low-condition cell into a hole. Template condition therefore leaves geometry intact, including at ruin; missing cells remain deliberate authoring. The template owns its condition distribution and pane threshold because these describe a placement's initial state, not a second damage system. Window frames keep the same distribution and panes use the existing window state, so broken glass does not remove its frame. The threshold alone decides initial pane presence, including at equality; a threshold that retains ruined glass leaves it at full damage until a strike breaks it, rather than silently overriding the content's choice. See `packages/engine/src/core/schema/templates.ts`, `TemplateSchema`; `packages/engine/src/core/site.ts`, `furnitureOf`; and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.createWindow`.
+
+A bounded beta distribution preserves the authored average without clipping bias near the endpoints. Its variance control keeps narrow and broad wear within one family; zero width and endpoint means are constant, and maximum width takes the endpoint limit. Sampling uses seeded streams and exactly rounded arithmetic, not platform approximations, so browsers and arrival orders agree. See `packages/engine/src/core/conditionDistribution.ts`, `drawCondition` and `templateCondition`.
+
+Exploration and inspection must not enlarge a save with untouched damage. Defaults are derived from seed, placement and cell identity; only gameplay changes enter the damage ledger. An explicit repaired or replaced override suppresses the baseline even after reload, so mending cannot regenerate damage. See `packages/engine/src/core/templateDamage.ts`, `templateDamageSource`, and `packages/engine/src/core/blockDamage.ts`, `BlockDamage`.
 
 ### Curated kits
 
