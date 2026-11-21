@@ -42,7 +42,8 @@ export const furnitureActionsFor = (
   ) {
     actions.push({ id: 'repair', label: text.worldService.repair });
   }
-  if (pieceRecoveryWork(registry, entity.type, entity.boarding?.type)) {
+  const takeApart = registry.furniture.get(entity.type)?.takeApart;
+  if (pieceRecoveryWork(registry, entity.type, entity.boarding?.type) || takeApart?.parts) {
     actions.push({ id: 'take_apart', label: text.worldService.takeApart });
   }
   return actions;
