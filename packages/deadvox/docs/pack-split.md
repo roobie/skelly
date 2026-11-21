@@ -206,6 +206,11 @@ because a mod of its own would add a dependency and narrow nothing that matters.
 with a model, `skelly.body` too, loads inventory tuning and the work-in-progress item. See
 `packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
 
+**Chemical lights.** Snap lights belong in `skelly.chemical-lights`, while flame lights,
+igniters and their recipes belong in `skelly.light-sources`. Snap lights need no flame or
+igniter, so a stack can carry them without fire. Their models remain declared by
+`skelly.light-sources` until their asset release moves them.
+
 **Food.** Packaged means any wrapped or canned food, and `skelly.packaged-foods` depends on
 `skelly.hand-tools` so a tool-opened can always finds an opener. Portions stay with their
 vessel. The release ships the packaged foods' models in the `skelly.basic-foods` pack, so

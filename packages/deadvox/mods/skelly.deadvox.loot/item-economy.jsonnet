@@ -19,6 +19,7 @@ local sources = [
   import 'packages/mods/skelly.containers/containers-items.jsonnet',
   import 'packages/mods/skelly.flame-tools/flame-tools-items.jsonnet',
   import 'packages/mods/skelly.light-sources/light-sources-items.jsonnet',
+  import 'packages/mods/skelly.chemical-lights/chemical-lights-items.jsonnet',
   import 'packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet',
   import 'packages/mods/skelly.melee/melee-items.jsonnet',
   import 'packages/mods/skelly.traps/traps-items.jsonnet',
