@@ -2,7 +2,7 @@ local manifest = import '../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local assets = import '../assets/manifest.json';
 manifest(
   id='skelly.natural-world',
-  tier='core',
+  tier='theme',
   content=['block-materials', 'natural-blocks', 'vegetation', 'furniture-materials', 'natural-sounds', 'sounds-furniture', 'support'],
   assets=assets,
   json=['assets/manifest.json'],

@@ -129,6 +129,6 @@
   "id": "skelly.natural-world",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

@@ -35,7 +35,7 @@ it('validate rejects every missing or negative player tuning field and a missing
       JSON.stringify({
         id: 'fixture.player',
         version: '1',
-        tier: 'core',
+        tier: 'theme',
         product: false,
         dependencies: [],
         overrides: [],
