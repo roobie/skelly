@@ -1634,6 +1634,17 @@ export class BlockEntities {
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
   }
 
+  /** Removes matching boarding from a door or window, keeping its host and all other state intact. */
+  unboard(entity: BlockEntity, type: string): boolean {
+    if (entity.boarding?.type !== type) {
+      return false;
+    }
+    entity.boarding = undefined;
+    this.version += 1;
+    this.standingChanged(entity);
+    return true;
+  }
+
   /** Nails boards of a `boardings` type on one side of a door; that side controls their look and either face refuses opening. */
   board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
     const reason = this.boardingRefusal(entity);
