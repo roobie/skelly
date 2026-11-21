@@ -33,6 +33,6 @@
   "id": "skelly.household",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

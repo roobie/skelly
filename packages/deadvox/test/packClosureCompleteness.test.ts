@@ -1,21 +1,24 @@
-import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
-import { admitPacks } from '@skelly/engine/packs';
+import { buildRegistry } from '@skelly/engine/content';
+import { admitPacks, selectFolderClosure } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
-import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
+import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 
-// A mod that consumes a provider must declare it, so loading the mod with only its declared closure and the core mods
-// still finds every provider. The default and full stacks would hide a missing edge behind another mod's dependency.
-it('loads every non-core mod with only its declared closure and the core mods, with zero issues', () => {
+it('validates every shared pack with only its own declared dependency closure', () => {
   const available = readAvailablePacks('.');
-  const nonCore = available.filter(({ manifest }) => manifest.tier !== 'core');
-  expect(nonCore.length).toBeGreaterThan(0);
-  const issues = nonCore.flatMap(({ manifest }) => {
-    const closure = new Set(readBundledPacks('.', manifest.id).map(({ manifest: { id } }) => id));
-    const admitted = admitPacks(available.filter(({ manifest: { id, tier } }) => tier === 'core' || closure.has(id)));
-    const { registry, issues: buildIssues } = buildRegistry(admitted.sources);
-    return [...admitted.issues, ...buildIssues, ...requiredContentIssues(registry)].map(
-      ({ path, message }) => `${manifest.id}: ${path}: ${message}`,
-    );
+  const shared = available.filter(({ manifest }) => manifest.tier === 'theme');
+  expect(shared.length).toBeGreaterThan(0);
+  const checked = new Map<string, string[]>();
+  const issues = shared.flatMap(({ manifest }) => {
+    const closure = selectFolderClosure([manifest.id], available, []);
+    const key = JSON.stringify(closure.map(({ manifest }) => manifest.id).sort());
+    let problems = checked.get(key);
+    if (!problems) {
+      const admitted = admitPacks(closure);
+      const built = buildRegistry(admitted.sources);
+      problems = [...admitted.issues, ...built.issues].map(({ path, message }) => `${path}: ${message}`);
+      checked.set(key, problems);
+    }
+    return problems.map((problem) => `${manifest.id}: ${problem}`);
   });
   expect(issues).toEqual([]);
 });

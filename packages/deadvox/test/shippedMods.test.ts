@@ -11,7 +11,7 @@ const folderIssues = (packs: readonly PackInput[]): string[] =>
   });
 
 const tierIssues = (packs: readonly PackInput[]): string[] => {
-  const tiers = { core: 0, theme: 1, product: 2, scenario: 3 };
+  const tiers = { theme: 0, product: 1, scenario: 2 };
   return packs.flatMap(({ manifest }) =>
     manifest.dependencies.filter((id) => {
       if (manifest.product) {
@@ -40,14 +40,14 @@ it('keeps shipped mod dependencies, other than the entry pack selecting the stac
   expect(tierIssues(packs)).toEqual([]);
   const owner: PackInput = {
     ...packs[0]!,
-    manifest: { ...packs[0]!.manifest, id: 'fixture.owner', tier: 'theme', dependencies: [] },
+    manifest: { ...packs[0]!.manifest, id: 'fixture.owner', tier: 'product', dependencies: [] },
   };
   const consumer: PackInput = {
     ...owner,
-    manifest: { ...owner.manifest, id: 'fixture.consumer', tier: 'core', dependencies: [owner.manifest.id] },
+    manifest: { ...owner.manifest, id: 'fixture.consumer', tier: 'theme', dependencies: [owner.manifest.id] },
   };
   expect(tierIssues([owner, consumer])).toEqual([owner.manifest.id]);
-  expect(tierIssues([owner, { ...consumer, manifest: { ...consumer.manifest, tier: 'theme' } }])).toEqual([]);
+  expect(tierIssues([owner, { ...consumer, manifest: { ...consumer.manifest, tier: 'product' } }])).toEqual([]);
   const scenario: PackInput = { ...owner, manifest: { ...owner.manifest, id: 'fixture.scenario', tier: 'scenario' } };
   const entry: PackInput = {
     ...owner,
