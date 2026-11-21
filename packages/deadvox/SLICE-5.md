@@ -9,6 +9,7 @@ read_if:
   - you're authoring the shelter's starting block condition or broken panes
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing where Holdout players find building tools or fasteners
+  - you're changing collapse displacement, burial, suffocation or buried-player presentation
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
   - you're changing structure support, cascade landing, buried contents or their clearing
@@ -18,8 +19,8 @@ read_if:
 
 **Status. Built: the power network core, the placed-entity store, battery charging,
 world repair and take-apart with their review, world-destination crafting and
-placement picking with the timber kit, support with its placement refusal and cascades
-(see "Support"), and the first wave rule. Open: window covers, structural collapse,
+placement picking with the timber kit, support and collapse with burial
+(see "Support"), and the first wave rule. Open: window covers, retained crack fraction,
 fire and exposure, and the integration proofs.** See
 `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
@@ -155,8 +156,23 @@ unbuilt. Unanswered gates block only their dependent work.
   later drops. Landing rubble buries pile items and ruins furniture through the shared
   ruin path, rather than treating furniture as a floor. Buried contents stay with rubble
   through later falls and save/load; take-apart recovers them. A collapse is danger,
-  not arbitrary deletion: conserve anything it did not break. The actor landing rule
-  remains pending under #1332; keep actor fall refusal until displacement is decided.
+  not arbitrary deletion: conserve anything it did not break. Falling material hurts
+  victims and pushes them to the nearest reachable free floor spot. Walls stay walls:
+  no evacuation through solids, so a collapse cannot breach a sealed base by teleporting
+  its occupants. Without an exit, the material lands and the victim remains buried
+  until someone else clears its blocking cells. Burial persists through saves and
+  prevents movement. Living actors suffocate over simulation time through ordinary
+  damage and death; zombies do not breathe and stay trapped until cleared. Breathing
+  belongs to actor content, not an actor-kind exception. This makes collapse capable
+  of killing without inventing a breath meter; existing status feedback carries the harm.
+  Self-dig-out remains open and is not implemented. See
+  `packages/engine/src/core/collapse.ts`, `reachableCollapseExit` and `refreshBurial`,
+  and `packages/engine/src/game/session.ts`, `crushBodies`.
+  A buried player's view is murky, not black, and sound is muffled: bodily presentation
+  communicates confinement without taking away the view. Content owns both strengths;
+  neither changes simulation hearing or visibility. See
+  `packages/presentation/src/presentation/audio.ts`, `GameAudio.setBuriedCutoff`, and
+  `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
   See `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
   Judgements use the blocks standing after earlier falls so peers and batch sizes agree.
   A content-owned cell cap spreads work across ticks, rather than promising a time bound;
@@ -584,15 +600,15 @@ rounds are tracked under #1332.
   strength and the brute a higher authored strength, so the brute wrecks walls through
   its strength rather than an identity flag and ordinary types break doors only because
   door pieces sit below their strength. A blow that leaves cells unheld cascades them
-  into rubble under "Support" rather than being refused. Collapse then extends that
-  cascade with body burial, impact harm and retained crack fraction under #1332.
-  Terrain is generated on demand wherever collapse reaches, so no region departure-and-return
-  work precedes it; collapse timing at the largest authored roof is reported rather than
-  used as a gate. Body burial must use the same take-apart clearing verb, and ordinary
-  strikes never clear rubble, so the player clears a heap one way and finds whatever is under it. Blast by share and breach
-  charges follow, then furniture knock-out and push-off. Furniture movement keeps its
-  actor fall refusal separately from terrain landing crush; see
-  `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
+  into rubble under "Support" rather than being refused. Terrain is generated wherever
+  collapse reaches, so region departure-and-return is not a prerequisite. Collapse timing
+  at the largest authored roof is reported rather than used as a gate. Burial and impact
+  harm follow "Support" for both terrain and falling furniture; ruin planning admits the
+  fall before damage, so a refused plan cannot hurt or move a victim. See
+  `packages/engine/src/core/furnitureMove.ts`, `commitRuin` and `crushFall`.
+  Ordinary strikes never clear rubble: take-apart is the one clearing verb and recovers
+  what the heap holds. Retained crack fraction remains under #1332. Blast by share and
+  breach charges follow, then furniture knock-out and push-off.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and

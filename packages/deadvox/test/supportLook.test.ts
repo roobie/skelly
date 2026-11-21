@@ -3,7 +3,8 @@ import { meleeProfileForWeapon, meleeWeaponFromContent } from '@skelly/engine/in
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
-import { CHUNK, createWorldSetup, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
+import { applyStartState } from '@skelly/engine/sim';
+import { bodyOverlapsBlock, CHUNK, createWorldSetup, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { ChunkMeshes } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
 import supportLookManifest from '../mods/skelly.deadvox.scenario.test-house.support-look/pack/manifest.json' with {
@@ -19,13 +20,16 @@ import { quietMesherSource } from './fixtures/quietMesherSource.ts';
  * The support look as it is played: the real world setup the start builds, columns arrived around the spawn, and the
  * player's own melee swing along the start's aim, with whole frames of simulation after it.
  */
-const playLook = () => {
-  const { id } = supportLookManifest;
+const playLook = (buried = false) => {
+  const id = buried ? 'skelly.deadvox.scenario.test-house.support-buried-look' : supportLookManifest.id;
   // The look's link names only the start mod, as a tester opens it.
   const query = new URLSearchParams({ 'start-mod': id });
   const linked = withReusedBuilds(() =>
     selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id }),
   );
+  if (linked.content.issues.length > 0) {
+    throw new Error(JSON.stringify(linked.content.issues));
+  }
   const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
   const { registry } = linked.content;
   const { blockSize } = config.scale;
@@ -76,10 +80,21 @@ const playLook = () => {
       session.sim.scheduler.advance(1 / 60);
     }
   };
-  const heldKit = registry.starts.get(config.startId)!.kit.find((entry) => entry.destination.kind === 'hand')!;
-  const weapon = meleeWeaponFromContent(registry.items.get(heldKit.item)!.weapon!.melee);
+  const start = registry.starts.get(config.startId)!;
+  applyStartState(session.inventory, start, {
+    fresh: true,
+    character: session.character,
+    body: session.sim.body,
+    damageCell: session.damageTerrainCell,
+    loseSupport: (cell) => simulation.support.lost(registry, cell),
+  });
+  const heldKit = start.kit.find((entry) => entry.destination.kind === 'hand');
+  const weapon = heldKit ? meleeWeaponFromContent(registry.items.get(heldKit.item)!.weapon!.melee) : undefined;
   /** One blow of the start's held weapon along the aim, then a second of simulation. */
   const swing = () => {
+    if (!weapon) {
+      throw new Error('This look has no held melee weapon');
+    }
     const hands = { right: null, left: null };
     session.playerCombat.beginMeleeSwing({
       origin: eye,
@@ -95,7 +110,18 @@ const playLook = () => {
     frames(60);
   };
   const block = (cell: Vec3) => registry.blocks[canonical.getBlock(...cell)]!;
-  return { registry, simulation, rendered, aimed, block, frames, swing, minY: config.scale.minCy * CHUNK };
+  return {
+    registry,
+    simulation,
+    rendered,
+    aimed,
+    block,
+    frames,
+    swing,
+    session,
+    start,
+    minY: config.scale.minCy * CHUNK,
+  };
 };
 
 const expectedLandings = (look: ReturnType<typeof playLook>, falling: Vec3[]) => {
@@ -114,6 +140,16 @@ const expectedLandings = (look: ReturnType<typeof playLook>, falling: Vec3[]) =>
 };
 
 describe('support look as played', () => {
+  it('starts the buried look inside real rubble without a setup action', () => {
+    const look = playLook(true);
+    look.frames(1);
+    const buried = look.session.body.buried!;
+    expect(buried.length).toBeGreaterThan(0);
+    for (const cell of buried) {
+      expect(rubbleBlockIds(look.registry).has(look.block(cell).id)).toBe(true);
+    }
+    expect(buried.some((cell) => bodyOverlapsBlock(look.session.body, cell))).toBe(true);
+  });
   it('drops the post top, beam run and floor onto solid terrain when blows break the aimed post cell, keeping the stub', () => {
     const look = playLook();
     const { registry, simulation, rendered, aimed, block, frames, swing } = look;

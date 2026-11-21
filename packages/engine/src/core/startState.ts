@@ -190,12 +190,19 @@ export const applyStartState = (
     body: Body;
     /** Records authored damage on a terrain cell, through the session's own damage owner. */
     damageCell: (cell: Vec3, damage: number) => void;
+    loseSupport?: (cell: Vec3) => void;
   },
 ): void => {
   if (!context.fresh) {
     return;
   }
   applyStartKit(inventory, start, context.calendar);
+  for (const cell of start.supportLoss ?? []) {
+    if (!context.loseSupport) {
+      throw new Error('A collapsing start needs a support owner');
+    }
+    context.loseSupport([...cell]);
+  }
   try {
     context.character.initializeAttributes(start.attributes ?? {});
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);

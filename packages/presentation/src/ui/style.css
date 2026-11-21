@@ -288,6 +288,14 @@ body:not(.menu-pointer-locked) .fact-detail:hover > .fact-detail-copy {
 #view canvas {
   display: block;
 }
+body.buried #view::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #40382d;
+  opacity: var(--buried-murk, 0);
+  pointer-events: none;
+}
 body.unconscious::after {
   content: "";
   position: fixed;

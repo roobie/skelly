@@ -13,6 +13,7 @@ export interface Body {
   halfDepth?: number;
   height: number;
   onGround: boolean;
+  buried?: Vec3[] | undefined;
 }
 
 /** Physical constants in block units (convert from metres with the block size). */
@@ -401,6 +402,10 @@ const groundProbe = (body: Body, shape: BodyShape | undefined, { isSolid, clear 
 
 /** Applies gravity and velocity, returning downward terrain impact speed in blocks per second (zero without impact). */
 export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): number => {
+  if (body.buried) {
+    body.vel = [0, 0, 0];
+    return 0;
+  }
   const obstacles = params.obstacles ?? [];
   const { shapeOf, terrainShapeOf } = params;
   const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
@@ -448,6 +453,10 @@ export const stepBodyHorizontal = (
   body: Body,
   movement: { dx: number; dz: number; isSolid: SolidAt; params: PhysicsParams },
 ): void => {
+  if (body.buried) {
+    body.vel = [0, 0, 0];
+    return;
+  }
   const { dx, dz, isSolid, params } = movement;
   const { shapeOf, terrainShapeOf } = params;
   const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
@@ -538,6 +547,9 @@ interface PairContext extends CollisionContext {
 }
 
 const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: PairContext): void => {
+  if (first.buried || second.buried) {
+    return;
+  }
   if (!(collision.meetShapes ? bodiesOverlap(first, second, collision.shapeOf) : overlapsBody(first, second))) {
     return;
   }

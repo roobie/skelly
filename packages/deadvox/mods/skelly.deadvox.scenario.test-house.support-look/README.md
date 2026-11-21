@@ -3,6 +3,7 @@ read_if:
   - you check structure support, rubble landing and its cascade by eye (#1332)
   - you change `packages/engine/src/core/structureSupport.ts`, `createSupport`, or `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`
   - you change the fixture's post, beam run, floor or landing contents
+  - you check the buried-player murky view and muffled audio
 ---
 
 # Support look
@@ -29,4 +30,12 @@ need no setup. The first aim meets the post's eye-height cell, below both runs. 
 4. The post cells below the gap stay standing on the pad, and the pad and the lot are unchanged. The landing
    crate is ruined, with its debris conserved by the normal ruin path; the loose note is buried, not deleted.
 5. Save, reload and look again: the rubble and the standing stub are as they were. Take apart the rubble over the
-   note to recover it. Actor landing behavior is pending; this fixture keeps the tester out of the fall path.
+   note to recover it. This start keeps the tester out of the fall path.
+
+## Buried view
+
+Open the [buried fixture](/?start-mod=skelly.deadvox.scenario.test-house.support-buried-look#{debug:true}).
+It starts already buried so no collapse setup or waiting is needed. The world remains visible through brown murk,
+world sounds are muffled rather than muted, and movement cannot escape the rubble. Existing bodily status feedback
+shows suffocation; no breath meter is added. The fixture is ephemeral, so reload starts the check again.
+The presentation rule and reason are under `packages/deadvox/SLICE-5.md`, "Support".

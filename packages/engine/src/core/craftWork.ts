@@ -97,6 +97,7 @@ export const cellTakeApartRefusal = (
   inventory: Inventory,
   target: { cell: Vec3; epoch?: number },
 ): string | undefined =>
+  (inventory.buried() ? coreMessage(inventory.registry, 'handsBusy') : undefined) ??
   (inventory.rubble
     ? inventory.rubble.refusal(target.cell, target.epoch)
     : coreMessage(inventory.registry, 'rubbleGone')) ??

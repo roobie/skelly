@@ -259,6 +259,16 @@ const fallCell = (
       supply.publish(revision, ensure, (live) => {
         terrain.ensureCell(...cell);
         destroyed = plan ? commitRuin({ ...mover, inventory: live }, plan) : [];
+        mover.crush?.(landing, [1, cell[1] - landing[1] + 1, 1], landing, [1, 1, 1]);
+        // Follow the debris so clearing its source cannot free a victim still trapped at the landing.
+        for (const body of [mover.player, ...mover.others]) {
+          if (body.buried?.some((at) => at.every((value, axis) => value === cell[axis]))) {
+            body.pos[1] = Math.min(body.pos[1], landing[1]);
+            body.buried = body.buried.map((at) =>
+              at.every((value, axis) => value === cell[axis]) ? [...landing] : at,
+            );
+          }
+        }
         const carried = terrain.world.rubble.release(cell);
         const buried = live.buryPile(landing);
         edited = terrain.world.setBlock(...cell, 0);

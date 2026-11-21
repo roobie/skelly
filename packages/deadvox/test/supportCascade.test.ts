@@ -24,8 +24,10 @@ const STOCK = 'support_cascade_stock';
 const PIECE = 'support_cascade_piece';
 const VEHICLE = 'support_cascade_vehicle';
 
-const fixtureRegistry = (cascadeCellsPerTick?: number) => {
+const fixtureRegistry = (cascadeCellsPerTick?: number, breathes = false) => {
   const registry = baseRegistry();
+  const shambler = registry.actors.get('shambler')!;
+  registry.actors.set(shambler.id, { ...shambler, breathes });
   registry.items.set(STOCK, {
     id: STOCK,
     name: 'Fixture stock',
@@ -90,10 +92,13 @@ const fixtureRegistry = (cascadeCellsPerTick?: number) => {
       gainJitter: [1, 1],
     });
   }
-  if (cascadeCellsPerTick !== undefined) {
-    const [tuning] = registry.supportTuning.values();
-    registry.supportTuning.set(tuning!.id, { ...tuning!, cascadeCellsPerTick });
-  }
+  const [tuning] = registry.supportTuning.values();
+  registry.supportTuning.set(tuning!.id, {
+    ...tuning!,
+    crushDamage: 1,
+    suffocationDamagePerSimSecond: 1,
+    ...(cascadeCellsPerTick === undefined ? {} : { cascadeCellsPerTick }),
+  });
   return registry;
 };
 
@@ -131,10 +136,10 @@ const fixture = (
   cascadeCellsPerTick?: number,
   restored?: Readonly<SaveSnapshot>,
   neighbour = false,
-  options: { layout?: typeof structures; spawn?: Vec3 } = {},
+  options: { layout?: typeof structures; spawn?: Vec3; breathes?: boolean } = {},
 ) => {
   const { layout = structures, spawn = [20, 1, 20] } = options;
-  const registry = fixtureRegistry(cascadeCellsPerTick);
+  const registry = fixtureRegistry(cascadeCellsPerTick, options.breathes);
   const world = new World();
   const ground = registry.blockIds.get(GROUND)!;
   const terrain: TerrainPlan = {
@@ -181,6 +186,7 @@ const fixture = (
     isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     ready: () => false,
+    actorReady: () => true,
     controls: {
       active: () => true,
       intent: () => IDLE,
@@ -212,16 +218,26 @@ const fixture = (
     return cells;
   };
   const snapshot = () => session.snapshot({ worldId: 'support-fixture', characterId: 'support-character' });
-  return { registry, world, canonical, session, block, tick, strike, standing, snapshot };
+  return { registry, world, canonical, session, block, tick, strike, standing, snapshot, options };
 };
 type Fixture = ReturnType<typeof fixture>;
+
+const chamber: typeof structures = (registry) => {
+  const post = registry.blockIds.get(POST)!;
+  return [
+    column(2, 8, post),
+    row(3, 4, 8, registry.blockIds.get(BEAM)!),
+    ...[2, 6].map((x): BlockBox => ({ min: [x, 1, 1], max: [x + 1, 2, 6], block: post })),
+    ...[1, 5].map((z): BlockBox => ({ min: [3, 1, z], max: [6, 2, z + 1], block: post })),
+  ];
+};
 
 const reload = async (f: Fixture, cascadeCellsPerTick?: number, neighbour = false) => {
   const decoded = await decodeSave(await encodeFixture(f.snapshot()), {
     version: formatVersion,
     contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
-  return fixture(cascadeCellsPerTick, decoded.snapshot, neighbour);
+  return fixture(cascadeCellsPerTick, decoded.snapshot, neighbour, f.options);
 };
 
 /** The fixture row's blocks, so two runs can be compared cell by cell. */
@@ -239,6 +255,65 @@ const settle = (f: Fixture) => {
 };
 
 describe('support cascade', () => {
+  it('saves a trapped player and suffocates it over simulation time, without allowing self clearing', async () => {
+    const f = fixture(undefined, undefined, false, { layout: chamber, spawn: [4.5, 1, Z + 0.5] });
+    expect(f.strike([2, 6, Z])).toBe(true);
+    settle(f);
+    expect(f.session.body.buried?.length).toBeGreaterThan(0);
+    const restored = await reload(f);
+    expect(restored.session.body.buried).toEqual(f.session.body.buried);
+    const cell = restored.session.body.buried![0]!;
+    expect(restored.session.crafting.previewTakeApartCell(cell).refusal).toBeDefined();
+    const { health } = restored.session.sim.body;
+    const tuning = [...restored.registry.supportTuning.values()][0]!;
+    restored.session.sim.scheduler.advance(health / tuning.suffocationDamagePerSimSecond + 1);
+    expect(restored.session.sim.dead?.cause).toBe(tuning.suffocationCause);
+  });
+
+  it('frees an unbreathing victim when another actor takes its rubble apart', async () => {
+    const f = fixture(undefined, undefined, false, { layout: chamber, spawn: [7.65, 1, Z + 0.5] });
+    const id = f.session.actors.add(f.registry.actors.get('shambler')!, [4.5, 1, Z + 0.5]);
+    expect(f.strike([2, 6, Z])).toBe(true);
+    settle(f);
+    const actor = f.session.actors.store.get(id)!;
+    expect(actor.body.buried?.length).toBeGreaterThan(0);
+    const health = { ...actor.regions };
+    const position = [...actor.body.pos];
+    const tuning = [...f.registry.supportTuning.values()][0]!;
+    f.session.sim.scheduler.advance(
+      Math.max(...Object.values(health).map((value) => value!)) / tuning.suffocationDamagePerSimSecond + 1,
+    );
+    expect(f.session.actors.store.get(id)?.regions).toEqual(health);
+    expect(actor.body.pos).toEqual(position);
+    const restored = await reload(f);
+    const victim = restored.session.actors.store.get(id)!;
+    expect(victim.body.buried).toEqual(actor.body.buried);
+    for (const cell of [...victim.body.buried!]) {
+      const preview = restored.session.crafting.previewTakeApartCell(cell);
+      if (!preview.identity) {
+        continue;
+      }
+      expect(restored.session.crafting.takeApartCell(cell, preview.identity)).toBeUndefined();
+      const work = restored.session.inventory.hands.right?.work;
+      expect(work?.kind).toBe('cellDisassembly');
+      restored.session.sim.scheduler.advance(work!.duration / restored.session.sim.clock.ratio + 1);
+    }
+    expect(victim.body.buried).toBeUndefined();
+  });
+
+  it('uses the content breathing flag for living NPC suffocation and the existing death path', () => {
+    const f = fixture(undefined, undefined, false, { layout: chamber, spawn: [7.65, 1, Z + 0.5], breathes: true });
+    const id = f.session.actors.add(f.registry.actors.get('shambler')!, [4.5, 1, Z + 0.5]);
+    expect(f.strike([2, 6, Z])).toBe(true);
+    settle(f);
+    const actor = f.session.actors.store.get(id)!;
+    expect(actor.body.buried?.length).toBeGreaterThan(0);
+    const tuning = [...f.registry.supportTuning.values()][0]!;
+    f.session.sim.scheduler.advance(
+      Math.max(...Object.values(actor.regions).map((value) => value!)) / tuning.suffocationDamagePerSimSecond + 1,
+    );
+    expect(f.session.actors.store.get(id)).toBeUndefined();
+  });
   it('drops broken dependants onto the first solid below instead of leaving rubble suspended', () => {
     const f = fixture();
     expect(f.strike([2, 1, Z])).toBe(true);
@@ -316,15 +391,19 @@ describe('support cascade', () => {
     expect([...loose, ...buried].some((item) => item.type === STOCK)).toBe(true);
   });
 
-  it('retains the actor fall refusal while landing displacement is pending', () => {
+  it('hurts and displaces a victim before rubble lands rather than refusing the collapse', () => {
     const f = fixture(undefined, undefined, false, {
       layout: (registry) => [column(2, 6, registry.blockIds.get(POST)!), row(3, 4, 6, registry.blockIds.get(BEAM)!)],
       spawn: [3.5, 1, Z + 0.5],
     });
+    const before = [...f.session.body.pos];
+    const { health } = f.session.sim.body;
     expect(f.strike([2, 1, Z])).toBe(true);
     settle(f);
-    expect(f.block([3, 6, Z])).toBe(BEAM);
-    expect(f.canonical.getBlock(3, 1, Z)).toBe(0);
+    expect(f.block([3, 1, Z])).toBe(RUBBLE);
+    expect(f.session.body.pos).not.toEqual(before);
+    expect(f.session.body.buried).toBeUndefined();
+    expect(f.session.sim.body.health).toBeLessThan(health);
   });
 
   it('treats occupied vehicle fittings as a floor without changing the vehicle', () => {

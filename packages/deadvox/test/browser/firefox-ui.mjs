@@ -1065,6 +1065,42 @@ try {
       assert.equal(Number(await reloadedWeatheringGroup.locator('#weathering-strength').inputValue()), sliderNext);
       assert.deepEqual(pageErrors, []);
     }
+    await page.goto(
+      browserStageUrl(
+        'firefox-ui',
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.support-buried-look',
+          hash: playHash,
+          harness: { 'play-test': 1 },
+        }),
+      ),
+    );
+    await startPlay();
+    await waitForWorldLoaded(page);
+    await page.waitForFunction(() => document.body.classList.contains('buried'));
+    const buriedPresentation = await page.evaluate(() => {
+      const { session, engine, audio } = globalThis.skellyPlayTest;
+      const [tuning] = engine.registry.supportTuning.values();
+      const nodes = Reflect.get(audio, 'nodes');
+      const view = document.querySelector('#view');
+      if (!(tuning && nodes && view)) {
+        throw new Error('Buried presentation was not initialized');
+      }
+      return {
+        buried: session.body.buried !== undefined,
+        opacity: Number(getComputedStyle(view, '::after').opacity),
+        expectedOpacity: tuning.buriedMurk,
+        cutoff: nodes.burial.frequency.value,
+        expectedCutoff: tuning.buriedAudioCutoffHz,
+        outputGain: nodes.master.gain.value,
+      };
+    });
+    assert.equal(buriedPresentation.buried, true);
+    assert.ok(buriedPresentation.opacity > 0 && buriedPresentation.opacity < 1, 'murky view is not black');
+    assert.equal(buriedPresentation.opacity, buriedPresentation.expectedOpacity);
+    assert.equal(buriedPresentation.cutoff, buriedPresentation.expectedCutoff);
+    assert.ok(buriedPresentation.outputGain > 0, 'burial muffles rather than muting output');
+    assert.deepEqual(pageErrors, []);
     process.stdout.write(
       runWeatheringTestPage
         ? 'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n'

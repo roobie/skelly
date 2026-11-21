@@ -31,7 +31,13 @@ import {
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
-import { type BashOutcome, BlockEntities, type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import {
+  type BashOutcome,
+  BlockEntities,
+  type BlockEntity,
+  boxIntersectsBody,
+  searchTime,
+} from '../core/blockEntities.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -40,6 +46,7 @@ import { claimed, claimedId } from '../core/capabilities.ts';
 import type { CastShotEnd } from '../core/castVolleys.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { collapseBlockingCells, reachableCollapseExit, refreshBurial } from '../core/collapse.ts';
 import {
   type LightBlocking,
   terrainSolid,
@@ -1749,6 +1756,51 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  inventory.buried = () => body.buried !== undefined;
+  const collapseSolid = (x: number, y: number, z: number): boolean =>
+    (options.terrainDestruction
+      ? registry.blocks[options.terrainDestruction.terrain.getBlock(x, y, z)]!.solid
+      : physicalSolid(x, y, z)) ||
+    entities.isSolid(x, y, z) ||
+    vehicleOccupancy.isSolid(x, y, z);
+  const crushBodies = (path: Vec3, pathSize: Vec3, landing: Vec3, size: Vec3): void => {
+    const tuning = claimed(registry.supportTuning, 'support');
+    if (!tuning) {
+      throw new Error('A collapse needs support tuning');
+    }
+    const victims = [...actorSystem.store.entries()];
+    const bodies = [body, ...victims.map(([, actor]) => actor.body)];
+    for (const victim of bodies.filter((candidate) => boxIntersectsBody(path, pathSize, candidate))) {
+      const actor = victims.find(([, candidate]) => candidate.body === victim);
+      if (actor) {
+        actorSystem.injureVitals(actor[0], tuning.crushDamage, 'crush');
+      } else {
+        sim.hit(tuning.crushDamage, tuning.crushCause, 'torso', { kind: 'crush' });
+      }
+      if (actor && !actorSystem.store.get(actor[0])) {
+        continue;
+      }
+      const exit =
+        !victim.buried &&
+        reachableCollapseExit({
+          body: victim,
+          path,
+          size: pathSize,
+          solid: collapseSolid,
+          others: bodies.filter((other) => other !== victim),
+          stride: tuning.pushStepMetres / s,
+          budget: tuning.pushSearchCells,
+        });
+      if (exit) {
+        victim.pos = exit;
+        victim.vel = [0, 0, 0];
+        continue;
+      }
+      victim.pos[1] = Math.min(victim.pos[1], landing[1]);
+      victim.buried = [...(victim.buried ?? []), ...collapseBlockingCells(landing, size)];
+      victim.vel = [0, 0, 0];
+    }
+  };
   /** Runs the saved support cascade up to its per-tick cap; the rest continues next tick. */
   const cascadeTick = (): void => {
     const context = options.terrainDestruction;
@@ -2170,6 +2222,7 @@ export const createSession = (options: SessionOptions) => {
     player: body,
     others: standingActorBodies(),
     stamina: sim.needs.stamina,
+    crush: crushBodies,
     beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
   });
   const boxCentre = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3 => [
@@ -2587,7 +2640,12 @@ export const createSession = (options: SessionOptions) => {
     const tick = playerTick;
     playerTick += 1;
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
-    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
+    const moving =
+      playerInput.active &&
+      !playerInput.inputLocked &&
+      !sim.body.actionRefusal &&
+      !traps.holds(undefined) &&
+      !body.buried;
     const intent = moving ? playerInput.intent : IDLE;
     if (
       trapInterrupts.read().some((event) => event.kind === 'interrupt') ||
@@ -2723,9 +2781,18 @@ export const createSession = (options: SessionOptions) => {
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
+      const tuning = claimed(registry.supportTuning, 'support');
+      if (refreshBurial(body, collapseSolid)) {
+        sim.hurt(tuning!.suffocationDamagePerSimSecond * dt, tuning!.suffocationCause);
+      }
+      for (const [id, actor] of [...actorSystem.store.entries()]) {
+        if (refreshBurial(actor.body, collapseSolid) && actor.type.breathes) {
+          actorSystem.injureVitals(id, tuning!.suffocationDamagePerSimSecond * dt);
+        }
+      }
       const step = preparePlayerStep(dt, time);
       applyAimViewPitchShift();
-      if (!playerInput?.worldReady) {
+      if (!playerInput?.worldReady || body.buried) {
         return;
       }
       advancePlayerMovement(dt, time, step);

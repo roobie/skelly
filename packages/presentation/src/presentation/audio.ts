@@ -82,6 +82,7 @@ const readVolumes = (defaults: Readonly<AudioVolumes>): AudioVolumes => {
 
 interface Nodes {
   master: GainNode;
+  burial: BiquadFilterNode;
   categories: Map<AudioCategory, GainNode>;
 }
 
@@ -266,13 +267,23 @@ export class GameAudio {
         gain.connect(master);
         categories.set(category, gain);
       }
-      master.connect(this.context.destination);
-      this.nodes = { master, categories };
+      const burial = this.context.createBiquadFilter();
+      burial.type = 'lowpass';
+      burial.frequency.value = this.context.sampleRate / 2;
+      master.connect(burial);
+      burial.connect(this.context.destination);
+      this.nodes = { master, categories, burial };
       this.applyVolumes();
       this.updateListener(this.hearing.listener, this.listenerForward);
     }
     if (this.context.state !== 'running') {
       this.context.resume().catch((error: unknown) => this.report(`audio context did not resume: ${String(error)}`));
+    }
+  }
+
+  setBuriedCutoff(cutoffHz: number | undefined): void {
+    if (this.nodes && this.context) {
+      this.nodes.burial.frequency.value = cutoffHz ?? this.context.sampleRate / 2;
     }
   }
 

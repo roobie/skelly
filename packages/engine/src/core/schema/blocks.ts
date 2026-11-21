@@ -108,6 +108,14 @@ export const SupportTuningSchema = strictObject({
   cascadeCellsPerTick: pipe(Count, minValue(1)),
   /** Most cells one strike reads, the trunk cell included, when looking for canopy on a trunk; a search that runs out refuses the blow. */
   trunkSearchCells: pipe(Count, minValue(1)),
+  crushDamage: NonNegative,
+  crushCause: Name,
+  suffocationDamagePerSimSecond: NonNegative,
+  suffocationCause: Name,
+  pushStepMetres: Positive,
+  pushSearchCells: pipe(Count, minValue(1)),
+  buriedMurk: pipe(Fraction, maxValue(0.95)),
+  buriedAudioCutoffHz: Positive,
 });
 
 export const BlockSchema = strictObject({

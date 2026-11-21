@@ -109,6 +109,7 @@ export const StartSchema = strictObject({
   kit: keyedRows(StartKitEntrySchema, START_ROW_KEYS.kit),
   wounds: array(strictObject({ region: picklist(BODY_REGIONS), bleeding: Id })),
   /** Terrain cells the start ships already damaged, in world blocks; the damage amount is content, not code. */
+  supportLoss: optional(array(CellPosition)),
   blockDamage: optional(
     array(
       strictObject({

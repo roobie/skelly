@@ -338,6 +338,7 @@ export class Inventory {
   canReachCell: (cell: Readonly<Vec3>) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
+  buried: () => boolean = () => false;
   worldPlacement: WorldPlacement | undefined;
   /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
   rubble: RubbleClearing | undefined;

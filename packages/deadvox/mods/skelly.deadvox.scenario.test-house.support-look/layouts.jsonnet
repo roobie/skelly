@@ -24,6 +24,22 @@ local postRow = ['..p...', empty, empty, empty, empty];
       ['..ppp.', '..f...', '..f...', empty, empty],
       [empty, empty, empty, empty, empty],
     ],
+  }, {
+    id: 'test_house_support_burial',
+    lootContext: { usage: ['Residential'], tier: 'Tier1' },
+    size: [5, 9, 5],
+    palette: { '.': 'air', k: 'concrete', f: 'plank_floor' },
+    layers: [
+      ['kkkkk', 'kkkkk', 'kkkkk', 'kkkkk', 'kkkkk'],
+      ['kkkkk', 'k...k', 'k...k', 'k...k', 'kkkkk'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '.....', '.....', '.....'],
+      ['.....', '.....', '..f..', '.....', '.....'],
+    ],
   }],
   layouts: [layout + {
     id: 'testHouseSupportLook',
@@ -33,6 +49,13 @@ local postRow = ['..p...', empty, empty, empty, empty];
     // Standing south of the post in its column, facing north, so the eye-height aim meets the post under the floor
     // run; an empty slot row lets the bearing apply.
     player: { position: [-10.75, 21, 16], bearing: 0 },
+    showroom: layout.showroom + { slots: [] },
+  }, layout + {
+    id: 'testHouseSupportBuriedLook',
+    buildings: layout.buildings + [
+      { template: 'test_house_support_burial', position: [-12, 20.5, 14], rotation: 0 },
+    ],
+    player: { position: [-10.75, 21, 15.25], bearing: 0 },
     showroom: layout.showroom + { slots: [] },
   }],
 }
