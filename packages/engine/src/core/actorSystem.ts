@@ -99,8 +99,9 @@ import { modified } from './modifiers.ts';
 import {
   type Body,
   type BodyShape,
-  bodyOverlapsTerrain,
+  type ClearCells,
   CONTACT_SKIN,
+  copyOverlapsTerrain,
   type PhysicsParams,
   type ShapeOf,
   separateBodies,
@@ -1615,6 +1616,8 @@ export class ActorSystem {
     }
     scratch.beforeStep = copy(scratch.pos);
     this.settleTurn(actor);
+    // Nothing between the step and the wall probe changes solidity, so the probe reuses what the step found clear.
+    const clear: ClearCells = new Map();
     if (!this.restsStill(actor)) {
       const obstacles = player.body ? [player.body] : [];
       stepBody(actor.body, dt, isSolid, {
@@ -1622,11 +1625,12 @@ export class ActorSystem {
         stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
         obstacles,
         shapeOf: this.shapeOf,
+        clear,
       });
       this.noteRest(actor);
     }
     scratch.travelled = horizontalDistance(scratch.beforeStep, actor.body.pos) * blockSize;
-    scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection);
+    scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection, clear);
     scratch.dx = actor.body.pos[0] - scratch.beforeStep[0];
     scratch.dz = actor.body.pos[2] - scratch.beforeStep[2];
     scratch.forward = aimDirection ? (scratch.dx * aimDirection[0] + scratch.dz * aimDirection[2]) * blockSize : 0;
@@ -1643,13 +1647,13 @@ export class ActorSystem {
    * grind against that corner without ever registering the contact. A fused mass's flesh reaches metres past
    * its centre, so its shape is moved as far ahead instead.
    */
-  private wallAhead(aim: Vec3): boolean {
+  private wallAhead(aim: Vec3, clear: ClearCells): boolean {
     const { actor, isSolid } = this.tickScratch;
     const shape = this.shapeOf(actor.body) ?? this.options.physics.terrainShapeOf?.(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
-    return bodyOverlapsTerrain(this.bodyAhead(aim), isSolid);
+    return copyOverlapsTerrain(this.bodyAhead(aim), isSolid, clear, actor.body);
   }
 
   /** The actor's box at its tick start, moved the obstacle lookahead along `aim`. */
