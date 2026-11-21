@@ -1,6 +1,6 @@
 import type { GeneratedBlockDamage } from './blockDamage.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
-import { templateCondition } from './conditionDistribution.ts';
+import { conditionAt, templateCondition } from './conditionDistribution.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import type { BlockBox } from './structure.ts';
@@ -57,7 +57,10 @@ export const templateDamageSource = (
     ),
   ];
   const conditioned = stages.flatMap((stage) =>
-    stage.kind === 'placement' && stage.placement.template.condition ? [stage.placement] : [],
+    stage.kind === 'placement' &&
+    (stage.placement.template.condition || stage.placement.template.provenance?.some((entry) => entry?.condition))
+      ? [stage.placement]
+      : [],
   );
   const byColumn = new Map<string, Stage[]>();
   if (conditioned.length > 0) {
@@ -81,7 +84,7 @@ export const templateDamageSource = (
         return;
       }
       if (authored !== undefined) {
-        return authored.placement.template.condition ? authored : undefined;
+        return conditionAt(authored.placement.template, authored.local) ? authored : undefined;
       }
     }
     return undefined;

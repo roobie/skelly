@@ -253,6 +253,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.json"
     },
