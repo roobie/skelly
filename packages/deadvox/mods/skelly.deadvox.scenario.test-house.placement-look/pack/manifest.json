@@ -32,6 +32,10 @@
     {
       "entry": "recipes:board_up_door",
       "pack": "skelly.basic-recipes"
+    },
+    {
+      "entry": "recipes:build_wood_shelf",
+      "pack": "skelly.basic-recipes"
     }
   ],
   "product": false,

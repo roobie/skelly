@@ -1074,6 +1074,7 @@ const startPlayWith = (
           return false;
         }
         if (action === 'carry.turn') {
+          placementPicking.facing ??= builderFacing();
           placementPicking.turns += 1;
           return true;
         }
@@ -2245,7 +2246,7 @@ const startPlayWith = (
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
   const playContext = (): InputContext => (mainMenuOpen || sim.dead || session.won ? 'menu' : activePlayContext());
-  const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
+  const footContext = (): InputContext => (entities.carrying() || placementPicking ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
       return 'title';
@@ -2803,7 +2804,7 @@ const startPlayWith = (
   // ---- placement picking ----
 
   /** The placement recipe whose spot the crosshair picks, with its ghost's turn steps; the ghost shares the carry keys. */
-  let placementPicking: { recipeId: string; turns: number } | undefined;
+  let placementPicking: { recipeId: string; turns: number; facing?: Facing } | undefined;
 
   /** Each facing's own front in world x and z: a north-facing piece's front is its local −z (`packages/engine/src/core/orientation.ts`, `Tip`). */
   const FacingFronts: Readonly<Record<Facing, readonly [number, number]>> = {
@@ -2825,7 +2826,8 @@ const startPlayWith = (
 
   /** The facing a ghost's turn steps stand it on, a quarter clockwise per step from its builder-facing front. */
   const turnedFacing = (turns: number): Facing => {
-    let facing = builderFacing();
+    // Once turned, looking around must not rotate the player's chosen orientation underneath it.
+    let facing = placementPicking?.facing ?? builderFacing();
     for (let turn = 0; turn < turns % 4; turn += 1) {
       facing = turnFacing(facing, 1);
     }

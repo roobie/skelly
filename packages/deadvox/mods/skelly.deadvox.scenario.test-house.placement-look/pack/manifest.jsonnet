@@ -6,7 +6,7 @@ manifest(
   tier='scenario',
   optIn=true,
   content=['placement', 'layouts', 'starts'],
-  overrides=[{ pack: 'skelly.basic-recipes', entry: 'recipes:board_up_door' }],
+  overrides=[{ pack: 'skelly.basic-recipes', entry: 'recipes:' + id } for id in ['board_up_door', 'build_wood_shelf']],
   dependencies=kit.dependencies([
     'skelly.deadvox.scenario.test-house', 'skelly.basic-recipes', 'skelly.manufactured-blocks',
     'skelly.materials', 'skelly.structures',

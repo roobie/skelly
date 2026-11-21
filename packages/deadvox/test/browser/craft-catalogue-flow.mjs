@@ -404,11 +404,12 @@ const placementFlow = async ({ page, url, output }) => {
    */
   const aimedAt = (point) =>
     page.evaluate((target) => {
-      const { eye, input } = globalThis.skellyPlayTest;
+      const { eye, input, engine } = globalThis.skellyPlayTest;
+      const { blockSize } = engine.config.scale;
       const [ox, oy, oz] = eye();
-      const dx = target[0] - ox;
-      const dy = target[1] - oy;
-      const dz = target[2] - oz;
+      const dx = target[0] / blockSize - ox;
+      const dy = target[1] / blockSize - oy;
+      const dz = target[2] / blockSize - oz;
       input.controls.yaw = Math.atan2(-dx, -dz);
       input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, point);
@@ -429,8 +430,8 @@ const placementFlow = async ({ page, url, output }) => {
   await page.waitForFunction(() => Boolean(document.querySelector('.craft-query')));
   const query = page.locator('.craft-query');
   await query.fill('Shelf');
-  const result = page.locator('[data-craft-result="placement_look_shelf"]');
-  assert.equal(await result.count(), 1, 'the look\u2019s quick shelf recipe is in the catalogue');
+  const result = page.locator('[data-craft-result="build_wood_shelf"]');
+  assert.equal(await result.count(), 1, 'the look offers the real shelf recipe');
   await activate(result);
   const start = page.locator('.craft-start');
   assert.equal(
@@ -449,7 +450,7 @@ const placementFlow = async ({ page, url, output }) => {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.waitForFunction(() => {
     const { registry } = globalThis.skellyPlayTest.session.inventory;
-    const recipe = registry.recipes.get('placement_look_shelf');
+    const recipe = registry.recipes.get('build_wood_shelf');
     const name = recipe && 'entity' in recipe.result && registry.furniture.get(recipe.result.entity)?.name;
     return Boolean(name && document.querySelector('#prompt')?.textContent?.toLowerCase().includes(name.toLowerCase()));
   });
@@ -470,7 +471,45 @@ const placementFlow = async ({ page, url, output }) => {
   await aimedAt([-10.25, 21.05, 14.75]);
   await page.waitForFunction((line) => document.querySelector('#prompt')?.textContent === line, buildLine ?? '');
   process.stdout.write('placement: confirm spot\n');
+  /** @param {number} yaw */
+  const facingAlongLook = (yaw) => {
+    const fronts = /** @type {const} */ ([
+      ['n', 0, -1],
+      ['e', 1, 0],
+      ['s', 0, 1],
+      ['w', -1, 0],
+    ]);
+    const builder = fronts.reduce((best, row) =>
+      row[1] * Math.sin(yaw) + row[2] * Math.cos(yaw) > best[1] * Math.sin(yaw) + best[2] * Math.cos(yaw) ? row : best,
+    );
+    return { builder: builder[0], turned: fronts[(fronts.indexOf(builder) + 1) % fronts.length]?.[0] };
+  };
+  const chosen = facingAlongLook(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw));
+  const turnedFacing = chosen.turned;
+  assert.ok(turnedFacing, 'a quarter turn has a facing');
   await pressAction(page, 'carry.turn');
+  // Find a free spot across a facing boundary, by aiming only; both the unturned and auto-retuned mutations
+  // must differ from the player's chosen facing. The shelf's rotated footprint need not fit the original spot.
+  let found = false;
+  for (const x of [-11.25, -10.75, -9.75, -9.25]) {
+    for (const z of [14.75, 15.25, 16.25]) {
+      await aimedAt([x, 21.0, z]);
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const current = facingAlongLook(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw));
+      if (
+        current.builder !== chosen.builder &&
+        current.builder !== chosen.turned &&
+        (await promptLine()) === buildLine
+      ) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      break;
+    }
+  }
+  assert.ok(found, 'the rotated shelf has a free spot across an automatic-facing boundary');
   await tapAction(page, 'world.interact');
   await page.waitForFunction(() => {
     const inventory = document.querySelector('#inventory');
@@ -491,6 +530,7 @@ const placementFlow = async ({ page, url, output }) => {
   });
   const spot = await destination.jsonValue();
   assert.ok(spot && spot.kind === 'entity', 'the fixture shelf has a pinned piece destination');
+  assert.equal(spot.facing, turnedFacing, 'T turns the piece and aiming elsewhere preserves that chosen facing');
   process.stdout.write('placement: piece stands\n');
   await page.waitForFunction((dest) => {
     const { entities } = globalThis.skellyPlayTest.session.inventory;

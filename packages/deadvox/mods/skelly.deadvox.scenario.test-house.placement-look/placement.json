@@ -39,20 +39,25 @@
         ],
         [
           {
-            "count": 8,
+            "count": 12,
             "item": "nails"
           }
         ]
       ],
-      "id": "placement_look_shelf",
+      "id": "build_wood_shelf",
       "placementReviewOrder": "review-first",
-      "qualities": {},
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
       "result": {
         "count": 1,
         "entity": "shelf"
       },
       "searchTerms": ["build", "fortify"],
-      "skills": {},
+      "skills": {
+        "crafting": 0
+      },
       "tags": ["wood"],
       "timeGameMinutes": 0.5
     },
