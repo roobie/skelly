@@ -664,7 +664,7 @@ const detailsTemplate = (
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
       ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
       ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
-      ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
+      ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined || vm.pour.receiverUid === undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
       ${vm.recovery ? recoveryTemplate(vm.recovery, changeRecovery, text) : nothing}
       <div class="inv-kicker">${text.whereItCanGo}</div>
       ${

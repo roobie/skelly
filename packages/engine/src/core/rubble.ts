@@ -111,7 +111,7 @@ export class Rubble {
   }
 
   /** Retain a replacement stamp even without a job: a preview must detect an unpinned cell replaced and rebuilt. */
-  clear(cell: Readonly<Vec3>): void {
+  noteChange(cell: Readonly<Vec3>): void {
     if (this.nextEpoch >= Number.MAX_SAFE_INTEGER) {
       throw new Error('Rubble episodes exhausted');
     }

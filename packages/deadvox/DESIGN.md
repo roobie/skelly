@@ -2668,11 +2668,14 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
 - **Damage comes in types.** Every hit deals a mix of types, and every target
   resists each type differently. The melee types above (blunt, cut, pierce) are
   joined by, for example, fragment, blast and breach. The kind of damage decides
-  the outcome, not just the amount:
-  - a hand grenade (fragment plus a modest blast) barely marks a brick wall but
-    tears limbs off a shambler;
-  - a breaching charge (directional, at contact) destroys a steel door and
-    little around it.
+  the outcome, not just the amount. The intended contrast: a hand grenade
+  (fragment plus a modest blast) barely marks a brick wall but tears limbs off a
+  shambler, while a breaching charge (directional, at contact) destroys a steel
+  door and little around it. Blast and fragment damage apply to bodies
+  (`packages/engine/src/core/explosive.ts`, `blastShare` and `fragmentHitsOnBody`);
+  blocks and pieces take damage only from blows through their material gate
+  (`packages/engine/src/core/blockDamage.ts`, `bashBlock`). Breach charges and
+  blast damage to materials are owed under #1332.
 - **Material admission.** Explicit block resistances let fragments and pressure
   differ without weapon-name exceptions or a later schema replacement. Missing
   metadata must fail admission rather than hide incomplete content behind a default.
@@ -2681,9 +2684,14 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
 - **Rubble preserves wreckage.** A material's fallen form is solid rubble until
   cleared, because wreckage should still provide cover; falling alone is not loose
-  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
-  that command and adds no second destruction verb. Breaking also yields, at far
-  more time per unit than looting stock, so looting stays the efficient path; see
+  salvage. Clearing is the take-apart command applied to rubble, so it adds no
+  second destruction verb. A material's `fallsTo` names the block the clearing
+  verb treats as its rubble (`packages/engine/src/core/rubble.ts`, `rubbleBlockIds`).
+  Rubble blocks stand only where content places them: a blow that breaks a cell
+  empties it and drops the material's break yield as items
+  (`packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`), and collapse into
+  rubble is owed under #1332. Breaking yields at far more time per unit than
+  looting stock, so looting stays the efficient path; see
   `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
   A rubble cell is pinned as an episode while work clears it, and any block change
@@ -2717,8 +2725,8 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema` (`cracks`),
   and `packages/presentation/src/render/terrainCracks.ts`, `crackReach`,
   `TerrainCracks` and `crackStrokes`.
-- **No structural collapse in the first version.** Blocks left unsupported
-  stay where they are. Collapse is a later, separate system.
+- **No structural collapse before #1332's collapse round.** Blocks left unsupported
+  stay where they are. Collapse is a separate system, owed under #1332.
 - **Shamblers have body regions and die only when the head is destroyed.**
   Every humanoid zombie crawls after losing even one leg: whatever its type, a
   zombie that loses a leg must not keep walking or stand upright on none. Only rig
@@ -4074,9 +4082,11 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
+Holding world interaction opens the ring on every piece with a hold action, intact or damaged, while lifting requires pointing and releasing: one gesture shape keeps lift and repair from competing for the same hold. See `DESIGN.md`, "Moving furniture", and `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`.
+
 World repair starts from the chosen piece or damaged terrain cell, never from the crafting catalogue. Rubble clearing starts from the chosen rubble cell. Both use the interaction ring and the same short-lived world-work review: choosing a target is not consent to spend supplies or start work. The review retains its target when the crosshair moves, and closing it or losing that target discards it. Explicit Start revalidates the chosen identity and supplies, not a preview's permission. Repair shows the condition bands before and after because the material look changes in steps; the review must let a player see what a repair buys. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork` and `InventoryScreen.openCellWork`; `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`; and `packages/engine/src/game/cellActions.ts`, `cellActionsFor`.
 
-Repair inputs and take-apart yields share one review so the player learns one surface and the view has one owner. Furniture can be inspected in a turnable depiction; a terrain cell retains its own identity rather than borrowing a piece's. Keyboard arrow aiming is not a second target-selection path: the interaction choice already names the target. See `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`, and [Crafting and world-work layout](docs/crafting-layout.md).
+Repair inputs and take-apart yields share one review so the player learns one surface and the view has one owner. Crafting and world work share one layout because independently shaped reviews would leave a second surface to replace or let drift. Furniture can be inspected in a turnable depiction; a terrain cell retains its own identity rather than borrowing a piece's. Keyboard arrow aiming is not a second target-selection path: the interaction choice already names the target. See `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`, and [Crafting and world-work layout](docs/crafting-layout.md).
 
 A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`, `checkRecoveryYields`.
 
@@ -4084,7 +4094,7 @@ A job on a piece — furniture repair or take apart — lives on its piece, runn
 
 A terrain cell repair job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity: a refused resume keeps the paused job, while a refused completion or a cancellation returns the escrow. Clearing rubble from a cell is a different job with its own episode, so these rules are about repair only. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`.
 
-Cell previews only read identity: looking must not change the simulation or mint work episodes. Repair retains its damage epoch through partial damage changes; replacement or full repair ends it. Rubble review reads its block and cell-change stamp, including before any job exists. Retaining replacement stamps prevents clearing a replacement heap under consent given for the old one. Start checks the reviewed identity before pinning work, so replay carries the same consent as live play. See `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewCellRepair`, `CraftCommands.previewTakeApartCell`, `CraftCommands.repairCell` and `CraftCommands.takeApartCell`; `packages/engine/src/core/rubble.ts`, `Rubble.clear` and `reviewRubble`; and `packages/engine/src/game/replayCommands.ts`, `ReplayActionPayload`.
+Cell previews only read identity: looking must not change the simulation or mint work episodes. Repair retains its damage epoch through partial damage changes; replacement or full repair ends it. Rubble review reads its block and cell-change stamp, including before any job exists. Retaining replacement stamps prevents clearing a replacement heap under consent given for the old one. Start checks the reviewed identity before pinning work, so replay carries the same consent as live play. See `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewCellRepair`, `CraftCommands.previewTakeApartCell`, `CraftCommands.repairCell` and `CraftCommands.takeApartCell`; `packages/engine/src/core/rubble.ts`, `Rubble.noteChange` and `reviewRubble`; and `packages/engine/src/game/replayCommands.ts`, `ReplayActionPayload`.
 
 Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
 
