@@ -132,6 +132,11 @@ interface CommandRouterPresentation {
   debugCommand: (action: string, at: number) => boolean;
   /** The backquote hint and orbit gesture; true when it consumed the command. */
   hintCommand: (action: string, phase: InputCommand['phase'], at: number) => boolean;
+  /**
+   * Placement picking holds world keys like a carried piece: the use key confirms its spot and the turn key turns
+   * its ghost. True when it consumed the command; absent when no recipe is being picked.
+   */
+  pickingCommand?: (action: string) => boolean;
 }
 
 type InventoryTab = NonNullable<ReturnType<typeof inventoryTabForAction>>;
@@ -1311,6 +1316,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     if (ports.session().sim.dead) {
+      return;
+    }
+    if (presentation.pickingCommand?.(action)) {
       return;
     }
     if (!modalCommand(action)) {

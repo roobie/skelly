@@ -30,7 +30,13 @@ const sources = (rows: object[]): ContentSource[] => [
         },
       ],
       boardings: [
-        { id: 'fixture_boarding', name: 'Fixture boarding', color: '#a08060', thicknessBlocks: 0.125, boards: [{ from: 0, height: 1 }] },
+        {
+          id: 'fixture_boarding',
+          name: 'Fixture boarding',
+          color: '#a08060',
+          thicknessBlocks: 0.125,
+          boards: [{ from: 0, height: 1 }],
+        },
       ],
       recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
     },

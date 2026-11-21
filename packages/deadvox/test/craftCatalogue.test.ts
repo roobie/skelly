@@ -290,7 +290,12 @@ describe('craft catalogue', () => {
     const root = document.createElement('section');
     document.body.append(root);
     const dispatch = vi.fn();
-    const controller = mountCraftPanel(root, session, { dispatch, notice: vi.fn(), sites: housingSites(session) });
+    const controller = mountCraftPanel(root, session, {
+      dispatch,
+      notice: vi.fn(),
+      sites: housingSites(session),
+      pickSpot: vi.fn(),
+    });
     const query = () => root.querySelector<HTMLInputElement>('.craft-query')!;
     const input = (value: string) => {
       query().value = value;

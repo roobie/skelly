@@ -45,6 +45,45 @@ describe('furniture service choices', () => {
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
     expect(choices.some(({ id }) => id === 'lift')).toBe(false);
   });
+
+  it("offers a door's known boarding recipes as Board up ring entries carrying their recipe", () => {
+    const boarding = [...registry.boardings.keys()][0]!;
+    const withBoarding = baseRegistryWith([
+      ...worldRepairSources(),
+      {
+        source: 'boarding-ring-fixture.json',
+        data: {
+          recipes: [
+            {
+              id: 'boarding_ring_recipe',
+              category: [...registry.recipeCategories.keys()][0]!,
+              tags: [],
+              searchTerms: [],
+              result: { doorBoarding: boarding, count: 1 },
+              placementReviewOrder: 'spot-first',
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [],
+            },
+          ],
+        },
+      },
+    ]);
+    const { inventory } = worldRepairFixture(withBoarding);
+    const door = inventory.entities.add({
+      type: [...withBoarding.furniture.keys()].find((id) => withBoarding.furniture.get(id)!.door !== undefined)!,
+      pos: [1, 1, 1],
+      size: [1, 1, 1],
+      facing: 'n',
+    })!;
+    const known = new Set(['boarding_ring_recipe']);
+    const choices = furnitureActionsFor(inventory, door, known);
+    const boardUp = choices.filter(({ id }) => id === 'board_up');
+    expect(boardUp.map(({ placementRecipe }) => placementRecipe)).toEqual(['boarding_ring_recipe']);
+    // A recipe the player does not know reaches no ring.
+    expect(furnitureActionsFor(inventory, door).some(({ id }) => id === 'board_up')).toBe(false);
+  });
 });
 
 describe('radial entry geometry', () => {

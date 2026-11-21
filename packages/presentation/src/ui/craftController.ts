@@ -10,7 +10,7 @@ import {
 } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
 import { fillText } from '@skelly/engine/text';
-import type { BlockEntity } from '@skelly/engine/world';
+import type { BlockEntity, WorldDestination } from '@skelly/engine/world';
 import { Group, type Matrix4, type Object3D, Vector3 } from 'three';
 import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
 import type { Depiction } from '../render/plantInstruments.ts';
@@ -48,7 +48,7 @@ export const mountCraftPanel = (
   session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
     crafting: Pick<
       Session['crafting'],
-      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'previewPieceWork'
+      'startReason' | 'previewEntityRepair' | 'previewPlacement' | 'previewTakeApartEntity' | 'previewPieceWork'
     >;
   },
   controls: {
@@ -57,6 +57,8 @@ export const mountCraftPanel = (
     sites: WorkSiteProducer;
     /** Absent in render-free play. */
     targetView?: TargetView | undefined;
+    /** Enters spot picking for a placement recipe; the screen closes while the crosshair picks. */
+    pickSpot: (recipeId: string) => void;
   },
 ) => {
   const preferences: Record<string, CraftPreference> = {};
@@ -82,6 +84,8 @@ export const mountCraftPanel = (
   let open = false;
   let revision = 0;
   let drawn = '';
+  /** The spot a placement recipe's picking pinned, judged live until its Start commits; one build, one pin. */
+  let placement: { recipeId: string; destination: WorldDestination; spot?: string } | undefined;
   /** A take-apart or Continue review just opened: its commitment is the one choice left, so focus lands on it. */
   let focusStart = false;
   let lastReach: ReturnType<Session['reach']> | undefined;
@@ -110,17 +114,44 @@ export const mountCraftPanel = (
       ...(sources[id] ? { sources: sources[id] } : {}),
     };
   };
-  const dispatch = (payload: ReplayActionPayload | undefined): void => {
+  const dispatch = (payload: ReplayActionPayload | undefined): string | undefined => {
     if (!payload) {
-      return;
+      return undefined;
     }
     const reason = controls.dispatch(payload);
     if (reason) {
       controls.notice(reason);
     }
+    return reason;
+  };
+  /** A placement recipe's Start: with a pin it commits `craft.place`, without one a spot-first recipe picks its spot. */
+  const placementStart = (id: string): void => {
+    if (placement?.recipeId === id) {
+      const reason = dispatch({
+        kind: 'craft.place',
+        recipeId: id,
+        destination: placement.destination,
+        ...(preferences[id] ? { preference: preferences[id] } : {}),
+        ...(sources[id] ? { sources: sources[id] } : {}),
+      });
+      // A finished build is one and done: the player reopens the recipe each time, so its pin leaves with it.
+      if (reason === undefined) {
+        placement = undefined;
+      }
+      return;
+    }
+    // Without a pin no placement recipe starts from the list: spot-first picks its spot first, and the review-first
+    // Start stays refused until a pin exists.
+    if (registry.recipes.get(id)?.placementReviewOrder === 'spot-first') {
+      controls.pickSpot(id);
+    }
   };
   const actions: CraftPanelActions = {
     start: (id) => {
+      if (registry.recipes.get(id)?.placementReviewOrder !== undefined) {
+        placementStart(id);
+        return;
+      }
       const preference = preferences[id];
       dispatch(
         world
@@ -132,6 +163,11 @@ export const mountCraftPanel = (
               ...(sources[id] ? { sources: sources[id] } : {}),
             },
       );
+    },
+    pickSpot: (id) => {
+      if (registry.recipes.get(id)?.placementReviewOrder !== undefined) {
+        controls.pickSpot(id);
+      }
     },
     prefer: (id, group, item) => {
       const next = { ...preferences[id] };
@@ -321,6 +357,9 @@ export const mountCraftPanel = (
       preferences,
       sources,
       startReason: session.crafting.startReason(),
+      ...(placement && placement.recipeId === state.selected
+        ? { placementPreview: { ...placement, crafting: session.crafting } }
+        : {}),
       ...(world
         ? { entityRepair: { target: world.target, crafting: session.crafting } }
         : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
@@ -384,6 +423,8 @@ export const mountCraftPanel = (
       world?.operation,
       world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
+      placement?.recipeId,
+      placement?.destination,
       world && controls.sites.drawState(world.target),
       surface(),
     ]);
@@ -410,7 +451,7 @@ export const mountCraftPanel = (
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
     render(reach);
     drawTarget();
-    if (focusStart && world && world.operation !== 'repair') {
+    if (focusStart && (world ? world.operation !== 'repair' : placement !== undefined)) {
       focusStart = false;
       panel.querySelector<HTMLElement>('.craft-start')?.focus();
     }
@@ -418,6 +459,16 @@ export const mountCraftPanel = (
     drawn = drawKey(knowledge, skills);
   };
   return {
+    /** Pins a spot a placement recipe's picking confirmed, and points the review at its recipe. */
+    pinPlacement: (recipeId: string, destination: WorldDestination, spot?: string) => {
+      if (session.character.knownRecipes.has(recipeId)) {
+        placement = { recipeId, destination, ...(spot === undefined ? {} : { spot }) };
+        state.selected = recipeId;
+        focusStart = true;
+        revision += 1;
+        refresh();
+      }
+    },
     update: (isOpen: boolean, work?: { target: BlockEntity; operation: WorldOperation }) => {
       open = isOpen;
       if (work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {

@@ -2,7 +2,13 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '@skelly/engine/content';
+import {
+  type ActorFigureFiles,
+  type BodyTuningDef,
+  loadActorFigureFiles,
+  type RecipeDef,
+  repairTargetName,
+} from '@skelly/engine/content';
 import {
   type ActionText,
   actionText,
@@ -124,14 +130,23 @@ import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
 import { fittedOpening, vehicleName } from '@skelly/engine/vehicles';
 import {
   type BlockEntity,
+  boardable,
   CitySite,
   cellCondition,
   columnArrival,
+  type DoorSide,
+  doorBoardingBoxes,
+  type Facing,
   NOT_LOADED,
+  panelFor,
   playerStartFromWorld,
   raycast,
   registerLayoutVehicles,
+  rotatedSize,
+  rotationOf,
+  turnFacing,
   type Vec3,
+  type WorldDestination,
 } from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { programsByName } from '../render/gpuPrograms.ts';
@@ -185,6 +200,7 @@ import {
   playHudText,
   playInteractionText,
   playNeedsText,
+  playPickingText,
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHandling,
@@ -862,8 +878,15 @@ const furnitureChoicePlanner =
     screen: { openWorldWork: (uid: number, operation: WorldOperation) => void };
     cancelQuickbar: () => void;
     closeMainMenu: () => void;
+    enterPlacementPicking: (recipeId: string) => void;
   }) =>
   (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
+    if (selected.placementRecipe !== undefined) {
+      owners.cancelQuickbar();
+      owners.enterPlacementPicking(selected.placementRecipe);
+      owners.closeMainMenu();
+      return undefined;
+    }
     if (isWorldWorkChoice(selected)) {
       owners.cancelQuickbar();
       owners.screen.openWorldWork(entity.uid, selected.id);
@@ -1044,6 +1067,20 @@ const startPlayWith = (
       },
       debugCommand: (action, at) => handleDebugCommand(action, at),
       hintCommand: (action, phase, at) => handleHintCommand(action, phase, at),
+      pickingCommand: (action) => {
+        if (!placementPicking) {
+          return false;
+        }
+        if (action === 'carry.turn') {
+          placementPicking.turns += 1;
+          return true;
+        }
+        if (action === 'world.interact') {
+          confirmPlacementPicking();
+          return true;
+        }
+        return false;
+      },
     },
     active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
     worldReady: () => worldLoading.ready,
@@ -1568,6 +1605,7 @@ const startPlayWith = (
     dispatch: router.dispatchScreenCommand,
     sites: housingSites(session),
     targetView: worldTargetView(),
+    pickSpot: (recipeId) => enterPlacementPicking(recipeId),
   });
 
   let revealActors = false;
@@ -2502,6 +2540,7 @@ const startPlayWith = (
       mainMenuOpen = false;
       syncMenuState();
     },
+    enterPlacementPicking: (recipeId) => enterPlacementPicking(recipeId),
   });
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
@@ -2725,6 +2764,240 @@ const startPlayWith = (
     const carry = carryPreview();
     return carry && 'pos' in carry.spot ? carry.spot.pos : undefined;
   };
+  // ---- placement picking ----
+
+  /** The placement recipe whose spot the crosshair picks, with its ghost's turn steps; the ghost shares the carry keys. */
+  let placementPicking: { recipeId: string; turns: number } | undefined;
+
+  /** Each facing's own front in world x and z: a north-facing piece's front is its local −z (`packages/engine/src/core/orientation.ts`, `Tip`). */
+  const FacingFronts: Readonly<Record<Facing, readonly [number, number]>> = {
+    n: [0, -1],
+    e: [1, 0],
+    s: [0, 1],
+    w: [-1, 0],
+  };
+
+  /** The facing whose front points nearest back along the look, so a new piece's front faces its builder. */
+  const builderFacing = (): Facing => {
+    const [dx, , dz] = lookDir();
+    return (Object.keys(FacingFronts) as Facing[]).reduce((best, facing) => {
+      const [fx, fz] = FacingFronts[facing];
+      const [bx, bz] = FacingFronts[best];
+      return fx * -dx + fz * -dz > bx * -dx + bz * -dz ? facing : best;
+    }, 'n');
+  };
+
+  /** The facing a ghost's turn steps stand it on, a quarter clockwise per step from its builder-facing front. */
+  const turnedFacing = (turns: number): Facing => {
+    let facing = builderFacing();
+    for (let turn = 0; turn < turns % 4; turn += 1) {
+      facing = turnFacing(facing, 1);
+    }
+    return facing;
+  };
+
+  /** The face a turn step flips a boarding to. */
+  const flipSide = (side: DoorSide): DoorSide => (side === 'front' ? 'back' : 'front');
+
+  /** The aimed boardable leaf and the face that faces the builder, flipped by an odd number of turn steps. */
+  const boardingDestination = (turns: number): WorldDestination => {
+    const target = interactionTargetAt();
+    const leaf = target?.kind === 'furniture' && boardable(entities.defOf(target.entity)) ? target.entity : undefined;
+    const near = (leaf && entities.sideOf(leaf, body.pos)) ?? 'front';
+    return { kind: 'door', uid: leaf?.uid ?? 0, side: turns % 2 === 1 ? flipSide(near) : near };
+  };
+
+  /** The aimed cell, with the result's front facing its builder and its box centred on the aim. */
+  const pieceDestination = (entityId: string, turns: number): WorldDestination => {
+    const aimed = aimedCell();
+    const facing = turnedFacing(turns);
+    const def = registry.furniture.get(entityId)!;
+    const size = rotatedSize(def.size, rotationOf({ facing }));
+    return {
+      kind: 'entity',
+      pos: [aimed[0] - Math.floor(size[0] / 2), aimed[1], aimed[2] - Math.floor(size[2] / 2)],
+      facing,
+    };
+  };
+
+  /**
+   * Where the picked recipe would build now: the aimed cell with its ghost's front facing the builder, or the aimed
+   * boardable leaf with the face that faces the builder. An item result is no placement recipe, so its destination
+   * is the one the engine refuses as absent.
+   */
+  const placementDestination = (recipe: RecipeDef, turns: number): WorldDestination => {
+    const { result } = recipe;
+    if ('doorBoarding' in result) {
+      return boardingDestination(turns);
+    }
+    if ('block' in result) {
+      return { kind: 'cell', pos: aimedCell() };
+    }
+    if (!('entity' in result)) {
+      return { kind: 'door', uid: 0, side: 'front' };
+    }
+    return pieceDestination(result.entity, turns);
+  };
+
+  /** The live pick: its recipe, where it aims, and the engine's own refusal for that destination. */
+  const placementPick = ():
+    | { recipe: RecipeDef; destination: WorldDestination; refusal: string | undefined }
+    | undefined => {
+    const picking = placementPicking;
+    if (!picking) {
+      return undefined;
+    }
+    const recipe = registry.recipes.get(picking.recipeId);
+    if (!recipe?.placementReviewOrder) {
+      placementPicking = undefined;
+      return undefined;
+    }
+    const destination = placementDestination(recipe, picking.turns);
+    return {
+      recipe,
+      destination,
+      refusal: session.crafting.previewPlacement(picking.recipeId, destination).refusal,
+    };
+  };
+
+  /** Enters spot picking for a placement recipe: the screen closes while the crosshair picks its spot. */
+  const enterPlacementPicking = (recipeId: string): void => {
+    if (registry.recipes.get(recipeId)?.placementReviewOrder !== undefined) {
+      closeInventoryScreen();
+      placementPicking = { recipeId, turns: 0 };
+    }
+  };
+
+  /** Pins the picked spot and opens its review; a refused spot stays picked, with its reason. */
+  const confirmPlacementPicking = (): void => {
+    const pick = placementPick();
+    if (!pick) {
+      return;
+    }
+    if (pick.refusal !== undefined) {
+      showRefusal(pick.refusal, sim.time);
+      return;
+    }
+    placementPicking = undefined;
+    const leaf = pick.destination.kind === 'door' ? entities.byUid(pick.destination.uid) : undefined;
+    craftPanel.pinPlacement(pick.recipe.id, pick.destination, leaf && entities.defOf(leaf).name);
+    screen.openOnTab('crafting');
+  };
+
+  /** The ghost's result model stood at its destination, for a recipe whose result is a piece. */
+  const ghostPiece = (entityId: string, destination: Extract<WorldDestination, { kind: 'entity' }>, valid: boolean) => {
+    const def = registry.furniture.get(entityId)!;
+    return {
+      entity: {
+        spec: {
+          uid: 0,
+          type: def.id,
+          origin: destination.pos,
+          pos: destination.pos,
+          size: def.size,
+          facing: destination.facing,
+          carried: false,
+          searched: true,
+          open: false,
+        },
+        def,
+      },
+      boxes: [] as { center: Vec3; size: Vec3 }[],
+      valid,
+    };
+  };
+
+  /** The ghost's boxes in view metres: a block result's aimed cell, or a boarding's boards on their leaf. */
+  const ghostBoxes = (recipe: RecipeDef, destination: WorldDestination): { center: Vec3; size: Vec3 }[] => {
+    const { result } = recipe;
+    if ('block' in result && destination.kind === 'cell') {
+      return [
+        {
+          center: [(destination.pos[0] + 0.5) * s, (destination.pos[1] + 0.5) * s, (destination.pos[2] + 0.5) * s],
+          size: [s, s, s],
+        },
+      ];
+    }
+    if (destination.kind !== 'door' || !('doorBoarding' in result)) {
+      return [];
+    }
+    const leaf = entities.byUid(destination.uid);
+    const boarding = registry.boardings.get(result.doorBoarding);
+    if (!(leaf && boarding)) {
+      return [];
+    }
+    const boarded = { ...leaf, boarding: { side: destination.side, type: boarding.id } };
+    return doorBoardingBoxes(boarded, panelFor(boarded, entities.defOf(boarded), s), boarding, s);
+  };
+
+  /** Stands the see-through result at the picked destination, tinted by the engine's answer for that spot. */
+  const drawPlacementGhost = (pick: ReturnType<typeof placementPick>): void => {
+    if (!pick) {
+      view.placementGhost.update(undefined);
+      return;
+    }
+    const valid = pick.refusal === undefined;
+    const { result } = pick.recipe;
+    const draw =
+      'entity' in result && pick.destination.kind === 'entity'
+        ? ghostPiece(result.entity, pick.destination, valid)
+        : { boxes: ghostBoxes(pick.recipe, pick.destination), valid };
+    view.placementGhost.update(draw);
+  };
+  /** The destination's footprint in blocks: the piece's turned size, the aimed cell, or the boarded leaf itself. */
+  const placementBounds = (pick: NonNullable<ReturnType<typeof placementPick>>): { pos: Vec3; size: Vec3 } => {
+    const { destination } = pick;
+    if (destination.kind === 'door') {
+      const leaf = entities.byUid(destination.uid);
+      return { pos: leaf?.pos ?? [0, 0, 0], size: leaf?.size ?? [0, 0, 0] };
+    }
+    if (destination.kind === 'cell') {
+      return { pos: destination.pos, size: [1, 1, 1] };
+    }
+    const { result } = pick.recipe;
+    if (!('entity' in result)) {
+      return { pos: [0, 0, 0], size: [0, 0, 0] };
+    }
+    const def = registry.furniture.get(result.entity)!;
+    return { pos: destination.pos, size: rotatedSize(def.size, rotationOf({ facing: destination.facing })) };
+  };
+
+  /** Outlines where the picked piece would stand, as the carry outline marks where a carried piece would. */
+  const markPlacement = (pick: NonNullable<ReturnType<typeof placementPick>>, outline: boolean): void => {
+    if (!outline) {
+      view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
+      return;
+    }
+    const { pos, size } = placementBounds(pick);
+    view.furniture.markBounds(
+      `place:${pick.recipe.id}`,
+      [(pos[0] + size[0] / 2) * s, (pos[1] + size[1] / 2) * s, (pos[2] + size[2] / 2) * s],
+      [size[0] * s, size[1] * s, size[2] * s],
+    );
+  };
+
+  /**
+   * Each frame's pick: an open screen, a lost grip or death ends picking, then the pick's ghost and outline stand
+   * where its piece would. The pick it returns feeds the prompt line.
+   */
+  const syncPlacementPicking = (
+    visible: Readonly<HudOptionsState>,
+    target: InteractionTarget | undefined,
+    carry: ReturnType<typeof carryPreview>,
+  ): ReturnType<typeof placementPick> => {
+    if (placementPicking && (screen.isOpen || sim.dead || reading.isOpen)) {
+      placementPicking = undefined;
+    }
+    const pick = placementPick();
+    if (pick) {
+      markPlacement(pick, visible.interactionOutline);
+    } else {
+      markOutline(target, carry, visible.interactionOutline);
+    }
+    drawPlacementGhost(pick);
+    return pick;
+  };
+
   /** Outlines the crosshair target, or, while carrying, where the piece would be set down. */
   const markOutline = (
     target: InteractionTarget | undefined,
@@ -2790,8 +3063,16 @@ const startPlayWith = (
   const interactionHintFor = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
+    pick: ReturnType<typeof placementPick>,
   ): HintText | undefined => {
     const key = keyCap(inputBindings, 'world.interact');
+    if (pick) {
+      return playPickingText(
+        pick.refusal ?? fillHint(lines.hints.buildHere, { key, name: repairTargetName(registry, pick.recipe) }),
+        screenText.interaction,
+        inputBindings,
+      );
+    }
     if (carry) {
       return playCarryText(
         'refusal' in carry.spot
@@ -2817,18 +3098,23 @@ const startPlayWith = (
   const promptText = (
     now: number,
     visible: Readonly<HudOptionsState>,
-    target: InteractionTarget | undefined,
-    carry: ReturnType<typeof carryPreview>,
+    seen: {
+      target: InteractionTarget | undefined;
+      carry: ReturnType<typeof carryPreview>;
+      pick: ReturnType<typeof placementPick>;
+    },
   ) => {
-    // The furniture menu lasts only as long as the press that opened it.
+    const { target, carry, pick } = seen;
+    // The furniture menu lasts only as long as the press that opened it; picking owns the use key, so it opens no ring.
     const choosingFurniture =
+      pick === undefined &&
       target?.kind === 'furniture' &&
       !target.entity.window &&
       !carry &&
       (replayPlayer !== undefined || keyboardInput.held('world.interact'));
     actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
     syncHeldActionMenu(sim.paused);
-    const interactionHint = interactionHintFor(target, carry);
+    const interactionHint = interactionHintFor(target, carry, pick);
     drawActionMenu(visible.interaction && input.locked && !debugTools?.buildOn);
     return playPromptText(
       {
@@ -3472,7 +3758,7 @@ const startPlayWith = (
 
     const affordance = affordanceForFrame(visible);
     const carry = carryPreview();
-    markOutline(affordance.target, carry, visible.interactionOutline);
+    const pick = syncPlacementPicking(visible, affordance.target, carry);
     const opticReticleVisible =
       !isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled) &&
       view.held.opticLensFrame?.reticle !== undefined;
@@ -3489,7 +3775,7 @@ const startPlayWith = (
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
         crosshairVisible: crosshair.visible,
         crosshairScreenPosition: crosshair.screenPosition,
-        prompt: promptText(now, visible, affordance.target, carry),
+        prompt: promptText(now, visible, { target: affordance.target, carry, pick }),
       },
     );
     renderRestAndWait(visible.messages);

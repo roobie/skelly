@@ -91,7 +91,7 @@ export const RecipeSchema = pipe(
     workstation: optional(nullable(Id)),
   }),
   check(
-    (recipe) => ('item' in recipe.result) === (recipe.placementReviewOrder === undefined),
+    (recipe) => 'item' in recipe.result === (recipe.placementReviewOrder === undefined),
     'placementReviewOrder belongs to every placement recipe and no item recipe',
   ),
 );
