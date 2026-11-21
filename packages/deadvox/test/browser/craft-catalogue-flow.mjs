@@ -124,25 +124,12 @@ const coldCraftOpenMs = async (page) =>
   });
 
 /**
- * @param {{
- *   page: Page;
- *   url: string;
- *   resizeViewport: ResizeViewport;
- *   output: string | undefined;
- *   depicted?: boolean;
- * }} options
+ * Boots one look's world and waits for its ready state to hold, so a later dispatch lands in settled play.
+ * @param {Page} page
+ * @param {string} url
  */
-export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, depicted = false }) => {
-  // Every wait here follows a world boot or a frame, whose duration scales with machine load, so a Playwright timer
-  // only turns a busy runner into a failure. A hung wait ends at the stage's outer `timeout`
-  // (`packages/deadvox/package.json`, "test:ui-browser"); the world-work step lines name the stuck step.
+const bootLook = async (page, url) => {
   page.setDefaultTimeout(0);
-  page.on('console', (message) => {
-    if (message.type() === 'info') {
-      process.stdout.write(`page: ${message.text()}
-`);
-    }
-  });
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
@@ -158,9 +145,8 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
       loading.dataset.state === 'ready'
     );
   });
-  // The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page.
   // The boot's ready transition applies the replay start state, whose non-replay default closes any open screen; a
-  // player cannot have one open that early (input is gated until ready), so the cold dispatch waits for ready to hold.
+  // player cannot have one open that early (input is gated until ready), so a dispatch waits for ready to hold.
   await page.evaluate(async () => {
     for (;;) {
       const flips = globalThis.foregripFitTest.readyFlips;
@@ -174,6 +160,29 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
       }
     }
   });
+};
+
+/**
+ * @param {{
+ *   page: Page;
+ *   url: string;
+ *   resizeViewport: ResizeViewport;
+ *   output: string | undefined;
+ *   depicted?: boolean;
+ *   placementUrl?: string | undefined;
+ * }} options
+ */
+export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, depicted = false, placementUrl }) => {
+  // Every wait here follows a world boot or a frame, whose duration scales with machine load, so a Playwright timer
+  // only turns a busy runner into a failure. A hung wait ends at the stage's outer `timeout`
+  // (`packages/deadvox/package.json`, "test:ui-browser"); the world-work step lines name the stuck step.
+  page.on('console', (message) => {
+    if (message.type() === 'info') {
+      process.stdout.write(`page: ${message.text()}\n`);
+    }
+  });
+  await bootLook(page, url);
+  // The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page.
   const coldOpenMs = await coldCraftOpenMs(page);
   const limits = await page.evaluate(() => {
     const { session } = globalThis.skellyPlayTest;
@@ -367,7 +376,171 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
     await page.locator('#crafting').screenshot({ path: join(output, 'crafting-enlarged.png') });
   }
   await worldWorkFlow({ page, resizeViewport, output, depicted, activate, fixtureDensity });
+  if (placementUrl) {
+    await placementFlow({ page, url: placementUrl, output });
+  }
   return { ...limits, coldCraftOpenMs: coldOpenMs, ...timings };
+};
+
+/**
+ * One placement by play on the placement look start mod
+ * `skelly.deadvox.scenario.test-house.placement-look`: a review-first shelf refuses Start until a spot is pinned,
+ * the pick's live refusal names the occupied spot in the prompt line, the turn key turns the ghost before its spot
+ * is pinned, and Start stands the piece on the pinned destination alone — one build, one and done.
+ * @param {{ page: Page; url: string; output: string | undefined }} options
+ */
+const placementFlow = async ({ page, url, output }) => {
+  process.stdout.write('placement: boot\n');
+  await bootLook(page, url);
+  /** @param {Locator} locator */
+  const activate = async (locator) => {
+    await locator.focus();
+    await pressAction(page, 'inventory.control-activate');
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+  };
+  /**
+   * Points the crosshair at a world point in metres, as the look's own aims do.
+   * @param {[number, number, number]} point
+   */
+  const aimedAt = (point) =>
+    page.evaluate((target) => {
+      const { eye, input, engine } = globalThis.skellyPlayTest;
+      const { blockSize } = engine.config.scale;
+      const [ox, oy, oz] = eye();
+      const dx = target[0] / blockSize - ox;
+      const dy = target[1] / blockSize - oy;
+      const dz = target[2] / blockSize - oz;
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    }, point);
+  const promptLine = () => page.locator('#prompt').textContent();
+  const lookDownAtFeet = () =>
+    page.evaluate(() => {
+      const { input } = globalThis.skellyPlayTest;
+      input.controls.pitch = -Math.PI / 2 + 0.05;
+    });
+  const screenClosed = () =>
+    page.waitForFunction(() => {
+      const inventory = document.querySelector('#inventory');
+      return inventory instanceof HTMLElement && inventory.hidden;
+    });
+  process.stdout.write('placement: open catalogue\n');
+  await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
+  await pressAction(page, 'ui.inventory-tab-crafting');
+  await page.waitForFunction(() => Boolean(document.querySelector('.craft-query')));
+  const query = page.locator('.craft-query');
+  await query.fill('Shelf');
+  const result = page.locator('[data-craft-result="build_wood_shelf"]');
+  assert.equal(await result.count(), 1, 'the look offers the real shelf recipe');
+  await activate(result);
+  const start = page.locator('.craft-start');
+  assert.equal(
+    await start.getAttribute('aria-disabled'),
+    'true',
+    'a review-first placement refuses Start until a spot is pinned',
+  );
+  const pickSpot = page.locator('.craft-pick-spot');
+  process.stdout.write('placement: pick spot\n');
+  await activate(pickSpot);
+  await screenClosed();
+  process.stdout.write('placement: screen closed\n');
+  await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
+  // The free floor ahead of the spawn carries the build hint; the occupied shelf behind it the engine's refusal.
+  await aimedAt([-10.25, 21.05, 14.75]);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.waitForFunction(() => {
+    const { registry } = globalThis.skellyPlayTest.session.inventory;
+    const recipe = registry.recipes.get('build_wood_shelf');
+    const name = recipe && 'entity' in recipe.result && registry.furniture.get(recipe.result.entity)?.name;
+    return Boolean(name && document.querySelector('#prompt')?.textContent?.toLowerCase().includes(name.toLowerCase()));
+  });
+  const buildLine = await promptLine();
+  assert.ok((buildLine ?? '').length > 0, 'the pick names what it would build');
+  process.stdout.write('placement: refused spot\n');
+  // The player's own feet: the ghost's own cell is taken, and the engine's live refusal names it in the prompt line.
+  await lookDownAtFeet();
+  await page.waitForFunction(() => {
+    const { registry } = globalThis.skellyPlayTest.session.inventory;
+    const ui = [...registry.ui.values()].find((row) => row.capability === 'interface');
+    return ui && document.querySelector('#prompt')?.textContent?.includes(ui.furnitureMoveMessages.noRoom);
+  });
+  if (output) {
+    await page.screenshot({ path: join(output, 'placement-refused.png') });
+  }
+  // A valid spot again: one turn of the ghost, then the use key pins it and reopens the review.
+  await aimedAt([-10.25, 21.05, 14.75]);
+  await page.waitForFunction((line) => document.querySelector('#prompt')?.textContent === line, buildLine ?? '');
+  process.stdout.write('placement: confirm spot\n');
+  /** @param {number} yaw */
+  const facingAlongLook = (yaw) => {
+    const fronts = /** @type {const} */ ([
+      ['n', 0, -1],
+      ['e', 1, 0],
+      ['s', 0, 1],
+      ['w', -1, 0],
+    ]);
+    const builder = fronts.reduce((best, row) =>
+      row[1] * Math.sin(yaw) + row[2] * Math.cos(yaw) > best[1] * Math.sin(yaw) + best[2] * Math.cos(yaw) ? row : best,
+    );
+    return { builder: builder[0], turned: fronts[(fronts.indexOf(builder) + 1) % fronts.length]?.[0] };
+  };
+  const chosen = facingAlongLook(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw));
+  const turnedFacing = chosen.turned;
+  assert.ok(turnedFacing, 'a quarter turn has a facing');
+  await pressAction(page, 'carry.turn');
+  // Find a free spot across a facing boundary, by aiming only; both the unturned and auto-retuned mutations
+  // must differ from the player's chosen facing. The shelf's rotated footprint need not fit the original spot.
+  let found = false;
+  for (const x of [-11.25, -10.75, -9.75, -9.25]) {
+    for (const z of [14.75, 15.25, 16.25]) {
+      await aimedAt([x, 21.0, z]);
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const current = facingAlongLook(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw));
+      if (
+        current.builder !== chosen.builder &&
+        current.builder !== chosen.turned &&
+        (await promptLine()) === buildLine
+      ) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      break;
+    }
+  }
+  assert.ok(found, 'the rotated shelf has a free spot across an automatic-facing boundary');
+  await tapAction(page, 'world.interact');
+  await page.waitForFunction(() => {
+    const inventory = document.querySelector('#inventory');
+    const crafting = document.querySelector('#crafting');
+    return inventory instanceof HTMLElement && !inventory.hidden && crafting instanceof HTMLElement && !crafting.hidden;
+  });
+  assert.equal(await start.getAttribute('aria-disabled'), 'false', 'the pinned spot admits commitment');
+  process.stdout.write('placement: start build\n');
+  await activate(start);
+  await screenClosed();
+  const destination = await page.waitForFunction(() => {
+    for (const { item } of globalThis.skellyPlayTest.session.inventory.items()) {
+      if (item.work?.kind === 'craft' && item.work.destination) {
+        return item.work.destination;
+      }
+    }
+    return false;
+  });
+  const spot = await destination.jsonValue();
+  assert.ok(spot && spot.kind === 'entity', 'the fixture shelf has a pinned piece destination');
+  assert.equal(spot.facing, turnedFacing, 'T turns the piece and aiming elsewhere preserves that chosen facing');
+  process.stdout.write('placement: piece stands\n');
+  await page.waitForFunction((dest) => {
+    const { entities } = globalThis.skellyPlayTest.session.inventory;
+    return entities.at(dest.pos[0], dest.pos[1], dest.pos[2]) !== undefined;
+  }, spot);
+  // One build is one and done: reopening the recipe reviews an unpinned spot again.
+  await pressAction(page, 'ui.inventory-tab-crafting');
+  await page.waitForFunction(() => Boolean(document.querySelector('.craft-pick-spot')));
+  assert.equal(await start.getAttribute('aria-disabled'), 'true', 'a finished build leaves no pinned spot');
+  process.stdout.write('placement: build stood and pin cleared\n');
 };
 
 /**

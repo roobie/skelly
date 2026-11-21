@@ -564,6 +564,31 @@ describe('keyboard registry', () => {
     expect(commands.map(({ action }) => action)).not.toContain('carry.turn');
     expect(commands.map(({ action }) => action)).not.toContain('carry.tip');
   });
+  it('keeps reload and emotes while picking, replacing only throw with turn', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'picking', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    for (const action of ['firearm.reload', 'player.throw', 'emote.menu']) {
+      const { code } = bindings.chords(action)[0]!;
+      keyboard.press(event(code));
+      keyboard.release(event(code));
+    }
+    expect(commands.filter(({ phase }) => phase === 'down').map(({ action }) => action)).toEqual([
+      'firearm.reload',
+      'carry.turn',
+      'emote.menu',
+    ]);
+    const play = INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('play')).map(({ id }) => id);
+    const picking = INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('picking')).map(({ id }) => id);
+    expect(picking.toSorted(compareCodeUnits)).toEqual(
+      play
+        .filter((id) => id !== 'player.throw')
+        .concat('carry.turn')
+        .toSorted(compareCodeUnits),
+    );
+  });
   it('takes default keys from content and lets a stored rebind win by action id', () => {
     const fromContent = new BindingRegistry(INPUT_BINDINGS, storage()).chords('world.interact');
     expect(fromContent.length).toBeGreaterThan(0);
@@ -961,6 +986,15 @@ describe('keyboard registry', () => {
       expect(prevented(globalThis, freeLook, { altKey: true })).toBe(true);
       expect(keyboard.held('view.free-look')).toBe(true);
       keyboard.release(event(freeLook));
+
+      context = 'picking';
+      expect(prevented(globalThis, 'KeyU', { ctrlKey: true })).toBe(true);
+      prevented(globalThis, freeLook, { altKey: true });
+      expect(keyboard.held('view.free-look')).toBe(true);
+      locked = null;
+      keyboard.reconcileFocus();
+      expect(keyboard.held('view.free-look')).toBe(false);
+      locked = document.body;
 
       const input = document.createElement('input');
       document.body.append(input);

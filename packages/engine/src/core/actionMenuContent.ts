@@ -7,7 +7,7 @@ import { Positive } from './schema/primitives.ts';
  * a position chosen at run time and move the others.
  */
 export const ACTION_MENU_ACTIONS = {
-  furniture: ['push', 'drag', 'lift', 'repair', 'continue', 'take_apart'],
+  furniture: ['push', 'drag', 'lift', 'repair', 'continue', 'take_apart', 'board_up'],
   held: ['own', 'sharpen', 'open-can', 'magazine:strip', 'battery:unload', 'continue-work', 'treat'],
   /** The emote ring's modes, each opening a child ring of the emotes content places under it. */
   emote: ['gun'],

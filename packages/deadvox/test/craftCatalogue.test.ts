@@ -55,6 +55,18 @@ const setup = () => {
           recipeTags: [{ id: 'catalogue_tag', label: 'Tagged', searchTerms: ['keyword'] }],
           furniture: [{ id: 'catalogue_piece', name: 'Catalogue piece', size: [1, 1, 1], color: '#777777' }],
           recipes: [
+            ...(['spot-first', 'review-first'] as const).map((order) => ({
+              id: `catalogue_placement_${order.replace('-', '_')}`,
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { entity: 'catalogue_piece', count: 1 },
+              placementReviewOrder: order,
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'catalogue_fibre', count: 1 }]],
+            })),
             {
               id: WORLD_REPAIR_ID,
               kind: 'repair',
@@ -255,6 +267,32 @@ describe('craft catalogue', () => {
     expect(new Set(reasons).size).toBe(3);
   });
 
+  it.each(['spot-first', 'review-first'] as const)(
+    'reviews %s placement before a pin and admits an unnamed free-piece pin',
+    (order) => {
+      const session = setup();
+      const id = `catalogue_placement_${order.replace('-', '_')}`;
+      session.character.learnRecipes([id]);
+      const options = {
+        registry: session.inventory.registry,
+        character: session.character,
+        reach: session.reach(),
+        preferences: {},
+        startReason: undefined,
+        recipeIds: [id],
+      };
+      const [unpinned] = craftRows(options);
+      expect(unpinned?.placement).toEqual({ order, pinned: false });
+      expect(unpinned?.reason === undefined).toBe(order === 'spot-first');
+      const previewPlacement = vi.fn(() => ({ result: undefined, refusal: undefined }));
+      const destination = { kind: 'entity' as const, pos: [2, 0, 0] as [number, number, number], facing: 'n' as const };
+      const [pinned] = craftRows({ ...options, placementPreview: { destination, crafting: { previewPlacement } } });
+      expect(pinned?.placement).toEqual({ order, pinned: true });
+      expect(pinned?.reason).toBeUndefined();
+      expect(previewPlacement).toHaveBeenCalledWith(id, destination, undefined, undefined);
+    },
+  );
+
   it('bounds result and facet pages, clamps lost pages and represents empty results', () => {
     const entries = ['a', 'b', 'c', 'd'];
     expect(cataloguePage(entries, 1, 3)).toMatchObject({
@@ -290,7 +328,12 @@ describe('craft catalogue', () => {
     const root = document.createElement('section');
     document.body.append(root);
     const dispatch = vi.fn();
-    const controller = mountCraftPanel(root, session, { dispatch, notice: vi.fn(), sites: housingSites(session) });
+    const controller = mountCraftPanel(root, session, {
+      dispatch,
+      notice: vi.fn(),
+      sites: housingSites(session),
+      pickSpot: vi.fn(),
+    });
     const query = () => root.querySelector<HTMLInputElement>('.craft-query')!;
     const input = (value: string) => {
       query().value = value;

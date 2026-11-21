@@ -1,4 +1,4 @@
-import type { BlockEntity } from '../core/blockEntities.ts';
+import { type BlockEntity, boardable } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
 import { coreLabel } from '../core/coreText.ts';
 import { jobName } from '../core/craftCommands.ts';
@@ -45,6 +45,17 @@ export const furnitureActionsFor = (
   const takeApart = registry.furniture.get(entity.type)?.takeApart;
   if (pieceRecoveryWork(registry, entity.type, entity.boarding?.type) || takeApart?.parts) {
     actions.push({ id: 'take_apart', label: text.worldService.takeApart });
+  }
+  // Ring entries come from recipe data, not recipe ids in code: every known recipe whose result boards a leaf or
+  // opening names its own entry, so a pack's boarding recipe reaches the ring without an engine edit. A second
+  // boarding recipe needs its own ring slot decision before content ships one.
+  if (boardable(registry.furniture.get(entity.type)!)) {
+    for (const id of [...knownRecipes].sort()) {
+      const boarding = registry.recipes.get(id)?.result;
+      if (boarding && 'doorBoarding' in boarding && registry.boardings.has(boarding.doorBoarding)) {
+        actions.push({ id: 'board_up', label: text.worldService.boardUp, placementRecipe: id });
+      }
+    }
   }
   return actions;
 };
