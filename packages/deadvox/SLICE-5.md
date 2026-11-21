@@ -14,7 +14,8 @@ read_if:
 
 **Status: the power network core, the placed-entity store, the first appliance
 process, world repair and take-apart, world-destination crafting and timber kit
-content, and the first wave rule are built; the player-facing placement and
+content, support with its placement refusal and cascades (see "Support"), and the
+first wave rule are built; the player-facing placement and
 world-work view, opening covers, structural collapse, fire and exposure, and the
 integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
@@ -138,9 +139,19 @@ unbuilt. Unanswered gates block only their dependent work.
   computed and a save grows with changes, not exploration. The world saves only which
   cells a player placed, because a placed block is structure even where it matches the
   natural ground. Placement refuses a block that would not be held, with a reason the
-  placement preview shows. See `packages/engine/src/core/structureSupport.ts`,
-  `createSupport` and `SupportState`, and `packages/engine/src/core/worldPlacement.ts`,
-  `createWorldPlacement`.
+  placement preview shows. Breaking a cell, or clearing rubble, cascades: every
+  structure cell left unheld, authored or placed, falls into its material's rubble in
+  place, and pieces standing on it or hung under it are lost as they are under a broken
+  cell. Rubble neither buries nor harms here, so the collapse PR under "Lanes and the
+  next rounds" extends it rather than replacing it. A cascade judges a capped number of
+  cells per physics tick, the cap being content, and the rest continues on the next
+  tick, so a large collapse never stalls a tick and still ends with nothing unheld
+  standing. Its frontier is saved, so a reload resumes it. Cells are judged first in,
+  first out, in a fixed search order, so every peer gets the same cascade. See
+  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState`;
+  `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`;
+  `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`; and
+  `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
@@ -550,11 +561,10 @@ and the rounds named as starting now need nothing that is not on main.
   construction without joining it. Zombies bash terrain by material
   strength first, so the brute wrecks walls through its strength rather than an
   identity flag and ordinary types break doors only because door pieces sit below
-  their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
-  support with surface ground follows, and until collapse lands live play refuses a
-  blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
-  in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
-  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies and
+  their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. A blow
+  that leaves cells unheld cascades them into rubble under "Support" rather than being
+  refused. Collapse
+  then extends that cascade as a separate PR: rubble that keeps its crack fraction, buries bodies and
   contents, and hurts every body, generating terrain on demand wherever it reaches, so
   no region departure-and-return work precedes it; its PR reports collapse time at the
   largest authored roof rather than gating on it. Taking rubble apart digs out buried

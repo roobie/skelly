@@ -2717,8 +2717,10 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema` (`cracks`),
   and `packages/presentation/src/render/terrainCracks.ts`, `crackReach`,
   `TerrainCracks` and `crackStrokes`.
-- **No structural collapse in the first version.** Blocks left unsupported
-  stay where they are. Collapse is a later, separate system.
+- **Unheld cells fall to rubble in place.** A structure cell left unheld when the cell
+  that held it breaks falls into its material's rubble where it stands, so no wall
+  floats after its support goes. Burial, harm and rubble that moves belong to collapse,
+  a later system that extends this cascade. The rule is under `SLICE-5.md`, "Support".
 - **Shamblers have body regions and die only when the head is destroyed.**
   Every humanoid zombie crawls after losing even one leg: whatever its type, a
   zombie that loses a leg must not keep walking or stand upright on none. Only rig

@@ -86,9 +86,20 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
   return { holds: ([x, y, z]) => holdsAt(x, y, z) };
 };
 
+/** A cell a cascade still has to judge, because a cell it may depend on stopped holding. */
+export interface CascadeEntry {
+  cell: Vec3;
+  /** The cell under it stopped holding, so even if it stays held it may no longer anchor a run beside it. */
+  lostFloor: boolean;
+}
+
 export interface SavedSupport {
   /** Cells whose standing block a player placed, sorted by y, x, z. */
   placed: Vec3[];
+  /** Cells the running cascade still has to judge, in the order it judges them. */
+  frontier: CascadeEntry[];
+  /** Cells the running cascade has already seen stop holding, so none is followed twice; sorted by y, x, z. */
+  lost: Vec3[];
 }
 
 const keyOf = (cell: Readonly<Vec3>): string => cell.join(',');
@@ -100,17 +111,80 @@ const warnRestoreIssue = (issue: string): void => {
   console.warn(issue);
 };
 
+/** The widest span any material reaches, which bounds how far sideways a lost cell's dependants can be. */
+const widestSpan = (registry: Registry): number =>
+  [...registry.blockMaterials.values()].reduce((widest, { span }) => (span > widest ? span : widest), 0);
+
 /**
  * World-owned support state that play produces. A placed mark lasts as long as the block placed with it, so any block
- * change at the cell ends it, as it ends the cell's damage.
+ * change at the cell ends it, as it ends the cell's damage. A cascade is a first-in, first-out frontier of cells to
+ * judge; it is saved, so a cascade cut short by its per-tick cap continues on the next tick and after a reload.
  */
 export class SupportState {
   private readonly placedCells = new Map<string, Vec3>();
+  private readonly frontier: CascadeEntry[] = [];
+  private readonly queued = new Map<string, CascadeEntry>();
+  private readonly lostCells = new Map<string, Vec3>();
 
   private readonly world: World;
 
   constructor(world: World) {
     this.world = world;
+  }
+
+  /** Whether a cascade still has cells to judge. */
+  get cascading(): boolean {
+    return this.frontier.length > 0;
+  }
+
+  /** The next cell the cascade judges, left queued until `judged`. */
+  next(): Readonly<CascadeEntry> | undefined {
+    return this.frontier[0];
+  }
+
+  judged(): void {
+    const entry = this.frontier.shift();
+    if (entry) {
+      this.queued.delete(keyOf(entry.cell));
+    }
+    if (this.frontier.length === 0) {
+      this.lostCells.clear();
+    }
+  }
+
+  /**
+   * A cell stopped holding: it was broken, cleared or fell. Queues what may have depended on it: the cell above
+   * first, then each sideways line out to the widest span. A cell is followed once per cascade.
+   */
+  lost(registry: Registry, cell: Readonly<Vec3>): void {
+    const key = keyOf(cell);
+    if (this.lostCells.has(key)) {
+      return;
+    }
+    this.lostCells.set(key, [...cell] as Vec3);
+    this.enqueue([cell[0], cell[1] + 1, cell[2]], true);
+    this.enqueueSideways(registry, cell);
+  }
+
+  /** Queues the cells whose sideways run may pass through or end at `cell`. */
+  enqueueSideways(registry: Registry, cell: Readonly<Vec3>): void {
+    const reach = widestSpan(registry);
+    for (const [dx, dz] of SIDEWAYS) {
+      for (let step = 1; step <= reach; step++) {
+        this.enqueue([cell[0] + dx * step, cell[1], cell[2] + dz * step], false);
+      }
+    }
+  }
+
+  private enqueue(cell: Vec3, lostFloor: boolean): void {
+    const queued = this.queued.get(keyOf(cell));
+    if (queued) {
+      queued.lostFloor ||= lostFloor;
+      return;
+    }
+    const entry = { cell, lostFloor };
+    this.frontier.push(entry);
+    this.queued.set(keyOf(cell), entry);
   }
 
   isPlaced(cell: Readonly<Vec3>): boolean {
@@ -131,18 +205,51 @@ export class SupportState {
   }
 
   snapshotState(): Readonly<SavedSupport> {
-    return freezeSnapshot({ placed: [...this.placedCells.values()].map((cell) => [...cell] as Vec3).sort(byRow) });
+    const cells = (from: Iterable<Vec3>) => [...from].map((cell) => [...cell] as Vec3).sort(byRow);
+    return freezeSnapshot({
+      placed: cells(this.placedCells.values()),
+      frontier: this.frontier.map(({ cell, lostFloor }) => ({ cell: [...cell] as Vec3, lostFloor })),
+      lost: cells(this.lostCells.values()),
+    });
   }
 
-  /** Columns are restored first. A mark on a cell with no solid block is reported and dropped. */
+  /**
+   * Columns are restored first. A mark on a cell with no solid block is reported and dropped; a frontier cell needs no
+   * block, since judging an empty cell ends there.
+   */
   restoreState(
     state: Readonly<SavedSupport>,
     registry: Registry,
     report: (issue: string) => void = warnRestoreIssue,
   ): string[] {
-    if (this.placedCells.size > 0) {
+    if (this.placedCells.size > 0 || this.frontier.length > 0 || this.lostCells.size > 0) {
       throw new Error('Cannot restore over support state');
     }
+    const issues = [...this.restoreCascade(state), ...this.restorePlaced(state, registry)];
+    for (const issue of issues) {
+      report(issue);
+    }
+    return issues;
+  }
+
+  private restoreCascade(state: Readonly<SavedSupport>): string[] {
+    const issues: string[] = [];
+    for (const { cell, lostFloor } of state.frontier) {
+      if (!validCell(cell) || this.queued.has(keyOf(cell))) {
+        issues.push(`Dropped invalid cascade cell at ${keyOf(cell)}`);
+        continue;
+      }
+      this.enqueue([...cell] as Vec3, lostFloor);
+    }
+    if (this.frontier.length > 0) {
+      for (const cell of state.lost.filter(validCell)) {
+        this.lostCells.set(keyOf(cell), [...cell] as Vec3);
+      }
+    }
+    return issues;
+  }
+
+  private restorePlaced(state: Readonly<SavedSupport>, registry: Registry): string[] {
     const issues: string[] = [];
     for (const cell of state.placed) {
       const [x, y, z] = cell;
@@ -153,28 +260,24 @@ export class SupportState {
       }
       this.placedCells.set(keyOf(cell), [x, y, z]);
     }
-    for (const issue of issues) {
-      report(issue);
-    }
     return issues;
   }
 }
 
 /**
- * The live view of canonical terrain, with `placing` standing in for a block not yet published. Reads that leave the
- * world's height see air.
+ * The live view of canonical terrain, with `placing` standing in for a block not yet published. It reads only inside
+ * the world's height, which `minY` and `maxY` bound.
  */
 export const terrainSupportView = (
   terrain: CanonicalTerrain,
   placing?: { readonly cell: Readonly<Vec3>; readonly block: number },
-  read: (x: number, y: number, z: number) => number = (x, y, z) => terrain.getBlock(x, y, z),
 ): SupportView => {
   const { scale } = terrain.terrain;
   const minY = scale.minCy * CHUNK;
   const maxY = (scale.maxCy + 1) * CHUNK;
   const at = (x: number, y: number, z: number): boolean =>
     placing !== undefined && x === placing.cell[0] && y === placing.cell[1] && z === placing.cell[2];
-  const block = (x: number, y: number, z: number): number => (at(x, y, z) ? placing!.block : read(x, y, z));
+  const block = (x: number, y: number, z: number): number => (at(x, y, z) ? placing!.block : terrain.getBlock(x, y, z));
   return {
     minY,
     maxY,

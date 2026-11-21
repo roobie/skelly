@@ -26,6 +26,10 @@
       "path": "sounds-furniture.json"
     },
     {
+      "kind": "content",
+      "path": "support.json"
+    },
+    {
       "kind": "json",
       "path": "assets/manifest.json"
     },

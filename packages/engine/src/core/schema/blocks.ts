@@ -16,6 +16,7 @@ import {
 } from 'valibot';
 import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
+import { capabilityField } from './capability.ts';
 import { Color, Count, Fraction, Id, Name, NonNegative, Positive, PositiveGameMinutes } from './primitives.ts';
 
 // ---- blocks ----
@@ -97,6 +98,14 @@ export const BlockMaterialSchema = strictObject({
   blowSound: Id,
   broken: strictObject({ tint: Color, strength: Fraction }),
   cracks: CrackPatternSchema,
+});
+
+/** How a support cascade paces itself (`packages/deadvox/SLICE-5.md`, "Support"). */
+export const SupportTuningSchema = strictObject({
+  id: Id,
+  capability: capabilityField('supportTuning'),
+  /** Most cascade cells judged in one physics tick; the rest wait for the next tick, so a cascade never stalls a tick. */
+  cascadeCellsPerTick: pipe(Count, minValue(1)),
 });
 
 export const BlockSchema = strictObject({

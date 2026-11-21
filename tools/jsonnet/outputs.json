@@ -1917,6 +1917,10 @@
       "output": "packages/mods/skelly.natural-world/sounds-furniture.json"
     },
     {
+      "source": "packages/mods/skelly.natural-world/support.jsonnet",
+      "output": "packages/mods/skelly.natural-world/support.json"
+    },
+    {
       "source": "packages/mods/skelly.natural-world/vegetation.jsonnet",
       "output": "packages/mods/skelly.natural-world/vegetation.json"
     },

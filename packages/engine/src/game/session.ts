@@ -154,7 +154,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { strikeTerrain } from '../core/terrainStrike.ts';
+import { cascadeSupport, strikeTerrain } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -1066,6 +1066,7 @@ export const createSession = (options: SessionOptions) => {
       return reason;
     }
     const edited = world.setBlock(cell[0], cell[1], cell[2], 0);
+    world.support.lost(registry, [...cell]);
     options.onTerrainEdited?.(edited);
     return undefined;
   };
@@ -1736,6 +1737,35 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  /** Runs the saved support cascade up to its per-tick cap; the rest continues next tick. */
+  const cascadeTick = (): void => {
+    const context = options.terrainDestruction;
+    const tuning = claimed(registry.supportTuning, 'support');
+    if (!(context && tuning)) {
+      throw new Error('A support cascade needs a terrain destruction owner and support tuning');
+    }
+    const result = cascadeSupport(
+      {
+        terrain: context.terrain,
+        project: () => columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      tuning.cascadeCellsPerTick,
+    );
+    if (result.edited.length > 0) {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+  };
+  sim.scheduler.register({
+    id: 'support',
+    rate: PHYSICS_RATE,
+    enabled: () => world.support.cascading,
+    tick: cascadeTick,
+  });
   /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;

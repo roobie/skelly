@@ -984,6 +984,8 @@ const rubbleSchema = obj({
 
 const supportSchema = obj({
   placed: arr(tuple(safeInt, safeInt, safeInt)),
+  frontier: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), lostFloor: bool })),
+  lost: arr(tuple(safeInt, safeInt, safeInt)),
 });
 
 const wirePayloadSchema = obj({

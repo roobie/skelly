@@ -21,8 +21,8 @@ import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import type { SimulationWorld } from './simulationTerrain.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { SavedSupport } from './structureSupport.ts';
 import type { SoundPickerState } from './soundPicker.ts';
+import type { SavedSupport } from './structureSupport.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn } from './world.ts';
 
