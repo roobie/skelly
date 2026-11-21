@@ -239,6 +239,8 @@ const READY_MODULE = 'fixture_plant_ready_module';
 const CORE = 'fixture_plant_core';
 const DUD = 'fixture_plant_dud';
 const STOCK = 'fixture_plant_stock';
+const CELL = 'fixture_charger_cell';
+const CHARGER = 'fixture_charger';
 const STORE = 'fixture_plant_store';
 const BIG = 'fixture_plant_big_load';
 const SMALL = 'fixture_plant_small_load';
@@ -277,7 +279,12 @@ const plantRegistry = baseRegistryWith(
     {
       source: 'plant-module-fixture',
       data: {
-        items: [item(CORE), item(DUD), item(STOCK)],
+        items: [
+          item(CORE),
+          item(DUD),
+          item(STOCK),
+          { ...item(CELL), battery: { capacity: 100, rechargeable: { microjoulesPerCharge: 1_000_000_000 } } },
+        ],
         sounds: [{ ...baseRegistry().sounds.values().next().value!, id: HUM }],
         powerDevices: [
           { id: MODULE, kind: 'inexhaustible', priority: 0, outputWatts: WATTS, hum: { sound: HUM, radiusMetres: 1 } },
@@ -327,6 +334,11 @@ const plantRegistry = baseRegistryWith(
               enabled: true,
               requires: [{ slot: 'core', parts: [CORE], minimum: 0.5 }],
             },
+          }),
+          piece(CHARGER, SMALL, {
+            breach: { minimumStrength: 1, durability: 100 },
+            container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+            charger: { batteries: [CELL], pocket: 0, efficiency: 1 },
           }),
           piece(STORE, STORE),
           piece(BIG, BIG),
@@ -409,6 +421,62 @@ const stored = (power: SitePower) =>
   power.network.snapshot().devices.find(({ type }) => type === STORE)!.storedMicrojoules;
 const gameMs = (at: number) => gameMillisecondsAt(BASE_CLOCK, at);
 const energy = (watts: number, from: number, to: number) => watts * POWER_UNITS.rate * (gameMs(to) - gameMs(from));
+
+describe('placed charger furnishing', () => {
+  it('arrives with wear, required pocket stock and surface loot once, then binds and charges that owned cell', () => {
+    const charger = placed(CHARGER, 1);
+    const source = placed(READY_MODULE, 3);
+    const inventory = new Inventory(plantRegistry, undefined, new BlockEntities(plantRegistry, SEED));
+    let arrived = false;
+    let power = new SitePower({
+      registry: plantRegistry,
+      inventory,
+      devices: [source, charger],
+      clock: BASE_CLOCK,
+      cycle: BASE_DAY_CYCLE,
+      arrived: () => arrived,
+    });
+    power.advance(simTimestamp(1));
+    expect(inventory.entities.atOrigin(charger.pos)).toBeUndefined();
+    power = new SitePower({
+      registry: plantRegistry,
+      inventory,
+      devices: [source, charger],
+      clock: BASE_CLOCK,
+      cycle: BASE_DAY_CYCLE,
+      arrived: () => arrived,
+      saved: power.network.snapshot(),
+    });
+    expect(inventory.entities.atOrigin(charger.pos)).toBeUndefined();
+    const spawn = {
+      spec: charger.entitySpec!,
+      loot: [{ type: CELL, count: 1, condition: 1, charge: 0 }],
+      fixedCount: 1,
+      surfaceLoot: [{ type: STOCK, count: 1, condition: 1 }],
+      wear: 0.5,
+    };
+    const entity = inventory.furnishSpawn(spawn)!;
+    inventory.furnishSpawn({ spec: source.entitySpec!, loot: [] });
+    arrived = true;
+    expect(entity).toBeDefined();
+    expect(inventory.entities.conditionOf(entity)).toBeLessThan(1);
+    const cell = entity.pockets![0]![0]!.item;
+    expect(cell.type).toBe(CELL);
+    expect([...inventory.piles.values()].flatMap(({ items }) => items).map((entry) => entry.item.type)).toEqual([
+      STOCK,
+    ]);
+    const before = inventory.snapshotState();
+    expect(inventory.furnishSpawn(spawn)).toBeUndefined();
+    expect(inventory.snapshotState()).toEqual(before);
+    const id = power.chargerId(entity)!;
+    expect(id).toBeDefined();
+    expect(power.chargers!.start(simTimestamp(1), id, cell)).toEqual({ ok: true });
+    power.advance(simTimestamp(2));
+    expect(cell.batteryMicrojoules).toBeGreaterThan(0);
+    expect(entity.charging?.batteryUid).toBe(cell.uid);
+    expect(power.chargerId(entity)).toBe(id);
+  });
+});
 
 describe('part-gated module sources', () => {
   it('projects the worst required band without allocating baseline parts or changing power', () => {
