@@ -64,7 +64,7 @@ export class SitePower {
   private readonly registry: Registry;
   readonly network: PowerNetwork;
   readonly chargers: BatteryChargers | undefined;
-  private readonly chargerIds = new Map<number, string>();
+  private readonly chargerEndpoints = new Map<string, ChargerEndpoint>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
   private readonly runLamps: { id: string; light: PoweredLight }[] = [];
   private readonly hums: PoweredSound[] = [];
@@ -179,23 +179,38 @@ export class SitePower {
       throw new Error('Placed chargers require inventory ownership');
     }
     const id = identity(device);
-    let entity = [...inventory.entities.records].find(
-      (piece) => piece.type === device.type && piece.origin.every((value, axis) => value === device.pos[axis]),
-    );
-    if (!(restoring || entity)) {
-      if (!device.entitySpec) {
-        throw new Error('Placed charger requires authored geometry');
-      }
-      entity = inventory.entities.add(device.entitySpec);
-    }
     if (!state.devices.some((entry) => entry.id === id)) {
       return [];
     }
-    if (!entity || entity.carried) {
-      throw new Error('Placed charger endpoint has no standing entity');
+    if (!device.entitySpec) {
+      throw new Error('Placed charger requires authored geometry');
     }
-    this.chargerIds.set(entity.uid, id);
-    return [{ consumerId: id, entityUid: entity.uid }];
+    let uid: number | undefined;
+    const resolve = (): number | undefined => {
+      if (uid !== undefined) {
+        return uid;
+      }
+      const entity = inventory.entities.atOrigin(device.pos);
+      if (!entity) {
+        if (restoring && (!this.arrived || this.arrived(device.pos))) {
+          throw new Error('Placed charger endpoint has no standing entity');
+        }
+        return undefined;
+      }
+      if (entity.type !== device.type || entity.carried) {
+        throw new Error('Placed charger endpoint has no standing entity');
+      }
+      ({ uid } = entity);
+      return uid;
+    };
+    const endpoint: ChargerEndpoint = {
+      consumerId: id,
+      get entityUid() {
+        return resolve();
+      },
+    };
+    this.chargerEndpoints.set(id, endpoint);
+    return [endpoint];
   }
 
   /**
@@ -308,7 +323,8 @@ export class SitePower {
   }
 
   chargerId(entity: BlockEntity): string | undefined {
-    return this.chargerIds.get(entity.uid);
+    const endpoint = this.chargerEndpoints.get(identity({ type: entity.type, pos: entity.origin }));
+    return endpoint?.entityUid === entity.uid ? endpoint.consumerId : undefined;
   }
 
   /**
@@ -318,10 +334,10 @@ export class SitePower {
    * fails a housing that is carried, gone or standing anywhere but its placement from the move's own timestamp.
    */
   beforeRemove(at: SimTimestamp, entity: BlockEntity): void {
-    const id = this.chargerIds.get(entity.uid);
+    const id = this.chargerId(entity);
     if (id !== undefined) {
       this.chargers!.beforeRemove(at, id);
-      this.chargerIds.delete(entity.uid);
+      this.chargerEndpoints.delete(id);
       return;
     }
     const deviceId = identity({ type: entity.type, pos: entity.origin });

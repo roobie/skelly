@@ -97,6 +97,10 @@ export const createChargerSession = (
   session.sim.paused = false;
   if (!restore) {
     session.entities.add({ type: 'test_charger_supply', pos: [-2, 1, -1], size: [1, 1, 1], facing: 'n' });
+    session.inventory.furnishSpawn({
+      spec: { type: charger.id, pos: [1, 1, 0], size: charger.size, facing: 'n' },
+      loot: [],
+    });
   }
   const supply = [...session.entities.records].find((entry) => entry.type === 'test_charger_supply')!;
   const entity = [...session.entities.records].find((entry) => entry.type === charger.id);
