@@ -10,7 +10,7 @@ manifest(
   assets=assets,
   json=['assets/manifest.json'],
   dependencies=[
-    'skelly.body', 'skelly.deadvox.loot', 'skelly.graphics', 'skelly.inventory', 'skelly.manufactured-blocks',
+    'skelly.building-blocks', 'skelly.body', 'skelly.deadvox.loot', 'skelly.graphics', 'skelly.inventory', 'skelly.manufactured-blocks',
     'skelly.melee-classes', 'skelly.natural-world',
   ],
   overrides=[{ pack: 'skelly.graphics', entry: 'graphics:core' }],

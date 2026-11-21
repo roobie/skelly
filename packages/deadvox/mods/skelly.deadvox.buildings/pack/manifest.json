@@ -2,6 +2,7 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.body",
+    "skelly.building-blocks",
     "skelly.deadvox.actors",
     "skelly.deadvox.loot",
     "skelly.household-electrical",
