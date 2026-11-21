@@ -322,15 +322,17 @@ export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
   const at = inv.locate(item);
   const other = at?.kind === 'hand' ? inv.hands[otherHand(at.side)] : undefined;
   const receiver = other && defOf(inv.registry, other.type).vessel ? other : undefined;
-  const refusal = receiver
-    ? pourRefusal(view, item.uid, receiver.uid)
-    : coreMessage(inv.registry, 'liquidTransferRefused');
+  const refusal: string = receiver
+    ? (pourRefusal(view, item.uid, receiver.uid) ?? '')
+    : (coreMessage(inv.registry, 'liquidTransferRefused') ?? '');
   return {
     kind: 'use',
     label: coreLabel(inv.registry, 'pour'),
     operation: 'pour',
     ...(receiver ? { receiver } : {}),
-    plan: refusal ? { ok: false, reason: refusal } : swapPlan(0),
+    // Admission needs a resolved receiver outright, not merely a falsy refusal text: a pour without
+    // endpoints has no encodable replay payload, so it must read as refused however the text fills.
+    plan: receiver && !refusal ? swapPlan(0) : { ok: false, reason: refusal },
   };
 };
 
