@@ -10,6 +10,7 @@ export const INPUT_CONTEXTS = {
   noclip: true,
   play: false,
   carrying: false,
+  picking: false,
   interrupted: false,
 } as const satisfies Record<string, boolean>;
 export type InputContext = keyof typeof INPUT_CONTEXTS;
@@ -40,7 +41,7 @@ export const bindingIsDebugOnly = (binding: Binding): boolean =>
   binding.debug === true || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
 export const contextsForRun = (binding: Binding, debugRun: boolean): readonly InputContext[] =>
   debugRun ? binding.contexts : binding.contexts.filter((context) => !DEBUG_ONLY_CONTEXTS.has(context));
-const world: readonly InputContext[] = ['play', 'carrying', 'noclip'];
+const world: readonly InputContext[] = ['play', 'carrying', 'picking', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
 const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
 const entered: readonly InputContext[] = [
@@ -115,7 +116,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row(
     'player.crouch-toggle',
     'Tap to toggle crouch; hold to lie down or rise to a crouch',
-    ['play', 'carrying', 'build'],
+    ['play', 'carrying', 'picking', 'build'],
     'tap-or-hold',
     {
       commands: [
@@ -125,9 +126,9 @@ export const INPUT_ACTIONS: readonly Action[] = [
     },
   ),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play'], 'tap-or-hold'),
-  row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
+  row('movement.jump', 'Jump', ['play', 'carrying', 'picking', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),
-  row('carry.turn', 'Turn the carried piece', ['carrying']),
+  row('carry.turn', 'Turn the carried piece', ['carrying', 'picking']),
   row('noclip.ascend', 'Ascend while flying', ['noclip'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, 'tap-or-hold'),
@@ -138,11 +139,11 @@ export const INPUT_ACTIONS: readonly Action[] = [
     world,
     'tap-or-hold',
   ),
-  row('emote.menu', 'Hold to choose an emote; release to perform it', ['play', 'noclip'], 'held-state'),
+  row('emote.menu', 'Hold to choose an emote; release to perform it', ['play', 'picking', 'noclip'], 'held-state'),
   row(
     'firearm.reload',
     'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
-    ['play', 'noclip'],
+    ['play', 'picking', 'noclip'],
     'hold',
     {
       commands: [
@@ -157,7 +158,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row('ui.main-menu-toggle', 'Main menu', entered, 'press', { text: true }),
   row('hud.toggle', 'Hold to hide or show the HUD', entered, 'hold', { holdMs: HUD_TOGGLE_HOLD_MS }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted']),
-  row('craft.continue', 'Continue stopped crafting', ['play', 'carrying']),
+  row('craft.continue', 'Continue stopped crafting', ['play', 'carrying', 'picking']),
   row('compression.continue', 'Continue after an interruption', ['interrupted']),
   ...Array.from({ length: 5 }, (_, i) =>
     row(`quickbar.use.${i + 1}`, `Quickbar ${i + 1}: tap to take or put away; hold to use`, world, 'tap-or-hold'),
@@ -230,7 +231,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.spawn-actors', 'Spawn actors'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
   debugRow('debug.freeze-actors', 'Freeze actors'),
-  debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),
+  debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'picking', 'noclip', 'review-map']),
   mapRow('debug.map-slice-down', 'Review map: cut lower'),
   mapRow('debug.map-slice-up', 'Review map: cut higher'),
   mapRow('debug.map-slice-surface', 'Review map: back to the surface'),

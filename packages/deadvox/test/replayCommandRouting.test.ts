@@ -51,6 +51,7 @@ describe('screen command routing', () => {
     }
     const craftCallbacks = callbackNames(craftControls);
     expect(craftCallbacks).toContain('dispatch');
-    expect(craftCallbacks.filter((name) => name !== 'dispatch' && name !== 'notice')).toEqual([]);
+    // Picking changes the view only; the reviewed destination enters simulation through dispatch's craft.place.
+    expect(craftCallbacks.filter((name) => !['dispatch', 'notice', 'pickSpot'].includes(name))).toEqual([]);
   });
 });

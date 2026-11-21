@@ -61,7 +61,7 @@ const fixtureRegistry = {
           device: 'fixture_load',
           fuelLitres: 0,
           enabled: true,
-          light: { color: '#ffffff', intensity: 20, radius: 8 },
+          light: { color: '#ffffff', intensity: 20, radius: 8, seenFrom: 80 },
         },
       },
     ],
@@ -148,7 +148,7 @@ describe('authored facility power', () => {
           device: 'fixture_load',
           fuelLitres: 0,
           enabled: true,
-          light: { color: '#ffffff', intensity: 20, radius: 8, ...light },
+          light: { color: '#ffffff', intensity: 20, radius: 8, seenFrom: 80, ...light },
         },
       };
       const stack = { ...fixtureRegistry, furniture: new Map(fixtureRegistry.furniture).set(lamp, shining) };

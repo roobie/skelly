@@ -2123,6 +2123,15 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .craft-components {
   margin: calc(var(--ui-spacing) * 0.5rem) 0;
 }
+.craft-spot {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
+}
+.craft-spot-name {
+  overflow-wrap: anywhere;
+}
 .craft-gap {
   color: #efb78b;
 }

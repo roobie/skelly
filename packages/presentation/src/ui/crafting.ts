@@ -26,6 +26,8 @@ export interface CraftPanelActions {
   selectSlot?: (slot: string) => void;
   /** Chooses the shown slot's service the commitment strip commits, such as which spare a fit puts in. */
   select?: (id: string) => void;
+  /** Enters spot picking for a placement recipe: its review keeps its choices until picking returns. */
+  pickSpot?: (id: string) => void;
 }
 /** The pinned world piece: its review heading, and whether a model view sits beside the rows. */
 export interface CraftWorldView {
@@ -159,7 +161,9 @@ const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
   }
 };
 const commitLabel = (row: CraftRow, text: CraftingText) =>
-  fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() });
+  row.placement && !row.placement.pinned && row.placement.order === 'spot-first'
+    ? fillText(text.pickSpot, { item: row.itemName.toLowerCase() })
+    : fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() });
 // A part shows its condition as the band's blip alone (`packages/deadvox/INTERFACE.md`, "Condition").
 const partLine = (text: CraftingText, item: string, condition: ConditionBand | undefined) =>
   condition ? fillHint(text.slotPart, { condition: conditionMark(condition), item }) : item;
@@ -196,6 +200,18 @@ const slotSection = (parts: CraftPartsView, actions: CraftPanelActions, text: Cr
     }
     ${toolRows(service, text)}
   </section>`;
+};
+/** A placement recipe's destination row: the pinned spot's name, and the control that reopens picking. */
+const spotRow = (row: CraftRow, actions: CraftPanelActions, text: CraftingText) => {
+  const placement = row.placement!;
+  return html`<div class="craft-spot">
+    ${
+      placement.spot === undefined
+        ? nothing
+        : html`<span class="craft-spot-name">${fillText(text.spot, { spot: placement.spot })}</span>`
+    }
+    <button type="button" class="craft-pick-spot" @click=${() => actions.pickSpot?.(row.id)}>${placement.pinned ? text.changeSpot : text.chooseSpot}</button>
+  </div>`;
 };
 /** The rows a review reads but never chooses: condition, progress, held inputs and yield. */
 const readOnlyRows = (row: CraftRow, text: CraftingText) =>
@@ -253,6 +269,7 @@ const reviewTemplate = (
     <div class="craft-review-scroll">
       <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
         ${readOnlyRows(row, text)}
+        ${row.placement ? spotRow(row, actions, text) : nothing}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);
           const label = chosen ? alternativeLabel(chosen, text) : text.noPlan;

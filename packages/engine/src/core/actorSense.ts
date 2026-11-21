@@ -47,6 +47,8 @@ export interface SensedLightSource {
   sunlit?: boolean | undefined;
   /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
   carried: boolean;
+  /** The fixture's own body, whose cells never stop the sense ray to its emitter. */
+  body?: { readonly min: Vec3; readonly max: Vec3 } | undefined;
 }
 export interface PerceptionInput {
   def: ActorDef;

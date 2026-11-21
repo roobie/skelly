@@ -83,6 +83,7 @@ import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { clearOwnCamera } from './ownCamera.ts';
 import { PileMeshes } from './piles.ts';
+import { PlacementGhost } from './placementGhost.ts';
 import { PlantInstruments } from './plantInstruments.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
@@ -399,6 +400,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    placementGhost.dispose();
     instruments.dispose();
     corpses.dispose();
     vehicles.dispose();
@@ -434,6 +436,11 @@ export const createPlayView = (
   );
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
+  const placementGhost = new PlacementGhost(
+    (entity, def) => (def.corpse ? corpses.figure(entity, def) : furniture.pieceMesh(entity, def)),
+    graphics.placementGhost,
+  );
+  scene.add(placementGhost.group);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   const updateHeldViews = createHeldViews(inventory, held, playerMeshes);
   const lightTuning = claimed(registry.senses, 'player')!.light;
@@ -626,6 +633,7 @@ export const createPlayView = (
     acidEffects,
     castShots,
     furniture,
+    placementGhost,
     /** A piece drawn away from the world as it stands, with its instruments as the world shows them; its drawer disposes it. */
     pieceDepiction: (entity: BlockEntity, def: FurnitureDef) =>
       instruments.depicted(entity, furniture.pieceMesh(entity, def)),

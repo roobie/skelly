@@ -158,6 +158,12 @@ export const GraphicsTuningSchema = strictObject({
    * its pick box's edges, as thick as `edgeBlocks` in the model's frame.
    */
   siteMark: strictObject({ color: Color, edgeBlocks: Positive }),
+  /**
+   * The see-through result a placement recipe's picking holds at its aimed spot, tinted by whether the engine
+   * admits the spot (`CraftCommands.previewPlacement`): one tint for a valid spot, one for a refused one, and how
+   * see-through the model stands.
+   */
+  placementGhost: strictObject({ validTint: Color, refusedTint: Color, opacity: Fraction }),
   mobActors: strictObject({ maxCorpses: Count }),
   gore: strictObject({
     dropletCap: Count,

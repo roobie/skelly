@@ -17,10 +17,10 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status. Built: the power network core, the placed-entity store, battery charging,
-world repair and take-apart with their review, world-destination crafting with the
-timber wall, floor, door, shelf and door boarding, support with its placement refusal
-and cascades (see "Support"), and the first wave rule. Open: placement picking, window
-covers, structural collapse, fire and exposure, and the integration proofs.** See
+world repair and take-apart with their review, world-destination crafting and
+placement picking with the timber kit, support with its placement refusal and cascades
+(see "Support"), and the first wave rule. Open: window covers, structural collapse,
+fire and exposure, and the integration proofs.** See
 `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
@@ -505,10 +505,10 @@ reason-doc updates, not a later save retrofit.
 6. **Fire, smoke and light.** Prove per-cell ignition and spread, material exhaustion,
    direct extinguishing, sight-blocking smoke, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
-   remains a prerequisite, not a source of free ignition. Only item lights are stimuli
-   to attention (`packages/engine/src/core/agentPerception.ts`, `canSeeLight`); powered
-   fixed lamps light the scene (`packages/engine/src/core/sitePower.ts`, `SitePower.lights`)
-   and are not sensed until a round under #1332 feeds them to the same sense. Show a
+   remains a prerequisite, not a source of free ignition. Item lights and operating fixed
+   lamps are stimuli to attention through the same sense (`packages/engine/src/core/agentPerception.ts`,
+   `canSeeLight`; `packages/engine/src/core/lights.ts`, `fixedLightSenseSourceFor`); a switched-off,
+   unpowered or obstructed lamp is no stimulus. Show a
    window cover changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario waves and region integration.** #313's rules and their
@@ -545,8 +545,9 @@ rounds are tracked under #1332.
   from the chosen rubble cell; buried contents follow collapse under "Destruction".
   Placement is built in the engine for the wall, floor, door, shelf and door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
   `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
-  the sheet panel and the curtain of "First build vocabulary" are not authored, and no
-  player can pick a destination until the picking round under "Construction, view".
+  the sheet panel and the curtain of "First build vocabulary" are not authored.
+  Player picking reaches the shared review through
+  `packages/presentation/src/presentation/play.ts`, `confirmPlacementPicking`.
   Support is built under "Support": placement refuses a floating block and a break
   cascades what it held into rubble, ahead of the first session because free-standing
   walls and floors are in it and a wall that floats would be judged before the kit is.
@@ -559,10 +560,8 @@ rounds are tracked under #1332.
   interaction ring, preserving one surface without disguising cells as pieces. See
   `packages/engine/src/game/cellActions.ts`, `cellActionsFor`, and
   `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openCellWork`.
-  Placement picking remains under #1332 on the first session's critical path, extending
-  the same review rather than adding a screen. Its rulings are
-  `docs/crafting-layout.md`, "Order authored per placement recipe" and
-  `docs/crafting-layout.md`, "Build slices after the decisions".
+  Placement picking shares that review rather than adding a screen, with its reasons
+  in `docs/crafting-layout.md`, "The picking gesture".
 - **Playtest pack.** Author shelter and supply asks independently so each can be
   retuned without city-shape constraints; see
   `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
