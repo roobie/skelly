@@ -2692,6 +2692,21 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
     }
     ids.add(rule.id);
     rule.effects.forEach((effect, effectIndex) => {
+      if (scenario.hordeCountBudget === undefined) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].count`,
+          'needs an authored horde count budget',
+        );
+      } else if (effect.count > scenario.hordeCountBudget) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].count`,
+          `exceeds horde count budget ${scenario.hordeCountBudget}`,
+        );
+      }
       if (!registry.actors.has(effect.actor)) {
         report(
           'scenarios',

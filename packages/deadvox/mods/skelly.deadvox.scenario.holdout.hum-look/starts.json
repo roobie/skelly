@@ -781,6 +781,7 @@
       ],
       "ground": 21,
       "guarantee": {},
+      "hordeCountBudget": 64,
       "id": "holdout_hum",
       "kind": "composedSite",
       "lootContext": {

@@ -2,7 +2,7 @@
 read_if:
   - you design or curate a building type, or write a building brief
   - you add or change a world setting, or the settlement kinds a setting has
-  - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
+  - you change the brief schema, an assembly's `brief`, or the registry versus validate boundary for briefs
   - you iterate on one building and validate after each try
   - one change makes validate report many missing references, and you look for the root
   - you give a house type a cellar twin, or tune how often a site draws it
@@ -114,7 +114,7 @@ Validate resolves a brief's setting, tags, settlement kinds, styles and services
 standard's settlement kind and services, and an assembly's brief, then runs the fit check
 below; see `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`. Nothing the
 game reads depends on a brief, so only validate runs these checks; see `docs/content.md`,
-"Core-pack integrity".
+"Pack integrity".
 
 Briefs and settings are ordinary content sections, so they load into the runtime registry
 like every other section, although no runtime code reads them. A validate-only home
@@ -317,7 +317,7 @@ that selection alone rather than every opt-in; see `src/cli/validate.ts`, `valid
 
 A fit fault, such as a standing anchor without room to stand, a door without clearance or a port
 whose mouth is blocked, is an authoring check: validate reports it at its own path and the file
-stays loaded; see `docs/content.md`, "Core-pack integrity". A fault the registry build finds, such
+stays loaded; see `docs/content.md`, "Pack integrity". A fault the registry build finds, such
 as a reference that does not resolve, a piece or assembly that does not compile (a nesting cycle,
 a seam that cannot mate) or stock naming an unknown item, drops that whole file
 (`packages/engine/src/core/content.ts`, `buildRegistry`). Every building, piece and style the file
