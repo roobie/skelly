@@ -954,7 +954,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await page.evaluate(() => {
     globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 2 + 0.05;
   });
-  await page.waitForFunction(() => globalThis.skellyPlayTest.interactionTargetAt() === undefined);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.interactionTargetAt()?.kind === 'cell');
   assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
   // An aimed vehicle part is named the same way. The look's hatchback stands in reach with some parts worn, so one
   // worn part and one intact part each show their own band's blip.
@@ -1026,7 +1026,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         { start: ignore, prefer: ignore, source: ignore },
         {
           text: craftingText(registry),
-          world: { heading: '', depicted: false },
+          world: { heading: '', depicted: false, turnable: true },
         },
       );
     });

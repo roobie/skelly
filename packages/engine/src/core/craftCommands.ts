@@ -138,6 +138,8 @@ export interface EntityRepairProjection {
 }
 
 export interface CellRepairProjection {
+  identity: Readonly<{ epoch: number }> | undefined;
+  condition: { now: ConditionBand; after: ConditionBand } | undefined;
   targetCell: Vec3;
   targetName: string | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
@@ -342,6 +344,23 @@ export class CraftCommands {
         })
       : coreMessage(registry, 'noRepairTarget');
     return {
+      identity: state ? { epoch: state.epoch } : undefined,
+      condition:
+        state && repair
+          ? {
+              now: conditionBand(registry, 1 - state.damage / state.durability),
+              after: conditionBand(
+                registry,
+                Math.max(
+                  1 - state.damage / state.durability,
+                  Math.min(
+                    repairCeiling(registry, recipe),
+                    1 - Math.max(0, state.damage - repair.amount - repair.perSkill * skill) / state.durability,
+                  ),
+                ),
+              ),
+            }
+          : undefined,
       targetCell: [...cell],
       targetName: state ? registry.blocks[blockId(registry, state.block)]!.name : undefined,
       requirements: repair?.block ? requirementStatus(recipe!, snapshot, this.character) : undefined,
@@ -349,7 +368,15 @@ export class CraftCommands {
         this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
     };
   }
-  repairCell(recipeId: string, cell: Vec3, prefer?: CraftPreference, sources?: CraftSources): string | undefined {
+  repairCell(
+    recipeId: string,
+    cell: Vec3,
+    expected: Readonly<{ epoch: number }>,
+    { prefer, sources }: { prefer?: CraftPreference; sources?: CraftSources | undefined } = {},
+  ): string | undefined {
+    if (this.inventory.cellRepair?.state(cell)?.epoch !== expected.epoch) {
+      return coreMessage(this.inventory.registry, 'repairTargetGone');
+    }
     const reason = this.previewCellRepair(recipeId, cell, prefer, sources).refusal;
     if (reason) {
       return reason;
@@ -402,6 +429,7 @@ export class CraftCommands {
   }
   /** What clearing a rubble cell would give now, with why it can't start; a job's start pins the cell's episode. */
   previewTakeApartCell(cell: Vec3): {
+    identity: Readonly<{ block: string; epoch: number }> | undefined;
     work: (RubbleClearWork & { block: string }) | undefined;
     refusal: string | undefined;
   } {
@@ -409,10 +437,11 @@ export class CraftCommands {
     const block = rubble?.standing(cell);
     const work = block ? rubbleClearWork(registry, block) : undefined;
     if (!(block && work)) {
-      return { work: undefined, refusal: coreMessage(registry, 'rubbleGone') };
+      return { identity: undefined, work: undefined, refusal: coreMessage(registry, 'rubbleGone') };
     }
     const { craft } = this.sim.actions;
     return {
+      identity: rubble?.review(cell),
       work: { block, ...work },
       refusal:
         this.startReason() ??
@@ -420,8 +449,11 @@ export class CraftCommands {
         (craft ? undefined : 'Missing craft action owner'),
     };
   }
-  takeApartCell(cell: Vec3): string | undefined {
-    const { work, refusal } = this.previewTakeApartCell(cell);
+  takeApartCell(cell: Vec3, expected: Readonly<{ block: string; epoch: number }>): string | undefined {
+    const { work, refusal, identity } = this.previewTakeApartCell(cell);
+    if (identity?.block !== expected.block || identity.epoch !== expected.epoch) {
+      return coreMessage(this.inventory.registry, 'rubbleGone');
+    }
     if (refusal || !work) {
       return refusal;
     }

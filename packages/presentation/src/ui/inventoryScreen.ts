@@ -1050,6 +1050,9 @@ export class InventoryScreen {
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
     Inventory,
+    | 'canReachCell'
+    | 'cellRepair'
+    | 'rubble'
     | 'canReachEntity'
     | 'carried'
     | 'carriedWeight'
@@ -1076,6 +1079,22 @@ export class InventoryScreen {
   private readonly tabs = new InventoryTabState();
   /** The pinned world-work target: Repair, Take apart or Continue of one chosen piece; Continue also pins its job. */
   private world: { uid: number; operation: WorldOperation; workUid?: number } | undefined;
+  private cellWorld: import('./cellWork.ts').CellWorldWork | undefined;
+
+  get cellWork(): import('./cellWork.ts').CellWorldWork | undefined {
+    return this.cellWorld;
+  }
+
+  openCellWork(cell: [number, number, number], operation: 'repair' | 'take_apart'): void {
+    const identity = operation === 'repair' ? this.inv.cellRepair?.state(cell) : this.inv.rubble?.review(cell);
+    if (!identity) {
+      return;
+    }
+    this.world = undefined;
+    this.cellWorld = { cell: [...cell], block: identity.block, epoch: identity.epoch, operation };
+    this.drawn = '';
+    this.openOnTab('repair');
+  }
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
@@ -1100,6 +1119,9 @@ export class InventoryScreen {
     root: HTMLElement,
     inv: Pick<
       Inventory,
+      | 'canReachCell'
+      | 'cellRepair'
+      | 'rubble'
       | 'canReachEntity'
       | 'carried'
       | 'carriedWeight'
@@ -1208,6 +1230,7 @@ export class InventoryScreen {
     if (!target || (operation === 'continue' && workUid === undefined)) {
       return;
     }
+    this.cellWorld = undefined;
     this.world = { uid, operation, ...(workUid === undefined ? {} : { workUid }) };
     this.drawn = '';
     this.openOnTab('repair');
@@ -1239,6 +1262,7 @@ export class InventoryScreen {
     this.selectedContainer = undefined;
     this.tabs.close();
     this.world = undefined;
+    this.cellWorld = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
@@ -1267,7 +1291,7 @@ export class InventoryScreen {
   }
 
   selectTab(tab: InventoryTab): void {
-    if (tab === 'repair' && !this.repairTarget) {
+    if (tab === 'repair' && !this.repairTarget && !this.cellWorld) {
       return;
     }
     this.cancelInput();
@@ -1283,14 +1307,29 @@ export class InventoryScreen {
     document.body.classList.toggle('inventory-tab-repair', this.tabs.active === 'repair');
   }
 
+  private cellTargetLost(): boolean {
+    const cell = this.cellWorld;
+    const identity =
+      cell &&
+      (cell.operation === 'repair' ? this.inv.cellRepair?.state(cell.cell) : this.inv.rubble?.review(cell.cell));
+    return (
+      cell !== undefined &&
+      (!identity || identity.block !== cell.block || identity.epoch !== cell.epoch || !this.inv.canReachCell(cell.cell))
+    );
+  }
+
   /** Redraws when something changed; call every frame while open. */
   update(at = performance.now()): void {
     if (!this.isOpen) {
       return;
     }
     const { repairTarget } = this;
-    if (this.world !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+    if (
+      this.cellTargetLost() ||
+      (this.world !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget)))
+    ) {
       this.world = undefined;
+      this.cellWorld = undefined;
       if (this.tabs.active === 'repair') {
         this.tabs.select('items');
         this.root.dataset.tab = this.tabs.active;
@@ -1772,7 +1811,7 @@ export class InventoryScreen {
         vm,
         {
           tab: this.tabs.active,
-          worldOperation: this.worldWork?.operation,
+          worldOperation: this.worldWork?.operation ?? this.cellWorld?.operation,
           splitRatio: this.splitRatio,
           text: this.text(),
           keys: this.bindings,

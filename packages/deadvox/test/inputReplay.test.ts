@@ -184,7 +184,8 @@ const applyCommand = (
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftRepairEntity: (recipeId, entityUid, preference) =>
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
-    craftRepairCell: (recipeId, cell, preference) => runtime.session.crafting.repairCell(recipeId, cell, preference),
+    craftRepairCell: (recipeId, cell, expected, options) =>
+      runtime.session.crafting.repairCell(recipeId, cell, expected, options),
     craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
     craftServicePart: (entityUid, request) => runtime.session.crafting.servicePart(entityUid, request),
     craftContinue: () => {
@@ -788,9 +789,19 @@ describe('input replay', () => {
         destination: { kind: 'entity', pos: [0.25, 1, 0.5], facing: 'n' },
       },
       'craft.repair-entity': { kind: 'craft.repair-entity', recipeId: 'fixture', entityUid: 1, preference: {} },
-      'craft.repair-cell': { kind: 'craft.repair-cell', recipeId: 'fixture', cell: [0, 0, 0], preference: {} },
+      'craft.repair-cell': {
+        kind: 'craft.repair-cell',
+        recipeId: 'fixture',
+        cell: [0, 0, 0],
+        expected: { epoch: 1 },
+        preference: {},
+      },
       'craft.take-apart-entity': { kind: 'craft.take-apart-entity', entityUid: 1 },
-      'craft.take-apart-cell': { kind: 'craft.take-apart-cell', cell: [0, 0, 0] },
+      'craft.take-apart-cell': {
+        kind: 'craft.take-apart-cell',
+        cell: [0, 0, 0],
+        expected: { block: 'fixture', epoch: 0 },
+      },
       'craft.service-part': { kind: 'craft.service-part', entityUid: 1, slot: 'fixture', operation: 'remove' },
       'craft.continue': { kind: 'craft.continue' },
       'craft.stop': { kind: 'craft.stop' },

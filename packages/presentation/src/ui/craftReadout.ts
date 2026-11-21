@@ -134,7 +134,7 @@ const startsElsewhere = (recipe: RecipeDef, text: ScreenText['crafting'], allKno
     return text.startsFromItem;
   }
   if (recipe.repair?.block !== undefined) {
-    return text.startsNowhere;
+    return text.startsFromCell;
   }
   return recipe.repair?.entity === undefined ? undefined : text.startsFromPiece;
 };
@@ -172,18 +172,28 @@ const recipeStartReason = (
 /** Taking a pinned piece apart: the command owner's preview yield and refusal, read-only. */
 export const takeApartRow = (
   registry: Registry,
-  target: BlockEntity,
-  crafting: Pick<CraftCommands, 'previewTakeApartEntity'>,
+  target: BlockEntity | import('./cellWork.ts').CellWorldWork,
+  crafting: Pick<CraftCommands, 'previewTakeApartEntity' | 'previewTakeApartCell'>,
 ): CraftRow => {
   const text = craftingText(registry);
-  const { plan, refusal } = crafting.previewTakeApartEntity(target.uid);
-  const itemName = target.boarding
-    ? registry.boardings.get(target.boarding.type)!.name
-    : registry.furniture.get(target.type)!.name;
-  const gameSeconds =
-    plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type, target.boarding?.type)?.timeGameMinutes ?? 0;
+  const cell = 'cell' in target;
+  const projection = cell ? crafting.previewTakeApartCell(target.cell) : crafting.previewTakeApartEntity(target.uid);
+  const plan = 'plan' in projection ? projection.plan : projection.work;
+  const { refusal } = projection;
+  let itemName: string;
+  let gameSeconds: number;
+  if (cell) {
+    itemName = registry.blocks[registry.blockIds.get(target.block)!]!.name;
+    gameSeconds = plan?.timeGameMinutes ?? 0;
+  } else {
+    itemName = target.boarding
+      ? registry.boardings.get(target.boarding.type)!.name
+      : registry.furniture.get(target.type)!.name;
+    gameSeconds =
+      plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type, target.boarding?.type)?.timeGameMinutes ?? 0;
+  }
   return {
-    id: `take_apart:${target.uid}`,
+    id: `take_apart:${cell ? target.cell.join(',') : target.uid}`,
     name: fillText(text.takeApartName, { item: itemName }),
     itemName,
     kind: 'take_apart',
@@ -241,6 +251,7 @@ export const craftRows = ({
   sources = {},
   startReason,
   entityRepair,
+  cellRepair,
   recipeIds,
   allKnown = false,
 }: {
@@ -251,21 +262,29 @@ export const craftRows = ({
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
   entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
+  cellRepair?: { target: import('./cellWork.ts').CellWorldWork; crafting: Pick<CraftCommands, 'previewCellRepair'> };
   recipeIds?: readonly string[];
   /** The all-known view reviews every known recipe; those that cannot start from the catalogue read as refused. */
   allKnown?: boolean;
-}): CraftRow[] =>
-  [...(recipeIds ?? character.knownRecipes)]
+}): CraftRow[] => {
+  const matchesTarget = (recipe: RecipeDef): boolean => {
+    if (cellRepair) {
+      return recipe.repair?.block === cellRepair.target.block;
+    }
+    return entityRepair
+      ? recipe.repair?.entity === entityRepair.target.type
+      : recipe.repair?.entity === undefined && recipe.repair?.block === undefined;
+  };
+  const previewWorld = (id: string, prefer: CraftPreference | undefined) => {
+    if (cellRepair) {
+      return cellRepair.crafting.previewCellRepair(id, cellRepair.target.cell, prefer, sources[id]);
+    }
+    return entityRepair?.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]);
+  };
+  return [...(recipeIds ?? character.knownRecipes)]
     .filter((id) => {
       const recipe = registry.recipes.get(id)!;
-      return (
-        character.knownRecipes.has(id) &&
-        (allKnown ||
-          (!recipe.activation &&
-            (entityRepair
-              ? recipe.repair?.entity === entityRepair.target.type
-              : recipe.repair?.entity === undefined && recipe.repair?.block === undefined)))
-      );
+      return character.knownRecipes.has(id) && (allKnown || (!recipe.activation && matchesTarget(recipe)));
     })
     .sort(compareCodeUnits)
     .map((id) => {
@@ -276,7 +295,7 @@ export const craftRows = ({
       const selected = 'plan' in result ? result.plan.selectedAlternatives : {};
       const text = craftingText(registry);
       const itemName = repairTargetName(registry, recipe);
-      const world = entityRepair?.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]);
+      const world = previewWorld(id, prefer);
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
@@ -348,3 +367,4 @@ export const craftRows = ({
         workstation: recipe.workstation ?? null,
       };
     });
+};

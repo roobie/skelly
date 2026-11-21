@@ -226,6 +226,7 @@ export interface FurnitureAndObstructionHit {
   readonly furniture: FurniturePickHit | undefined;
   /** First blocking cell on the same normalized ray, in blocks. */
   readonly obstructionDistanceBlocks: number | undefined;
+  readonly cell: RayHit | undefined;
 }
 
 /** Resolves furniture and the first blocking cell from one shared interaction ray. */
@@ -240,7 +241,7 @@ export const pickFurnitureAndObstruction = ({
 }: FurniturePickOptions): FurnitureAndObstructionHit => {
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0 || maxDistance < 0 || blockSize <= 0) {
-    return { furniture: undefined, obstructionDistanceBlocks: undefined };
+    return { furniture: undefined, obstructionDistanceBlocks: undefined, cell: undefined };
   }
   const dir: Vec3 = direction.map((component) => component / magnitude) as Vec3;
   const maxMetres = maxDistance * blockSize;
@@ -255,6 +256,7 @@ export const pickFurnitureAndObstruction = ({
   const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid, throughLadders });
   return {
     furniture: resolvePick({ entities, panelHit, cellHit, blockSize }),
+    cell: cellHit,
     obstructionDistanceBlocks: panelHit
       ? Math.min(panelHit.distance / blockSize, cellHit?.distance ?? Number.POSITIVE_INFINITY)
       : cellHit?.distance,

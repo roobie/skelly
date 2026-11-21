@@ -192,7 +192,7 @@ const UiScreenTextSchema = strictObject({
     allKnown: [],
     startsFromItem: [],
     startsFromPiece: [],
-    startsNowhere: [],
+    startsFromCell: [],
     categoryFind: [],
     tagFind: [],
     removeTag: ['tag'],

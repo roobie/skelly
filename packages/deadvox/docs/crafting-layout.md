@@ -301,20 +301,21 @@ These are delivery boundaries, not permission to ship one player view first.
 Each needs a testHouse fixture start under `docs/PROCESS.md`, "Reviews by eye and by play"
 (repo root), with the reviewer beside the target and carrying the required gear.
 
-The joint first look and the joint player delivery of crafting and world work are
-delivered: the look fixtures are
+Crafting and world work share the delivered layout so their reviews do not become
+separate surfaces to replace or let drift. The look fixtures are
 `packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/starts.jsonnet`, `starts`, and
-`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`, "Housing-slot look", and
-world work starts through `packages/presentation/src/ui/inventoryScreen.ts`,
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`, "Housing-slot look".
+World work starts through `packages/presentation/src/ui/inventoryScreen.ts`,
 `InventoryScreen.openWorldWork`, and `packages/presentation/src/ui/craftController.ts`,
-`worldStart`. Two slices remain under #1332:
+`worldStart`.
 
-- **Cell-work integration.** Cell repair and rubble clearing exist in the engine
-  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairCell` and
-  `CraftCommands.takeApartCell`) but reach players only through the debug
-  interface. Extend the same review for a looked-at cell rather than adding a
-  terrain screen, and never fake a cell as a piece identity. Its fixture starts
-  beside a cracked wall and rubble with supplies.
+Terrain repair and rubble clearing use the same review rather than a terrain screen,
+so cells do not become fake piece identities. Read-only previews and Start's identity
+checks preserve target-bound consent; see `packages/engine/src/core/craftCommands.ts`,
+`CraftCommands.previewCellRepair` and `CraftCommands.previewTakeApartCell`, and
+`packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openCellWork`.
+The by-eye fixture is `mods/skelly.deadvox.scenario.test-house.rubble-look/README.md`.
+
 - **Placement picking.** Join destination picking to the shared rows and commit
   shape. The fixture has a window, doorway, wall gap, kit and occupied
   destination, with one recipe of each authored order and one using the
