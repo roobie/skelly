@@ -17,6 +17,27 @@ if (!(scenario?.kind === 'composedSite' && start)) {
   throw new Error('Holdout needs its composed scenario and start');
 }
 
+const recipe = content.registry.recipes.get('build_plank_wall');
+if (!(recipe && 'block' in recipe.result)) {
+  throw new Error('Holdout needs a wall recipe');
+}
+const wallBlock = recipe.result.block;
+const wallKit = () => [
+  ...recipe.components.map((options, index) => {
+    const [component] = options;
+    if (!(component && 'item' in component)) {
+      throw new Error('Holdout wall recipe needs an item component option');
+    }
+    return { id: `wall-component-${index}`, item: component.item, count: component.count };
+  }),
+  ...Object.entries(recipe.qualities).map(([quality, level]) => {
+    const tool = [...content.registry.items.values()].find((item) => (item.tool?.qualities[quality] ?? 0) >= level);
+    if (!tool) {
+      throw new Error(`Holdout wall recipe needs a ${quality} tool`);
+    }
+    return { id: `wall-tool-${quality}`, item: tool.id };
+  }),
+];
 const config = { ...makeConfig(start.seed!, 32, content), startId: start.id, site: scenario.id };
 const version = formatVersion;
 
@@ -63,12 +84,7 @@ const createHoldout = (restore?: Awaited<ReturnType<typeof decodeSave>>['snapsho
     setup.streamer.update(pose.position[0], pose.position[2]);
   }
   if (!restore) {
-    const supplies = [
-      { id: 'wall-planks', item: 'wooden_plank', count: 2 },
-      { id: 'wall-nails', item: 'nails', count: 4 },
-      { id: 'wall-hammer', item: 'hammer' },
-      { id: 'wall-saw', item: 'hand_saw' },
-    ].map((entry) => ({
+    const supplies = wallKit().map((entry) => ({
       ...entry,
       destination: { kind: 'pile' as const, pos: session.body.pos.map(Math.floor) as [number, number, number] },
     }));
@@ -92,10 +108,6 @@ const snapshot = (session: ReturnType<typeof createSession>) =>
 
 it('keeps a placed Holdout wall, fired wave rule, and released horde across reload', async () => {
   const { setup, session } = createHoldout();
-  const recipe = content.registry.recipes.get('build_plank_wall');
-  if (!(recipe && 'block' in recipe.result)) {
-    throw new Error('Holdout needs a wall recipe');
-  }
   const placed = (() => {
     let refusal: string | undefined;
     const [x, y, z] = session.body.pos.map(Math.floor) as [number, number, number];
@@ -117,13 +129,12 @@ it('keeps a placed Holdout wall, fired wave rule, and released horde across relo
     throw new Error('Wall placement did not start work');
   }
   session.sim.scheduler.advance((work.work.duration - work.work.elapsed) / session.sim.clock.ratio + 1);
-  expect(setup.simulationWorld.getBlock(...placed)).toBe(content.registry.blockIds.get(recipe.result.block));
+  expect(setup.simulationWorld.getBlock(...placed)).toBe(content.registry.blockIds.get(wallBlock));
 
   const rule = setup.scenario?.eventRules[0];
   if (!rule) {
     throw new Error('Holdout needs a first wave rule');
   }
-  session.sim.paused = false;
   session.sim.setDebugCalendarTime(session.scenarioRun!.startedAtGameTimestamp + rule.trigger.afterGameHours);
   session.frame(1);
   const saved = snapshot(session);
@@ -148,7 +159,7 @@ it('keeps a placed Holdout wall, fired wave rule, and released horde across relo
   const restored = createHoldout(decoded.snapshot);
   restored.session.sim.paused = false;
   restored.session.frame(1);
-  expect(restored.setup.simulationWorld.getBlock(...placed)).toBe(content.registry.blockIds.get(recipe.result.block));
+  expect(restored.setup.simulationWorld.getBlock(...placed)).toBe(content.registry.blockIds.get(wallBlock));
   const resumed = snapshot(restored.session);
   expect(resumed.character.scenarioRun!.eventsFiredAtGameTimestamp[rule.id]).toBe(firedAt);
   expect(resumed.world.actors.hordes.filter(({ id }) => id.startsWith('event:')).map(({ id }) => id)).toEqual(hordeIds);
