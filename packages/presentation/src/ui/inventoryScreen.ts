@@ -2337,7 +2337,12 @@ export class InventoryScreen {
       case 'disassembly':
         return fillText(text.takingApart, { item: defOf(this.inv.registry, work.source).name });
       case 'pieceDisassembly':
-        return fillText(text.takingApart, { item: this.inv.registry.furniture.get(work.furniture)!.name });
+        return fillText(text.takingApart, {
+          item:
+            work.boarding === undefined
+              ? this.inv.registry.furniture.get(work.furniture)!.name
+              : this.inv.registry.boardings.get(work.boarding)!.name,
+        });
       case 'cellDisassembly':
         return fillText(text.takingApart, {
           item: this.inv.registry.blocks[this.inv.registry.blockIds.get(work.block)!]!.name,

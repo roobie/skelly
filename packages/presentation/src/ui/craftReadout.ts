@@ -177,8 +177,11 @@ export const takeApartRow = (
 ): CraftRow => {
   const text = craftingText(registry);
   const { plan, refusal } = crafting.previewTakeApartEntity(target.uid);
-  const itemName = registry.furniture.get(target.type)!.name;
-  const gameSeconds = plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type)?.timeGameMinutes ?? 0;
+  const itemName = target.boarding
+    ? registry.boardings.get(target.boarding.type)!.name
+    : registry.furniture.get(target.type)!.name;
+  const gameSeconds =
+    plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type, target.boarding?.type)?.timeGameMinutes ?? 0;
   return {
     id: `take_apart:${target.uid}`,
     name: fillText(text.takeApartName, { item: itemName }),

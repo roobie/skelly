@@ -53,7 +53,9 @@ export const jobName = (registry: Registry, work: NonNullable<Item['work']>): st
     case 'disassembly':
       return registry.items.get(work.source)!.name;
     case 'pieceDisassembly':
-      return registry.furniture.get(work.furniture)!.name;
+      return work.boarding === undefined
+        ? registry.furniture.get(work.furniture)!.name
+        : registry.boardings.get(work.boarding)!.name;
     case 'cellDisassembly':
       return registry.blocks[registry.blockIds.get(work.block)!]!.name;
     case 'partService':
