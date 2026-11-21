@@ -10,7 +10,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { baseRegistryWith } from './baseRegistry.ts';
-import { DURABILITY, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
+import { DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
 const directions = { push: 0, drag: 180, lift: 270 };
@@ -44,6 +44,13 @@ describe('furniture service choices', () => {
     expect(choices.some(({ id }) => id === 'push')).toBe(true);
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
     expect(choices.some(({ id }) => id === 'lift')).toBe(false);
+  });
+
+  it('offers take apart for a piece with a parts route', () => {
+    const local = baseRegistryWith(worldRepairSources());
+    const { inventory, target } = worldRepairFixture(local);
+    local.furniture.set(PIECE, { ...local.furniture.get(PIECE)!, takeApart: { parts: 'fixture_parts' } });
+    expect(furnitureActionsFor(inventory, target).some(({ id }) => id === 'take_apart')).toBe(true);
   });
 });
 

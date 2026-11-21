@@ -63,6 +63,7 @@ export type SaveContentKind =
   | 'block'
   | 'item'
   | 'furniture'
+  | 'boarding'
   | 'climbable'
   | 'actor'
   | 'sound'
@@ -565,6 +566,7 @@ itemSchema = obj({
       obj({
         kind: enumeration(['pieceDisassembly']),
         furniture: str({ id: true }),
+        boarding: opt(str({ id: true })),
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
@@ -1882,6 +1884,20 @@ function grabbedLadder(
     : undefined;
 }
 
+function validatePieceDisassemblyReferences(
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'pieceDisassembly' }>,
+  path: string,
+  check: (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string) => void,
+): void {
+  check('furniture', work.furniture, `${path}.furniture`);
+  if (work.boarding) {
+    check('boarding', work.boarding, `${path}.boarding`);
+  }
+  work.outputs.forEach((output, index) => {
+    check('item', output.item, `${path}.outputs[${index}].item`);
+  });
+}
+
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
   vehicles: VehicleInstancesState,
@@ -1917,10 +1933,7 @@ function validateItemContentReferences(
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
     } else if (item.work?.kind === 'pieceDisassembly') {
-      check('furniture', item.work.furniture, `${path}.work.furniture`);
-      item.work.outputs.forEach((output, index) => {
-        check('item', output.item, `${path}.work.outputs[${index}].item`);
-      });
+      validatePieceDisassemblyReferences(item.work, `${path}.work`, check);
     } else if (item.work?.kind === 'cellDisassembly') {
       check('block', item.work.block, `${path}.work.block`);
       item.work.outputs.forEach((output, index) => {
