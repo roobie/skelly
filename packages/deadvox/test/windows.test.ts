@@ -432,6 +432,26 @@ describe('window curtains', () => {
     expect(blocking(restored)).toEqual({ body: false, sight: true, light: true });
   });
 
+  it('lets a blow aimed at a closed curtain break the glass behind it, leaving the window undamaged', () => {
+    const runtime = createRuntime(undefined, false, undefined, { registry });
+    const { entities, entity } = make('n', 'low', 'back', runtime.inventory);
+    expect(entities.board(entity, 'front', CURTAIN.type)).toBeUndefined();
+    // From two blocks out on the front face, at the window's middle, straight at it.
+    const centre: Vec3 = [entity.pos[0] + entity.size[0] / 2, entity.pos[1] + entity.size[1] / 2, entity.pos[2]];
+    const picked = pickFurnitureHit({
+      entities,
+      origin: [centre[0], centre[1], centre[2] - 2],
+      direction: [0, 0, 1],
+      maxDistance: 4,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+    expect(picked).toMatchObject({ entity, part: 'curtain' });
+    expect(runtime.session.bashFurniture(entity, pane.breakForce, picked!.part)).toBe('broken');
+    expect(entity.window).toMatchObject({ pane: 'missing' });
+    expect(entity.damage).toBeUndefined();
+  });
+
   it('opens a closed curtain on use and closes an open one on hold, leaving the sash and latch reachable', () => {
     const { entities, entity } = make();
     const from = beside(entity, 'back');

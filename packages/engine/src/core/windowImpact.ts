@@ -12,7 +12,8 @@ export interface WindowImpactWorld {
 /**
  * Whether a blow on a piece breaks at its glass rather than as the piece's own damage: one aimed at the pane, or an
  * unaimed one on an intact pane that no boards cover. A boarded window takes unaimed blows on its boards, so a horde
- * must beat the whole window down to get in; a curtain stops no blow.
+ * must beat the whole window down to get in. A curtain stops no blow, so one aimed at it lands where an unaimed blow
+ * would.
  */
 export const blowLandsOnPane = (
   entities: BlockEntities,
@@ -20,7 +21,8 @@ export const blowLandsOnPane = (
   part: FurniturePart | undefined,
 ): boolean =>
   entity.window !== undefined &&
-  (part === 'pane' || (part === undefined && entity.window.pane === 'intact' && !entities.boardedUp(entity)));
+  (part === 'pane' ||
+    ((part === undefined || part === 'curtain') && entity.window.pane === 'intact' && !entities.boardedUp(entity)));
 
 export const strikeWindowPane = (
   world: WindowImpactWorld,
