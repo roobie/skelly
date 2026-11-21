@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.natural-world"],
+  "dependencies": ["skelly.natural-world", "skelly.building-blocks"],
   "files": [
     {
       "kind": "content",

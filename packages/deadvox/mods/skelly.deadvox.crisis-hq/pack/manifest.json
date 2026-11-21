@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "skelly.building-blocks",
     "skelly.deadvox.actors",
     "skelly.deadvox.camp",
     "skelly.deadvox.loot",

@@ -7,6 +7,6 @@ manifest(
   optIn=true,
   content=['layouts', 'starts'],
   dependencies=kit.dependencies([
-    'skelly.deadvox.scenario.test-house', 'skelly.manufactured-blocks', 'skelly.materials', 'skelly.structures',
+    'skelly.building-blocks', 'skelly.deadvox.scenario.test-house', 'skelly.manufactured-blocks', 'skelly.materials', 'skelly.structures',
   ]),
 )
