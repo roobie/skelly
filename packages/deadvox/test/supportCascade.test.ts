@@ -82,7 +82,12 @@ const structures = (registry: ReturnType<typeof fixtureRegistry>, neighbour: boo
   ];
 };
 
-const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>, neighbour = false) => {
+const fixture = (
+  cascadeCellsPerTick?: number,
+  restored?: Readonly<SaveSnapshot>,
+  neighbour = false,
+  layout: typeof structures = structures,
+) => {
   const registry = fixtureRegistry(cascadeCellsPerTick);
   const world = new World();
   const ground = registry.blockIds.get(GROUND)!;
@@ -109,7 +114,7 @@ const fixture = (cascadeCellsPerTick?: number, restored?: Readonly<SaveSnapshot>
         structures: [],
       },
     },
-    structures: structures(registry, neighbour),
+    structures: layout(registry, neighbour),
   };
   const canonical = new CanonicalTerrain(world, createTerrainEvaluator(terrain));
   const source: ColumnSource = {
@@ -209,6 +214,25 @@ describe('support cascade', () => {
     }
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
     expect(f.block([9, 3, Z])).toBe(POST);
+  });
+
+  it('drops landed rubble again when a later strike removes the post it landed on', () => {
+    const f = fixture(undefined, undefined, false, (registry) => [
+      column(2, 5, registry.blockIds.get(POST)!),
+      row(3, 4, 5, registry.blockIds.get(BEAM)!),
+      column(4, 3, registry.blockIds.get(POST)!),
+    ]);
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.block([4, 4, Z])).toBe(RUBBLE);
+    expect(f.block([4, 3, Z])).toBe(POST);
+    expect(f.strike([4, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.canonical.getBlock(4, 4, Z)).toBe(0);
+    expect(f.block([4, 3, Z])).toBe(RUBBLE);
+    expect(f.block([4, 2, Z])).toBe(RUBBLE);
+    expect(createSupport(f.registry, terrainSupportView(f.canonical)).holds([4, 3, Z])).toBe(true);
+    expect(f.standing().filter(({ held }) => !held)).toEqual([]);
   });
 
   it('drops a run whose only anchor stays up but no longer stands', () => {

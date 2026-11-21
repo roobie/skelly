@@ -6,7 +6,6 @@ import type { createColumnSupply } from './columnSupply.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { commitRuin, type FurnitureMover, hungOnTerrain, planRuin } from './furnitureMove.ts';
-import { rubbleBlockIds } from './rubble.ts';
 import { createSupport, terrainSupportView } from './structureSupport.ts';
 
 interface TerrainStrike {
@@ -242,8 +241,8 @@ const fallCell = (
 
 /**
  * Judges up to `budget` cascade cells in frontier order, and returns what fell. A held cell ends its branch, though one
- * whose floor was lost queues its sideways lines, since it may no longer anchor them; an unheld cell falls, or stays
- * as it is if it is already rubble, and queues what depended on it. Cells past the budget wait for the next call.
+ * whose floor was lost queues its sideways lines, since it may no longer anchor them; an unheld cell falls and
+ * queues what depended on it. Cells past the budget wait for the next call.
  */
 export const cascadeSupport = (
   context: Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] },
@@ -255,10 +254,9 @@ export const cascadeSupport = (
   const view = terrainSupportView(terrain);
   // A judgement holds only while the blocks it read stand, so every fall starts a fresh one.
   let support = createSupport(registry, view);
-  const rubbleIds = rubbleBlockIds(registry);
   const destroyed: BlockEntity[] = [];
   const edited: Vec3[] = [];
-  /** Whether the cell stopped holding; a structure cell that did falls, unless it is already rubble. */
+  /** Whether the cell stopped holding. */
   const judge = (cell: Vec3, lostFloor: boolean): boolean => {
     const inside = cell[1] >= view.minY && cell[1] < view.maxY;
     const block = inside ? registry.blocks[view.block(...cell)] : undefined;
@@ -271,14 +269,12 @@ export const cascadeSupport = (
       }
       return false;
     }
-    if (!rubbleIds.has(block.id)) {
-      const material = registry.blockMaterials.get(block.material)!;
-      // A projection publishes once, so each fall reads the supply afresh.
-      const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
-      destroyed.push(...fell.destroyed);
-      edited.push(...fell.edited);
-      support = createSupport(registry, view);
-    }
+    const material = registry.blockMaterials.get(block.material)!;
+    // A projection publishes once, so each fall reads the supply afresh.
+    const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
+    destroyed.push(...fell.destroyed);
+    edited.push(...fell.edited);
+    support = createSupport(registry, view);
     return true;
   };
   for (let judged = 0; judged < budget; judged++) {
