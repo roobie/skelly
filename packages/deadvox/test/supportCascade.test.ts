@@ -1,4 +1,5 @@
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
 import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
 import { createSupport, terrainSupportView } from '@skelly/engine/internal/core/structureSupport.ts';
@@ -19,9 +20,53 @@ const POST = 'support_cascade_post';
 const BEAM = 'support_cascade_beam';
 const GROUND = 'support_cascade_ground';
 const RUBBLE = 'support_cascade_rubble';
+const STOCK = 'support_cascade_stock';
+const PIECE = 'support_cascade_piece';
+const VEHICLE = 'support_cascade_vehicle';
 
 const fixtureRegistry = (cascadeCellsPerTick?: number) => {
   const registry = baseRegistry();
+  registry.items.set(STOCK, {
+    id: STOCK,
+    name: 'Fixture stock',
+    category: 'material',
+    size: [1, 1],
+    weight: 1,
+    workInProgress: false,
+  });
+  registry.furniture.set(PIECE, {
+    id: PIECE,
+    name: 'Fixture piece',
+    size: [1, 1, 1],
+    color: '#888888',
+    material: [...registry.furnitureMaterials.keys()][0]!,
+    breach: { minimumStrength: 1, durability: 1 },
+    ruin: { debris: [{ item: STOCK, count: 1 }] },
+  });
+  const donor = [...registry.items.values()].find((item) => item.vehicle && item.model && !item.vehicle.addon)!;
+  registry.items.set(VEHICLE, { ...donor, id: VEHICLE, model: VEHICLE });
+  registry.models.set(VEHICLE, {
+    ...registry.models.get(donor.model!)!,
+    id: VEHICLE,
+    parts: {
+      body: {
+        massKg: 1,
+        centreOfMass: [0, 0, 0],
+        voxelGrain: scale.blockSize,
+        collision: [
+          {
+            min: [-scale.blockSize / 2, 0, -scale.blockSize / 2],
+            max: [scale.blockSize / 2, scale.blockSize, scale.blockSize / 2],
+          },
+        ],
+      },
+    },
+  });
+  registry.vehicleBlueprints.set(VEHICLE, {
+    id: VEHICLE,
+    name: 'Fixture vehicle',
+    fittings: [{ id: 'part', part: VEHICLE, at: [0, 0, 0], supportedBy: [] }],
+  });
   const material = (id: string, span: number) => {
     registry.blockMaterials.set(id, { ...fixtureBlockMaterial(RUBBLE), id, span, breakable: true });
   };
@@ -86,8 +131,9 @@ const fixture = (
   cascadeCellsPerTick?: number,
   restored?: Readonly<SaveSnapshot>,
   neighbour = false,
-  layout: typeof structures = structures,
+  options: { layout?: typeof structures; spawn?: Vec3 } = {},
 ) => {
+  const { layout = structures, spawn = [20, 1, 20] } = options;
   const registry = fixtureRegistry(cascadeCellsPerTick);
   const world = new World();
   const ground = registry.blockIds.get(GROUND)!;
@@ -130,7 +176,7 @@ const fixture = (
     scale,
     seed: 7,
     start: 43_200,
-    spawn: [20, 1, 20],
+    spawn,
     terrainDestruction: { terrain: canonical, source },
     isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
@@ -216,12 +262,97 @@ describe('support cascade', () => {
     expect(f.block([9, 3, Z])).toBe(POST);
   });
 
+  it('keeps empty landed rubble for take-apart rather than clearing it by ordinary blows', () => {
+    const f = fixture();
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    const cell: Vec3 = [4, 1, Z];
+    expect(f.block(cell)).toBe(RUBBLE);
+    expect(f.strike(cell)).toBe(true);
+    expect(f.block(cell)).toBe(RUBBLE);
+  });
+
+  it('buries landing-pile items through save/load and recovers their identity by taking the rubble apart', async () => {
+    const f = fixture(undefined, undefined, false, { spawn: [3, 1, Z + 2] });
+    const item = f.session.inventory.create(STOCK, 2, 0.7);
+    expect(f.session.inventory.add(item, { kind: 'pile', pos: [3, 1, Z] })).toBe(true);
+    const before = snapshotItem(item);
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.block([3, 1, Z])).toBe(RUBBLE);
+    expect(f.session.inventory.itemByUid(item.uid)).toBeUndefined();
+    expect(f.strike([3, 1, Z])).toBe(true);
+    expect(f.block([3, 1, Z])).toBe(RUBBLE);
+    const invalid = structuredClone(f.snapshot());
+    invalid.character.inventory.piles.push({
+      pos: [8, 1, Z],
+      items: [{ item: structuredClone(before), x: 0, y: 0, rotated: false }],
+    });
+    await expect(encodeFixture(invalid)).rejects.toThrow('Duplicate item id');
+    const restored = await reload(f);
+    expect(restored.session.inventory.itemByUid(item.uid)).toBeUndefined();
+    const cell: Vec3 = [3, 1, Z];
+    const preview = restored.session.crafting.previewTakeApartCell(cell);
+    expect(restored.session.crafting.takeApartCell(cell, preview.identity!)).toBeUndefined();
+    const work = restored.session.inventory.hands.right?.work;
+    expect(work?.kind).toBe('cellDisassembly');
+    restored.session.sim.scheduler.advance(work!.duration / restored.session.sim.clock.ratio + 1);
+    expect(restored.canonical.getBlock(...cell)).toBe(0);
+    const recovered = restored.session.inventory.itemByUid(item.uid);
+    expect(recovered && snapshotItem(recovered)).toEqual(before);
+  });
+
+  it('ruins furniture at the landing through the normal debris path before rubble occupies its cell', () => {
+    const f = fixture();
+    const piece = f.session.inventory.entities.add({ type: PIECE, pos: [3, 1, Z], size: [1, 1, 1], facing: 'n' })!;
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.block([3, 1, Z])).toBe(RUBBLE);
+    expect(f.session.inventory.entities.byUid(piece.uid)).toBeUndefined();
+    const loose = [...f.session.inventory.items()].map(({ item }) => item);
+    const buried = f.world.rubble
+      .snapshotState()
+      .entries.flatMap((entry) => (entry.buried ?? []).map(({ item }) => item));
+    expect([...loose, ...buried].some((item) => item.type === STOCK)).toBe(true);
+  });
+
+  it('retains the actor fall refusal while landing displacement is pending', () => {
+    const f = fixture(undefined, undefined, false, {
+      layout: (registry) => [column(2, 6, registry.blockIds.get(POST)!), row(3, 4, 6, registry.blockIds.get(BEAM)!)],
+      spawn: [3.5, 1, Z + 0.5],
+    });
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.block([3, 6, Z])).toBe(BEAM);
+    expect(f.canonical.getBlock(3, 1, Z)).toBe(0);
+  });
+
+  it('treats occupied vehicle fittings as a floor without changing the vehicle', () => {
+    const f = fixture();
+    f.session.inventory.registerVehicle({
+      blueprint: VEHICLE,
+      placementKey: VEHICLE,
+      origin: [3.5, 1, Z + 0.5],
+      facing: 'n',
+    });
+    const before = f.session.inventory.vehicles.snapshotState();
+    expect(f.strike([2, 1, Z])).toBe(true);
+    settle(f);
+    expect(f.block([3, 2, Z])).toBe(RUBBLE);
+    expect(f.canonical.getBlock(3, 1, Z)).toBe(0);
+    expect(f.session.inventory.vehicles.snapshotState()).toEqual(before);
+  });
+
   it('drops landed rubble again when a later strike removes the post it landed on', () => {
-    const f = fixture(undefined, undefined, false, (registry) => [
-      column(2, 5, registry.blockIds.get(POST)!),
-      row(3, 4, 5, registry.blockIds.get(BEAM)!),
-      column(4, 3, registry.blockIds.get(POST)!),
-    ]);
+    const f = fixture(undefined, undefined, false, {
+      layout: (registry) => [
+        column(2, 5, registry.blockIds.get(POST)!),
+        row(3, 4, 5, registry.blockIds.get(BEAM)!),
+        column(4, 3, registry.blockIds.get(POST)!),
+      ],
+    });
+    const load = f.session.inventory.create(STOCK);
+    expect(f.session.inventory.add(load, { kind: 'pile', pos: [4, 4, Z] })).toBe(true);
     expect(f.strike([2, 1, Z])).toBe(true);
     settle(f);
     expect(f.block([4, 4, Z])).toBe(RUBBLE);
@@ -231,6 +362,8 @@ describe('support cascade', () => {
     expect(f.canonical.getBlock(4, 4, Z)).toBe(0);
     expect(f.block([4, 3, Z])).toBe(RUBBLE);
     expect(f.block([4, 2, Z])).toBe(RUBBLE);
+    expect(f.world.rubble.contents([4, 4, Z])).toEqual([]);
+    expect(f.world.rubble.contents([4, 3, Z]).map(({ item }) => item.uid)).toContain(load.uid);
     expect(createSupport(f.registry, terrainSupportView(f.canonical)).holds([4, 3, Z])).toBe(true);
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
   });

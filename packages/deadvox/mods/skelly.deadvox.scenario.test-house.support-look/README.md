@@ -2,17 +2,18 @@
 read_if:
   - you check structure support, rubble landing and its cascade by eye (#1332)
   - you change `packages/engine/src/core/structureSupport.ts`, `createSupport`, or `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`
-  - you change the fixture's post, beam run or floor
+  - you change the fixture's post, beam run, floor or landing contents
 ---
 
 # Support look
 
 Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.support-look#{debug:true}).
 
-A free-standing plank post stands on a concrete pad at noon. At its top, just above eye height, a short plank beam
+A free-standing plank post stands on a concrete pad at noon. At its top, above eye height, a short plank beam
 runs east and a short plank floor runs south toward the player, both held only by the post. The player starts south
-of the post, facing it, with a sledgehammer in hand and every skill at its top level from the start kit. The first
-aim meets the post's eye-height cell, below both runs. The rule the look checks is under
+of the post, outside the landing cells, facing it, with a sledgehammer in hand and every skill at its top level
+from the start kit. A crate sits beneath the beam and a loose note beneath the floor, so landing crush and burial
+need no setup. The first aim meets the post's eye-height cell, below both runs. The rule the look checks is under
 `packages/deadvox/SLICE-5.md`, "Support".
 
 ## Check
@@ -25,5 +26,7 @@ aim meets the post's eye-height cell, below both runs. The rule the look checks 
 3. Stop swinging when the post breaks: its top drops into the gap as rubble, onto the standing stub. The beam
    run and floor drop straight down onto the pad as rubble, leaving their old positions empty. The drop is instant,
    not animated; rubble must not hang in the air. Stop before another swing hits the landed rubble.
-4. The post cells below the gap stay standing on the pad, and the pad and the lot are unchanged.
-5. Save, reload and look again: the rubble and the standing stub are as they were.
+4. The post cells below the gap stay standing on the pad, and the pad and the lot are unchanged. The landing
+   crate is ruined, with its debris conserved by the normal ruin path; the loose note is buried, not deleted.
+5. Save, reload and look again: the rubble and the standing stub are as they were. Take apart the rubble over the
+   note to recover it. Actor landing behavior is pending; this fixture keeps the tester out of the fall path.

@@ -11,7 +11,7 @@ read_if:
   - you're changing where Holdout players find building tools or fasteners
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
-  - you're changing structure support, cascade landing or its placement refusal
+  - you're changing structure support, cascade landing, buried contents or their clearing
 ---
 
 # Slice 5 — Holding ground
@@ -149,11 +149,15 @@ unbuilt. Unanswered gates block only their dependent work.
   unheld block before spending inputs so the player learns why first; see
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
   Cascade-broken cells drop straight down instantly and land as rubble on the first
-  solid terrain below. Rubble left where structure stood hides the collapse from the
-  player; falling rubble reads as a collapse. Landed rubble is solid terrain for later
-  drops. Furniture is not a terrain landing surface. Burial and impact harm remain
-  outside this cascade; see `SLICE-5.md`, "Lanes and the next rounds". See
-  `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
+  solid terrain below; occupied vehicle fittings also stop rubble above them because
+  vehicle impact damage has no owner. Rubble left where structure stood hides the
+  collapse from the player; falling rubble reads as a collapse. Landed rubble supports
+  later drops. Landing rubble buries pile items and ruins furniture through the shared
+  ruin path, rather than treating furniture as a floor. Buried contents stay with rubble
+  through later falls and save/load; take-apart recovers them. A collapse is danger,
+  not arbitrary deletion: conserve anything it did not break. The actor landing rule
+  remains pending under #1332; keep actor fall refusal until displacement is decided.
+  See `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
   Judgements use the blocks standing after earlier falls so peers and batch sizes agree.
   A content-owned cell cap spreads work across ticks, rather than promising a time bound;
   saving the frontier lets interrupted cascades finish after reload. See
@@ -410,11 +414,9 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   comes apart, so clearing adds no second destruction verb and fallen material keeps
   one representation, solid for cover and pathing; see
   `DESIGN.md`, "Damage, destruction and dismemberment". A rubble cell is not a damaged
-  wall in another coat. It carries conserved buried contents from the collapse, damaged
-  items among them become parts, and take-apart steps dig them out, so a collapse loses
-  nothing it did not break. The first clearing round may yield material only, but the
-  cell's data shape leaves room for buried contents from the start, so the contents
-  round extends the shape rather than replacing it; see
+  wall in another coat. It carries conserved buried contents from the collapse;
+  broken contents yield parts rather than disappearing, and take-apart digs out what
+  was kept, so a collapse loses nothing it did not break. See
   `packages/engine/src/core/rubble.ts`, `SavedRubble`, and `packages/engine/src/core/craftCommands.ts`,
   `takeApartCell`. How rubble reads apart from a
   damaged wall is ruled under "Rubble look".
@@ -584,15 +586,14 @@ rounds are tracked under #1332.
   its strength rather than an identity flag and ordinary types break doors only because
   door pieces sit below their strength. A blow that leaves cells unheld cascades them
   into rubble under "Support" rather than being refused. Collapse then extends that
-  cascade as a separate PR: rubble that
-  keeps its crack fraction, buries bodies and contents, and hurts every body, generating
-  terrain on demand wherever it reaches, so no region departure-and-return work precedes
-  it; its PR reports collapse time at the largest authored roof rather than gating on
-  it. Taking rubble apart digs out buried bodies too, one clearing verb for everything a
-  cell buried, and ordinary strikes never clear rubble. One verb and one rule let the
-  player clear a heap one way and find whatever is under it. Blast by share and breach
-  charges follow, then furniture knock-out and push-off, which replace the fall refusal
-  with landing crush; see `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
+  cascade with body burial, impact harm and retained crack fraction under #1332.
+  Terrain is generated on demand wherever collapse reaches, so no region departure-and-return
+  work precedes it; collapse timing at the largest authored roof is reported rather than
+  used as a gate. Body burial must use the same take-apart clearing verb, and ordinary
+  strikes never clear rubble, so the player clears a heap one way and finds whatever is under it. Blast by share and breach
+  charges follow, then furniture knock-out and push-off. Furniture movement keeps its
+  actor fall refusal separately from terrain landing crush; see
+  `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and

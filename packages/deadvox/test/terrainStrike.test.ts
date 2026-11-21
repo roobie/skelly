@@ -47,6 +47,7 @@ const stock = 'terrain_fixture_stock';
 const shelfType = 'terrain_fixture_shelf';
 const leafType = 'terrain_fixture_leaf';
 const floorType = 'terrain_fixture_floor';
+const rubbleType = 'terrain_fixture_rubble';
 const lampType = 'terrain_fixture_lamp';
 /** Hung under the struck block, which is its ceiling. */
 const lampPos: Vec3 = [cell[0], cell[1] - 1, cell[2]];
@@ -55,8 +56,10 @@ const fixtureRegistry = () => {
   const registry = baseRegistry();
   registry.blockIds.set(floorType, registry.blocks.length);
   registry.blocks.push({ id: floorType, name: 'Floor', material: 'fixture_material', solid: true, color: '#888888' });
+  registry.blockIds.set(rubbleType, registry.blocks.length);
+  registry.blocks.push({ id: rubbleType, name: 'Rubble', material: 'fixture_material', solid: true, color: '#888888' });
   registry.blockMaterials.set('fixture_material', {
-    ...fixtureBlockMaterial(floorType),
+    ...fixtureBlockMaterial(rubbleType),
     breakable: true,
     rubble: [{ item: stock, count: 1 }],
   });

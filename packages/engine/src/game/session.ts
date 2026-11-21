@@ -1065,6 +1065,7 @@ export const createSession = (options: SessionOptions) => {
     if (reason) {
       return reason;
     }
+    world.rubble.release(cell);
     const edited = world.setBlock(cell[0], cell[1], cell[2], 0);
     world.support.lost(registry, [...cell]);
     options.onTerrainEdited?.(edited);

@@ -1,4 +1,5 @@
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
+import { meleeProfileForWeapon, meleeWeaponFromContent } from '@skelly/engine/internal/game/melee.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
@@ -13,7 +14,6 @@ import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
-import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 /**
  * The support look as it is played: the real world setup the start builds, columns arrived around the spawn, and the
@@ -76,14 +76,16 @@ const playLook = () => {
       session.sim.scheduler.advance(1 / 60);
     }
   };
-  /** One blow of a sledgehammer's strength along the aim, then a second of simulation. */
+  const heldKit = registry.starts.get(config.startId)!.kit.find((entry) => entry.destination.kind === 'hand')!;
+  const weapon = meleeWeaponFromContent(registry.items.get(heldKit.item)!.weapon!.melee);
+  /** One blow of the start's held weapon along the aim, then a second of simulation. */
   const swing = () => {
     const hands = { right: null, left: null };
     session.playerCombat.beginMeleeSwing({
       origin: eye,
       direction,
-      weapon: { ...FISTS_MELEE, impulse: 14 },
-      profile: 'fists',
+      weapon,
+      profile: meleeProfileForWeapon(registry.meleeClasses, weapon.type),
       twoHanded: false,
       hands,
     });

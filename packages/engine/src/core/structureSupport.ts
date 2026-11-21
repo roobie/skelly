@@ -24,6 +24,8 @@ export interface SupportView {
   readonly block: (x: number, y: number, z: number) => number;
   /** Whether the solid block at a cell is untouched natural ground. */
   readonly natural: (x: number, y: number, z: number) => boolean;
+  /** Vehicle occupancy must stop a drop without turning fittings into terrain blocks. */
+  readonly externalSupport?: ((x: number, y: number, z: number) => boolean) | undefined;
   /** The lowest cell row; a cell on it stands on the world's floor. */
   readonly minY: number;
   /** One past the highest cell row. */
@@ -47,7 +49,7 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
   const solidAt = (x: number, y: number, z: number): boolean =>
     y >= view.minY && y < view.maxY && solid[view.block(x, y, z)] === true;
   const holdsAt = (x: number, y: number, z: number): boolean =>
-    solidAt(x, y, z) && (view.natural(x, y, z) || heldAt(x, y, z));
+    view.externalSupport?.(x, y, z) === true || (solidAt(x, y, z) && (view.natural(x, y, z) || heldAt(x, y, z)));
   /** Whether what is under a solid cell holds it. */
   const standsAt = (x: number, y: number, z: number): boolean => {
     const key = `${x},${y},${z}`;

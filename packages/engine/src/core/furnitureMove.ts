@@ -329,9 +329,13 @@ const settle = (
 
 /** Why a piece can't fall to a height: someone is in its path. */
 const fallRefusal = (mover: FurnitureMover, entity: BlockEntity, y: number): string | undefined => {
-  const messages = messagesOf(mover.inventory);
   const path: Vec3 = [entity.pos[0], y, entity.pos[2]];
   const pathSize: Vec3 = [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]];
+  return fallingBoxRefusal(mover, path, pathSize);
+};
+
+export const fallingBoxRefusal = (mover: FurnitureMover, path: Vec3, pathSize: Vec3): string | undefined => {
+  const messages = messagesOf(mover.inventory);
   mover.readBox?.(path, pathSize);
   if (boxIntersectsBody(path, pathSize, mover.player)) {
     return messages.fallsOnPlayer;

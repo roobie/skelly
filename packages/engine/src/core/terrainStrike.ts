@@ -5,7 +5,8 @@ import { claimed } from './capabilities.ts';
 import type { createColumnSupply } from './columnSupply.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { commitRuin, type FurnitureMover, hungOnTerrain, planRuin } from './furnitureMove.ts';
+import { commitRuin, type FurnitureMover, fallingBoxRefusal, hungOnTerrain, planRuin } from './furnitureMove.ts';
+import { rubbleBlockIds } from './rubble.ts';
 import { createSupport, terrainSupportView } from './structureSupport.ts';
 
 interface TerrainStrike {
@@ -135,6 +136,21 @@ const hostLossRoots = (mover: FurnitureMover, under: Vec3): BlockEntity[] => {
   return hungOnTerrain(mover, piece) ? [] : [piece];
 };
 
+const preStrikeRefusal = (
+  terrain: CanonicalTerrain,
+  registry: Registry,
+  cell: Vec3,
+  breakable: boolean,
+): TerrainStrikeResult | undefined => {
+  if (rubbleBlockIds(registry).has(registry.blocks[terrain.getBlock(...cell)]!.id)) {
+    return { outcome: 'refused', destroyed: [], edited: [] };
+  }
+  if (carriesCanopy(terrain, registry, cell, breakable)) {
+    return { outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] };
+  }
+  return undefined;
+};
+
 export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
@@ -144,8 +160,9 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     return undefined;
   }
   const material = registry.blockMaterials.get(block.material)!;
-  if (carriesCanopy(terrain, registry, cell, material.breakable)) {
-    return { outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] };
+  const refusal = preStrikeRefusal(terrain, registry, cell, material.breakable);
+  if (refusal) {
+    return refusal;
   }
   const bash = bashBlock({ material, damage: world.blockDamage.get(cell)?.damage ?? 0 }, blow);
   if (bash.outcome === 'resisted') {
@@ -188,12 +205,26 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
   }
 };
 
+const landingCell = (context: TerrainStrike, cell: Vec3): Vec3 => {
+  const { terrain, mover } = context;
+  const landing: Vec3 = [...cell];
+  const minY = terrain.terrain.scale.minCy * CHUNK;
+  while (
+    landing[1] > minY &&
+    !mover.inventory.registry.blocks[terrain.getBlock(landing[0], landing[1] - 1, landing[2])]!.solid &&
+    context.obstructed?.(landing[0], landing[1] - 1, landing[2]) !== true
+  ) {
+    landing[1] -= 1;
+  }
+  return landing;
+};
+
 /** An instant drop: furniture loses the source cell, and its debris plans around the landed rubble. */
 const fallCell = (
   context: TerrainStrike,
   cell: Vec3,
   rubble: number,
-): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> => {
+): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
   const { terrain, supply, mover } = context;
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
@@ -201,15 +232,13 @@ const fallCell = (
     const { revision } = supply;
     try {
       const clearing = provisionalMover(context, cell);
-      const landing: Vec3 = [...cell];
-      const minY = terrain.terrain.scale.minCy * CHUNK;
-      while (
-        landing[1] > minY &&
-        !mover.inventory.registry.blocks[terrain.getBlock(landing[0], landing[1] - 1, landing[2])]!.solid
-      ) {
-        landing[1] -= 1;
+      const landing = landingCell(context, cell);
+      if (fallingBoxRefusal(clearing, landing, [1, cell[1] - landing[1] + 1, 1])) {
+        return undefined;
       }
+      const crushed = clearing.inventory.entities.filling(...landing);
       const roots = [
+        ...(crushed ? [crushed] : []),
         ...floorLossRoots(clearing, [cell[0], cell[1] + 1, cell[2]]),
         ...hostLossRoots(clearing, [cell[0], cell[1] - 1, cell[2]]),
       ];
@@ -222,13 +251,19 @@ const fallCell = (
         cell,
       );
       const plan = roots.length > 0 ? planRuin(landed, roots, [], []) : undefined;
+      if (roots.length > 0 && !plan) {
+        return undefined;
+      }
       let destroyed: BlockEntity[] = [];
       let edited: Vec3[] = [];
       supply.publish(revision, ensure, (live) => {
         terrain.ensureCell(...cell);
         destroyed = plan ? commitRuin({ ...mover, inventory: live }, plan) : [];
+        const carried = terrain.world.rubble.release(cell);
+        const buried = live.buryPile(landing);
         edited = terrain.world.setBlock(...cell, 0);
         edited.push(...terrain.world.setBlock(...landing, rubble));
+        terrain.world.rubble.bury(landing, [...carried, ...buried]);
       });
       return { destroyed, edited };
     } catch (error) {
@@ -251,7 +286,7 @@ export const cascadeSupport = (
   const { terrain, mover } = context;
   const { registry } = mover.inventory;
   const state = terrain.world.support;
-  const view = terrainSupportView(terrain);
+  const view = { ...terrainSupportView(terrain), externalSupport: context.obstructed };
   // A judgement holds only while the blocks it read stand, so every fall starts a fresh one.
   let support = createSupport(registry, view);
   const destroyed: BlockEntity[] = [];
@@ -272,6 +307,9 @@ export const cascadeSupport = (
     const material = registry.blockMaterials.get(block.material)!;
     // A projection publishes once, so each fall reads the supply afresh.
     const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
+    if (!fell) {
+      return false;
+    }
     destroyed.push(...fell.destroyed);
     edited.push(...fell.edited);
     support = createSupport(registry, view);
