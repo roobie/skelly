@@ -429,9 +429,21 @@ describe('command router', () => {
       planRealFrame(compression, realSeconds(1 / 60));
       return compression;
     };
-    const reloadRouter = (compression: Compression, loadRefusal: string | undefined) => {
+    const reloadRouter = (
+      compression: Compression,
+      loadRefusal: string | undefined,
+      pickingCommand?: (action: string) => boolean,
+    ) => {
+      let loads = 0;
       const session = {
-        sim: { compression, paused: false, dead: false, time: 0, body: { actionRefusal: undefined } },
+        sim: {
+          compression,
+          paused: false,
+          dead: false,
+          time: 0,
+          body: { actionRefusal: undefined },
+          actions: { cancelWaitForMovement: () => undefined },
+        },
         throwCharge: { startedAt: undefined },
         queue: { busy: false },
         ladderHold: { hand: () => undefined },
@@ -439,7 +451,10 @@ describe('command router', () => {
           busy: false,
           reloadableUid: () => 1,
           reloadsInOneAction: () => false,
-          loadNext: () => loadRefusal,
+          loadNext: () => {
+            loads += 1;
+            return loadRefusal;
+          },
           cock: () => undefined,
           removeMagazine: () => undefined,
           stillLoaded: () => false,
@@ -448,18 +463,61 @@ describe('command router', () => {
         magazines: { reloadableUid: () => undefined },
       } as unknown as Session;
       const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
-      const router = createCommandRouter(
-        routerPorts({
-          controls,
-          session: () => session,
-          pointerLocked: () => true,
-          menuPointer: () => false,
-          inputContext: () => 'play',
-        }),
-      );
-      return { router, reload: controls.reload };
+      const ports = routerPorts({
+        controls,
+        session: () => session,
+        sim: () => session.sim,
+        worldReady: () => true,
+        pointerLocked: () => true,
+        menuPointer: () => false,
+        inputContext: () => (pickingCommand ? 'picking' : 'play'),
+      });
+      const router = createCommandRouter({
+        ...ports,
+        presentation: {
+          ...ports.presentation,
+          refusal: pickingCommand ? unused : ports.presentation.refusal,
+          spectatorAllows: () => true,
+          locomotionPressed: () => undefined,
+          debugCommand: () => false,
+          hintCommand: () => false,
+          pickingCommand: pickingCommand ?? (() => false),
+          modal: {
+            ...ports.presentation.modal,
+            readingOpen: () => false,
+            screenOpen: () => false,
+            mainMenuOpen: () => false,
+          },
+        },
+      });
+      return { router, reload: controls.reload, loads: () => loads };
     };
     const { hold } = RELOAD_GESTURE_MS;
+
+    it('routes picking reload to the firearm instead of furniture tipping, while turn stays in picking', async () => {
+      const { INPUT_BINDINGS } = await import('../src/product/controls.ts');
+      let turns = 0;
+      const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
+      const { router, reload, loads } = reloadRouter(compression, undefined, (action) => {
+        if (action !== 'carry.turn') {
+          return false;
+        }
+        turns += 1;
+        return true;
+      });
+      for (const id of ['firearm.reload', 'carry.turn']) {
+        const chord = INPUT_BINDINGS.find((binding) => binding.id === id)!.defaults[0]!;
+        const selectedBinding = INPUT_BINDINGS.find(
+          (binding) => binding.contexts.includes('picking') && binding.defaults.some(({ code }) => code === chord.code),
+        );
+        expect(selectedBinding).toBeDefined();
+        router.dispatchInputCommand({ action: selectedBinding!.id, phase: 'down', at: 0 });
+      }
+      reload.advance(hold * 2, router.reloadBinding());
+      expect(loads()).toBe(1);
+      expect(turns).toBe(1);
+      // A furniture command or a false refusal reaches an unsupplied port and throws in this fixture.
+    });
 
     it('keeps the ramp for a short single tap, which has no action', () => {
       const compression = rampingDown();

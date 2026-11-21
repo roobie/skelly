@@ -2246,7 +2246,12 @@ const startPlayWith = (
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
   const playContext = (): InputContext => (mainMenuOpen || sim.dead || session.won ? 'menu' : activePlayContext());
-  const footContext = (): InputContext => (entities.carrying() || placementPicking ? 'carrying' : 'play');
+  const footContext = (): InputContext => {
+    if (placementPicking) {
+      return 'picking';
+    }
+    return entities.carrying() ? 'carrying' : 'play';
+  };
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
       return 'title';
@@ -2803,7 +2808,7 @@ const startPlayWith = (
   };
   // ---- placement picking ----
 
-  /** The placement recipe whose spot the crosshair picks, with its ghost's turn steps; the ghost shares the carry keys. */
+  /** The placement recipe whose spot the crosshair picks, with its ghost's turn steps. */
   let placementPicking: { recipeId: string; turns: number; facing?: Facing } | undefined;
 
   /** Each facing's own front in world x and z: a north-facing piece's front is its local −z (`packages/engine/src/core/orientation.ts`, `Tip`). */

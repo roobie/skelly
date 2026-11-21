@@ -291,6 +291,12 @@ aiming alone makes the ordinary choice without a separate facing or side control
 See `packages/presentation/src/presentation/play.ts`, `placementDestination` and
 `drawPlacementGhost`; `packages/presentation/src/render/placementGhost.ts`, `PlacementGhost`.
 
+Picking keeps play bindings except the throw binding, whose key turns the ghost instead. Reload and emotes remain
+available because choosing a build spot neither carries a piece nor suspends ordinary play. Sharing the turn gesture
+must not enable carried-piece actions that would falsely refuse empty hands. The picking context owns this boundary;
+see `packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`, and
+`packages/mods/skelly.controls/controls.jsonnet`, `controls`.
+
 The refusal belongs to the placement engine, not a screen's copy of its rules,
 and lives in the prompt under the interaction-hint setting so a refused ghost
 explains itself without defeating the player's chosen hint visibility. See
