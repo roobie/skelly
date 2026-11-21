@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change inventory pocket layouts, capacity or shared transfer, tuning ownership and save rules
+  - you change shared content ownership of UI density or HUD scale
   - you change holders, content forms, how loaded holders nest, how a holder is used or named or how packaged items spawn
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
@@ -4133,7 +4134,7 @@ Offering a repair that cannot change anything would only be refused, so a piece 
   affordances grow. See `packages/presentation/src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
-- **Core mods set the UI's spacing and size.** Content-owned density and HUD
+- **Shared content sets the UI's spacing and size.** Content-owned density and HUD
   scale let players adapt the interface without making page zoom authoritative.
   Text-reserving space must remain legible as density changes. See
   `packages/mods/skelly.ui/ui.jsonnet`, `ui`; `packages/presentation/src/ui/uiTokens.ts`,

@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
-  - you classify mods, choose their ids or combine a theme with a product
+  - you classify mods using the consumer roster, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or package boundaries
   - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
   - you separate actor bodies from agent decisions, memory and save ownership
@@ -94,12 +94,36 @@ product or scenario that distributes them; consumer wiring declares its dependen
 
 ### Classification guide
 
-Consumer evidence governs ownership. A reusable definition belongs to a theme topic,
-even if only one product uses it; a setting's distribution and policy belong to that
-product, and a particular run's wiring belongs to its scenario. Broad usefulness does
-not give a theme a different tier. Creature mechanisms stay in the engine while
-reusable tuning belongs in themes and setting-specific creature types belong to the
-product. Topic definitions may mix eras; distribution decides what appears.
+This roster is a starting guide, not a content contract or a promise of implemented
+mechanisms. The other products are hypothetical consumers: MW is Morrowind-inspired,
+BL is Bannerlord-inspired and EM is Empyrion-inspired. DV is Deadvox, a real-time 3D
+voxel take on CDDA, possibly multiplayer later. All use the same engine. A check means
+expected use, a tilde means possible use, and a dot means no expected use. Consumer
+evidence governs classification, not perfect adherence to the table.
+
+| Content | DV | MW | BL | EM | Ownership guide |
+|---|---|---|---|---|---|
+| Body, injuries, bleeding, needs, senses, player tuning | ✓ | ✓ | ✓ | ✓ | Theme |
+| Inventory, compression, saves, day cycle, controls, UI, graphics policy | ✓ | ✓ | ✓ | ✓ | Theme |
+| Natural blocks and vegetation | ✓ | ✓ | ✓ | ✓ | Theme |
+| Doors, locks, ladders, stairs, basic furniture | ✓ | ✓ | ✓ | ✓ | Theme; appearance varies by era |
+| Creature senses, attention and attack tuning | ✓ | ✓ | ✓ | ✓ | Theme; mechanisms stay in the engine |
+| Blades and blunt melee weapons | ✓ | ✓ | ✓ | · | Theme |
+| Hand tools | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
+| Food, wearables and readables | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
+| Firearms, ammunition, attachments and gun parts | ✓ | · | · | ~ | Theme; also useful to an 80s Miami police product |
+| Explosives | ✓ | · | · | ✓ | Theme |
+| Manufactured blocks (concrete, asphalt, steel) | ✓ | · | · | ✓ | Theme |
+| Electric power content | ✓ | · | · | ✓ | Theme |
+| Ground motor vehicles | ✓ | · | · | · | Theme; also useful to an 80s Miami police product |
+| Magic | Opt-in | ✓ | · | · | Theme; #1528 is a reference consumer |
+| Mounts, armies and factions | · | ~ | ✓ | · | Theme direction, not delivered mechanisms |
+| Ships and space | · | · | · | ✓ | Deferred theme direction |
+| Zombie types, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
+| Gauntlet, tutorial, playtest and test house | ✓ | · | · | · | Scenario |
+
+A reusable definition belongs to a theme topic even if only one product uses it.
+Broad usefulness does not give a theme a different tier.
 
 Skills belong in theme topics; products select their available skills through ordinary
 mod dependencies, rather than a separate skill configuration or registry filter.

@@ -13,7 +13,7 @@ read_if:
   - you validate one pack while iterating on it, or change which selection that checks
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan SkellyEngine runtime and content extraction
-  - you place a recipe, power tuning, a manual or a household electrical device in a mod
+  - you place a recipe, key model, power tuning, a manual or a household electrical device in a mod
   - you change when a stack needs site generation or how shared-pack closures validate
 ---
 
@@ -212,16 +212,18 @@ vessel. The release ships the packaged foods' models in the `skelly.basic-foods`
 See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
 
 **Keys.** A key belongs with its lock-bearing door, not with shared structures whose
-closure cannot supply that lock. Key models are one release pack, so each key's pack
-depends on their owner; see
-`packages/deadvox/mods/skelly.keys/models-keys.jsonnet` and `packages/engine/src/core/content.ts`, `checkKeys`.
+closure cannot supply that lock. Key models live in the product-tier pack `skelly.keys`,
+so each key's pack depends on it; see
+`packages/deadvox/mods/skelly.keys/pack/manifest.jsonnet`, `dependencies`;
+`packages/deadvox/mods/skelly.keys/models-keys.jsonnet`; and `packages/engine/src/core/content.ts`, `checkKeys`.
 
 **Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `packages/engine/src/core/liquids.ts`, `vesselAccepts`.
 
-**Recipes.** Place recipes by topic rather than by a universal-versus-specialised tier.
-A recipe spanning topics makes its owner depend on the other providers. Shared recipe
-content must not acquire a product's distribution policy merely because that product
-first uses it.
+**Recipes.** A recipe lives in its output's pack when that pack's declared closure
+supplies its inputs, tool qualities and workstation. Otherwise it goes in
+`skelly.basic-recipes`, which sits above the topics it combines: placing it lower
+would create a dependency cycle. See
+`packages/mods/skelly.basic-recipes/pack/manifest.jsonnet`, `dependencies`.
 
 **Manuals.** A manual's id names what it is, a manual; its player-visible title stays as authored and need not say "Manual". Every manual sits in one theme mod, `skelly.manuals`, so loading it pulls in each topic its manuals teach. See `packages/mods/skelly.manuals/manuals-items.jsonnet`, `book`.
 
