@@ -213,10 +213,12 @@ again.
 A group has no home: its home is where its last attention was, and by night it roams. A
 member's sighting is attention too: it ends any sound the group followed, without getting
 used to it, and once sight is lost the group strays where it last saw its prey, not back
-at the sound. With several members in sight, the latest sighting counts. The stall time,
-resisted-blow cap, cool-off and how far the group strays are content; see
-`packages/engine/src/core/schema/actors.ts`, `ActorSchema`. The arrival radius is code:
-`packages/engine/src/core/agentHorde.ts`, `HORDE_ARRIVAL_METRES`.
+at the sound. With several members in sight, the latest sighting counts. The arrival
+radius, stall time, resisted-blow cap, cool-off and how far the group strays are content;
+see `packages/engine/src/core/schema/actors.ts`, `ActorSchema`. One radius is code,
+`packages/engine/src/core/agentHorde.ts`, `HORDE_ARRIVAL_METRES`: a wander or release point
+is a place to walk to, so it counts as reached that close, and a group that close to a
+followed sound has arrived without waiting out the stall time.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and

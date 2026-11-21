@@ -23,8 +23,8 @@ the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGr
 and `CraftCommands.place`; `packages/presentation/src/ui/inventoryScreen.ts`,
 `InventoryScreen.openWorldWork`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. Window covers
-have no recipes: `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, admits a door
-boarding result only. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
+have no recipes: among cover results, `packages/engine/src/core/schema/recipes.ts`,
+`RecipeSchema`, admits door boarding only. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
 model exists in `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a
 base worth building and defending?**
 This plan separates settled intent from choices that must precede dependent work.
@@ -519,8 +519,8 @@ rounds are tracked under #1332.
   `BlockMaterialSchema.span`, and a placed cell may float. Its rule is "Support"; it
   precedes the first session because free-standing walls and floors are in it and a
   wall that floats would be judged before the kit is.
-- **Construction, view.** The hold menu offers Repair, Work on and Take apart
-  (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`) and opens the
+- **Construction, view.** The hold menu offers Repair and Work on, the ring's name for
+  take apart (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`), and opens the
   pinned world-work review (`packages/presentation/src/ui/inventoryScreen.ts`,
   `InventoryScreen.openWorldWork`), whose layout is owned by
   `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
