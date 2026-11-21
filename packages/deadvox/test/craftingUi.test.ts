@@ -193,6 +193,9 @@ describe('crafting read-only presentation', () => {
     const target = { uid: 1, type: furniture.id } as BlockEntity;
     const row = takeApartRow(registry, target, {
       previewTakeApartEntity: () => ({ plan: undefined, refusal: 'refused' }),
+      previewTakeApartCell: () => {
+        throw new Error('Unexpected cell preview');
+      },
     });
     expect(row.length).toBe(fillText(craftingText(registry).mins, { value: decimalText(gameSeconds / 60) }));
   });

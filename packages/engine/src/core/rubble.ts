@@ -39,7 +39,7 @@ export const rubbleClearWork = (registry: Registry, block: string): RubbleClearW
     : undefined;
 };
 
-/** A job clearing one rubble cell; the episode it pins was minted when the job began. */
+/** A job clearing one rubble cell, retaining the episode it pins at Start. */
 export interface CellDisassemblyPlan extends RubbleClearWork {
   kind: 'cellDisassembly';
   cell: Vec3;
@@ -48,7 +48,7 @@ export interface CellDisassemblyPlan extends RubbleClearWork {
   epoch: number;
 }
 
-/** The identity of one rubble episode at a cell: minted when work pins the cell, ended by any block change. */
+/** A job's identity for the rubble standing at a cell. */
 export interface RubbleEpisode {
   readonly block: string;
   readonly epoch: number;
@@ -56,7 +56,7 @@ export interface RubbleEpisode {
 
 export interface SavedRubble {
   nextEpoch: number;
-  /** The contents round extends each entry with the conserved items a collapse buried; this round pins identity only. */
+  /** Cell-change stamps also retain ended episodes, so a read-only review detects replacement before a job pins. */
   entries: { cell: Vec3; epoch: number }[];
 }
 
@@ -69,8 +69,8 @@ const keyOf = (cell: Readonly<Vec3>): string => cell.join(',');
 const validCell = (cell: Readonly<Vec3>): boolean => cell.length === 3 && cell.every(Number.isSafeInteger);
 
 /**
- * World-owned rubble episodes. The standing block decides what is rubble; an entry only pins one cell's episode
- * so work holds an identity that ends when any block change replaces the cell, as replacement ends block damage.
+ * Retained cell-change stamps let an unstarted review reject replacement without minting state by looking.
+ * The standing block still decides what is rubble; a stamp alone never makes a cell rubble.
  */
 export class Rubble {
   private readonly entries = new Map<string, { cell: Vec3; epoch: number }>();
@@ -82,12 +82,12 @@ export class Rubble {
     this.world = world;
   }
 
-  /** The pinned episode's identity at a cell, where work has minted one. */
+  /** Read-only replacement stamp; absent on an unchanged cell without a pinned job. */
   get(cell: Readonly<Vec3>): number | undefined {
     return this.entries.get(keyOf(cell))?.epoch;
   }
 
-  /** Pins the cell's episode for work, minting one where rubble stands unrecorded. */
+  /** Pins work only at Start; a read-only review of an unchanged cell needs no saved entry. */
   pin(registry: Registry, cell: Readonly<Vec3>): RubbleEpisode | undefined {
     if (!validCell(cell)) {
       return undefined;
@@ -110,11 +110,13 @@ export class Rubble {
     return { block, epoch: entry.epoch };
   }
 
-  /** Any block change at the cell ends its episode, as it ends the cell's damage identity. */
+  /** Retain a replacement stamp even without a job: a preview must detect an unpinned cell replaced and rebuilt. */
   clear(cell: Readonly<Vec3>): void {
-    if (this.entries.delete(keyOf(cell))) {
-      this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
+    if (this.nextEpoch >= Number.MAX_SAFE_INTEGER) {
+      throw new Error('Rubble episodes exhausted');
     }
+    this.entries.set(keyOf(cell), { cell: [...cell] as Vec3, epoch: this.nextEpoch });
+    this.nextEpoch += 1;
   }
 
   snapshotState(): Readonly<SavedRubble> {
@@ -145,7 +147,8 @@ export class Rubble {
       if (
         !(
           validCell(cell) &&
-          standingRubble(this.world, registry, cell) !== undefined &&
+          this.world.getChunk(toChunk(cell[0]), toChunk(cell[1]), toChunk(cell[2])) !== undefined &&
+          registry.blocks[this.world.getBlock(...cell)] !== undefined &&
           Number.isSafeInteger(epoch) &&
           epoch >= 1 &&
           epoch < state.nextEpoch &&
@@ -176,10 +179,20 @@ export class Rubble {
 export interface RubbleClearing {
   /** The rubble block standing at a cell, where rubble stands there and its column is loaded. */
   readonly standing: (cell: Readonly<Vec3>) => string | undefined;
+  readonly review: (cell: Readonly<Vec3>) => Readonly<{ block: string; epoch: number }> | undefined;
   /** Pins the cell's rubble episode for a job, minting one where rubble stands unrecorded. */
   readonly pin: (cell: Readonly<Vec3>) => RubbleEpisode | undefined;
   readonly refusal: (cell: Readonly<Vec3>, epoch?: number) => string | undefined;
 }
+
+const reviewRubble = (
+  world: TerrainRead & { readonly rubble: Pick<Rubble, 'get'> },
+  registry: Registry,
+  cell: Readonly<Vec3>,
+): Readonly<{ block: string; epoch: number }> | undefined => {
+  const block = standingRubble(world, registry, cell);
+  return block === undefined ? undefined : { block, epoch: world.rubble.get(cell) ?? 0 };
+};
 
 /** Binds the clearing owner to a world; `resting` names why something resting on the cell blocks clearing it. */
 export const worldRubbleClearing = (
@@ -197,6 +210,7 @@ export const worldRubbleClearing = (
   };
   return {
     standing: (cell) => standingRubble(world, registry, cell),
+    review: (cell) => reviewRubble(world, registry, cell),
     pin: (cell) => {
       if (standingRubble(world, registry, cell) === undefined) {
         return;

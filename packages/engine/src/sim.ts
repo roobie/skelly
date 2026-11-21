@@ -149,6 +149,7 @@ export {
   radialEntries,
   radialEntryIndex,
 } from './game/actionMenu.ts';
+export { cellActionsFor } from './game/cellActions.ts';
 export { EmotePress } from './game/emotePress.ts';
 export { clearedBore, firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';

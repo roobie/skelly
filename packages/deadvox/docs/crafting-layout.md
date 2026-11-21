@@ -317,10 +317,12 @@ This documentation plan itself changes no UI and needs no playable fixture.
   the reviewer need not wait for a paused job. Show work done/time left before
   Continue, pin loss, refused commitment, world-close/crafting-stay-open, yield
   at the feet and save/resume conservation. Extend an owning browser smoke flow.
-- **Cell-work integration.** Once #1332's cell repair and rubble-clearing
-  contracts exist, extend the same review rather than adding a terrain screen.
-  Its fixture starts beside a cracked wall and rubble with supplies; it must
-  not fake cells as piece identities while those engine decisions are open.
+- **Cell-work integration.** Terrain repair and rubble clearing use the same
+  review rather than a terrain screen, so cells do not become fake piece identities.
+  Read-only previews and Start's identity checks preserve target-bound consent;
+  see `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewCellRepair`
+  and `CraftCommands.previewTakeApartCell`. The by-eye fixture is
+  `mods/skelly.deadvox.scenario.test-house.rubble-look/README.md`.
 - **Placement picking.** After the placement engine and joint delivery, join
   destination picking to the shared rows and commit shape. The fixture has a
   window, doorway, wall gap, kit and occupied destination. Include one recipe of
