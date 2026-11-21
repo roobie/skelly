@@ -36,16 +36,6 @@ local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) =
 (import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   items: [
     {
-      id: 'wooden_plank',
-      name: 'Wooden plank',
-      category: 'material',
-      model: 'wooden_plank',
-      size: [2, 4],
-      // Only a stockpile container stacks them (its `maxCount` is the real limit); carried, they stay single.
-      stockpileStack: 99,
-      disassembly: { timeGameMinutes: 4, skill: 'crafting', yields: [yield('stick', 2)] },
-    },
-    {
       id: 'door_bar',
       name: 'Door bar',
       category: 'tool',

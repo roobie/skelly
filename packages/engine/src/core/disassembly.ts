@@ -290,15 +290,23 @@ export const planDisassembly = (
 export interface PieceDisassemblyPlan {
   kind: 'pieceDisassembly';
   entity: BlockEntity;
+  /** The boarding being removed, when the piece itself remains standing. */
+  boarding?: string;
   outputs: DisassemblyOutput[];
   skillLevel: number;
   toolLevels: Record<string, number>;
   timeGameMinutes: number;
 }
 
-/** A piece's authored take-apart yield; a piece taken apart into a parts blueprint has none. */
-export const pieceRecoveryWork = (registry: Registry, furniture: string): RecoveryWork | undefined =>
-  registry.furniture.get(furniture)?.takeApart?.yield;
+/** A piece's authored take-apart yield; boarding takes precedence because it leaves the host in place. */
+export const pieceRecoveryWork = (
+  registry: Registry,
+  furniture: string,
+  boarding?: string,
+): RecoveryWork | undefined =>
+  boarding === undefined
+    ? registry.furniture.get(furniture)?.takeApart?.yield
+    : registry.boardings.get(boarding)?.takeApart;
 
 export const pieceDisassemblyOutputs = (
   work: RecoveryWork,
@@ -313,7 +321,8 @@ export const planPieceDisassembly = (
   character: CraftCharacter,
 ): PieceDisassemblyPlan | undefined => {
   const { registry } = reach.player.inventory;
-  const work = pieceRecoveryWork(registry, entity.type);
+  const boarding = entity.boarding?.type;
+  const work = pieceRecoveryWork(registry, entity.type, boarding);
   if (!work) {
     return undefined;
   }
@@ -322,6 +331,7 @@ export const planPieceDisassembly = (
   return {
     kind: 'pieceDisassembly',
     entity,
+    ...(boarding ? { boarding } : {}),
     outputs: pieceDisassemblyOutputs(work, skillLevel, toolLevels),
     skillLevel,
     toolLevels,
@@ -331,6 +341,7 @@ export const planPieceDisassembly = (
 
 export const samePieceDisassembly = (left: PieceDisassemblyPlan, right: PieceDisassemblyPlan): boolean =>
   left.entity === right.entity &&
+  left.boarding === right.boarding &&
   left.skillLevel === right.skillLevel &&
   left.timeGameMinutes === right.timeGameMinutes &&
   Object.keys(left.toolLevels).length === Object.keys(right.toolLevels).length &&
