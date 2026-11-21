@@ -38,7 +38,7 @@ import { AftermathOddsSchema, CellCoordinate, CellPosition } from './templates.t
 const HordeEffectSchema = strictObject({
   kind: literal('releaseHorde'),
   actor: Id,
-  count: pipe(Count, minValue(1), maxValue(64)),
+  count: pipe(Count, minValue(1)),
   at: CellPosition,
 });
 
