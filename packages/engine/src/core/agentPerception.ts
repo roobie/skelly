@@ -15,6 +15,7 @@ import { copy } from './actorState.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
+import { reaches } from './illumination.ts';
 import { lightSenseRangeScale } from './lights.ts';
 import type { PlayerStance } from './playerStance.ts';
 import type { Rng } from './random.ts';
@@ -278,8 +279,8 @@ const canSeeLight = ({
   }
   const origin: Vec3 = [from[0], from[1] + actor.eyeHeightMetres / blockSize, from[2]];
   const target: Vec3 = [source.pos[0], source.pos[1] + source.heightMetres / blockSize, source.pos[2]];
-  const ray = sub(target, origin);
-  return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
+  // The one wall check for light, so the sense and the picture agree on what a cover stops.
+  return reaches(origin, target, isOpaque, source.body) ? distance : undefined;
 };
 
 export const visibleLightTarget = ({
