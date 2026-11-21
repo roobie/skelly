@@ -177,6 +177,7 @@ const SLOW_TEST_FILES = [
   'test/gauntletHqThreat.test.ts',
   'test/gauntletLoot.test.ts',
   'test/gauntletRoutes.test.ts',
+  'test/holdoutSave.test.ts',
   'test/packClosureCompleteness.test.ts',
   'test/playtestLootChart.test.ts',
   'test/scenarioCertificate.test.ts',
