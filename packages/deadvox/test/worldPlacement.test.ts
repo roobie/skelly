@@ -27,7 +27,8 @@ const ENTITY_RECIPE = 'placement_entity_recipe';
 const BOARD_RECIPE = 'placement_board_recipe';
 const DOOR = 'placement_door';
 const BOARDING = 'placement_boarding';
-const CELL: WorldDestination = { kind: 'cell', pos: [1, 2, 0] };
+/** On the fixture ground, whose top row is y = 0, so the placed cell stands on natural terrain. */
+const CELL: WorldDestination = { kind: 'cell', pos: [1, 1, 0] };
 const SPOT: WorldDestination = { kind: 'entity', pos: [1.25, 2, 0.25], facing: 'e' };
 const registry = baseRegistry();
 registry.items.set(STOCK, {
@@ -175,13 +176,26 @@ it.each(['terrain', 'piece', 'contents', 'body'] as const)(
       expect(r.inventory.add(r.inventory.create(STOCK), { kind: 'pile', pos: CELL.pos })).toBe(true);
     }
     if (obstacle === 'body') {
-      r.bodies.push({ pos: [1.5, 2, 0.5], vel: [0, 0, 0], halfWidth: 0.25, height: 2, onGround: true });
+      r.bodies.push({ pos: [1.5, 1, 0.5], vel: [0, 0, 0], halfWidth: 0.25, height: 2, onGround: true });
     }
     const before = save(r);
     expect(r.commands.place(CELL_RECIPE, CELL)).toBeTruthy();
     expect(save(r)).toEqual(before);
   },
 );
+
+it('refuses a floating block before spending inputs, then admits it once a placed block holds it', () => {
+  const r = make();
+  const above: WorldDestination = { kind: 'cell', pos: [CELL.pos[0], CELL.pos[1] + 1, CELL.pos[2]] };
+  const unsupported = coreMessage(registry, 'placementUnsupported');
+  const before = save(r);
+  expect(r.commands.previewPlacement(CELL_RECIPE, above).refusal).toBe(unsupported);
+  expect(r.commands.place(CELL_RECIPE, above)).toBe(unsupported);
+  expect(save(r)).toEqual(before);
+  finish(r, start(r).uid);
+  expect(r.world.support.isPlaced(CELL.pos)).toBe(true);
+  expect(r.inventory.worldPlacement!.refusal(registry.recipes.get(CELL_RECIPE)!, above)).toBeUndefined();
+});
 
 it('requires an explicit destination and validates the result grain before spending inputs', () => {
   const r = make();

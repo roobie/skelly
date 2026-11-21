@@ -1,0 +1,10 @@
+{
+  "supportTuning": [
+    {
+      "capability": "support",
+      "cascadeCellsPerTick": 64,
+      "id": "support",
+      "trunkSearchCells": 4096
+    }
+  ]
+}

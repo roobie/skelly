@@ -11,15 +11,17 @@ read_if:
   - you're changing where Holdout players find building tools or fasteners
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
+  - you're changing structure support, cascade landing or its placement refusal
 ---
 
 # Slice 5 — Holding ground
 
 **Status. Built: the power network core, the placed-entity store, battery charging,
 world repair and take-apart with their review, world-destination crafting with the
-timber wall, floor, door, shelf and door boarding, and the first wave rule. Open:
-placement picking, support, window covers, structural collapse, fire and exposure, and
-the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+timber wall, floor, door, shelf and door boarding, support with its placement refusal
+and cascades (see "Support"), and the first wave rule. Open: placement picking, window
+covers, structural collapse, fire and exposure, and the integration proofs.** See
+`packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
@@ -132,9 +134,31 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** persist authored support dependencies, so removal can resolve what
-  depends on a structure rather than forgetting support after placement. Prove
-  destructive cascades; physical stress simulation is not required.
+- **Support:** natural terrain anchors structure; material span limits sideways reach.
+  A held beam cannot anchor the next run, because chained beams would cantilever without
+  end and span would stop being a limit. Furniture never holds terrain. This avoids
+  floating walls without simulating physical stress; see
+  `packages/engine/src/core/structureSupport.ts`, `createSupport`.
+  A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
+  or left floating both read wrong, and refusal keeps timber yield open. An exhausted
+  search has not cleared the trunk, so it refuses too; see
+  `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
+  Authored support stays derived so saves grow with play, not exploration. Player-placed
+  blocks need provenance even when they match natural ground; see
+  `packages/engine/src/core/structureSupport.ts`, `SupportState`. Placement refuses an
+  unheld block before spending inputs so the player learns why first; see
+  `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
+  Cascade-broken cells drop straight down instantly and land as rubble on the first
+  solid terrain below. Rubble left where structure stood hides the collapse from the
+  player; falling rubble reads as a collapse. Landed rubble is solid terrain for later
+  drops. Furniture is not a terrain landing surface. Burial and impact harm remain
+  outside this cascade; see `SLICE-5.md`, "Lanes and the next rounds". See
+  `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
+  Judgements use the blocks standing after earlier falls so peers and batch sizes agree.
+  A content-owned cell cap spreads work across ticks, rather than promising a time bound;
+  saving the frontier lets interrupted cascades finish after reload. See
+  `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
+  `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
@@ -521,10 +545,9 @@ rounds are tracked under #1332.
   `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
   the sheet panel and the curtain of "First build vocabulary" are not authored, and no
   player can pick a destination until the picking round under "Construction, view".
-  Support is unbuilt: nothing reads `packages/engine/src/core/schema/blocks.ts`,
-  `BlockMaterialSchema.span`, and a placed cell may float. Its rule is "Support"; it
-  precedes the first session because free-standing walls and floors are in it and a
-  wall that floats would be judged before the kit is.
+  Support is built under "Support": placement refuses a floating block and a break
+  cascades what it held into rubble, ahead of the first session because free-standing
+  walls and floors are in it and a wall that floats would be judged before the kit is.
 - **Construction, view.** The hold menu offers Repair and Work on, the ring's name for
   take apart (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`), and opens the
   pinned world-work review (`packages/presentation/src/ui/inventoryScreen.ts`,
@@ -559,11 +582,9 @@ rounds are tracked under #1332.
   `strikeTerrain`. The lane's first round gives actors that terrain path by material
   strength and the brute a higher authored strength, so the brute wrecks walls through
   its strength rather than an identity flag and ordinary types break doors only because
-  door pieces sit below their strength. Span support with surface ground follows, and
-  until collapse lands live play refuses a blow whose ruin would leave a block
-  unsupported, a temporary gate whose reason goes in
-  `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse then
-  lands as a separate PR: rubble that
+  door pieces sit below their strength. A blow that leaves cells unheld cascades them
+  into rubble under "Support" rather than being refused. Collapse then extends that
+  cascade as a separate PR: rubble that
   keeps its crack fraction, buries bodies and contents, and hurts every body, generating
   terrain on demand wherever it reaches, so no region departure-and-return work precedes
   it; its PR reports collapse time at the largest authored roof rather than gating on

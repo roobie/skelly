@@ -622,6 +622,56 @@ describe('supply-aware terrain destruction', () => {
     restored.arrive();
     expect(restored.inventory.snapshotState()).toEqual(after);
   });
+  describe('tree trunks', () => {
+    /** The struck cell is a trunk joined upward to a trunk column; `canopy` ends that column in a canopy block. */
+    const tree = (canopy: boolean) => {
+      const f = fixture();
+      const struck = f.registry.blocks[f.floor]!;
+      f.registry.blocks[f.floor] = { ...struck, tree: 'trunk' };
+      const top: Vec3 = [cell[0], 6, cell[2] - 1];
+      if (canopy) {
+        f.registry.blockIds.set('fixture_canopy', f.registry.blocks.length);
+        f.registry.blocks.push({ ...struck, id: 'fixture_canopy', tree: 'canopy' });
+        f.canonical.ensureCell(...top);
+        f.world.setBlock(...top, f.registry.blockIds.get('fixture_canopy')!);
+      }
+      return { f, top };
+    };
+    it('refuses a blow on a trunk that carries canopy, leaving trunk and canopy untouched', () => {
+      const { f, top } = tree(true);
+      const canopy = f.registry.blockIds.get('fixture_canopy')!;
+      const before = owners(f);
+      const struck = f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2);
+      expect(struck).toEqual({ outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] });
+      expect(f.canonical.getBlock(...cell)).toBe(f.floor);
+      expect(f.canonical.getBlock(...top)).toBe(canopy);
+      expect(f.world.blockDamage.get(cell)).toBeUndefined();
+      expect(f.world.support.cascading).toBe(false);
+      expect(owners(f)).toEqual(before);
+    });
+    it('refuses a trunk whose canopy search runs out of budget before clearing it', () => {
+      const { f } = tree(false);
+      const [tuning] = f.registry.supportTuning.values();
+      f.registry.supportTuning.set(tuning!.id, { ...tuning!, trunkSearchCells: 3 });
+      const before = owners(f);
+      const struck = f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2);
+      expect(struck).toEqual({ outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] });
+      expect(f.canonical.getBlock(...cell)).toBe(f.floor);
+      expect(f.world.blockDamage.get(cell)).toBeUndefined();
+      expect(owners(f)).toEqual(before);
+    });
+    it('resists a blow on an unbreakable trunk without support tuning, which such a stack may omit', () => {
+      const { f } = tree(true);
+      const material = f.registry.blockMaterials.get('fixture_material')!;
+      f.registry.blockMaterials.set(material.id, { ...material, breakable: false });
+      f.registry.supportTuning.clear();
+      expect(f.strike(material.durability * 2)).toEqual({ outcome: 'resisted', destroyed: [], edited: [] });
+    });
+    it('breaks a trunk that carries no canopy like any other block', () => {
+      const { f } = tree(false);
+      expect(f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2)?.outcome).toBe('broken');
+    });
+  });
   it('keeps an unbreakable material standing through a blow that would break it', () => {
     const f = fixture();
     const material = f.registry.blockMaterials.get('fixture_material')!;
