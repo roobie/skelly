@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.deadvox.scenario.test-house"],
+  "dependencies": ["skelly.building-blocks", "skelly.deadvox.scenario.test-house"],
   "files": [
     {
       "kind": "content",

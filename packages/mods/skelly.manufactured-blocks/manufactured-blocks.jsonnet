@@ -1,18 +1,16 @@
-// Built surfaces and construction blocks. Ground-contact events are authored per block even when several
-// blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
+// Industrial surfaces. Ground-contact events are authored per block even when several blocks share a
+// surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
 local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local footstepEvents = {
   stone: { player: 'footstep_stone' },
   wood: { player: 'footstep_wood' },
-  leaves: { player: 'footstep_leaves' },
 };
 
 local materials = {
-  asphalt: 'masonry', concrete: 'masonry', planks: 'timber', brick: 'masonry',
-  plaster: 'masonry', tiles: 'masonry', fabric: 'textile', roof: 'masonry',
-  carpet: 'textile', window_frame: 'timber', siding_red: 'timber', siding_blue: 'timber',
-  galvanized: 'metal', bitumen_felt: 'masonry', cobblestone_mossy: 'masonry', dressed_stone: 'masonry',
-  hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber',
+  asphalt: 'masonry', concrete: 'masonry',
+  siding_red: 'timber', siding_blue: 'timber',
+  galvanized: 'metal', bitumen_felt: 'masonry',
+  hazard_yellow: 'metal', chain_link: 'metal', camo_woodland: 'timber',
 };
 local block(id, name, color, surface, extra={}) =
   { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' } + landings.forBlock(materials[id]), footsteps: footstepEvents[surface] } + extra;
@@ -25,23 +23,11 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     asphalt,
     paintedAsphalt,
     block('concrete', 'Concrete', '#b5b3ad', 'stone', { pattern: 'noise', weatherable: true }),
-    block('planks', 'Wooden planks', '#a0763f', 'wood', { pattern: 'planks', weatherable: true }),
-    block('planks', 'Plank wall', '#a0763f', 'wood', { id: 'plank_wall', pattern: 'planks', weatherable: true }),
-    block('planks', 'Plank floor', '#a0763f', 'wood', { id: 'plank_floor', pattern: 'planks', weatherable: true }),
-    block('brick', 'Brick', '#9c4f3a', 'stone', { pattern: 'brick', weatherable: true }),
-    block('plaster', 'Plaster', '#d9d4c7', 'stone', { pattern: 'noise', weatherable: true }),
-    block('tiles', 'Tiles', '#cfd6da', 'stone', { pattern: 'tiles', weatherable: true }),
-    block('fabric', 'Fabric', '#5b6f9a', 'leaves', { weatherable: false }),
-    block('roof', 'Roofing', '#4a4b50', 'stone', { pattern: 'shingles', weatherable: true }),
-    block('carpet', 'Carpet', '#6b4f4a', 'leaves', { pattern: 'noise', weatherable: true }),
-    block('window_frame', 'Window frame', '#e6e2d8', 'stone', { weatherable: false }),
     block('siding_red', 'Painted siding (faded red)', '#8f4b4b', 'stone', { pattern: 'siding', weatherable: true }),
     block('siding_blue', 'Painted siding (faded blue-grey)', '#7a8d94', 'stone', { pattern: 'siding', weatherable: true }),
     block('galvanized', 'Galvanized sheet', '#aab4b8', 'stone', { pattern: 'corrugated', weatherable: false }),
     // The felt is laid over a slab, so a cell of it breaks and falls as the masonry it covers.
     block('bitumen_felt', 'Bitumen roofing felt', '#3a3a3c', 'stone', { pattern: 'noise', weatherable: true }),
-    block('cobblestone_mossy', 'Mossy cobblestone', '#5f6b58', 'stone', { pattern: 'cobble', weatherable: true }),
-    block('dressed_stone', 'Dressed stone', '#bcab8a', 'stone', { pattern: 'dressed', weatherable: true }),
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
     block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
       weatherable: false,
@@ -51,7 +37,6 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
       wireMesh: { cellsPerBlock: 4, wireFraction: 0.08 },
       fencePosts: { widthBlocks: 0.12, spacingBlocks: 6 },
     }),
-    block('sandbag', 'Sandbag', '#9b8d6a', 'stone', { weatherable: false }),
     block('camo_woodland', 'Weathered woodland camouflage', '#777b6a', 'stone', {
       pattern: 'camo',
       weatherable: true,

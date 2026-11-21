@@ -4,5 +4,5 @@ manifest(
   tier='product',
   optIn=true,
   content=['roads'],
-  dependencies=['skelly.manufactured-blocks', 'skelly.natural-world'],
+  dependencies=['skelly.building-blocks', 'skelly.manufactured-blocks', 'skelly.natural-world'],
 )
