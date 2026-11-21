@@ -135,7 +135,14 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Support:** natural terrain holds. A structure cell, authored or placed, is held
   when the solid cell under it holds, or when a straight sideways run of solid cells
   reaches, within the cell's own material span, a cell that stands on a holding cell.
-  Only a standing cell anchors a run, so spans never chain into an endless cantilever.
+  Only a standing cell or natural ground anchors a run; a held beam never anchors the
+  next, because chained beams would cantilever without end and span would stop being a
+  limit. A tree trunk that carries canopy refuses a blow, with no damage and no cascade,
+  until felling exists: canopy falling to rubble reads wrong, canopy left floating reads
+  wrong, and refusing keeps a real felling system, with logs and timber yield, fully open.
+  Content marks tree parts and the refusal text is content; a trunk with no canopy on it
+  breaks like any block. See `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`,
+  and `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
   Any solid structure cell holds any other, with span the only limit, and furniture
   never holds terrain. These rules make no wall float and no floor hang in front of a
   tester without simulating physical stress, and the material's span is what separates

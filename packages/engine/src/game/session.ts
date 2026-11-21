@@ -1726,6 +1726,10 @@ export const createSession = (options: SessionOptions) => {
     if (!result) {
       return false;
     }
+    if (result.cause === 'canopy') {
+      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
+      return true;
+    }
     if (result.outcome === 'broken') {
       options.onTerrainEdited?.(result.edited);
     }

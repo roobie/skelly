@@ -55,6 +55,7 @@
     notEnoughGas: "There isn't enough gas left for that",
     noCartridge: "There's no gas cartridge in it",
     noLanding: "There's nowhere for it to land",
+    trunkHoldsCanopy: "The trunk is too thick to break",
     noGroundRoom: "There's no room on the ground",
     notLight: "It isn't a light",
     cantDouse: "It can't be doused",

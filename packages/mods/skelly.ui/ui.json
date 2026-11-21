@@ -474,6 +474,7 @@
         "toolNotInReach": "Required {quality} tool is not in reach",
         "trapSet": "It's set",
         "trapShut": "It's shut on a leg",
+        "trunkHoldsCanopy": "The trunk is too thick to break",
         "wearingOther": "I'm already wearing the {item} there",
         "windowLatchInside": "The latch is inside",
         "windowLatched": "It's latched",

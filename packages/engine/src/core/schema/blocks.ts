@@ -148,6 +148,8 @@ export const BlockSchema = strictObject({
   pattern: optional(picklist(BLOCK_PATTERNS)),
   /** Whether render-only site weathering may affect this built material. */
   weatherable: optional(vBoolean()),
+  /** A tree's part: a trunk that carries canopy refuses a blow, so felling stays a separate system. */
+  tree: optional(picklist(['trunk', 'canopy'])),
   /** Four-colour palette read only by the `camo` surface pattern. */
   patternPalette: optional(tuple([Color, Color, Color, Color])),
   /** Washout amount in [0, 1], read only by the `camo` surface pattern. */

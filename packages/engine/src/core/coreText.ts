@@ -62,6 +62,7 @@ export const CORE_MESSAGE_SLOTS = {
   notEnoughGas: [],
   noCartridge: [],
   noLanding: [],
+  trunkHoldsCanopy: [],
   noGroundRoom: [],
   notLight: [],
   cantDouse: [],

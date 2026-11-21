@@ -15,6 +15,7 @@
       "opaque": true,
       "pattern": "rough",
       "solid": true,
+      "tree": "trunk",
       "weatherable": false
     },
     {
@@ -32,6 +33,7 @@
       "opaque": true,
       "pattern": "rough",
       "solid": true,
+      "tree": "canopy",
       "weatherable": false
     },
     {
@@ -49,6 +51,7 @@
         "gentle": "foliage_rustle"
       },
       "solid": false,
+      "tree": "canopy",
       "weatherable": false
     },
     {
