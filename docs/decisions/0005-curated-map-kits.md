@@ -2,6 +2,7 @@
 read_if:
   - you author map pieces, assemblies or intended site routes
   - you change template ownership, circulation, descent lids or deterministic selection
+  - you author road gates, road profiles or a piece's road route
 ---
 
 # 5. Curated spaces with exclusive ownership
@@ -45,6 +46,16 @@ Reserve walking volume, support and connector mouths before attaching rooms or c
 Role palettes separate structural meaning from material choice: interior flooring must
 not silently become shell treatment. Final supported body traversal, including furnished
 return routes, establishes reachability rather than graph connectivity alone.
+
+A road gate is a walk port whose `type` names a road profile, and the profile is the one
+width and surface authority: the gate's aperture must span exactly the profile's width, so
+a gate cannot claim a road wider or narrower than the one drawn through it, and the track
+laid on the profile carries its surface block. A profile holds no road class because a
+track has only a width and a surface and nothing reads a class. A piece's road
+passage is authored as its `route` from one walk gate's mouth to another, so the drawn
+track follows the authored path rather than inferring a line from pavement blocks. See
+`packages/engine/src/core/schema/templates.ts`, `RoadProfileSchema` and `MapPieceSchema`,
+and `packages/engine/src/core/mapKit.ts`, `portIssues` and `pieceRouteIssues`.
 
 Resolve choices from sorted candidates with random streams keyed by world seed, site
 identity and slot path before requesting any chunks. Determinism means equal inputs,

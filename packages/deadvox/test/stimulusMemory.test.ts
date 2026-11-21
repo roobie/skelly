@@ -41,57 +41,8 @@ const noiseAtPlayer = (id: number, expiresAt: number): VocalNoise => ({
   radiusMetres: 500,
   expiresAt,
 });
-const unreachableWall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
 
 describe('stimulus memory', () => {
-  const memorySeconds = SHAMBLER.agent!.stimulusMemorySimSeconds;
-
-  it.each([
-    { hour: 12, expected: 'home' },
-    { hour: 23, expected: 'roam' },
-  ] as const)('forgets an unreachable horde sound during $expected mode', ({ hour, expected }) => {
-    const noise = noiseAtPlayer(1, 1);
-    const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const system = new ActorSystem({ ...senses(target, unreachableWall, hour), isLoaded: () => true });
-    system.addHorde('memory-fixture', SHAMBLER, [200, 1, 0], 1);
-    let time = 0.5;
-    system.tickBackground(0.5, time);
-    expect(system.snapshotState().hordes[0]?.mode).toBe('noise');
-    expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
-
-    const steps = Math.ceil(memorySeconds / 0.5) + 2;
-    for (let step = 0; step < steps; step++) {
-      time += 0.5;
-      system.tickBackground(0.5, time);
-    }
-    expect(system.store.get(1)?.body.pos[0]).toBeGreaterThan(100);
-    expect(system.snapshotState().hordes[0]?.mode).toBe(expected);
-    expect(system.snapshotState().hordes[0]?.stimulusAt).toBeUndefined();
-  });
-
-  it('restarts a horde’s memory when it hears a newer sound before forgetting the first', () => {
-    let noise = noiseAtPlayer(1, 1);
-    const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const system = new ActorSystem({ ...senses(target, unreachableWall), isLoaded: () => true });
-    system.addHorde('memory-refresh-fixture', SHAMBLER, [200, 1, 0], 1);
-    const firstTime = 0.5;
-    system.tickBackground(0.5, firstTime);
-    const firstStamp = system.snapshotState().hordes[0]?.stimulusAt;
-    if (firstStamp === undefined) {
-      throw new Error('Horde did not record the first sound time');
-    }
-
-    const oldDeadline = firstStamp + memorySeconds;
-    const secondTime = firstStamp + memorySeconds / 2;
-    noise = noiseAtPlayer(2, secondTime + 0.5);
-    system.tickBackground(0.5, secondTime);
-    expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(secondTime);
-    system.tickBackground(0.5, oldDeadline);
-    expect(system.snapshotState().hordes[0]?.mode).toBe('noise');
-    system.tickBackground(0.5, secondTime + memorySeconds);
-    expect(system.snapshotState().hordes[0]?.mode).toBe('home');
-  });
-
   it('returns a blocked active investigator to its home behavior after stimulus memory expires', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
@@ -125,7 +76,7 @@ describe('stimulus memory', () => {
     expect(actor.agent!.lastPerceived).toBeUndefined();
   });
 
-  it('round-trips forgotten zombie and horde state with a fresh zombie', () => {
+  it('round-trips a forgotten zombie and a following horde with a fresh zombie', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
     const type = { ...SHAMBLER, agent: { ...SHAMBLER.agent!, sight: 0.01, nightSight: 0.01 } };
@@ -143,7 +94,7 @@ describe('stimulus memory', () => {
     expect(actor.agent!.stimulusAt).toBeDefined();
     expect(actor.agent!.lastPerceived).toBeDefined();
     expect(actor.agent!.investigationTier).toBeDefined();
-    expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
+    expect(system.snapshotState().hordes[0]).toMatchObject({ mode: 'noise', heard: { tier: 'near' } });
     const stimulusAt = actor.agent!.stimulusAt!;
     const deadline = stimulusAt + type.agent.stimulusMemorySimSeconds;
     while (time < deadline + dt) {
@@ -157,7 +108,6 @@ describe('stimulus memory', () => {
     expect(actor.agent!.lastPerceived).toBeUndefined();
     expect(actor.agent!.investigationTier).toBeUndefined();
     expect(actor.agent!.searchAnchor).toBeUndefined();
-    expect(system.snapshotState().hordes[0]?.stimulusAt).toBeUndefined();
 
     system.add(type, [40, 1, 0]);
     const snapshot = system.snapshotState();

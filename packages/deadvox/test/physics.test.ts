@@ -1,3 +1,4 @@
+import { separateBodies, separateBodyPair } from '@skelly/engine/internal/core/physics.ts';
 import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, makeScale, raycast, stepBody } from '@skelly/engine/world';
 import { StepOffset } from '@skelly/presentation/internal/render/stepOffset.ts';
 import { describe, expect, it } from 'vitest';
@@ -45,6 +46,34 @@ describe('terrain bounds', () => {
     expect(bodyOverlapsTerrain(body, solid)).toBe(true);
     cells.pop();
     expect(bodyOverlapsTerrain(body, solid)).toBe(false);
+  });
+});
+
+describe('separateBodies', () => {
+  it('moves a crowd packed in a pen exactly as separating each pair alone does, and never into the walls', () => {
+    const pen = (x: number, y: number, z: number) => y < 10 || (y < 12 && (x < 1 || x >= 4 || z < 0 || z >= 2));
+    const crowd = (): Body[] =>
+      Array.from({ length: 12 }, (_, i) => ({
+        pos: [1.4 + (i % 4) * 0.4 + (i % 3) * 0.05, 10, 0.4 + Math.floor(i / 4) * 0.45 + (i % 2) * 0.04],
+        vel: [0, 0, 0],
+        halfWidth: 0.3,
+        height: 1.6,
+        onGround: true,
+      }));
+    const together = crowd();
+    const pairwise = crowd();
+    for (let pass = 0; pass < 4; pass++) {
+      separateBodies({ bodies: together, dt: 0.5, isSolid: pen, blockSize: 1 });
+      for (let i = 0; i < pairwise.length; i++) {
+        for (let j = i + 1; j < pairwise.length; j++) {
+          separateBodyPair({ first: pairwise[i]!, second: pairwise[j]!, dt: 0.5, isSolid: pen, blockSize: 1 });
+        }
+      }
+      expect(together).toEqual(pairwise);
+      for (const body of together) {
+        expect(bodyOverlapsTerrain(body, pen)).toBe(false);
+      }
+    }
   });
 });
 

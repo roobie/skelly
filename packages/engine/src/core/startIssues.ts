@@ -6,6 +6,7 @@ import { Inventory, wornOccupancyIssue, wornSlotOf } from './inventory.ts';
 import { type Item, ItemFactory, setInitialCylinder } from './items.ts';
 import { toggleLight } from './lights.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
+import { assertPaperMapItem } from './paperMap.ts';
 import { startFixedLootIssues } from './scenarioComposition.ts';
 import { scenarioStartIssues } from './scenarioStart.ts';
 import type { StartDef, StartKitEntry, StartRowList } from './schema/starts.ts';
@@ -80,6 +81,14 @@ const kitRowIssues = (
 ): void => {
   if (!registry.items.has(entry.item)) {
     fail('.item', `no item "${entry.item}"`);
+  }
+  const def = registry.items.get(entry.item);
+  if (def) {
+    try {
+      assertPaperMapItem(def, entry.count ?? 1, entry.paperMap);
+    } catch (error) {
+      fail('.paperMap', String(error));
+    }
   }
   if (entry.cartridges !== undefined) {
     const reason = magazineContentsReason(registry, entry.item, entry.cartridges);

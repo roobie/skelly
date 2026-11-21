@@ -1,0 +1,174 @@
+{
+  "scenarios": [
+    {
+      "anchors": [],
+      "asks": [
+        {
+          "id": "homestead",
+          "kind": "place",
+          "template": "roads_homestead"
+        },
+        {
+          "distance": {
+            "curve": [[0, 0], [12, 4], [28, 4], [44, 0]],
+            "from": "homestead"
+          },
+          "id": "barn",
+          "kind": "place",
+          "template": "roads_barn"
+        }
+      ],
+      "body": "player",
+      "bounds": {
+        "x0": -48,
+        "x1": 48,
+        "z0": -48,
+        "z1": 48
+      },
+      "compression": "player",
+      "decalLimit": 48,
+      "eventRules": [],
+      "ground": 21,
+      "guarantee": {},
+      "id": "roads_look",
+      "kind": "composedSite",
+      "links": [
+        {
+          "from": {
+            "ask": "homestead",
+            "port": "gate"
+          },
+          "id": "lane",
+          "to": {
+            "ask": "barn",
+            "port": "gate"
+          },
+          "transition": {
+            "assembly": "roads_corner",
+            "gate": "gate",
+            "outward": "outward"
+          }
+        }
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "outbreakAgeGameHours": 2880,
+      "placement": {
+        "apronMetres": 2,
+        "attempts": 400
+      },
+      "population": {
+        "authoredMarkers": false
+      },
+      "settlementKind": "rural",
+      "start": {
+        "ask": "homestead"
+      }
+    }
+  ],
+  "starts": [
+    {
+      "allSkills": 10,
+      "debugOnly": true,
+      "density": null,
+      "id": "roadslook",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "repair_brick",
+        "repair_planks",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "assemble_fastener_pack",
+        "rag_to_cloth_strip",
+        "build_plank_wall",
+        "build_plank_floor",
+        "build_wood_door",
+        "build_wood_shelf",
+        "board_up_door",
+        "repair_plank_wall",
+        "repair_plank_floor",
+        "repair_improvised_wood_door",
+        "repair_wood_shelf",
+        "cut_sheet_metal_torch",
+        "cut_sheet_metal_saw",
+        "cut_small_sheet_torch",
+        "cut_small_sheet_saw",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "roads_look",
+      "skills": {},
+      "startTimeGameTimeOfDay": "12:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}

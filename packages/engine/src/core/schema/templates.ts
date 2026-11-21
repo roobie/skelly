@@ -6,6 +6,7 @@ import {
   literal,
   maxLength,
   maxValue,
+  minLength,
   minValue,
   nonEmpty,
   number,
@@ -272,19 +273,74 @@ export const KitPortSchema = strictObject({
   standing: CellPosition,
 });
 
-export const MapPieceSchema = strictObject({
+/**
+ * A named road profile: the one width and surface authority for every port whose `type` names it and every track
+ * it composes. A track has exactly these two fields, and no road class exists until something reads one.
+ */
+export const RoadProfileSchema = strictObject({
   id: Id,
-  lootContext: LootContextSchema,
-  size: KitSize,
-  style: Id,
-  aftermath: AftermathTags,
-  palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
-  layers: array(array(string())),
-  decals: optional(pipe(array(DecalSchema), maxLength(128))),
-  ownership: OwnershipSchema,
-  anchors: record(Id, KitAnchorSchema),
-  ports: array(KitPortSchema),
+  /** The block the road's track surface is made of. */
+  surface: Id,
+  /** Metres, so track widths read in the same unit; on the half-metre grid so a port aperture can check against it. */
+  widthMetres: pipe(
+    Positive,
+    check((value) => Number.isInteger(value * 2), 'road width must sit on the half-metre grid'),
+  ),
 });
+
+export type RoadProfileDef = InferOutput<typeof RoadProfileSchema>;
+
+/** A piece's road passage, tied to its mouths; see `MapPieceSchema`, `route`. */
+const PieceRoute = pipe(
+  array(CellPosition),
+  minLength(2, 'a route needs a mouth at each end'),
+  check(
+    (points) => points.every((point, index) => index === 0 || point.join(',') !== points[index - 1]!.join(',')),
+    'route points must not repeat a neighbour',
+  ),
+);
+
+/** A route mouth matches a port point-for-point, so a tied route mouth and its port stay one claim. */
+const atPort = (point: readonly [number, number, number], port: { at: readonly number[] }): boolean =>
+  port.at.every((value, axis) => value === point[axis]);
+
+export const MapPieceSchema = pipe(
+  strictObject({
+    id: Id,
+    lootContext: LootContextSchema,
+    size: KitSize,
+    style: Id,
+    aftermath: AftermathTags,
+    palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
+    layers: array(array(string())),
+    decals: optional(pipe(array(DecalSchema), maxLength(128))),
+    ownership: OwnershipSchema,
+    anchors: record(Id, KitAnchorSchema),
+    ports: array(KitPortSchema),
+    /**
+     * The piece's own road passage: from one walk port's mouth to another, through the points the road follows.
+     * Compilation projects it exactly as it projects ports, and the layout track draws it rather than inferring
+     * a line from pavement blocks.
+     */
+    route: optional(PieceRoute),
+  }),
+  check(
+    (piece) =>
+      piece.route === undefined ||
+      piece.route!.every((point) => point.every((value, axis) => value >= 0 && value <= piece.size[axis]!)),
+    'route points must stay inside the piece',
+  ),
+  check(
+    (piece) =>
+      piece.route === undefined ||
+      (() => {
+        const ends = [piece.route![0]!, piece.route!.at(-1)!];
+        const mouths = ends.map((end) => piece.ports.find((port) => port.traversal === 'walk' && atPort(end, port)));
+        return mouths.every(Boolean) && mouths[0] !== mouths[1];
+      })(),
+    'route endpoints must sit on two distinct walk ports of this piece',
+  ),
+);
 
 export const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id, style: optional(Id) });
 

@@ -1,6 +1,7 @@
 ---
 read_if:
   - you add a composed-site ask, anchor, landscape cover or population mechanism
+  - you add or change a link that joins two asks with a road
   - you decide whether a world feature belongs in the city planner or authored layout
   - you change supply guarantees or the boundary between wave content and runtime events
   - you change Holdout's starting building or decide whether it should force a base location
@@ -45,6 +46,32 @@ See `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`;
 
 > A wave effect names an anchor (or a list of them to draw
 > from), never a cell.
+
+A link joins two placed asks with one authored road: each end names a walk gate whose
+`type` names one shared road profile, and a transition assembly docks on each gate, its
+route bending the road between them and oriented gate-to-outward however it was
+authored. A candidate placement counts only once the road fits — gates mated,
+transitions clear of the bounds, the buildings and every unrelated reservation — and the
+ask the road leaves is retried too, because no later placement can unblock a gate that
+cannot host its transition or lead the road away. Refusals name the link, both ports,
+the profile and the transition, so a blocked road is attributable rather than silently
+dropped. The profile fixes the road's width and surface, so the laid track carries the
+profile's surface and a link names none; a profile has no class until something reads one,
+since a track has exactly a width and a surface. Gates on profiles of different surfaces
+are refused, because the one transition a link names does not change surface. The first
+content uses single routes. A cycle of links is not yet proven to compose: the composer
+re-rolls a compound's turn only for an arriving link, so a ring closes only for some
+seeds, and a test pinned to one seed would break on any change to the random stream. The
+first content loop (#2003) is the trigger to prove it. The first compounds are road ends with one gate each, though the schema
+still allows an assembly to export a pair of gates, because an internal road is a slot with
+two ports, joined locally and re-exported as gates, so exported pairs cost no engine work
+and wait only on content. The site's start stands just outside its start ask's outgoing road gate, facing
+along the road, so the player opens the game standing on it. The transitions are
+authored pieces and the stretch between them is a layout track, so terrain, vegetation
+and paper maps treat the whole road as one surface. See
+`packages/engine/src/core/schema/scenarios.ts`, `SiteLinkSchema`;
+`packages/engine/src/core/composeLayout.ts`, `planLink`, `fromExitFits` and
+`linkDiagnostic`; and `packages/engine/src/core/templates.ts`, `portsMate`.
 
 Composed population does not inherit city street pressure: local occupants belong to
 the authored sites, not an unrelated street population. Holdout PoIs admit their own

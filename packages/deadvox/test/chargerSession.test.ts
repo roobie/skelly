@@ -124,7 +124,7 @@ describe('placed charger session', () => {
     const { session, entity } = runtime;
     const cell = load(runtime);
     runtime.advance(0.5);
-    expect(session.bashFurniture(entity, 100)).toBe(true);
+    expect(session.bashFurniture(entity, 100)).toBe('ruined');
     expect(session.entities.byUid(entity!.uid)).toBeUndefined();
     expect(session.power!.chargerId(entity!)).toBeUndefined();
     expect(session.inventory.itemByUid(cell.uid)).toBe(cell);

@@ -21,6 +21,7 @@
       ],
       "asks": [
         {
+          "at": [256, 256],
           "id": "shelter",
           "kind": "place",
           "template": "holdout_house"
@@ -86,10 +87,10 @@
       ],
       "body": "player",
       "bounds": {
-        "x0": -500,
-        "x1": 500,
-        "z0": -500,
-        "z1": 500
+        "x0": -244,
+        "x1": 756,
+        "z0": -244,
+        "z1": 756
       },
       "compression": "player",
       "decalLimit": 48,
@@ -948,6 +949,28 @@
           },
           "id": "bandages",
           "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 0
+          },
+          "id": "compass",
+          "item": "compass"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 1
+          },
+          "id": "regional_map",
+          "item": "regional_map",
+          "paperMap": {
+            "x": 0,
+            "z": 0
+          }
         }
       ],
       "recipes": [

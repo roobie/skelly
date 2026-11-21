@@ -197,6 +197,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.magic/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.roads/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.roads/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.roads/roads.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.roads/roads.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.json"
     },
@@ -505,6 +513,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/running-plant.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/running-plant.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.hum-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.json"
     },
@@ -643,6 +663,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/templates-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/templates-playtest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.roads-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.roads-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.roads-look/roads-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.roads-look/roads-look.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.rural-medical-post/pack/manifest.jsonnet",
@@ -1507,6 +1535,10 @@
     {
       "source": "packages/mods/skelly.electric-power/electric-power-items.jsonnet",
       "output": "packages/mods/skelly.electric-power/electric-power-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/electric-power-sounds.jsonnet",
+      "output": "packages/mods/skelly.electric-power/electric-power-sounds.json"
     },
     {
       "source": "packages/mods/skelly.electric-power/pack/manifest.jsonnet",

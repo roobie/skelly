@@ -282,3 +282,64 @@ it('rejects a graph connection without a supported walking-and-return route', ()
   const result = build(data);
   expect(result.issues.some((issue) => NO_ROUTE.test(issue.message))).toBe(true);
 });
+
+it("rejects a road port whose aperture does not span its road profile's width", () => {
+  const data = fixture();
+  data.roadProfiles![0]!.widthMetres = 1.5;
+  expect(
+    build(data).issues.some(
+      (issue) =>
+        issue.path.includes('mapPieces') &&
+        issue.message.includes('road port must span the 1.5 m width of road profile "fixture_road", not 1 m'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a route whose mouths are not two distinct walk ports', () => {
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  bend.route![0] = [0, 1, 1];
+  expect(
+    build(data).issues.some(
+      (issue) =>
+        issue.path.includes('mapPieces') &&
+        issue.message.includes('route endpoints must sit on two distinct walk ports'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a route segment no standing body can cross, wall or not', () => {
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  for (const y of [1, 2, 3, 4]) {
+    bend.layers[y] = ['....', '..=.', '..=.', '....'];
+    bend.ownership.layers[y] = ['RRRR', 'RRSR', 'RRSR', 'RRRR'];
+  }
+  expect(
+    build(data).issues.some(
+      ({ path, message }) =>
+        path.includes('mapPieces') &&
+        message.includes('every route segment must carry a standing body at clearance with support'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a walled route whose mouths an alternate passage still joins', () => {
+  // The wall sits on the authored route at the bend, outside both ports' clearances, while a detour around it
+  // stays open — so mouth-to-mouth reachability alone would admit this piece; the route itself must be the passage.
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  for (const y of [1, 2, 3, 4]) {
+    bend.layers[y] = ['....', '....', '..=.', '....'];
+    bend.ownership.layers[y] = ['RRRR', 'RRRR', 'RRSR', 'RRRR'];
+  }
+  const { issues } = build(data);
+  expect(
+    issues.some(
+      ({ path, message }) =>
+        path.includes('mapPieces') &&
+        message.includes('every route segment must carry a standing body at clearance with support'),
+    ),
+  ).toBe(true);
+  expect(issues.some(({ message }) => message.includes('port needs reserved mouth'))).toBe(false);
+});

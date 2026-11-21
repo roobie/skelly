@@ -4,6 +4,9 @@ import type { ItemDef } from '@skelly/engine/content';
 import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { paperMapAt } from '@skelly/engine/internal/core/paperMap.ts';
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
 import { WORLD_REGION_METRES } from '@skelly/engine/internal/core/worldRegion.ts';
 import { Inventory, ItemFactory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
@@ -188,4 +191,44 @@ it('save round-trip preserves sheet UIDs and coverage in a hand, nested pocket a
   invalidWire.checksum = createHash('sha256').update(payload).digest('hex');
   const invalidBytes = gzipSync(canonicalJsonBytes(invalidWire, { acceptTaggedNegativeZero: true }));
   await expect(decodeSave(invalidBytes, options)).rejects.toThrow('paperMap.x');
+});
+
+const startWithKit = (kit: StartDef['kit']): StartDef =>
+  ({
+    id: 'fixture_map_start',
+    site: 'city',
+    abilities: [],
+    pools: [],
+    skills: {},
+    recipes: [],
+    wounds: [],
+    kit,
+  }) as unknown as StartDef;
+
+it('a start kit map row arrives in inventory with the coverage it names', () => {
+  const inventory = new Inventory(content);
+  applyStartKit(
+    inventory,
+    startWithKit([
+      { id: 'map', item: sheet.id, destination: { kind: 'pile', pos: [0, 0, 0] }, paperMap: { x: -1, z: 0 } },
+    ]),
+  );
+  const [placed] = inventory.piles.get('0,0,0')!.items.map((pileItem) => pileItem.item);
+  expect(placed!.paperMap).toEqual({ x: -1, z: 0 });
+  expect(() => paperMapBounds(placed!.paperMap!)).not.toThrow();
+});
+
+it('a start kit row needs paper-map coverage exactly when its item is a paper map', () => {
+  const issuesFor = (kit: StartDef['kit']) => {
+    const withStart = { ...content, starts: new Map([['fixture_map_start', startWithKit(kit)]]) };
+    return startIssues(withStart).filter(({ path }) => JSON.stringify(path).includes('paperMap'));
+  };
+  const destination: StartDef['kit'][number]['destination'] = { kind: 'pile', pos: [0, 0, 0] };
+  expect(issuesFor([{ id: 'map', item: sheet.id, destination }])).toEqual([
+    expect.objectContaining({ path: { list: 'kit', element: 'map', path: '.paperMap' } }),
+  ]);
+  expect(issuesFor([{ id: 'map', item: sheet.id, destination, paperMap: { x: 0, z: 0 } }])).toEqual([]);
+  expect(issuesFor([{ id: 'bag', item: bag.id, destination, paperMap: { x: 0, z: 0 } }])).toEqual([
+    expect.objectContaining({ path: { list: 'kit', element: 'bag', path: '.paperMap' } }),
+  ]);
 });

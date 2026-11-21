@@ -280,6 +280,7 @@ export class AgentController {
       actor.agent!.searchTimer = 0;
       actor.agent!.searchStrolling = false;
       actor.agent!.lastPerceived = copy(player.pos);
+      this.agentHorde.attendSighting(actor, player.pos, scratch.dayState.phase);
     } else if (tier === 'near') {
       actor.agent!.mode = 'investigate';
       setActorChaseStance(actor, false);
@@ -843,9 +844,11 @@ export class AgentController {
       // into a target. A committed actor (slide and wander cleared by the blow that landed) is not held here.
       return;
     }
-    if (!bashObstacle(ahead, type.strength)) {
+    const outcome = bashObstacle(ahead, type.strength);
+    if (!outcome) {
       return;
     }
+    actor.agent!.bashResisted = outcome === 'resisted';
     setActorAttackWait(actor, type.attack!.cooldownSimSeconds);
     actor.agent!.obstacleSlideSide = 0;
     actor.agent!.obstacleWanderHeading = undefined;

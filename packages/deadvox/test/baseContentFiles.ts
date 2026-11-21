@@ -33,6 +33,17 @@ export const wearSlotsLookSources = (): ContentSource[] => {
   return admitted.sources;
 };
 
+/** The base stack plus the roads packs, as the roads look's start mod is admitted in the product. */
+export const roadsLookSources = (): ContentSource[] => {
+  const admitted = admitPacks(
+    selectFolderClosure([DEFAULT_STACK, 'skelly.deadvox.scenario.roads-look'], readAvailablePacks(process.cwd()), []),
+  );
+  if (admitted.issues.length > 0) {
+    throw new Error(`Roads look pack admission failed: ${JSON.stringify(admitted.issues)}`);
+  }
+  return admitted.sources;
+};
+
 const loadedFigures = new Map<string, ActorFigureFiles>();
 
 /**

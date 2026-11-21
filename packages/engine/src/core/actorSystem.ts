@@ -65,6 +65,7 @@ import {
 } from './actorState.ts';
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
 import { snapshotAgent, validActorEventState, validHordeMemberState, validObstacleWanderState } from './agentSave.ts';
+import type { BashOutcome } from './blockEntities.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { ProjectileVolleyRequest } from './castRules.ts';
@@ -98,8 +99,9 @@ import { modified } from './modifiers.ts';
 import {
   type Body,
   type BodyShape,
-  bodyOverlapsTerrain,
+  type ClearCells,
   CONTACT_SKIN,
+  copyOverlapsTerrain,
   type PhysicsParams,
   type ShapeOf,
   separateBodies,
@@ -385,9 +387,9 @@ export interface ActorSystemOptions {
   onMeleeContact?: (impulse: number) => void;
   /**
    * A bash at a pursuing actor's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
-   * The owner of doors resolves it against the leaf there and makes its noise; true when a leaf took the blow.
+   * The owner of doors resolves it against the leaf there and makes its noise; the outcome when a leaf took the blow.
    */
-  bashObstacle?: (ahead: Body, strength: number) => boolean;
+  bashObstacle?: (ahead: Body, strength: number) => BashOutcome | undefined;
   /**
    * Whether a bashable piece stands in the box moved the obstacle lookahead along an aim. A held-up actor asks this
    * before probing for a way past (#1957): bare terrain hides nothing to bash, so the probe never runs there.
@@ -918,6 +920,30 @@ export class ActorSystem {
     });
   }
 
+  private restoreHordes(state: ActorSystemState, resolveType: (id: string) => ActorDef | undefined): void {
+    this.agentHorde.hordes.clear();
+    for (const horde of state.hordes ?? []) {
+      if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
+        throw new Error(`Invalid horde state ${horde.id}`);
+      }
+      this.agentHorde.hordes.set(horde.id, {
+        state: {
+          id: horde.id,
+          type: horde.type,
+          attention: [...horde.attention],
+          target: [...horde.target],
+          mode: horde.mode,
+          roamTimer: horde.roamTimer,
+          ...(horde.heard === undefined ? {} : { heard: { ...horde.heard } }),
+          ...(horde.approach === undefined ? {} : { approach: { ...horde.approach } }),
+          habituated: horde.habituated.map((habituation) => ({ ...habituation })),
+          lastNoiseId: horde.lastNoiseId,
+        },
+        rng: new Rng(horde.rng),
+      });
+    }
+  }
+
   restoreState(state: ActorSystemState, resolveType: (id: string) => ActorDef | undefined): void {
     if (this.store.size > 0) {
       throw new Error('Actor state restores only into an empty entity store');
@@ -1090,25 +1116,7 @@ export class ActorSystem {
     this.nextPuddleId = state.nextPuddleId;
     this.volleys = cast.volleys;
     this.projectiles = cast.projectiles;
-    this.agentHorde.hordes.clear();
-    for (const horde of state.hordes ?? []) {
-      if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
-        throw new Error(`Invalid horde state ${horde.id}`);
-      }
-      this.agentHorde.hordes.set(horde.id, {
-        state: {
-          id: horde.id,
-          type: horde.type,
-          home: [...horde.home],
-          target: [...horde.target],
-          mode: horde.mode,
-          roamTimer: horde.roamTimer,
-          ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
-          lastNoiseId: horde.lastNoiseId,
-        },
-        rng: new Rng(horde.rng),
-      });
-    }
+    this.restoreHordes(state, resolveType);
     for (const [, actor] of this.store.entries()) {
       if (actor.agent?.hordeId !== undefined) {
         const horde = this.agentHorde.hordes.get(actor.agent.hordeId)?.state;
@@ -1150,6 +1158,7 @@ export class ActorSystem {
               obstacleWanderRemaining: 0,
               wayAroundProbeWait: 0,
               obstacleSlideSide: 0,
+              bashResisted: false,
               bodyLookTarget: angleOf(direction),
               headYawTarget: 0,
               lookTimer: 0,
@@ -1233,10 +1242,11 @@ export class ActorSystem {
     const state = {
       id,
       type: type.id,
-      home: copy(center),
+      attention: copy(center),
       target: copy(center),
-      mode: 'home' as const,
+      mode: 'stray' as const,
       roamTimer: 0,
+      habituated: [],
       lastNoiseId: 0,
     };
     const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
@@ -1259,11 +1269,11 @@ export class ActorSystem {
     }
   }
 
-  /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
+  /** A horde sent from `center` to `target`, which also becomes its last attention. */
   releaseHorde(id: string, type: ActorDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
     this.addHorde(id, type, center, count);
     const horde = this.agentHorde.hordes.get(id)!.state;
-    horde.home = copy(target);
+    horde.attention = copy(target);
     horde.target = copy(target);
     horde.mode = 'release';
   }
@@ -1606,6 +1616,8 @@ export class ActorSystem {
     }
     scratch.beforeStep = copy(scratch.pos);
     this.settleTurn(actor);
+    // Nothing between the step and the wall probe changes solidity, so the probe reuses what the step found clear.
+    const clear: ClearCells = new Map();
     if (!this.restsStill(actor)) {
       const obstacles = player.body ? [player.body] : [];
       stepBody(actor.body, dt, isSolid, {
@@ -1613,11 +1625,12 @@ export class ActorSystem {
         stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
         obstacles,
         shapeOf: this.shapeOf,
+        clear,
       });
       this.noteRest(actor);
     }
     scratch.travelled = horizontalDistance(scratch.beforeStep, actor.body.pos) * blockSize;
-    scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection);
+    scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection, clear);
     scratch.dx = actor.body.pos[0] - scratch.beforeStep[0];
     scratch.dz = actor.body.pos[2] - scratch.beforeStep[2];
     scratch.forward = aimDirection ? (scratch.dx * aimDirection[0] + scratch.dz * aimDirection[2]) * blockSize : 0;
@@ -1634,13 +1647,13 @@ export class ActorSystem {
    * grind against that corner without ever registering the contact. A fused mass's flesh reaches metres past
    * its centre, so its shape is moved as far ahead instead.
    */
-  private wallAhead(aim: Vec3): boolean {
+  private wallAhead(aim: Vec3, clear: ClearCells): boolean {
     const { actor, isSolid } = this.tickScratch;
     const shape = this.shapeOf(actor.body) ?? this.options.physics.terrainShapeOf?.(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
-    return bodyOverlapsTerrain(this.bodyAhead(aim), isSolid);
+    return copyOverlapsTerrain(this.bodyAhead(aim), isSolid, clear, actor.body);
   }
 
   /** The actor's box at its tick start, moved the obstacle lookahead along `aim`. */

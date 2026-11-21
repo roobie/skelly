@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you author road gates, road profiles or a site link joining two asks
   - you change ordered landscape cover, forest tree mixes, density profiles or baseline map-tone tuning
   - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
@@ -340,6 +341,16 @@ A non-solid shell would pass ownership yet fail the support-dependent proofs (st
 A sealed port is a geometric join, not a passage: it must sit on its face and inside the
 piece so siblings align, but it claims no mouth or body clearance because nothing
 traverses it. See `packages/engine/src/core/mapKit.ts`, `portIssues`.
+
+A road gate is a walk port whose `type` names a road profile from the `roadProfiles`
+section, and the profile owns the road's width: the gate's aperture must span it exactly,
+so a gate cannot claim a road wider or narrower than the one drawn through it. The
+dirt-road kit — two walled compounds with road gates and the corner transition whose
+route bends the road — is the shared starting point for roads content, and the roads look
+joins its two gates through a site link for review. See
+`packages/deadvox/mods/skelly.deadvox.roads/roads.jsonnet`, `roadProfiles`, and
+`packages/deadvox/mods/skelly.deadvox.scenario.roads-look/roads-look.jsonnet`, `roads_look`, and
+`packages/engine/src/core/mapKit.ts`, `portIssues`.
 
 City building pools may name an assembly instead of a literal template, but not both
 under the same identity. An assembly owns its authored floor topology; stress-test

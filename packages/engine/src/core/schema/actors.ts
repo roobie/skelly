@@ -168,6 +168,18 @@ const AgentSchema = strictObject({
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** A horde of this type stands on a golden-angle spiral whose radius grows from `innerMetres` by `stepMetres` × √member. */
   hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
+  /** How far a horde of this type strays around its last attention while nothing draws it. */
+  hordeStrayRadiusMetres: Positive,
+  /** How near a horde of this type must come to a sound it follows to have arrived; arrival is near the sound, not at its source. */
+  hordeArrivalRadiusMetres: Positive,
+  /** How long a horde within its arrival radius may gain no ground before it has arrived. */
+  hordeArrivalStallSimSeconds: Positive,
+  /** The least gain toward a followed sound that counts as progress, so shuffling in place is no approach. */
+  hordeArrivalProgressMetres: Positive,
+  /** How long blows that do a piece in the way no harm still hold a horde at it before stall time runs. */
+  hordeResistedBashHoldSimSeconds: Positive,
+  /** How long a sound the horde got used to must stay silent before the horde forgets it. */
+  hordeHabituationCoolOffSimSeconds: Positive,
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,

@@ -20,6 +20,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { DAY_PHASES } from '../dayPhase.ts';
+import { onPlacementGrid, PLACEMENT_GRID_METRES } from '../placementGrid.ts';
 import { SCENARIO_KINDS } from '../scenarioKinds.ts';
 import { AttemptPolicySchema } from './attemptPolicy.ts';
 import {
@@ -218,6 +219,12 @@ const NonnegativeFinite = pipe(
   check((value) => Number.isFinite(value), 'must be finite'),
 );
 
+// Placement snaps to the placement grid, so a fixed spot must already lie on it or it would silently move.
+const OnPlacementGrid = pipe(
+  number(),
+  check(onPlacementGrid, `must be a multiple of ${PLACEMENT_GRID_METRES} m, the placement grid`),
+);
+
 const PlaceAskSchema = strictObject({
   kind: literal('place'),
   id: Id,
@@ -240,6 +247,8 @@ const PlaceAskSchema = strictObject({
       ),
     }),
   ),
+  /** Fixed metres [x, z] for the building's centre, in place of a random spot. Excludes `distance`. */
+  at: optional(tuple([OnPlacementGrid, OnPlacementGrid])),
 });
 
 const AnchorFields = {
@@ -266,6 +275,17 @@ const AnchoredEventRuleSchema = strictObject({
     ),
     nonEmpty(),
   ),
+});
+
+/** One authored connection: which placed gates the road joins, and the transition piece that mates them. */
+const SiteLinkSchema = strictObject({
+  id: Id,
+  /** The already-placed ask whose exported gate the road leaves. */
+  from: strictObject({ ask: Id, port: Id }),
+  /** The ask being placed whose exported gate the road reaches; its placement retries until the road fits. */
+  to: strictObject({ ask: Id, port: Id }),
+  /** The transition assembly mated to both gates: `gate` docks with the compound, `outward` faces the track. */
+  transition: strictObject({ assembly: Id, gate: Id, outward: Id }),
 });
 
 export const ComposedSiteSchema = strictObject({
@@ -296,8 +316,11 @@ export const ComposedSiteSchema = strictObject({
         'needs exactly one of template or pool',
       ),
       check((ask) => ask.style === undefined || ask.template !== undefined, 'style needs a template'),
+      check((ask) => ask.at === undefined || ask.distance === undefined, 'needs at or distance, not both'),
     ),
   ),
+  /** Authored connection graph: an edge counts only once its gates, transitions and track actually fit. */
+  links: optional(array(SiteLinkSchema), []),
   guarantee: record(Id, Count),
   anchors: optional(array(AnchorSchema), []),
   population: strictObject({ authoredMarkers: vBoolean() }),

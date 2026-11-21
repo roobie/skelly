@@ -3252,9 +3252,10 @@ See `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, and `packages
 The first effect releases a horde from an authored world point toward where the
 player stood when it fired. It reuses the horde spawn path, so arrival placement
 is content, not a new placement rule. A released horde keeps its target until it
-arrives, unlike a heard noise it may forget, so a wave sent from beyond the
-stimulus memory still comes; that point then becomes its home. Released into
-unloaded terrain, it waits like any unloaded actor until the abstract tier of
+arrives, so a wave sent from far away still comes; that point then becomes its
+home. A sound it hears on the way replaces that target, because hearing is the
+only way a wave learns where the plant is; see
+`docs/holdout.md`, "Waves and attention". Released into unloaded terrain, it waits like any unloaded actor until the abstract tier of
 `EPIC.md`, "4b. The region", moves it. See `packages/engine/src/core/actorSystem.ts`,
 `ActorSystem.releaseHorde`.
 
@@ -3391,7 +3392,7 @@ crouch rules. See `packages/engine/src/core/agentPerception.ts`, `hearingTier`, 
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `packages/engine/src/core/agentPerception.ts`, `seesPlayer` and `farBearingTarget`; and `packages/engine/src/core/actorMotion.ts`, `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`, and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
 - **Distant attention and noise persistence:** Solar preference must not replace an active noise target. Distance alone must not make an unseen zombie pursue the player. See `packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
-- **Stimulus memory:** Unreachable stimuli must not hold attention forever, and loading must not restart the wait. The choice between real time and game time remains open for BR's decision. See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/agent.ts`, `AgentController.forgetIndividualStimulus`; and `packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`.
+- **Stimulus memory:** An individual's unreachable stimuli must not hold attention forever, and loading must not restart the wait. The choice between real time and game time remains open for BR's decision. A horde keeps a heard target until it reaches it instead (`docs/holdout.md`, "Waves and attention"). See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; and `packages/engine/src/core/agent.ts`, `AgentController.forgetIndividualStimulus`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `packages/engine/src/game/session.ts`.
 
 - **Level of detail:**
