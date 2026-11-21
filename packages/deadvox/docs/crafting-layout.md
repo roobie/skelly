@@ -11,14 +11,13 @@ read_if:
 
 ## Scope and authority
 
-The #1469 crafting tab and world-work view ship together, after their layout is
-settled, because shipping world work first would establish a second shape for
-crafting to replace. This document owns the decided layout, separate from the
-game's broader rules in `../DESIGN.md`. All layout choices are settled.
-Implementation trims intent into reasons and code cues.
+The #1469 crafting tab and world-work view shipped together, after their layout
+was settled, because shipping world work first would have established a second
+shape for crafting to replace. This document owns the decided layout, separate
+from the game's broader rules in `../DESIGN.md`. All layout choices are settled.
 
-This is the construction-view gate for #1332. Placement picking follows the
-shared view and placement engine; see `../SLICE-5.md`, "Lanes and the next rounds".
+Placement picking under #1332 joins the shared view and the placement engine;
+see `../SLICE-5.md`, "Lanes and the next rounds".
 Inventory item movement, recipe content expansion (#1465) and inventory key
 binding choices (#1463) are not reopened by this layout.
 
@@ -301,29 +300,23 @@ sensible in play, and both paths need cancellation, pin and focus proofs.
 These are delivery boundaries, not permission to ship one player view first.
 Each needs a testHouse fixture start under `docs/PROCESS.md`, "Reviews by eye and by play"
 (repo root), with the reviewer beside the target and carrying the required gear.
-This documentation plan itself changes no UI and needs no playable fixture.
 
-- **Joint first look.** Show both contexts with
-  the decided catalogue beside review, category browser, fixed commitment strip,
-  source detail below rows, fixed alternatives and turnable target. Include a
-  damaged chair, take-apart crate, competing materials, liquids and a missing
-  tool, plus thousands of synthetic known recipes and enough categories/tags to
-  test menu search and result paging. Prove retained context, empty results,
-  keyboard navigation, hover stability and focusable refusal at narrow and
-  enlarged-density layouts. No review scaffolding ships as a second surface.
-- **Joint player delivery.** After the look, wire crafting and world work through
-  command ownership in one shipment. The fixture offers hand crafting, Repair,
-  Take apart and prepared resumable work, plus a controllable interruption, so
-  the reviewer need not wait for a paused job. Show work done/time left before
-  Continue, pin loss, refused commitment, world-close/crafting-stay-open, yield
-  at the feet and save/resume conservation. Extend an owning browser smoke flow.
-- **Cell-work integration.** Once #1332's cell repair and rubble-clearing
-  contracts exist, extend the same review rather than adding a terrain screen.
-  Its fixture starts beside a cracked wall and rubble with supplies; it must
-  not fake cells as piece identities while those engine decisions are open.
-- **Placement picking.** After the placement engine and joint delivery, join
-  destination picking to the shared rows and commit shape. The fixture has a
-  window, doorway, wall gap, kit and occupied destination. Include one recipe of
-  each authored order and one using the authoring default. The picking gesture
-  remains a #1332 construction decision; see
+The joint first look and the joint player delivery of crafting and world work are
+delivered: the look fixtures are
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/starts.jsonnet`, `starts`, and
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`, "Housing-slot look", and
+world work starts through `packages/presentation/src/ui/inventoryScreen.ts`,
+`InventoryScreen.openWorldWork`, and `packages/presentation/src/ui/craftController.ts`,
+`worldStart`. Two slices remain under #1332:
+
+- **Cell-work integration.** Cell repair and rubble clearing exist in the engine
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairCell` and
+  `CraftCommands.takeApartCell`) but reach players only through the debug
+  interface. Extend the same review for a looked-at cell rather than adding a
+  terrain screen, and never fake a cell as a piece identity. Its fixture starts
+  beside a cracked wall and rubble with supplies.
+- **Placement picking.** Join destination picking to the shared rows and commit
+  shape. The fixture has a window, doorway, wall gap, kit and occupied
+  destination, with one recipe of each authored order and one using the
+  authoring default. The picking gesture is a #1332 construction decision; see
   `../SLICE-5.md`, "Lanes and the next rounds".
