@@ -1,4 +1,4 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry } from '@skelly/engine/content';
 import { lootPointStream, lootPointsByColumn, rollLoot } from '@skelly/engine/internal/core/loot.ts';
 import { groundLootSupplyIssues } from '@skelly/engine/internal/core/placementLoot.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
@@ -250,8 +250,9 @@ describe('ground loot', () => {
     const data = fixtureData();
     expect(buildRegistry([{ source: 'wall-fixture', data }]).issues).toEqual([]);
     data.templates![0]!.layers[2]![2] = '..#.....';
-    const { issues } = buildRegistry([{ source: 'wall-fixture', data }]);
-    expect(issues.map(({ path }) => path)).toEqual(['templates[0].groundLoot[0]']);
+    const { registry, issues } = buildRegistry([{ source: 'wall-fixture', data }]);
+    expect(issues).toEqual([]);
+    expect(authoringIssues(registry).map(({ path }) => path)).toEqual(['templates[0].groundLoot[0]']);
   });
 
   it('turns palette furniture stock into a required source and rejects stock it cannot hold or admit', () => {

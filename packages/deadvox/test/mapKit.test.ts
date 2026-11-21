@@ -1,4 +1,4 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry } from '@skelly/engine/content';
 import { compileMapSite } from '@skelly/engine/internal/core/mapKit.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { compileAssembly } from '@skelly/engine/internal/core/templates.ts';
@@ -14,7 +14,11 @@ const CLIMB_FIXTURE = JSON.parse(
 ) as ContentFile;
 const fixture = (): ContentFile => structuredClone(FIXTURE);
 const climbFixture = (): ContentFile => structuredClone(CLIMB_FIXTURE);
-const build = (data: ContentFile) => buildRegistry([{ source: 'fixture-kits.json', data }]);
+// Kit fit and map site certificates are authoring checks, so a kit's issues are the build's and validate's together.
+const build = (data: ContentFile) => {
+  const result = buildRegistry([{ source: 'fixture-kits.json', data }]);
+  return { ...result, issues: [...result.issues, ...authoringIssues(result.registry)] };
+};
 const registryOf = (data: ContentFile) => {
   const result = build(data);
   if (result.issues.length > 0) {
@@ -259,7 +263,14 @@ it('rejects a climbing graph edge with no distinct physical landings', () => {
       (issue) => issue.path.startsWith('mapSites[0]') && issue.message.includes('distinct ordered landing heights'),
     ),
   ).toBe(true);
-  expect(result.registry.mapSites.size).toBe(0);
+});
+
+it('leaves a map site that fails its certificate loaded, since nothing the game reads depends on it', () => {
+  const data = fixture();
+  data.mapSites![0]!.routes[0]!.traversal = 'climb';
+  const { registry, issues } = buildRegistry([{ source: 'fixture-kits.json', data }]);
+  expect(issues).toEqual([]);
+  expect(registry.mapSites.size).toBe(1);
 });
 
 it('rejects a graph connection without a supported walking-and-return route', () => {

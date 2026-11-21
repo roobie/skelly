@@ -4,7 +4,6 @@ import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { Inventory } from './inventory.ts';
-import { groundLootSupplyIssues } from './placementLoot.ts';
 import { pileInReach, reachTuning } from './reach.ts';
 import type { StairDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
@@ -596,16 +595,17 @@ export const templateGroundLootReservations = (template: CompiledTemplate, poses
   );
 };
 
+/** Where ground loot lies; what it supplies is `groundLootSupplyIssues`. */
 export const templateGroundLootIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
   if (!template.groundLoot?.length) {
     return [];
   }
   const space = new TemplateSpace(registry, template);
   const inventory = new Inventory(registry);
-  const issues = groundLootSupplyIssues(registry, template);
   if (!reachTuning(registry)) {
-    return [...issues, ['.groundLoot', 'ground loot needs player inventory reach tuning']];
+    return [['.groundLoot', 'ground loot needs player inventory reach tuning']];
   }
+  const issues: SpatialIssue[] = [];
   const poses = Object.values(template.anchors ?? {})
     .filter((anchor) => anchor.kind === 'standing')
     .map((anchor) => anchor.at);

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import {
+  authoringIssues,
   BLOCK_PATTERNS,
   blockColors,
   buildRegistry as buildContentRegistry,
@@ -323,8 +324,8 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
-  it('reports shapeless-door clearance issues during registry validation', () => {
-    const { issues } = buildRegistry([
+  it('reports shapeless-door clearance issues in the authoring checks', () => {
+    const { registry } = buildRegistry([
       {
         source: 'door-clearance-fixture.json',
         data: {
@@ -359,7 +360,7 @@ describe('content', () => {
       },
     ]);
 
-    expect(issues).toContainEqual(
+    expect(authoringIssues(registry)).toContainEqual(
       expect.objectContaining({ source: 'door-clearance-fixture.json', path: 'templates[0].pieces[0]' }),
     );
   });
@@ -3118,10 +3119,15 @@ describe('templates', () => {
     source: 'tpl.json',
     data: { templates: [{ id: 'hut', size, palette, layers }] },
   });
+  /** The build's issues and validate's authoring issues together, as `validate` reports a template. */
+  const checked = (sources: readonly { source: string; data: unknown }[]) => {
+    const { registry, issues } = buildRegistry(sources);
+    return [...issues, ...authoringIssues(registry)];
+  };
   const check = (t: { source: string; data: unknown }) =>
-    buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
+    checked([...templateBase, t]).map((i) => `${i.path}: ${i.message}`);
 
-  it('reports spatial template issues during registry validation', () => {
+  it('reports spatial template issues in the authoring checks, not the registry build', () => {
     const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
     const sealed = {
       source: 'sealed-entrance.json',
@@ -3148,7 +3154,9 @@ describe('templates', () => {
         ],
       },
     };
-    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+    const { registry, issues } = buildRegistry([...templateBase, sealed]);
+    expect(issues).toEqual([]);
+    expect(authoringIssues(registry)).toContainEqual({
       source: 'sealed-entrance.json',
       path: 'templates[0].access.entrance',
       message: 'entrance must reach a standing opening at the footprint edge on the ground storey',

@@ -6,7 +6,7 @@ import type { Vec3 } from './coords.ts';
 import { hash3, pickWeighted, Rng } from './random.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
-import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
+import { portalLadderPoint, portalPieceIssues, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
 import { type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, CityScenarioDef, MapPoolDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
@@ -15,6 +15,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
 import {
+  type CompiledTemplate,
   compileAssembly,
   compileTemplate,
   footprint,
@@ -477,8 +478,19 @@ const scenarioConsumers = ({ id, city }: CityScenarioDef): SettlementConsumer[] 
   return consumers;
 };
 
-export const settlementCollectionIssues = (registry: Registry) => {
-  const issues: { section: 'mapPools' | 'cityBenchmarks'; id: string; path: string; message: string }[] = [];
+export const cityBenchmarkIssues = (registry: Registry) =>
+  [...registry.cityBenchmarks.values()].flatMap((benchmark) =>
+    benchmarkPoolIssues(registry, benchmark).map(([path, message]) => ({
+      section: 'cityBenchmarks' as const,
+      id: benchmark.id,
+      path,
+      message,
+    })),
+  );
+
+/** Pool rows no consumer can ever draw: dead weight an author left, which world generation simply never picks. */
+export const excludedPoolChoiceIssues = (registry: Registry) => {
+  const issues: { section: 'mapPools'; id: string; path: string; message: string }[] = [];
   const consumers = [...registry.scenarios.values()].flatMap((scenario) =>
     scenario.kind === 'assembledCity' ? scenarioConsumers(scenario) : [],
   );
@@ -486,9 +498,6 @@ export const settlementCollectionIssues = (registry: Registry) => {
     const { id, pool, settlementKind } = benchmark;
     const fit = { along: benchmark.blockX - 2 * benchmark.pad, depth: cityRowDepth(benchmark) };
     consumers.push({ section: 'cityBenchmarks', id, path: '.pool', pool, kind: settlementKind, fit });
-    for (const [path, message] of benchmarkPoolIssues(registry, benchmark)) {
-      issues.push({ section: 'cityBenchmarks', id, path, message });
-    }
   }
   for (const pool of registry.mapPools.values()) {
     const uses = consumers.filter((consumer) => consumer.pool === pool.id);
@@ -561,16 +570,20 @@ export const startReservationIssues = (
   return issues;
 };
 
+const compileService = (registry: Registry, scenario: CityScenarioDef): CompiledTemplate => {
+  const assembly = registry.mapAssemblies.get(scenario.serviceTemplate);
+  return assembly
+    ? compileAssembly(registry, assembly, {
+        seed: 0,
+        siteId: `scenario:${scenario.id}:service`,
+        aftermathOdds: scenario.aftermathOdds,
+      })
+    : compileTemplate(registry, registry.templates.get(scenario.serviceTemplate)!);
+};
+
 export const scenarioPlanIssues = (registry: Registry, scenario: CityScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
-  const { city, serviceTemplate, population } = scenario;
-  if (population.roadsideOffset * 2 >= city.street) {
-    issues.push([
-      '.population.roadsideOffset',
-      'stragglers must stand inside the street on both sides of its centreline',
-    ]);
-  }
-  const width = city.blockX - 2 * city.pad;
+  const { city, serviceTemplate } = scenario;
   issues.push(...fixedServiceIssues(registry, scenario));
   issues.push(
     ...cityDecorationIssues(registry, scenario),
@@ -581,34 +594,55 @@ export const scenarioPlanIssues = (registry: Registry, scenario: CityScenarioDef
   );
   const template = registry.templates.get(serviceTemplate);
   const assembly = registry.mapAssemblies.get(serviceTemplate);
-  const service = template ?? assembly;
-  if (!service || (template && assembly)) {
+  if (!(template ?? assembly) || (template && assembly)) {
     return [...issues, ['.serviceTemplate', `missing or ambiguous template/assembly "${serviceTemplate}"`]];
-  }
-  if (Math.max(service.size[0], service.size[2]) > Math.min(width, city.blockZ - 2 * city.pad)) {
-    issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
   }
   if (template && !templateResolves(registry, template)) {
     return [...issues, ['.serviceTemplate', 'service template has unresolved palette references']];
   }
   try {
-    const compiled = assembly
-      ? compileAssembly(registry, assembly, {
-          seed: 0,
-          siteId: `scenario:${scenario.id}:service`,
-          aftermathOdds: scenario.aftermathOdds,
-        })
-      : compileTemplate(registry, template!);
-    const decals = compiled.decals?.length ?? 0;
-    if (decals > scenario.decalLimit) {
-      issues.push(['.decalLimit', `service template places ${decals} decals; the limit is ${scenario.decalLimit}`]);
-    }
-    issues.push(...scenarioPortalIssues(registry, scenario, compiled));
-    issues.push(...undergroundPortIssues(registry, scenario, compiled));
+    const compiled = compileService(registry, scenario);
+    issues.push(...portalPieceIssues(registry, scenario, compiled));
     issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
   } catch (error) {
     issues.push(['.serviceTemplate', error instanceof Error ? error.message : String(error)]);
   }
+  return issues;
+};
+
+/**
+ * Whether a city scenario's plan fits its grid and service building, which nothing the game reads depends on. A
+ * service that does not resolve or compile is left to `scenarioPlanIssues`.
+ */
+export const scenarioFitIssues = (registry: Registry, scenario: CityScenarioDef): [string, string][] => {
+  const issues: [string, string][] = [];
+  const { city, population } = scenario;
+  if (population.roadsideOffset * 2 >= city.street) {
+    issues.push([
+      '.population.roadsideOffset',
+      'stragglers must stand inside the street on both sides of its centreline',
+    ]);
+  }
+  const template = registry.templates.get(scenario.serviceTemplate);
+  const service = template ?? registry.mapAssemblies.get(scenario.serviceTemplate);
+  if (!service || (template && !templateResolves(registry, template))) {
+    return issues;
+  }
+  if (Math.max(service.size[0], service.size[2]) > Math.min(city.blockX - 2 * city.pad, city.blockZ - 2 * city.pad)) {
+    issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
+  }
+  let compiled: CompiledTemplate;
+  try {
+    compiled = compileService(registry, scenario);
+  } catch {
+    return issues;
+  }
+  const decals = compiled.decals?.length ?? 0;
+  if (decals > scenario.decalLimit) {
+    issues.push(['.decalLimit', `service template places ${decals} decals; the limit is ${scenario.decalLimit}`]);
+  }
+  issues.push(...scenarioPortalIssues(registry, scenario, compiled));
+  issues.push(...undergroundPortIssues(registry, scenario, compiled));
   return issues;
 };
 

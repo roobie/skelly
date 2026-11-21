@@ -1,6 +1,12 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry, type ContentSource } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
 import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
+
+/** Service fit and portal geometry are authoring checks, so a scenario's issues are the build's and validate's. */
+const validated = (sources: ContentSource[]) => {
+  const { registry, issues } = buildRegistry(sources);
+  return [...issues, ...authoringIssues(registry)];
+};
 
 describe('scenario admission', () => {
   it('admits resolved bounded references without mistaking another ladder marker for the entry column', () => {
@@ -114,17 +120,15 @@ describe('scenario admission', () => {
   it('rejects bounds that cannot preserve the reserved apron under every service turn', () => {
     const profile = fixtureScenario();
     profile.city.blockZ = profile.city.pad * 2 + fixtureService().size[2];
-    const rejected = buildRegistry(fixtureScenarioSources(profile));
-    expect(rejected.issues.some((issue) => issue.path.endsWith('.serviceTemplate'))).toBe(true);
-    expect(rejected.registry.scenarios.has(profile.id)).toBe(false);
+    const issues = validated(fixtureScenarioSources(profile));
+    expect(issues.some((issue) => issue.path.endsWith('.serviceTemplate'))).toBe(true);
   });
 
   it('rejects a landing or shaft obstruction rather than admitting an abstract portal', () => {
     const service = fixtureService();
     service.layers[4]![4] = `${service.layers[4]![4]!.slice(0, 3)}=${service.layers[4]![4]!.slice(4)}`;
-    const rejected = buildRegistry(fixtureScenarioSources(fixtureScenario(), service));
-    expect(rejected.issues.some((issue) => issue.path.includes('.portal.'))).toBe(true);
-    expect(rejected.registry.scenarios.size).toBe(0);
+    const issues = validated(fixtureScenarioSources(fixtureScenario(), service));
+    expect(issues.some((issue) => issue.path.includes('.portal.'))).toBe(true);
   });
 
   it('rejects a nearby lower landing sealed off from its ladder', () => {
@@ -168,13 +172,10 @@ describe('scenario admission', () => {
         }
         return [...lowerRows];
       });
-      const result = buildRegistry(fixtureScenarioSources(profile, service));
-      if (partition) {
-        expect(result.issues.some((issue) => issue.path.endsWith('.portal.lower'))).toBe(true);
-        expect(result.registry.scenarios.has(profile.id)).toBe(false);
-      } else {
-        expect(result.issues).toEqual([]);
-        expect(result.registry.scenarios.has(profile.id)).toBe(true);
+      const issues = validated(fixtureScenarioSources(profile, service));
+      expect(issues.some((issue) => issue.path.endsWith('.portal.lower'))).toBe(partition);
+      if (!partition) {
+        expect(issues).toEqual([]);
       }
     }
   });
@@ -189,13 +190,10 @@ describe('scenario admission', () => {
           service.layers[y] = service.layers[y]!.map((row) => `${row.slice(0, 6)}=${row.slice(7)}`);
         }
       }
-      const result = buildRegistry(fixtureScenarioSources(profile, service));
-      if (partition) {
-        expect(result.issues.some((issue) => issue.path.endsWith('.portal.upper'))).toBe(true);
-        expect(result.registry.scenarios.has(profile.id)).toBe(false);
-      } else {
-        expect(result.issues).toEqual([]);
-        expect(result.registry.scenarios.has(profile.id)).toBe(true);
+      const issues = validated(fixtureScenarioSources(profile, service));
+      expect(issues.some((issue) => issue.path.endsWith('.portal.upper'))).toBe(partition);
+      if (!partition) {
+        expect(issues).toEqual([]);
       }
     }
   });

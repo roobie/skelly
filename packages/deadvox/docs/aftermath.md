@@ -31,7 +31,7 @@ content that is checked. The checks cover each piece on its own, one compile of 
 cover container reach or spawn clearance in each assembled alternative, so keep scenes inside
 the placement rules below, which hold for every alternative by construction. See
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-scenes.libsonnet`, `scenes` and `slot`;
-`packages/engine/src/core/mapKit.ts`, `mapKitIssues`; `test/cityKitRoutes.test.ts`; and
+`packages/engine/src/core/mapKit.ts`, `mapKitFitIssues`; `test/cityKitRoutes.test.ts`; and
 `mods/skelly.deadvox.scenario.gauntlet.city/aftermath.libsonnet`, `pieces` and `slot`, which offers disorder poses as
 separate slots.
 

@@ -153,6 +153,14 @@ an incomplete game. See `packages/engine/src/core/content.ts`, `buildRegistry` a
 `requiredContentIssues`, and `src/cli/validate.ts`, `validate`.
 CLI fragment arguments exercise content validation; they do not admit folder mods.
 
+A new content check runs in validate unless the game depends on it. Every load, test and
+bundle stamp pays for the registry build, so it keeps only what protects players and saves:
+references that must resolve, content that must compile, and starts that must not put the
+player inside geometry. A check that only catches an author's mistake, such as fit, reach or
+clearance, runs in validate alone, which every content change still passes before it merges.
+A check that does both splits: the part the game reads stays in the build. See
+`packages/engine/src/core/content.ts`, `referenceIssues` and `authoringIssues`.
+
 ## Graphics policy
 
 Graphics defaults and allowed ranges or options belong to the core mod so mods can tune
@@ -328,7 +336,7 @@ standing anchors, port landings and climb certificates read support from block s
 A non-solid shell would pass ownership yet fail the support-dependent proofs (standing, landings, climbs) later. See
 `packages/engine/src/core/schema/templates.ts`, `STRUCTURAL_MATERIAL_ROLES`, `MapPieceSchema` and `MapAssemblySchema`; `packages/engine/src/core/templates.ts`,
 `compileMapPiece`, `traversalContract` and `compileAssembly`; and `packages/engine/src/core/mapKit.ts`,
-`mapKitIssues` and `reservedStanding`.
+`mapKitFitIssues` and `reservedStanding`.
 
 A sealed port is a geometric join, not a passage: it must sit on its face and inside the
 piece so siblings align, but it claims no mouth or body clearance because nothing
@@ -431,7 +439,7 @@ Flimsy and burglary-safe doors are content choices per building, so a building's
 
 An authored collection owns prevalence and guarantees; each building owns its fit. Keeping those policies separate lets a mod tune prevalence without changing geometry and prevents collection membership from forcing an unsuitable building into a settlement. Eligibility uses content-named settlement kinds, not engine enums, and reuses the building's authored footprint for plot fit rather than maintaining a second size that can disagree with its geometry. Templates and assemblies follow the same admission rule. See `packages/engine/src/core/schema/templates.ts`, `BuildingEligibilitySchema`, `TemplateSchema`, `MapAssemblySchema` and `MapPoolSchema`, `packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`, and `packages/engine/src/core/cityPlan.ts`, `cityGridOf`.
 
-Filtering must not hide an ineffective addition: a collection entry excluded for every consumer is a load error naming the collection, building and reasons. A consumer with no eligible weighted candidates also fails at load. A shared collection may legitimately serve different kinds or plot sizes, provided each entry serves at least one consumer. Quotas apply to admitted entries; impossible guarantees fail loudly, and recovery stays bounded and deterministic rather than searching layouts. See `packages/engine/src/core/cityPlan.ts`, `settlementCollectionIssues`, `cityPoolIssues`, `chooseBuilding` and `buildCityPlan`.
+Filtering must not hide an ineffective addition: validate reports a collection entry excluded for every consumer, naming the collection, building and reasons. A consumer with no eligible weighted candidates fails at load, because its plan would have nothing to draw. A shared collection may legitimately serve different kinds or plot sizes, provided each entry serves at least one consumer. Quotas apply to admitted entries; impossible guarantees fail loudly, and recovery stays bounded and deterministic rather than searching layouts. See `packages/engine/src/core/cityPlan.ts`, `excludedPoolChoiceIssues`, `cityPoolIssues`, `chooseBuilding` and `buildCityPlan`.
 
 The stress-test benchmark owns an independent named pool so playable-world edits cannot silently change its workload. Benchmark definitions are optional scenario content, not required capabilities or playable reachability sources: a stack without a benchmark can still validate. See `mods/skelly.deadvox.scenario.benchmark-city/benchmark-city.jsonnet`, `cityBenchmarks` and `mapPools`; `packages/engine/src/core/cityPlan.ts`, `benchmarkCityGrid`; and `packages/engine/src/core/content.ts`, `requiredContentIssues`. Classification follows `docs/pack-split.md`, "Classification rule".
 
@@ -666,7 +674,7 @@ attachment names its ordinary upright door anchor so the mark follows that panel
 owning door state. Size, palette, stroke geometry, seeded variants and ageing live in
 `mods/skelly.deadvox.scenario.gauntlet.city/decals.libsonnet`; the scenario owns the count cap, and validation
 reports a service template whose decals exceed it so the renderer never truncates the
-marks authors placed first (`scenarioPlanIssues` in `packages/engine/src/core/cityPlan.ts`). See
+marks authors placed first (`scenarioFitIssues` in `packages/engine/src/core/cityPlan.ts`). See
 `packages/engine/src/core/templates.ts`, `placedDecals`, and `packages/presentation/src/render/decals.ts`, `AuthoredDecals`.
 The renderer batches authored marks and shares stain noise with body blood. Use
 the hash `decals:false` in a review URL to compare without the marks; it does not alter the world.
