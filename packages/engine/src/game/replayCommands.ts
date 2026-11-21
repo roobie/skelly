@@ -334,7 +334,7 @@ const isWorldDestination = (destination: unknown): boolean => {
         ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
         fields === 3
       );
-    case 'door':
+    case 'opening':
       return (
         'uid' in destination &&
         isUid(destination.uid) &&

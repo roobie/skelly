@@ -16,6 +16,7 @@
         }
       ],
       "color": "#a0763f",
+      "fits": "door",
       "id": "wood_door_boarding",
       "name": "Wooden door boarding",
       "thicknessBlocks": 0.12
@@ -40,9 +41,58 @@
         }
       ],
       "color": "#a0763f",
+      "fits": "window",
       "id": "wood_window_boarding",
       "name": "Wooden window boarding",
       "thicknessBlocks": 0.12
+    },
+    {
+      "battens": {
+        "color": "#6e5232",
+        "strips": [
+          {
+            "from": 0.02,
+            "width": 0.12
+          },
+          {
+            "from": 0.44,
+            "width": 0.12
+          },
+          {
+            "from": 0.85999999999999999,
+            "width": 0.12
+          }
+        ],
+        "thicknessBlocks": 0.10000000000000001
+      },
+      "boards": [
+        {
+          "from": 0.02,
+          "height": 0.95999999999999996
+        }
+      ],
+      "color": "#8c949a",
+      "fits": "window",
+      "id": "sheet_window_panel",
+      "name": "Sheet metal window panel",
+      "thicknessBlocks": 0.040000000000000001
+    },
+    {
+      "boards": [
+        {
+          "from": 0.040000000000000001,
+          "height": 0.92000000000000004
+        }
+      ],
+      "color": "#7b6a8c",
+      "curtain": {
+        "gatheredShare": 0.16,
+        "handlingSimSeconds": 1
+      },
+      "fits": "window",
+      "id": "window_curtain",
+      "name": "Window curtain",
+      "thicknessBlocks": 0.050000000000000003
     }
   ],
   "furniture": [

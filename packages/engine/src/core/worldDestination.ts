@@ -5,11 +5,14 @@ import type { Facing } from './templates.ts';
 /** A door's face: the facing side is the front. */
 export type DoorSide = 'front' | 'back';
 
-/** Where world work puts its result: a terrain cell, a new piece's corner and facing, or one face of a standing door. */
+/**
+ * Where world work puts its result: a terrain cell, a new piece's corner and facing, or one face of a standing door or
+ * window that takes a cover.
+ */
 export type WorldDestination =
   | { kind: 'cell'; pos: Vec3 }
   | { kind: 'entity'; pos: Vec3; facing: Facing }
-  | { kind: 'door'; uid: number; side: DoorSide };
+  | { kind: 'opening'; uid: number; side: DoorSide };
 export const copyWorldDestination = (destination: WorldDestination): WorldDestination => {
   switch (destination.kind) {
     case 'cell':
@@ -17,7 +20,7 @@ export const copyWorldDestination = (destination: WorldDestination): WorldDestin
     case 'entity':
       return { kind: 'entity', pos: [...destination.pos], facing: destination.facing };
     default:
-      return { kind: 'door', uid: destination.uid, side: destination.side };
+      return { kind: 'opening', uid: destination.uid, side: destination.side };
   }
 };
 
@@ -25,10 +28,10 @@ export const validWorldDestination = (destination: WorldDestination | undefined,
   if ('item' in recipe.result) {
     return destination === undefined;
   }
-  if ('doorBoarding' in recipe.result || destination?.kind === 'door') {
+  if ('boarding' in recipe.result || destination?.kind === 'opening') {
     return (
-      'doorBoarding' in recipe.result &&
-      destination?.kind === 'door' &&
+      'boarding' in recipe.result &&
+      destination?.kind === 'opening' &&
       Number.isSafeInteger(destination.uid) &&
       destination.uid > 0 &&
       (destination.side === 'front' || destination.side === 'back')

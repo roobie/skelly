@@ -58,7 +58,7 @@ import {
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import type { PlayerInputSample, Session, SessionControls } from './session.ts';
-import { WINDOW_ACTION, type WindowOperation } from './windowAction.ts';
+import { WINDOW_ACTION, windowHandlingSimSeconds, windowOperation } from './windowAction.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 
@@ -1030,16 +1030,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return undefined;
   }
 
-  function toggleWindow(entity: BlockEntity, latchOnly = false): void {
+  function toggleWindow(entity: BlockEntity, hold = false): void {
     const session = ports.session();
     const { inventory, entities, queue, sim } = session;
-    const state = entity.window!;
-    let operation: WindowOperation = state.open ? 'close' : 'open';
-    if (latchOnly) {
-      operation = state.latched ? 'unlatch' : 'latch';
-    } else if (state.latched) {
-      operation = 'unlatch';
-    }
+    const operation = windowOperation(entities, entity, hold);
     const from = inventory.actorPosition();
     const reason =
       entities.useRefusal(entity) ??
@@ -1053,7 +1047,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     queue.enqueueAction(
       WINDOW_ACTION,
       coreLabel(registry, operation),
-      entities.defOf(entity).window!.handlingSimSeconds,
+      windowHandlingSimSeconds(entities, entity, operation),
       { entityUid: entity.uid, operation },
     );
   }

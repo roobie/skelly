@@ -112,6 +112,7 @@ import {
   selectPrimaryAction,
   stageMarkArea,
   unarmedMeleeWeapon,
+  windowOperation,
 } from '@skelly/engine/sim';
 import {
   caseLandingCue,
@@ -2471,14 +2472,10 @@ const startPlayWith = (
   };
 
   const windowUseText = (entity: BlockEntity): HintText => {
-    const state = entity.window!;
-    let operation = coreLabel(registry, state.open ? 'close' : 'open');
-    if (state.latched) {
-      operation = coreLabel(registry, 'unlatch');
-    }
-    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+    const operation = coreLabel(registry, windowOperation(entities, entity, false));
+    const held = coreLabel(registry, windowOperation(entities, entity, true));
     const key = keyCap(inputBindings, 'world.interact');
-    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: held })}`;
   };
 
   /** Describes the displayed action for the selected target. */

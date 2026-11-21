@@ -38,7 +38,7 @@ import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
-import { type WindowState, windowParts } from './windowParts.ts';
+import { type WindowOperation, type WindowState, windowParts } from './windowParts.ts';
 import { type DoorSide, placementCells } from './worldDestination.ts';
 
 interface ChargingState {
@@ -95,10 +95,14 @@ interface DoorBar {
   item: string;
 }
 
-/** Boards nailed on one side of a door leaf, a `boardings` id: their side determines the look, while either face refuses opening. */
+/**
+ * A `boardings` cover on one face of a door leaf or window frame: its side determines the look, while a protective
+ * cover refuses opening from either face. `open` is set only on an open curtain.
+ */
 interface Boarding {
   side: DoorSide;
   type: string;
+  open?: true;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -293,15 +297,16 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
 export const boardableDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
 
-/** Whether a piece can carry boards: a boardable door, or a window, whose boards cover its frame on one face. */
-export const boardable = (def: FurnitureDef): boolean => boardableDoor(def) || def.window !== undefined;
+/** Whether a cover goes on a kind of piece: a door cover on a boardable door, a window cover on a window's frame. */
+export const boardingFits = (def: FurnitureDef, boarding: BoardingDef): boolean =>
+  boarding.fits === 'door' ? boardableDoor(def) : def.window !== undefined;
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
 export const poseKey = (entity: BlockEntity, wear = 0): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${entity.window ? `${entity.window.open}:${entity.window.pane}:${entity.window.damage}:${entity.window.latched}:${entity.window.frameRemnants}` : ''}|${wear}|${entity.bar?.side ?? ''}|${entity.boarding ? `${entity.boarding.side}:${entity.boarding.type}` : ''}`;
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${entity.window ? `${entity.window.open}:${entity.window.pane}:${entity.window.damage}:${entity.window.latched}:${entity.window.frameRemnants}` : ''}|${wear}|${entity.bar?.side ?? ''}|${entity.boarding ? `${entity.boarding.side}:${entity.boarding.type}:${entity.boarding.open ?? false}` : ''}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -827,21 +832,22 @@ export class BlockEntities {
   }
 
   /**
-   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer, or on a shut
-   * window, since boards nailed across the frame keep the sash from swinging. A broken leaf keeps its boards: breaking
-   * it is how the street gets past them.
+   * A cover saved on the opening it fits, never beside a bar, so the door's opening side stays one answer. Protective
+   * covers go only on a shut window, since boards nailed across the frame keep the sash from swinging; a curtain hangs
+   * clear of the sash. A broken leaf keeps its boards: breaking it is how the street gets past them.
    */
-  private restoreBoarding(entity: BlockEntity, { side, type }: Boarding): void {
+  private restoreBoarding(entity: BlockEntity, { side, type, open }: Boarding): void {
+    const def = this.registry.boardings.get(type);
     if (
-      !boardable(this.defOf(entity)) ||
+      !(def && boardingFits(this.defOf(entity), def)) ||
       entity.bar ||
-      entity.window?.open ||
-      !this.registry.boardings.has(type) ||
+      (entity.window?.open && !def.curtain) ||
+      (open !== undefined && !(open === true && def.curtain)) ||
       (side !== 'front' && side !== 'back')
     ) {
       throw new Error('Invalid boarding');
     }
-    entity.boarding = { side, type };
+    entity.boarding = { side, type, ...(open ? { open } : {}) };
   }
 
   private restoreWindow(entity: BlockEntity, saved: WindowState | undefined): void {
@@ -920,6 +926,17 @@ export class BlockEntities {
 
   boardingOf(entity: BlockEntity): BoardingDef | undefined {
     return entity.boarding && this.registry.boardings.get(entity.boarding.type);
+  }
+
+  /** Whether a protective cover, boards or a panel rather than a curtain, holds the piece shut. */
+  boardedUp(entity: BlockEntity): boolean {
+    const boarding = this.boardingOf(entity);
+    return boarding !== undefined && boarding.curtain === undefined;
+  }
+
+  /** Whether the piece hangs a curtain drawn across its opening. */
+  curtainClosed(entity: BlockEntity): boolean {
+    return this.boardingOf(entity)?.curtain !== undefined && !entity.boarding!.open;
   }
 
   /**
@@ -1315,7 +1332,7 @@ export class BlockEntities {
     const width = entity.size[alongX ? 0 : 2];
     const rim = spec.frameWidthBlocks + (state.open ? 0 : spec.sashWidthBlocks);
     return (
-      entity.boarding !== undefined ||
+      this.boardedUp(entity) ||
       across < rim ||
       across + 1 > width - rim ||
       up < rim ||
@@ -1445,21 +1462,20 @@ export class BlockEntities {
     return undefined;
   }
 
-  windowRefusal(
-    entity: BlockEntity,
-    operation: 'open' | 'close' | 'latch' | 'unlatch',
-    from: Vec3,
-  ): string | undefined {
+  windowRefusal(entity: BlockEntity, operation: WindowOperation, from: Vec3): string | undefined {
     const state = entity.window;
     const spec = this.defOf(entity).window;
     if (!(state && spec)) {
       return coreMessage(this.registry, 'notWindow');
     }
+    if (operation === 'openCurtain' || operation === 'closeCurtain') {
+      return this.curtainRefusal(entity, operation);
+    }
     if (operation === 'open') {
       if (state.open) {
         return coreMessage(this.registry, 'alreadyOpen');
       }
-      if (entity.boarding) {
+      if (this.boardedUp(entity)) {
         return coreMessage(this.registry, 'boardedUp');
       }
       return state.latched ? coreMessage(this.registry, 'windowLatched') : undefined;
@@ -1468,6 +1484,15 @@ export class BlockEntities {
       return state.open ? undefined : coreMessage(this.registry, 'alreadyClosed');
     }
     return this.windowLatchRefusal(entity, operation, from);
+  }
+
+  private curtainRefusal(entity: BlockEntity, operation: 'openCurtain' | 'closeCurtain'): string | undefined {
+    if (!this.boardingOf(entity)?.curtain) {
+      return coreMessage(this.registry, 'noCurtain');
+    }
+    return this.curtainClosed(entity) === (operation === 'closeCurtain')
+      ? coreMessage(this.registry, operation === 'openCurtain' ? 'alreadyOpen' : 'alreadyClosed')
+      : undefined;
   }
 
   private windowLatchRefusal(entity: BlockEntity, operation: 'latch' | 'unlatch', from: Vec3): string | undefined {
@@ -1484,15 +1509,23 @@ export class BlockEntities {
       : undefined;
   }
 
+  /** A curtain opens and closes through whatever stands in the opening, since it never stops a body. */
   operateWindow(
     entity: BlockEntity,
-    operation: 'open' | 'close' | 'latch' | 'unlatch',
+    operation: WindowOperation,
     from: Vec3,
     bodies: Iterable<Body>,
   ): string | undefined {
     const reason = this.useRefusal(entity) ?? this.windowRefusal(entity, operation, from);
     if (reason) {
       return reason;
+    }
+    if (operation === 'openCurtain' || operation === 'closeCurtain') {
+      const { side, type } = entity.boarding!;
+      entity.boarding = { side, type, ...(operation === 'openCurtain' ? { open: true as const } : {}) };
+      this.version += 1;
+      this.standingChanged(entity);
+      return undefined;
     }
     if (
       operation === 'close' &&
@@ -1597,11 +1630,16 @@ export class BlockEntities {
   }
 
   /**
-   * Why boards can't be nailed on this door now: not an upright leaf, broken, barred, or boarded already. Boards hang
-   * on the leaf, so an open door can take them and they swing with it.
+   * Why a cover of a `boardings` type can't go on this piece now: not the opening it fits, broken, barred, covered
+   * already, or, for a protective cover, an open window, whose sash its boards would nail open. Door boards hang on the
+   * leaf, so an open door can take them and they swing with it.
    */
-  boardingRefusal(entity: BlockEntity): string | undefined {
-    if (!boardableDoor(this.defOf(entity))) {
+  boardingRefusal(entity: BlockEntity, type: string): string | undefined {
+    const boarding = this.registry.boardings.get(type);
+    if (!boarding) {
+      throw new Error(`Unknown boarding "${type}"`);
+    }
+    if (!boardingFits(this.defOf(entity), boarding)) {
       return coreMessage(this.registry, 'cantBoard');
     }
     if (entity.broken) {
@@ -1610,17 +1648,17 @@ export class BlockEntities {
     if (entity.boarding) {
       return coreMessage(this.registry, 'alreadyBoarded');
     }
+    if (entity.window?.open && !boarding.curtain) {
+      return coreMessage(this.registry, 'windowOpen');
+    }
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
   }
 
-  /** Nails boards of a `boardings` type on one side of a door; that side controls their look and either face refuses opening. */
+  /** Attaches a cover on one face of a door or window; that face controls its look, and a curtain starts closed. */
   board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
-    const reason = this.boardingRefusal(entity);
+    const reason = this.boardingRefusal(entity, type);
     if (reason) {
       return reason;
-    }
-    if (!this.registry.boardings.has(type)) {
-      throw new Error(`Unknown boarding "${type}"`);
     }
     entity.boarding = { side, type };
     this.version += 1;

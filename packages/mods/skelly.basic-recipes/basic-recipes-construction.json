@@ -156,8 +156,8 @@
         "sawing": 1
       },
       "result": {
-        "count": 1,
-        "doorBoarding": "wood_door_boarding"
+        "boarding": "wood_door_boarding",
+        "count": 1
       },
       "searchTerms": ["build", "fortify"],
       "skills": {
@@ -165,6 +165,113 @@
       },
       "tags": ["wood"],
       "timeGameMinutes": 20
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 16,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "board_up_window",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "boarding": "wood_window_boarding",
+        "count": 1
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 25
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sheet_metal"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 16,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "panel_window",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "boarding": "sheet_window_panel",
+        "count": 1
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal", "wood"],
+      "timeGameMinutes": 30
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 6,
+            "item": "rag"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "hang_window_curtain",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "boarding": "window_curtain",
+        "count": 1
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
     },
     {
       "category": "repair_structures",
