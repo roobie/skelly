@@ -1635,6 +1635,19 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
   }
 };
 
+const checkBoardingRecovery = (registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  for (const boarding of registry.boardings.values()) {
+    if (boarding.takeApart) {
+      checkRecoveryYields(
+        { section: 'boardings', id: boarding.id, path: '.takeApart.yields', yields: boarding.takeApart.yields },
+        registry,
+        qualities,
+        report,
+      );
+    }
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   checkMaterialSounds(registry, report);
@@ -1680,6 +1693,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     });
     checkCorpse(registry, furniture, report);
   }
+  checkBoardingRecovery(registry, qualities, report);
 };
 
 /** A furniture vehicle look over a content blueprint: the blueprint must exist, `removed` must name its fittings, and its parts must block within the piece. */
@@ -2679,6 +2693,21 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
     }
     ids.add(rule.id);
     rule.effects.forEach((effect, effectIndex) => {
+      if (scenario.hordeCountBudget === undefined) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].count`,
+          'needs an authored horde count budget',
+        );
+      } else if (effect.count > scenario.hordeCountBudget) {
+        report(
+          'scenarios',
+          scenario.id,
+          `.eventRules[${index}].effects[${effectIndex}].count`,
+          `exceeds horde count budget ${scenario.hordeCountBudget}`,
+        );
+      }
       if (!registry.actors.has(effect.actor)) {
         report(
           'scenarios',

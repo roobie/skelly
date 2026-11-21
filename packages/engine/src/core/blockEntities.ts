@@ -1654,6 +1654,17 @@ export class BlockEntities {
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
   }
 
+  /** Removes matching boarding from a door or window, keeping its host and all other state intact. */
+  unboard(entity: BlockEntity, type: string): boolean {
+    if (entity.boarding?.type !== type) {
+      return false;
+    }
+    entity.boarding = undefined;
+    this.version += 1;
+    this.standingChanged(entity);
+    return true;
+  }
+
   /** Attaches a cover on one face of a door or window; that face controls its look, and a curtain starts closed. */
   board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
     const reason = this.boardingRefusal(entity, type);

@@ -436,6 +436,14 @@ local unshaped = [
         { from: 0.45, height: 0.1 },
         { from: 0.75, height: 0.1 },
       ],
+      takeApart: {
+        timeGameMinutes: 10,
+        skill: 'crafting',
+        yields: [
+          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
+        ],
+      },
     },
     {
       id: 'wood_window_boarding',
@@ -449,6 +457,14 @@ local unshaped = [
         { from: 0.54, height: 0.16 },
         { from: 0.78, height: 0.16 },
       ],
+      takeApart: {
+        timeGameMinutes: 10,
+        skill: 'crafting',
+        yields: [
+          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
+        ],
+      },
     },
     {
       id: 'sheet_window_panel',

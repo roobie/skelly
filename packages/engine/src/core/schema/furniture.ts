@@ -117,6 +117,8 @@ export const BoardingSchema = pipe(
         handlingSimSeconds: SimSeconds,
       }),
     ),
+    /** The materials recovered when this boarding comes off its door or window. */
+    takeApart: optional(RecoveryWorkSchema),
   }),
   check(
     ({ fits, battens, curtain }) => fits === 'window' || (battens === undefined && curtain === undefined),

@@ -7,7 +7,7 @@ import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import type { Body } from '@skelly/engine/internal/core/physics.ts';
-import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { WorldDestination } from '@skelly/engine/internal/core/worldDestination.ts';
 import { createWorldPlacement } from '@skelly/engine/internal/core/worldPlacement.ts';
 import { isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
@@ -28,7 +28,8 @@ const ENTITY_RECIPE = 'placement_entity_recipe';
 const BOARD_RECIPE = 'placement_board_recipe';
 const WINDOW_BOARD_RECIPE = 'placement_window_board_recipe';
 const CURTAIN_RECIPE = 'placement_curtain_recipe';
-const DOOR = 'improvised_wood_door';
+const DOOR = 'placement_door';
+const BOARDING = 'placement_boarding';
 const CELL: WorldDestination = { kind: 'cell', pos: [1, 2, 0] };
 const SPOT: WorldDestination = { kind: 'entity', pos: [1.25, 2, 0.25], facing: 'e' };
 const registry = baseRegistry();
@@ -53,10 +54,32 @@ registry.furniture.set(PIECE, {
   material: [...registry.furnitureMaterials.keys()][0]!,
   breach: { minimumStrength: 1, durability: 10 },
 });
+registry.furniture.set(DOOR, {
+  id: DOOR,
+  name: 'Fixture door',
+  size: [2, 4, 1],
+  color: '#888888',
+  material: [...registry.furnitureMaterials.keys()][0]!,
+  breach: { minimumStrength: 1, durability: 10 },
+  door: { handlingSimSeconds: simSeconds(0.5), methods: {} },
+});
+registry.boardings.set(BOARDING, {
+  id: BOARDING,
+  name: 'Fixture boarding',
+  fits: 'door',
+  color: '#888888',
+  thicknessBlocks: 0.1,
+  boards: [{ from: 0, height: 1 }],
+  takeApart: {
+    timeGameMinutes: gameMinutes(1),
+    skill: 'crafting',
+    yields: [{ item: STOCK, count: 2, fractions: [1], rounding: 'floor' }],
+  },
+});
 for (const [id, result] of [
   [CELL_RECIPE, { block: BLOCK, count: 1 }],
   [ENTITY_RECIPE, { entity: PIECE, count: 1 }],
-  [BOARD_RECIPE, { boarding: coverOf('door', false), count: 1 }],
+  [BOARD_RECIPE, { boarding: BOARDING, count: 1 }],
   [WINDOW_BOARD_RECIPE, { boarding: coverOf('window', false), count: 1 }],
   [CURTAIN_RECIPE, { boarding: coverOf('window', true), count: 1 }],
 ] as const) {
@@ -288,6 +311,22 @@ it.each(['front', 'back'] as const)(
     }
   },
 );
+
+it('takes boarding apart from a door, opening it and landing the recovered materials', () => {
+  const r = make();
+  const door = withDoor(r);
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'opening', uid: door.uid, side: 'front' })).toBeUndefined();
+  finish(r, r.inventory.hands.right!.uid);
+  const { plan, refusal } = r.commands.previewTakeApartEntity(door.uid);
+  expect(refusal).toBeUndefined();
+  expect(plan?.boarding).toBe(BOARDING);
+  expect(r.commands.takeApartEntity(door.uid)).toBeUndefined();
+  finish(r, door.work!.uid);
+  expect(r.inventory.entities.byUid(door.uid)).toBe(door);
+  expect(door.boarding).toBeUndefined();
+  expect(openFrom(r, door.uid, 'front')).toMatchObject({ ok: true });
+  expect([...r.inventory.items()].some(({ item }) => item.type === STOCK)).toBe(true);
+});
 
 it('holds a door for one boarding job and refuses a second boarding before spending inputs', () => {
   const r = make();

@@ -149,6 +149,6 @@
   "id": "skelly.basic-foods",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

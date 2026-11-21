@@ -157,6 +157,6 @@
   "id": "skelly.materials",
   "overrides": [],
   "product": false,
-  "tier": "core",
+  "tier": "theme",
   "version": "1"
 }

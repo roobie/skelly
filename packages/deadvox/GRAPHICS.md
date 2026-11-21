@@ -5,7 +5,7 @@ read_if:
   - you're changing sun shadow occlusion in interiors or underground
   - you're changing how models reflect the sky, how metal draws or when the sky's reflection is rebaked
   - you're changing wide ambient occlusion or its interaction with skylight
-  - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
+  - you're changing shared graphics-policy ownership or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
   - you're interpreting or changing debug draw submission counters
   - you're changing crowd pose texture transfers
@@ -82,7 +82,7 @@ Inventory activity is not necessarily a visible change: a battery draining or an
 
 ## Graphics policy
 
-Keep graphics defaults and permitted choices in the core mod, while the player owns the
+Keep graphics defaults and permitted choices in shared content, while the player owns the
 choice for their machine: a content pack cannot know their GPU. Player choices must win over
 content defaults, and no link sets them; see `docs/decisions/0006-url-mods-and-hash-state.md`,
 "Decision". Explicit false values are choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
