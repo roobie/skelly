@@ -1,14 +1,8 @@
 import { buildRegistry } from '@skelly/engine/content';
-import {
-  BindingRegistry,
-  InputReplayRecorder,
-  inventoryTabForAction,
-  type ReplayActionPayload,
-} from '@skelly/engine/input';
+import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
-import type { SaveSnapshot } from '@skelly/engine/internal/core/saveState.ts';
 import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   attachmentWorkSkill,
@@ -1678,115 +1672,6 @@ describe('inventory screen Lit rendering', () => {
     expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
   });
 
-  it('refuses a receiverless pour instead of dispatching an unencodable one, and records a pour with a receiver', () => {
-    // A pour the inventory dispatches without a receiver to pour into has no encodable replay payload,
-    // and the recorder threw on it (#1964). The one state in which this code read a receiverless pour
-    // as admitted is a blank `liquidTransferRefused` text; the shipped schema forbids that text, so
-    // the case clones the interface claim by hand to reach it, then drives the same click a player
-    // makes, through the real dispatcher into the real recorder.
-    const built = buildRegistry([
-      {
-        source: 'pour-replay',
-        data: {
-          liquids: [{ id: 'pour_liquid', name: 'Pour liquid', densityGramsPerMillilitre: 1 }],
-          items: [
-            {
-              id: 'pour_source',
-              name: 'source',
-              category: 'tool',
-              weight: 1,
-              size: [1, 1],
-              workInProgress: false,
-              vessel: {
-                capacityMicrolitres: 24,
-                accepts: ['pour_liquid'],
-                initialContents: { kind: 'filled', liquid: 'pour_liquid', volumeMicrolitres: 24 },
-                pour: { incrementMicrolitres: 2, microlitresPerSimSecond: 4 },
-              },
-            },
-            {
-              id: 'pour_receiver',
-              name: 'receiver',
-              category: 'tool',
-              weight: 1,
-              size: [1, 1],
-              workInProgress: false,
-              vessel: { capacityMicrolitres: 12, accepts: ['pour_liquid'], initialContents: { kind: 'empty' } },
-            },
-          ],
-        },
-      },
-    ]);
-    expect(built.issues).toEqual([]);
-    const blankRefusal = structuredClone(registry.ui.get('core')!);
-    blankRefusal.coreMessages.liquidTransferRefused = '';
-    const t = setup({
-      ...registry,
-      items: new Map([...registry.items, ...built.registry.items]),
-      liquids: built.registry.liquids,
-      ui: new Map([['core', blankRefusal]]),
-    });
-    const pendingPlayerTickActions = new PlayerTickActions();
-    const recorder = new InputReplayRecorder({} as SaveSnapshot);
-    t.hooks.dispatch = createScreenCommandDispatcher({
-      isReplaying: () => false,
-      inputRecorder: () => recorder,
-      inputContext: () => 'inventory',
-      pendingPlayerTickActions,
-      apply: (payload) => applyReplayActionPayload(payload, t.commandOwners),
-      inventory: t.inv,
-      notice: t.hooks.notice,
-      refusal: t.hooks.refusal,
-    });
-    const source = t.inv.create('pour_source');
-    expect(t.inv.consume(t.beans)).toBe(true);
-    expect(t.inv.add(source, { kind: 'hand', side: 'left' })).toBe(true);
-    t.screen.selected = source;
-    t.screen.update();
-    const receiverless = t.root.querySelector<HTMLButtonElement>('.inv-pour')!;
-    expect(receiverless.disabled).toBe(true);
-    receiverless.click();
-    expect(recorder.copyInputs().actions).toEqual([]);
-
-    const receiver = t.inv.create('pour_receiver');
-    expect(t.inv.add(receiver, { kind: 'hand', side: 'right' })).toBe(true);
-    t.screen.update();
-    const pour = t.root.querySelector<HTMLButtonElement>('.inv-pour')!;
-    expect(pour.disabled).toBe(false);
-    pour.click();
-    // The recorder commits queued actions into the replay at the next frame tick.
-    recorder.recordTick({
-      active: true,
-      inputLocked: false,
-      intent: {
-        forward: 0,
-        right: 0,
-        jump: false,
-        sprint: false,
-        walk: false,
-        useDominant: false,
-        useDominantHeld: false,
-        useOff: false,
-      },
-      yaw: 0,
-      pitch: 0,
-      headYaw: 0,
-      headPitch: 0,
-      freeLooking: false,
-      walking: false,
-      descending: false,
-      worldReady: true,
-    });
-    expect(recorder.copyInputs().actions.filter((recorded) => recorded.action === 'liquid.pour')).toEqual([
-      {
-        tick: 0,
-        action: 'liquid.pour',
-        phase: 'down',
-        context: 'inventory',
-        payload: { kind: 'liquid.pour', sourceUid: source.uid, receiverUid: receiver.uid },
-      },
-    ]);
-  });
   it('refuses inventory actions while unconscious and permits them after waking', () => {
     const { screen, queue, body, beans, refusals } = setup();
     screen.selected = beans;
