@@ -3,7 +3,7 @@ read_if:
   - you're planning the magic mod inspired by Cataclysm's Magiclysm, or the engine work it needs
   - you're planning the high-fantasy product the magic mod is a big piece of
   - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox
-  - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
+  - you're building shared character attributes, content-declared modifiers, timed effects, resource pools or traits
   - you extend authored starts with traits or other character-state owners
   - you generalize skill capability providers into a composable effect resolver
   - you're deciding what a character attribute governs, or whether a new one is needed
@@ -93,7 +93,7 @@ The design it rests on:
   the opposite of synergy. An attribute is a content entry that feeds the effects that
   name it; no mechanism reads an attribute directly, so a product or mod adds an attribute
   without an engine change. A stack without the pack reads every attribute as average, so
-  core content may name attributes a stack leaves out.
+  shared content may name attributes a stack leaves out.
 - **Attributes as modified values:** an attribute has a base value plus modifiers, so an
   item or a condition can raise or lower it. This is what an enchantment's "+10 strength
   while worn" needs.

@@ -2,7 +2,7 @@ local manifest = import '../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
 local assets = import '../assets/manifest.jsonnet';
 manifest(
   id='skelly.structures',
-  tier='core',
+  tier='theme',
   content=['structures-furniture', 'structures-fixtures','structures-items', 'structures-sounds', 'models-structures', 'windows'],
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],
