@@ -2668,11 +2668,14 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
 - **Damage comes in types.** Every hit deals a mix of types, and every target
   resists each type differently. The melee types above (blunt, cut, pierce) are
   joined by, for example, fragment, blast and breach. The kind of damage decides
-  the outcome, not just the amount:
-  - a hand grenade (fragment plus a modest blast) barely marks a brick wall but
-    tears limbs off a shambler;
-  - a breaching charge (directional, at contact) destroys a steel door and
-    little around it.
+  the outcome, not just the amount. The intended contrast: a hand grenade
+  (fragment plus a modest blast) barely marks a brick wall but tears limbs off a
+  shambler, while a breaching charge (directional, at contact) destroys a steel
+  door and little around it. Blast and fragment damage apply to bodies
+  (`packages/engine/src/core/explosive.ts`, `blastShare` and `fragmentHitsOnBody`);
+  blocks and pieces take damage only from blows through their material gate
+  (`packages/engine/src/core/blockDamage.ts`, `bashBlock`). Breach charges and
+  blast damage to materials are owed under #1332.
 - **Material admission.** Explicit block resistances let fragments and pressure
   differ without weapon-name exceptions or a later schema replacement. Missing
   metadata must fail admission rather than hide incomplete content behind a default.
@@ -2681,9 +2684,14 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
 - **Rubble preserves wreckage.** A material's fallen form is solid rubble until
   cleared, because wreckage should still provide cover; falling alone is not loose
-  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
-  that command and adds no second destruction verb. Breaking also yields, at far
-  more time per unit than looting stock, so looting stays the efficient path; see
+  salvage. Clearing is the take-apart command applied to rubble, so it adds no
+  second destruction verb. A material's `fallsTo` names the block the clearing
+  verb treats as its rubble (`packages/engine/src/core/rubble.ts`, `rubbleBlockIds`).
+  Rubble blocks stand only where content places them: a blow that breaks a cell
+  empties it and drops the material's break yield as items
+  (`packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`), and collapse into
+  rubble is owed under #1332. Breaking yields at far more time per unit than
+  looting stock, so looting stays the efficient path; see
   `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
   A rubble cell is pinned as an episode while work clears it, and any block change
@@ -2719,8 +2727,9 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `TerrainCracks` and `crackStrokes`.
 - **Unheld cells fall to rubble in place.** A structure cell left unheld when the cell
   that held it breaks falls into its material's rubble where it stands, so no wall
-  floats after its support goes. Burial, harm and rubble that moves belong to collapse,
-  a later system that extends this cascade. The rule is under `SLICE-5.md`, "Support".
+  floats after its support goes. Burial, harm and rubble that moves belong to
+  collapse, a separate system owed under #1332 that extends this cascade. The rule is
+  under `SLICE-5.md`, "Support".
 - **Shamblers have body regions and die only when the head is destroyed.**
   Every humanoid zombie crawls after losing even one leg: whatever its type, a
   zombie that loses a leg must not keep walking or stand upright on none. Only rig
@@ -4078,7 +4087,7 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
-World repair acts on one chosen world piece, so furniture repair starts only from its own short-lived, target-bound Repair vertical in the inventory/skills/crafting panel, never from the ordinary crafting list. Terrain cell repair has no player-facing start until #1469 settles its requirements view. The crafting tab's all-known view lists a known world repair recipe of either kind for knowledge, read-only (`DESIGN.md`, "Repair ceiling"). Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the material look changes only in steps and the hint shows only the band now, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so furniture repair starts only from its own short-lived, target-bound Repair vertical in the inventory/skills/crafting panel, never from the ordinary crafting list. Terrain cell repair has no player-facing start until the cell-work integration round under #1332 adds a looked-at cell to the shared review (`docs/crafting-layout.md`, "Build slices after the decisions"); until then it is reached only through `packages/presentation/src/presentation/debugInterface.ts`, `repairCell`. The crafting tab's all-known view lists a known world repair recipe of either kind for knowledge, read-only (`DESIGN.md`, "Repair ceiling"). Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the material look changes only in steps and the hint shows only the band now, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
 Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Crafting and world work share one layout, because a review shaped on its own would fix the view before the crafting layout it sits beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The ring's Repair and Work on entries open that view, with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
 
@@ -4086,7 +4095,7 @@ A piece is whole by default: its definition authors what taking it apart yields,
 
 A job on a piece — furniture repair or take apart — lives on its piece, running or paused. The piece holds the job, its progress and, for repair, its escrowed inputs, as a work item in the piece's own work slot of the item tree, so item ownership stays in the item tree and progress gains no second owner. The slot is not a pocket: a chair has none, and a job in a pocket would make the piece refuse its own take apart as not empty. Continue is on the piece's ring. A job that stays at its piece also works reasonably in multiplayer: whoever stands at the piece can continue it, and nobody carries another player's job away. A paused repair reserves its piece as a paused take apart does, one rule for every job on a piece, so another move cannot take the target and leave the job vanishing under the player; a piece mid-repair cannot move until its job is cancelled. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal`, and `DESIGN.md`, "Block entities".
 
-A terrain cell repair job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity: a refused resume keeps the paused job, while a refused completion or a cancellation returns the escrow. Clearing rubble from a cell is a different job with its own episode, so these rules are about repair only. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`. Cell repair reaches players with the requirements view settled by #1469.
+A terrain cell repair job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity: a refused resume keeps the paused job, while a refused completion or a cancellation returns the escrow. Clearing rubble from a cell is a different job with its own episode, so these rules are about repair only. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`.
 
 Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
 
@@ -4105,7 +4114,7 @@ hidden from the default crafting list, one rule for both. Hiding is not forgetti
 item repair recipes, and the crafting tab's all-known view lists every recipe the character knows. Hiding an unusable
 action must not hide knowledge: a player must always be able to see everything they know. An activation or furniture
 repair recipe starts from its own surface, so the view reviews it read-only and says where; a terrain repair recipe has
-no player-facing start until #1469 settles it (`DESIGN.md`, "World repair selection"), so the view says that; any other
+no player-facing start until the cell-work integration round under #1332 (`DESIGN.md`, "World repair selection"), so the view says that; any other
 recipe shows its own refusal. See `packages/presentation/src/ui/craftCatalogue.ts`,
 `craftCatalogue`; `packages/presentation/src/ui/craftReadout.ts`, `craftRows`;
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;

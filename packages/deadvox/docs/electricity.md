@@ -6,6 +6,7 @@ read_if:
   - you're designing better solar panels and panel damage
   - you're wiring authored building devices into session power or changing player power controls
   - you're gating a source on its housing parts or service job
+  - you're changing charger endpoint binding or powered furniture arrival
 ---
 
 # Electricity
@@ -106,9 +107,16 @@ commands preserve replay intent instead of toggling whatever state a replay find
 See `packages/engine/src/game/session.ts`, `powerControl`, and `packages/engine/src/game/replayCommands.ts`,
 `applyReplayActionPayload`.
 
-Removing equipment settles old service and disables its authored connection so a
-ruined source cannot keep supplying power. A moved piece does not carry fixed wiring
-with it. See `packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`.
+A moved piece must not carry fixed wiring with it, and a ruined source must not
+keep supplying power. Removal must settle old service before changing availability.
+See `packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove` and `SitePower.aroundChange`.
+
+Electrical wiring must not pre-empt furnishing: a bare piece would suppress its
+authored wear and loot when its column arrives. Chargers share the furnishing owner
+with module housings; deferring their UID binding keeps pocket-battery ownership
+without a second arrival path or replacement entity. See `packages/engine/src/core/sitePower.ts`,
+`SitePower.bindCharger`, `packages/engine/src/core/batteryChargers.ts`, `ChargerEndpoint`,
+and `packages/engine/src/core/inventory.ts`, `Inventory.furnishSpawn`.
 
 A source with required housing parts produces only while its switch is on and its
 parts allow it. Availability is derived from the parts and the piece's job on every
