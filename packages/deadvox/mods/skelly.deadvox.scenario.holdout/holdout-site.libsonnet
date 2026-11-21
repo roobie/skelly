@@ -101,6 +101,7 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
       { id: 'north_road', kind: 'edge', minDistance: 100, clearOf: ['woodland', 'building'], spawnMarginMetres: 2, woodlandDensityFloor: 0.1 },
       { id: 'far_edge', kind: 'edge', minDistance: 250, clearOf: ['woodland', 'building'], spawnMarginMetres: 2, woodlandDensityFloor: 0.1 },
     ],
+    hordeCountBudget: 64,
     eventRules: waves.rules(['north_road', 'far_edge'], first=afterGameHours, gap=24 * 5, count=50, escalation=[
       { actor: 'shambler', count: 8 },
       { actor: 'shambler', count: 12 },
