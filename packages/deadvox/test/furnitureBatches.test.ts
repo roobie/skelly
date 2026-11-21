@@ -138,7 +138,7 @@ describe('furniture batches', () => {
               device: 'fixture_light',
               fuelLitres: 0,
               enabled: true,
-              light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+              light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
             },
           })),
         },
@@ -182,7 +182,7 @@ describe('furniture batches', () => {
       device: 'fixture_light',
       fuelLitres: 0,
       enabled: true,
-      light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+      light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
     };
     const { registry, issues } = buildFixtureRegistry([
       {
@@ -238,7 +238,7 @@ describe('furniture batches', () => {
       device: 'fixture_light',
       fuelLitres: 0,
       enabled: true,
-      light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+      light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
     };
     const { registry, issues } = buildFixtureRegistry([
       {

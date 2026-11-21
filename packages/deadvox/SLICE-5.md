@@ -479,10 +479,10 @@ reason-doc updates, not a later save retrofit.
 6. **Fire, smoke and light.** Prove per-cell ignition and spread, material exhaustion,
    direct extinguishing, sight-blocking smoke, obstruction and light invalidation.
    Molotovs and wood cutting must enter the same fire owner; sufficient torch fuel
-   remains a prerequisite, not a source of free ignition. Only item lights are stimuli
-   to attention (`packages/engine/src/core/agentPerception.ts`, `canSeeLight`); powered
-   fixed lamps light the scene (`packages/engine/src/core/sitePower.ts`, `SitePower.lights`)
-   and are not sensed until a round under #1332 feeds them to the same sense. Show a
+   remains a prerequisite, not a source of free ignition. Item lights and operating fixed
+   lamps are stimuli to attention through the same sense (`packages/engine/src/core/agentPerception.ts`,
+   `canSeeLight`; `packages/engine/src/core/lights.ts`, `fixedLightSenseSourceFor`); a switched-off,
+   unpowered or obstructed lamp is no stimulus. Show a
    window cover changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario waves and region integration.** #313's rules and their

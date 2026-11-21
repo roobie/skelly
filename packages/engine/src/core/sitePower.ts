@@ -31,6 +31,8 @@ export interface PoweredLight {
   readonly color: string;
   readonly intensity: number;
   readonly radius: number;
+  /** Authored sense reach in metres; a light without it, such as an instrument run lamp, is no lure. */
+  readonly seenFrom?: number;
   /** The cells of the fixture's own body, which never stop its light (`illumination.ts`, `reaches`). */
   readonly body?: { readonly min: Vec3; readonly max: Vec3 };
 }
