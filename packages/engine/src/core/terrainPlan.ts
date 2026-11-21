@@ -9,7 +9,9 @@ import type { CompiledTemplate, Placement, Turn } from './templates.ts';
 import type { createWeatheringTerrain } from './weatheringTerrainEvaluator.ts';
 import type { TerrainBlocks, TerrainShape } from './worldgen.ts';
 
-export type TerrainTemplate = Pick<CompiledTemplate, 'size' | 'blocks' | 'ownership' | 'ground'>;
+export type TerrainTemplate = Pick<CompiledTemplate, 'size' | 'blocks' | 'ownership' | 'ground' | 'condition'> & {
+  readonly id?: string;
+};
 export interface TerrainPlacement {
   readonly template: TerrainTemplate;
   readonly origin: Vec3;
@@ -68,6 +70,8 @@ export function terrainPlacements(placements: readonly Placement[]): TerrainPlac
     let projected = templates.get(template);
     if (!projected) {
       projected = {
+        id: template.id,
+        ...(template.condition ? { condition: template.condition } : {}),
         size: template.size,
         blocks: template.blocks,
         ...(template.ownership && { ownership: template.ownership }),
