@@ -4,7 +4,7 @@ read_if:
   - you're changing Holdout's power plant, wave attention or high-ground threats
   - you're authoring Holdout PoIs or deciding what varies between runs
   - you're selecting Holdout phase questions or designing modular plant repair
-  - you're implementing a P1 build slice or preparing its fixture start
+  - you're changing a P1 mechanism (housing slots, part-gated modules, ruin, part service) or its fixture start
   - you're authoring part condition gates, seeded failures or plant service jobs
   - you're building or authoring plant instruments, such as the RUN lamp, module dial, slot fault flags or fault labels
 ---
@@ -14,15 +14,18 @@ read_if:
 ## Design contract
 
 Holdout is an endurance scenario about building a home worth returning to and defending.
-These rules own its intended experience, not a claim that the mechanisms are implemented.
+These rules own its intended experience. The P1 plant restoration is built, under "P1 build
+specification"; later phases remain intent until their own build.
 The construction playtest belongs to `SLICE-5.md`, "Settled base-building playtest rules";
 the composition architecture belongs to `docs/decisions/0010-composed-sites.md`, "Decision".
 
 ## A landscape of destinations
 
-The map is a 1 × 1 km square, with one self-contained point of interest wholly inside
-each 100 m × 100 m cell. Cell containment gives every part of the map a distinct
-destination without letting a large compound consume neighbouring destinations.
+The map is a 1 × 1 km square. Destinations are asks placed by distance preference from
+the shelter; see `packages/engine/src/core/composeLayout.ts`, `askCandidate`. One self-contained point of
+interest wholly inside each 100 m × 100 m cell is a later ambition: cell containment would
+give every part of the map a distinct destination without letting a large compound consume
+neighbouring destinations.
 A PoI can be a lone shack in the woods with a rusty knife or a large construction
 site with abundant materials and enemies. Small discoveries matter alongside ambitious
 raids; not every destination needs to be a building complex.
@@ -172,8 +175,8 @@ Only hearing gives a wave a plant target. A heard target is kept through silence
 the group arrives, and hearing the same source near again refines it; at a waypoint
 with nothing new, the group strays around it as below. This fits the horde's existing target and
 mode. A wave does not take a plant target from a hearing owner kept from before its
-release, because no such owner exists, and a separate uncertainty state is not needed
-yet. Far hearing does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
+release, because no such owner exists, and a separate uncertainty state is not needed.
+Far hearing does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
 so a far wave walks that stretch and must hear the plant again to close in. A quiet
 plant therefore loses distant waves and a running one pulls them in step by step, which
 is how going quiet matters without an extra rule.
@@ -210,9 +213,10 @@ again.
 A group has no home: its home is where its last attention was, and by night it roams. A
 member's sighting is attention too: it ends any sound the group followed, without getting
 used to it, and once sight is lost the group strays where it last saw its prey, not back
-at the sound. With several members in sight, the latest sighting counts. The arrival
-radius, stall time, resisted-blow cap, cool-off and how far the group strays are content; see
-`packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
+at the sound. With several members in sight, the latest sighting counts. The stall time,
+resisted-blow cap, cool-off and how far the group strays are content; see
+`packages/engine/src/core/schema/actors.ts`, `ActorSchema`. The arrival radius is code:
+`packages/engine/src/core/agentHorde.ts`, `HORDE_ARRIVAL_METRES`.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and
@@ -243,116 +247,87 @@ invented display; see `holdout.md`, "Plant instruments".
 
 ## P1 build specification
 
-This is implementation intent, not implemented behaviour. The playable exit is:
-discover the broken plant, obtain a required spare through loot or crafting, fit it,
-power an ordinary bus consumer, and reload with the repair intact. Waves, noise,
-automated weapons, gun/vehicle conversion and difference-only column supplies are out.
-The plant's instruments follow `holdout.md`, "Plant instruments"; no coder may invent a
-temporary plant screen to call P1 playable. Gates and service follow the settled rules in
-`holdout.md`, "Supplies and progression"; the shared heat-source ceiling remains a later
-question. P1 must not invent a cap or claim unlimited combined capacity as a permanent rule.
+P1 is built. The plant is restored by part service through
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.partServiceOptions`, and the
+command `craft.service-part`; modules gate on `packages/engine/src/core/sitePower.ts`,
+`SitePower.available`; and `packages/deadvox/test/partService.test.ts` proves obtain, review,
+Start, fit, power and reload. The sections below keep the reasons behind each owner. The
+plant's instruments follow `holdout.md`, "Plant instruments": no temporary plant screen
+stands in for them. Gates and service follow `holdout.md`, "Supplies and progression". The
+shared heat-source ceiling remains a later question, so no code caps combined output and no
+rule claims it unlimited.
 
 ### Slice A: lazy housing slots and transfer ownership
 
-Extend `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, at its
-parts-blueprint boundary, and `packages/engine/src/core/content.ts`, `referenceIssues`,
-for validated blueprint, slot compatibility and initial-state content. Extend
-`packages/engine/src/core/blockEntities.ts`,
-`BlockEntities`, to own housing slots, rather than storing them in unrelated pockets.
-Reuse `packages/engine/src/core/items.ts`, `ItemFields`, `snapshotItem` and `restoreItem`,
-for changed child items, and extend `packages/engine/src/core/inventory.ts`, `Inventory`,
-for their traversal and transfer. `Inventory.fitSlot` accepts an item owner, not a
-housing; it is a transfer precedent, not a ready furniture adapter.
+Housing slots belong to the block entity, not to unrelated pockets, so a plant's parts
+have one owner and a pocket rule can never refuse a housing its own service; see
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.housingView`, `takeHousingPart`
+and `fitHousingPart`. The blueprint, slot compatibility and initial state are validated
+content on the kind (`packages/engine/src/core/schema/furniture.ts`, `PartBlueprintSchema`;
+`packages/engine/src/core/housing.ts`, `housingContentIssues`).
 
-Provide a deeply readonly baseline view and an owner-only sparse override path:
-no override means baseline, explicit absence means removed, and a changed item keeps
-its identity and condition. Derive baseline variation from world seed, stable authored
-assembly identity and slot path, not allocated item UID or observation order. Use
-`packages/engine/src/math.ts` for deterministic computation. Admit destinations before
-materialising, then publish in canonical event/slot order. Refusals allocate nothing.
-Do not erase an override merely because its condition equals the baseline. Wire saves
-through `packages/engine/src/core/saveState.ts`, `snapshotSession`, and
-`packages/engine/src/game/session.ts`, `createSession`. Reuse the planning/publication
-discipline of `packages/engine/src/core/columnSupply.ts`, `createColumnSupply`, without
-converting its storage or building a speculative universal entity framework.
+The view is a deeply readonly baseline with an owner-only sparse override: no override
+means baseline, explicit absence means removed, and a changed item keeps its identity and
+condition. An override whose condition equals the baseline is kept. Baseline variation
+derives from the world seed,
+the authored assembly identity and the slot path, never from allocated item UID or
+observation order, so reading a housing in any order leaves the snapshot and the next item
+identity unchanged and inspection makes no component permanent save data; see
+`packages/engine/src/core/housing.ts`, `baselinePart`, and
+`docs/decisions/0011-lazy-part-state.md`, "Scope".
 
-Tests earn their place by checking that different read orders leave snapshots and next
-item identity unchanged; removal survives reload without regeneration; a refused fit
-changes neither owner; and an accepted transfer leaves exactly one owner. Use fixture
-parts, not production IDs or seeded numeric outputs. Mutation proof: make a read publish
-one baseline item and show the read-purity test fails.
-
-BR fixture: a start-kit fixture beside fixed housings with a compatible spare, an
-incompatible item and a full destination. It must support the inspection/transfer/reload
-check through the approved interaction surface once available. No such surface is
-approved, so the fixture claims no playable look and its evidence is core evidence; see
-`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`, "Housing-slot look",
-and `docs/PROCESS.md`, "Reviews by eye and by play".
+Parts move between a slot and an owner only through
+`packages/engine/src/core/inventory.ts`, `Inventory.housingTransfer`, which admits the
+destination before either owner changes: a refused fit changes neither owner and allocates
+nothing, and an accepted transfer leaves exactly one owner. The playable surface is the
+piece's Work on review (`packages/presentation/src/ui/inventoryScreen.ts`,
+`InventoryScreen.openWorldWork`); the look fixture is
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`,
+"Housing-slot look".
 
 ### Slice B: part-gated module sources
 
-After Slice A, extend
-`packages/engine/src/core/powerContent.ts`, `PowerDeviceSchema`, with an inexhaustible
-source whose capacity is content, not fictitious generator fuel. Extend
-`packages/engine/src/core/power.ts`, `PowerNetwork` and `production`, rather than adding
-a plant solver. Bind each module's requirements through
-`packages/engine/src/core/sitePower.ts`, `SitePower`, including `control` admission.
-Keep switch intent separate from derived availability: an enabled broken module need
-not produce. Settle power at the action timestamp before changing parts or housing
-availability, including entering or leaving service, so a repair cannot supply an earlier
-interval and a maintenance window cannot produce power. Do not save a second
-readiness or plant-condition field.
+An inexhaustible source's output is content capacity, not fictitious generator fuel
+(`packages/engine/src/core/powerContent.ts`, `PowerDeviceSchema`, kind `inexhaustible`),
+and it joins the ordinary network (`packages/engine/src/core/power.ts`, `PowerNetwork`)
+rather than a plant solver. A module produces only while
+`packages/engine/src/core/sitePower.ts`, `SitePower.available`, holds. Switch intent stays
+separate from that derived availability, so an enabled broken module does not produce and
+no second readiness or plant-condition field is saved: the switch is the player's intent
+and the parts are the truth.
 
-Use a pure required-part predicate over Slice A's readonly view. Its failure causes
-must distinguish absent, incompatible and insufficient-condition parts. Compare each
-requirement's content-authored minimum, with omission meaning failure only at ruin,
-through the same predicate. Reads must not materialise parts or change condition;
-operation causes no wear. Validate non-critical seeded condition ranges against their
-minimums so the authored critical-failure set remains exhaustive. Derive maintenance
-unavailability from the piece's service job, not a separately saved module flag.
-`packages/engine/src/core/lights.ts`, `chargeOf` and `toggleLight`, provide a fitted
-resource precedent, not a general condition gate; charge and condition stay distinct.
-Housing requirements must be explicit content dependencies, not averages. A heat-source
-ceiling is outside this slice pending its later ruling, not implicitly rejected.
+The gate is a pure required-part predicate over the readonly view, whose failure causes
+distinguish absent, incompatible and insufficient-condition parts
+(`packages/engine/src/core/housing.ts`, `requirementFailures`). Each requirement's
+content-authored minimum, with omission meaning failure only at ruin, goes through that one
+predicate. Reads materialise no part and change no condition, and operation causes no wear,
+so inspecting or running the plant cannot alter it. Housing requirements are explicit
+content dependencies, not averages. Content validation rejects a non-critical seeded
+condition range that can cross its minimum, so the authored critical-failure set stays
+exhaustive.
 
-Extend `packages/deadvox/test/sitePower.test.ts` and `packages/deadvox/test/power.test.ts`
-with fixture modules: failing one requirement disables only dependent production;
-several sources supply the shared bus within their capacities; omitted and authored
-minimums use the same condition gate without read-side writes or running wear; reload
-and split-at-repair advancement agree. Check that service suppresses only the serviced
-module and settles power at maintenance boundaries. Do not duplicate existing bus-priority
-cases. Mutation proof: change a gate before settling the previous interval and demonstrate
-the boundary test fails.
-
-BR fixture: extend the same start with independently repairable modules and an ordinary
-visible powered consumer, plus spares at hand. The check is failed module versus working
-module, then additional supply after fitting, then reload; no waves or waiting for loot.
+Every parts, service or housing change settles power at the action timestamp first,
+through `SitePower.aroundChange`, so no interval is supplied retroactively: a repair cannot
+power the time before it and a maintenance window cannot produce. Maintenance
+unavailability derives from the piece's service job and suppresses only the serviced
+module; it is not a separately saved flag that could disagree with the job. The heat-source
+ceiling is outside this mechanism pending its ruling, not rejected by it.
 
 ### Slice C: destruction preserves parts
 
 A ruined housing's parts fall with it: `packages/engine/src/core/furnitureMove.ts`,
 `planRuin` and `commitRuin`, beneath `ruinFurniture`, admit its slot contents in the same
 whole-plan pile reservations as pockets, escrow and debris, not a second
-post-destruction drop pass, so a ruin either keeps every part or stands. Fitted parts keep
-their items; untouched baseline parts materialise only once the destruction is admitted,
-so a refused ruin allocates nothing. The blow that ruins a housing settles power before it,
-like any parts change (`packages/engine/src/core/sitePower.ts`, `SitePower.aroundChange`),
-and a housing retained by blocked drops is failed, not a live source. Lifting, setting down,
-sliding, dropping, removing or destroying a module housing is a parts change too: power
-settles before it and rebalances at its timestamp, so a housing off its placement stops
-producing at once while its switch intent stays as it was; see
-`packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`.
-
-Extend `packages/deadvox/test/furnitureRuin.test.ts`: admitted destruction conserves
-part identity and condition in piles across reload; blocked destruction preserves the
-standing failed housing and its slots without allocating baseline items. Existing
-pocket/debris cases remain the owners of their coverage. Mutation proof: materialise
-before admission and show the blocked-destruction case detects the write.
-
-BR fixture: adjacent open and fully blocked drop arrangements, containing healthy
-internals in damaged housings, with the means to deliver the final hit. The look checks
-recoverable piles versus a retained full-damage piece and no continued generation.
-Do not require manual construction of the blocked arrangement.
+post-destruction drop pass, so a ruin either keeps every part, with identity and
+condition, or stands. Fitted parts keep their items; untouched baseline parts materialise
+only once the destruction is admitted, so a refused ruin allocates nothing. The blow that
+ruins a housing settles power before it, like any parts change
+(`packages/engine/src/core/sitePower.ts`, `SitePower.aroundChange`), and a housing retained
+by blocked drops is failed, not a live source. Lifting, setting down, sliding, dropping,
+removing or destroying a module housing is a parts change too: power settles before it and
+rebalances at its timestamp, so a housing off its placement stops producing at once while
+its switch intent stays as it was; see `packages/engine/src/core/sitePower.ts`,
+`SitePower.beforeRemove`.
 
 ### Plant instruments
 
@@ -417,39 +392,28 @@ so BR judges mounting and readability without completing the restoration loop.
 
 ### Slice D: authored restoration loop
 
-After A–C, author the required failure,
-spares and recipes through content; compose the plant and reachable supply destination
-through `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
-Use `packages/engine/src/core/craftCommands.ts`, `CraftCommands`, and its
-`takeApartEntity` boundary for a parts-path job in the piece's work slot, not a separate
-plant repair command or item exchange. Extend the shared review and explicit Start,
-pause and ring-based continue flow; zero-time work follows it too. Content authors time
-and tool/skill requirements per part. Connect job lifecycle to Slice B's maintenance
-unavailability and timestamp settlement.
-Instruments follow `holdout.md`, "Plant instruments". Do not implement a full-map viability solver or guaranteed
-random loot result to strengthen the authored-route ruling.
+The plant's failures, spares and recipes are content in
+`packages/mods/skelly.electric-power/thermal-plant.jsonnet`, and the plant and its
+reachable supply destination are composed through
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`. Service is a
+parts-path job in the piece's work slot under `packages/engine/src/core/craftCommands.ts`,
+`CraftCommands.partServiceOptions`, not a separate plant repair command or item exchange,
+so the shared review, explicit Start, pause and ring-based continue serve the plant as they
+serve any piece; zero-time work follows the same contract. Time and tool/skill requirements
+are authored per part. No full-map viability solver or guaranteed random loot result
+strengthens the authored-route ruling.
 
 The Holdout start grants the skill the plant's part service asks for; see
 `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `start`. Without it the
 player could neither service the governor nor learn its spare's recipe, so a governor
 failure would leave the plant unrepairable from the start.
 
-Validate blueprint references, compatible spares, recipe inputs and power definitions
-through `packages/engine/src/core/content.ts`, `referenceIssues`, including rejection of
-non-critical seeded condition ranges that can cross their requirement's minimum. One
-focused integration test must traverse the fixture's obtain/review/Start/fit/power/reload
-loop through public command owners, including paused service and ring-based continue.
-Cover zero-time service through the same review/Start contract, not an exchange shortcut.
-Extend an existing browser smoke flow for the approved interaction, rather than adding
-a stage for each slot. Whole-world route sweeps remain on demand under the
-repository test policy; do not assert production counts or exact layouts.
-
-BR fixture: build on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, with the player
-beside the failed module, the nearby supply route ready, crafting inputs/tools available,
-and a visible consumer wired. Include timed service parts, so BR can check review/Start,
-pause/continue and the maintenance outage without setup. Provide both the
-short mechanical check and the authored supply-route check without waiting for random drops. Final P1 acceptance requires
-the playable route and save/reload, not just a debug power toggle.
+The loop's proof is `packages/deadvox/test/partService.test.ts`, which traverses obtain,
+review, Start, fit, power and reload through public command owners, paused service and
+ring-based continue included, and the part-service steps of
+`packages/deadvox/test/browser/craft-catalogue-flow.mjs`. Whole-world route sweeps stay on
+demand under the repository test policy, and no test asserts production counts or exact
+layouts, because both drift during development.
 
 ## Content ownership
 
