@@ -5,5 +5,5 @@ manifest(
   tier='scenario',
   optIn=true,
   content=['layouts', 'starts'],
-  dependencies=kit.dependencies(['skelly.deadvox.scenario.test-house', 'skelly.structures']),
+  dependencies=kit.dependencies(['skelly.building-blocks', 'skelly.deadvox.scenario.test-house', 'skelly.structures']),
 )

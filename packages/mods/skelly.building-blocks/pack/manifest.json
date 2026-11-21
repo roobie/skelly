@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "building-blocks.json"
+    }
+  ],
+  "id": "skelly.building-blocks",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

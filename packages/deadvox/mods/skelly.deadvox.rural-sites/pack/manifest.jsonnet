@@ -7,7 +7,7 @@ manifest(
     'rural-police-fixtures', 'rural-police', 'rural-substation-fixtures', 'rural-substation', 'templates-medical',
   ],
   dependencies=[
-    'skelly.body', 'skelly.crafting', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.loot',
+    'skelly.body', 'skelly.building-blocks', 'skelly.crafting', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.loot',
     'skelly.deadvox.site-generation', 'skelly.household-electrical', 'skelly.inventory', 'skelly.keys',
     'skelly.manufactured-blocks', 'skelly.natural-world', 'skelly.structures',
   ],

@@ -4,5 +4,5 @@ manifest(
   id='skelly.deadvox.scenario.test-house.lamp-cube-one',
   tier='scenario', optIn=true,
   content=['templates', 'layouts', 'starts'],
-  dependencies=kit.dependencies(['skelly.deadvox.scenario.test-house']),
+  dependencies=kit.dependencies(['skelly.building-blocks', 'skelly.deadvox.scenario.test-house']),
 )
