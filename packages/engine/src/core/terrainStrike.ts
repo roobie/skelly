@@ -50,7 +50,7 @@ const carriesCanopy = (terrain: CanonicalTerrain, registry: Registry, cell: Read
   const maxY = (terrain.terrain.scale.maxCy + 1) * CHUNK;
   const seen = new Set<string>([cell.join(',')]);
   const open: Vec3[] = [[...cell] as Vec3];
-  let reads = 0;
+  let reads = 1; // the trunk cell itself
   for (let at = open.pop(); at; at = open.pop()) {
     const fresh = FACES.map(([dx, dy, dz]): Vec3 => [at[0] + dx, at[1] + dy, at[2] + dz]).filter(
       (next) => next[1] >= cell[1] && next[1] < maxY && !seen.has(next.join(',')),
@@ -138,10 +138,11 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
   if (!block?.solid) {
     return undefined;
   }
-  if (carriesCanopy(terrain, registry, cell)) {
+  const material = registry.blockMaterials.get(block.material)!;
+  // An unbreakable material resists every blow, so no search is needed, and a stack with no breakable material may omit support tuning.
+  if (material.breakable && carriesCanopy(terrain, registry, cell)) {
     return { outcome: 'refused', cause: 'canopy', destroyed: [], edited: [] };
   }
-  const material = registry.blockMaterials.get(block.material)!;
   const bash = bashBlock({ material, damage: world.blockDamage.get(cell)?.damage ?? 0 }, blow);
   if (bash.outcome === 'resisted') {
     return { outcome: 'resisted', destroyed: [], edited: [] };

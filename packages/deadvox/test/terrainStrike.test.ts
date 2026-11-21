@@ -660,6 +660,13 @@ describe('supply-aware terrain destruction', () => {
       expect(f.world.blockDamage.get(cell)).toBeUndefined();
       expect(owners(f)).toEqual(before);
     });
+    it('resists a blow on an unbreakable trunk without support tuning, which such a stack may omit', () => {
+      const { f } = tree(true);
+      const material = f.registry.blockMaterials.get('fixture_material')!;
+      f.registry.blockMaterials.set(material.id, { ...material, breakable: false });
+      f.registry.supportTuning.clear();
+      expect(f.strike(material.durability * 2)).toEqual({ outcome: 'resisted', destroyed: [], edited: [] });
+    });
     it('breaks a trunk that carries no canopy like any other block', () => {
       const { f } = tree(false);
       expect(f.strike(f.registry.blockMaterials.get('fixture_material')!.durability * 2)?.outcome).toBe('broken');

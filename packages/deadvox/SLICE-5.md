@@ -142,7 +142,8 @@ unbuilt. Unanswered gates block only their dependent work.
   wrong, and refusing keeps a real felling system, with logs and timber yield, fully open.
   Content marks tree parts and the refusal text is content; a trunk with no canopy on it
   breaks like any block. The canopy search reads at most a content-set number of cells,
-  and one that runs out refuses the blow, since it never cleared the trunk. See `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`,
+  the trunk cell included, and one that runs out refuses the blow, since it never cleared
+  the trunk. An unbreakable material resists before any search. See `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`,
   and `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
   Any solid structure cell holds any other, with span the only limit, and furniture
   never holds terrain. These rules make no wall float and no floor hang in front of a
