@@ -7,5 +7,5 @@ manifest(
   tier='scenario',
   optIn=true,
   content=['start-grants'],
-  dependencies=['skelly.deadvox', 'skelly.deadvox.magic'],
+  dependencies=['skelly.building-blocks', 'skelly.deadvox', 'skelly.deadvox.magic'],
 )

@@ -106,6 +106,7 @@ evidence governs classification, not perfect adherence to the table.
 | Body, injuries, bleeding, needs, senses, player tuning | ✓ | ✓ | ✓ | ✓ | Theme |
 | Inventory, compression, saves, day cycle, controls, UI, graphics policy | ✓ | ✓ | ✓ | ✓ | Theme |
 | Natural blocks and vegetation | ✓ | ✓ | ✓ | ✓ | Theme |
+| Building blocks (masonry, timber, earth) | ✓ | ✓ | ✓ | ✓ | Theme; no era of their own, so any stack loads them without present-day blocks |
 | Doors, locks, ladders, stairs, basic furniture | ✓ | ✓ | ✓ | ✓ | Theme; appearance varies by era |
 | Creature senses, attention and attack tuning | ✓ | ✓ | ✓ | ✓ | Theme; mechanisms stay in the engine |
 | Blades and blunt melee weapons | ✓ | ✓ | ✓ | · | Theme |

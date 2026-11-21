@@ -8,7 +8,7 @@ manifest(
   optIn=true,
   content=['layouts', 'starts'],
   dependencies=kit.dependencies([
-    scenario, 'skelly.chemical-lights', 'skelly.containers', 'skelly.deadvox.buildings', 'skelly.deadvox.site-generation',
+    scenario, 'skelly.building-blocks', 'skelly.chemical-lights', 'skelly.containers', 'skelly.deadvox.buildings', 'skelly.deadvox.site-generation',
     'skelly.electric-power', 'skelly.electronics', 'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel',
     'skelly.ground-vehicles', 'skelly.manuals', 'skelly.manufactured-blocks', 'skelly.materials', 'skelly.readables',
     'skelly.structures', 'skelly.weathering',

@@ -1477,6 +1477,14 @@
       "output": "packages/mods/skelly.body/wield-motions.json"
     },
     {
+      "source": "packages/mods/skelly.building-blocks/building-blocks.jsonnet",
+      "output": "packages/mods/skelly.building-blocks/building-blocks.json"
+    },
+    {
+      "source": "packages/mods/skelly.building-blocks/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.building-blocks/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.chemical-lights/chemical-lights-items.jsonnet",
       "output": "packages/mods/skelly.chemical-lights/chemical-lights-items.json"
     },

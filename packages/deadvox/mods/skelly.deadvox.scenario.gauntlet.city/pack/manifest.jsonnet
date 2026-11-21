@@ -4,7 +4,7 @@ manifest(
   tier='scenario',
   content=['building-briefs', 'footstep-sounds', 'gauntlet', 'gauntlet-look', 'item-economy', 'scenarios'],
   dependencies=[
-    'skelly.basic-foods', 'skelly.body', 'skelly.crafting', 'skelly.deadvox.actors', 'skelly.deadvox.buildings',
+    'skelly.basic-foods', 'skelly.body', 'skelly.building-blocks', 'skelly.crafting', 'skelly.deadvox.actors', 'skelly.deadvox.buildings',
     'skelly.deadvox.camp', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.labs.underground', 'skelly.deadvox.loot',
     'skelly.deadvox.rural-sites', 'skelly.deadvox.site-generation', 'skelly.electric-power', 'skelly.electronics',
     'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel', 'skelly.hand-tools', 'skelly.household-electrical',

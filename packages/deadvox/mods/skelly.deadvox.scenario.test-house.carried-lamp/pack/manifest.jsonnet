@@ -5,5 +5,5 @@ manifest(
   id='skelly.deadvox.scenario.test-house.carried-lamp',
   tier='scenario', optIn=true,
   content=['templates', 'layouts'],
-  dependencies=['skelly.deadvox.scenario.test-house'],
+  dependencies=['skelly.building-blocks', 'skelly.deadvox.scenario.test-house'],
 )
