@@ -5,6 +5,8 @@ export {
   type BashOutcome,
   BlockEntities,
   type BlockEntity,
+  boardable,
+  boardableDoor,
   type DoorOperation,
   type DoorPanelBox,
   doorBarBox,
@@ -47,7 +49,7 @@ export {
 export { GENERATED_SITES } from './core/generatedSites.ts';
 export { climb, LadderHold } from './core/ladders.ts';
 export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
-export { rotationOf } from './core/orientation.ts';
+export { rotatedSize, rotationOf } from './core/orientation.ts';
 export { type PaperMapCoverage, paperMapBounds } from './core/paperMap.ts';
 export {
   type Body,
@@ -79,6 +81,7 @@ export {
   type Placement,
   placedDecals,
   placedPoint,
+  turnFacing,
   type VoxelProvenance,
 } from './core/templates.ts';
 export { createTerrainEvaluator, type TerrainEvaluator } from './core/terrainEvaluator.ts';
@@ -86,6 +89,7 @@ export type { SiteTerrainPlan, TerrainPlan } from './core/terrainPlan.ts';
 export { NOT_LOADED, type TerrainRead } from './core/terrainRead.ts';
 export { type WindowPart, windowParts } from './core/windowParts.ts';
 export { isEnclosed, World } from './core/world.ts';
+export type { DoorSide, WorldDestination } from './core/worldDestination.ts';
 export {
   generateColumn,
   type Surface,

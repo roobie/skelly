@@ -98,6 +98,7 @@ export const ActionTextSchema = strictObject({
     cancel: Template('key'),
     activate: Template('key', 'name'),
     setDown: Template('key', 'name'),
+    buildHere: Template('key', 'name'),
     groundItem: Template('key', 'item'),
     downedBody: Template('key', 'finish'),
     downedBodyRefused: Template('key', 'finish', 'reason'),

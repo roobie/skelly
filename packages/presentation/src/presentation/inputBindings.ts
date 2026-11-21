@@ -496,7 +496,7 @@ export class KeyboardInput {
   private playingBrowserChord(event: KeyboardEvent): boolean {
     return (
       event.cancelable &&
-      (this.context().context === 'play' || this.context().context === 'carrying') &&
+      ['play', 'carrying', 'picking'].includes(this.context().context) &&
       Boolean(document.pointerLockElement) &&
       ((!modifierCodes[event.code] && (event.ctrlKey || event.metaKey || event.altKey)) ||
         modifierCodes[event.code] === 'alt') &&
@@ -537,10 +537,7 @@ export class KeyboardInput {
       this.focusLost('document-hidden');
     } else if (!document.hasFocus()) {
       this.focusLost('window-blur');
-    } else if (
-      (this.context().context === 'play' || this.context().context === 'carrying') &&
-      !document.pointerLockElement
-    ) {
+    } else if (['play', 'carrying', 'picking'].includes(this.context().context) && !document.pointerLockElement) {
       this.focusLost('pointer-lock-lost');
     }
   }

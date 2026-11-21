@@ -16,10 +16,10 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status. Built: the power network core, the placed-entity store, battery charging,
-world repair and take-apart with their review, world-destination crafting with the
-timber wall, floor, door, shelf and door boarding, and the first wave rule. Open:
-placement picking, support, window covers, structural collapse, fire and exposure, and
-the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+world repair and take-apart with their review, world-destination crafting and
+placement picking with the timber kit, and the first wave rule. Open: support,
+window covers, structural collapse, fire and exposure, and the integration proofs.**
+See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
@@ -519,8 +519,9 @@ rounds are tracked under #1332.
   from the chosen rubble cell; buried contents follow collapse under "Destruction".
   Placement is built in the engine for the wall, floor, door, shelf and door boarding (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.place`;
   `packages/engine/src/core/worldDestination.ts`, `WorldDestination`); window boarding,
-  the sheet panel and the curtain of "First build vocabulary" are not authored, and no
-  player can pick a destination until the picking round under "Construction, view".
+  the sheet panel and the curtain of "First build vocabulary" are not authored.
+  Player picking reaches the shared review through
+  `packages/presentation/src/presentation/play.ts`, `confirmPlacementPicking`.
   Support is unbuilt: nothing reads `packages/engine/src/core/schema/blocks.ts`,
   `BlockMaterialSchema.span`, and a placed cell may float. Its rule is "Support"; it
   precedes the first session because free-standing walls and floors are in it and a
@@ -534,10 +535,8 @@ rounds are tracked under #1332.
   interaction ring, preserving one surface without disguising cells as pieces. See
   `packages/engine/src/game/cellActions.ts`, `cellActionsFor`, and
   `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openCellWork`.
-  Placement picking remains under #1332 on the first session's critical path, extending
-  the same review rather than adding a screen. Its rulings are
-  `docs/crafting-layout.md`, "Order authored per placement recipe" and
-  `docs/crafting-layout.md`, "Build slices after the decisions".
+  Placement picking shares that review rather than adding a screen, with its reasons
+  in `docs/crafting-layout.md`, "The picking gesture".
 - **Playtest pack.** Author shelter and supply asks independently so each can be
   retuned without city-shape constraints; see
   `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.

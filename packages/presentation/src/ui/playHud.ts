@@ -283,6 +283,10 @@ const doorInteractionText = (
 export const playCarryText = (setDown: HintText, text: InteractionText, keys: KeyLabels): TemplateResult =>
   html`${setDown} · ${fillHint(text.turn, { key: keyCap(keys, 'carry.turn') })} · ${fillHint(text.tip, { key: keyCap(keys, 'carry.tip') })}`;
 
+/** The placement pick's line: what it would build or why it can't, with the key that turns its ghost. */
+export const playPickingText = (build: HintText, text: InteractionText, keys: KeyLabels): TemplateResult =>
+  html`${build} · ${fillHint(text.turn, { key: keyCap(keys, 'carry.turn') })}`;
+
 /** Describes an already selected target; never selects/executes the interaction. */
 export const playInteractionText = (
   {
