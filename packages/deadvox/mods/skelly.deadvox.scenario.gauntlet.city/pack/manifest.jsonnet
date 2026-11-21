@@ -8,7 +8,7 @@ manifest(
     'skelly.deadvox.camp', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.labs.underground', 'skelly.deadvox.loot',
     'skelly.deadvox.rural-sites', 'skelly.deadvox.site-generation', 'skelly.electric-power', 'skelly.electronics',
     'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel', 'skelly.hand-tools', 'skelly.household-electrical',
-    'skelly.inventory', 'skelly.keys', 'skelly.light-sources', 'skelly.manufactured-blocks', 'skelly.materials',
+    'skelly.inventory', 'skelly.keys', 'skelly.chemical-lights', 'skelly.light-sources', 'skelly.manufactured-blocks', 'skelly.materials',
     'skelly.medicine', 'skelly.natural-world', 'skelly.packaged-foods', 'skelly.readables', 'skelly.structures',
     'skelly.wearables',
   ],
