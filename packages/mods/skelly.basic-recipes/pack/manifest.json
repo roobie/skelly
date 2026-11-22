@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "skelly.building-blocks",
+    "skelly.containers",
     "skelly.crafting",
     "skelly.flame-tools",
     "skelly.hand-tools",

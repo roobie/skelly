@@ -9,7 +9,13 @@ import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } 
 import { portalLadderPoint, portalPieceIssues, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
 import { type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, CityScenarioDef, MapPoolDef } from './schema.ts';
-import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
+import {
+  type AdmissionFit,
+  admittedChoices,
+  cityRowDepth,
+  eligibilityExclusion,
+  lotAdmissionFit,
+} from './settlementPools.ts';
 import { type Rect, rectsOverlap } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -24,6 +30,8 @@ import {
   stackTemplate,
   type Turn,
   templateResolves,
+  turnFacing,
+  turnToward,
 } from './templates.ts';
 
 interface PoolRef {
@@ -412,7 +420,7 @@ interface SettlementConsumer {
   path: string;
   pool: string;
   kind: string;
-  fit: { along: number; depth: number };
+  fit: AdmissionFit;
 }
 
 const benchmarkPoolIssues = (registry: Registry, benchmark: CityBenchmarkDef): [string, string][] => {
@@ -455,14 +463,13 @@ const scenarioConsumers = ({ id, city }: CityScenarioDef): SettlementConsumer[] 
     if (lot.source?.kind !== 'pool') {
       continue;
     }
-    const [along, lotDepth] = lot.turn % 2 === 0 ? lot.size : [lot.size[1], lot.size[0]];
     consumers.push({
       section: 'scenarios',
       id,
       path: `.city.lots[${index}].source`,
       pool: lot.source.id,
       kind: city.settlementKind,
-      fit: { along, depth: lotDepth },
+      fit: lotAdmissionFit(lot),
     });
   }
   if (city.ring) {
@@ -774,6 +781,15 @@ const rowSpan = (obstacles: Rect[], start: number, end: number, gap: number): { 
   }
   return { x, next: Math.min(end, ...obstacles.filter((rect) => rect.x0 > x).map((rect) => rect.x0 - gap)) };
 };
+/**
+ * The turn that puts a building's declared front edge where a north front would face at `base`, so a building whose
+ * front is not north still faces the street the base turn chose. The building's own access declares that front
+ * (`packages/engine/src/core/schema/templates.ts`, `TemplateAccessSchema`, `front`); the site only turns it, never
+ * declares a competing one.
+ */
+const frontTurn = (template: Pick<CompiledTemplate, 'access'>, base: Turn): Turn =>
+  turnToward(template.access?.front ?? 'n', turnFacing('n', base));
+
 const isIncidental = (context: FillContext, index: number, row: number): boolean =>
   index === 0 && row === 0 && context.incidentalTemplates.length > 0;
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
@@ -781,7 +797,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const end = (i + 1) * pitchX - grid.pad;
-  const turn = row % 2 === 0 ? 0 : 2;
+  const base = (row % 2 === 0 ? 0 : 2) as Turn;
   let x = i * pitchX + grid.street + grid.pad;
   const placements: Placement[] = [];
   const bank = j * pitchZ + cityRowStart(grid, row);
@@ -793,8 +809,12 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     const span = rowSpan(obstacles, x, end, grid.gap);
     ({ x } = span);
     const { next } = span;
-    const fits = ({ id, style }: PoolRef) =>
-      footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= next - x;
+    const fits = ({ id, style }: PoolRef) => {
+      const candidate = compiled({ id, style }, 1);
+      // An east or west front swaps the footprint's extents, so the row checks both, not only the width.
+      const [width, depth] = footprint({ template: candidate, origin: [0, 0, 0], turn: frontTurn(candidate, base) });
+      return width <= next - x && depth <= cityRowDepth(grid);
+    };
     const incidental = isIncidental(context, k, row);
     const building = chooseBuilding(context, fits, incidental, `city:${i},${j}/row:${row}/building:${k}/type`);
     if (!building) {
@@ -810,6 +830,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
     const storeys = 1 + Math.floor(hash3(seed, i, j * grid.rows + row, k + 1000) * limit);
     const template = compiled(building, storeys, `city:${i},${j}/row:${row}/building:${k}`);
+    const turn = frontTurn(template, base);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
     placements.push(freezePlacement({ template, origin: [x, groundedY(template, floor), z], turn }));
@@ -924,7 +945,7 @@ const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
     ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });
 
-/** Inward-facing quarter turn for each wall: the template front faces north at turn 0. */
+/** Inward-facing base turn for each wall: `frontTurn` turns each building's declared front where a north front faces at these. */
 const SIDES = [
   { side: 'north', turn: 2, alongX: true },
   { side: 'south', turn: 0, alongX: true },
@@ -964,7 +985,8 @@ const fillRingCell = (
   let at = index * pitch + grid.street + grid.pad;
   for (let k = 0; ; k++) {
     const fits = (ref: PoolRef) => {
-      const [fx, fz] = footprint({ template: compiled(ref, 1), origin: [0, 0, 0], turn });
+      const candidate = compiled(ref, 1);
+      const [fx, fz] = footprint({ template: candidate, origin: [0, 0, 0], turn: frontTurn(candidate, turn) });
       return (alongX ? fx : fz) <= end - at && (alongX ? fz : fx) <= depth;
     };
     const building = chooseBuilding(context, fits, false, `city:ring:${side}:${index}/building:${k}/type`);
@@ -975,9 +997,10 @@ const fillRingCell = (
     const limit = Math.min(maxStoreys, registry.templates.get(building.id)?.maxStoreys ?? maxStoreys);
     const storeys = 1 + Math.floor(hash3(seed, index, sideIndex + 5000, k + 1000) * limit);
     const template = compiled(building, storeys, `city:ring:${side}:${index}/building:${k}`);
-    const extent = footprint({ template, origin: [0, 0, 0], turn });
+    const facing = frontTurn(template, turn);
+    const extent = footprint({ template, origin: [0, 0, 0], turn: facing });
     const origin = againstWall({ side, ...wall }, { y: groundedY(template, floor), at, extent });
-    placements.push(freezePlacement({ template, origin, turn }));
+    placements.push(freezePlacement({ template, origin, turn: facing }));
     at += (alongX ? extent[0] : extent[1]) + grid.gap;
   }
 };
@@ -999,13 +1022,14 @@ const standAtWall = (
   { id, siteId, at }: { id: string; siteId: string; at: (extent: Extent) => number },
 ): { placement: Placement; extent: Extent } => {
   const template = context.compiled({ id }, 1, siteId);
-  const extent = footprint({ template, origin: [0, 0, 0], turn: side.turn });
+  const turn = frontTurn(template, side.turn);
+  const extent = footprint({ template, origin: [0, 0, 0], turn });
   // Dressing's authored air must not excavate the top solid terrain voxel.
   const origin = againstWall(
     { side: side.side, bounds, setback: 0 },
     { y: groundedY(template, context.floor + 1), at: at(extent), extent },
   );
-  return { placement: freezePlacement({ template, origin, turn: side.turn }), extent };
+  return { placement: freezePlacement({ template, origin, turn }), extent };
 };
 
 /** Lining along one wall's inside face, leaving the gate's span clear on walls the gate stands in. */
@@ -1016,12 +1040,10 @@ const liningPlacements = (
   { lining, gated }: { lining: NonNullable<Perimeter['lining']>; gated: boolean },
 ): Placement[] => {
   const [lo, hi] = side.alongX ? [bounds.x0, bounds.x1] : [bounds.z0, bounds.z1];
-  const extentAt = (k: number) =>
-    footprint({
-      template: context.compiled({ id: lining.assembly }, 1, `perimeter:${side.side}:${k}`),
-      origin: [0, 0, 0],
-      turn: side.turn,
-    });
+  const extentAt = (k: number) => {
+    const template = context.compiled({ id: lining.assembly }, 1, `perimeter:${side.side}:${k}`);
+    return footprint({ template, origin: [0, 0, 0], turn: frontTurn(template, side.turn) });
+  };
   const inset = extentAt(0)[side.alongX ? 1 : 0];
   const placements: Placement[] = [];
   for (let k = 0, at = lo + inset; ; k++, at += lining.pitch) {
