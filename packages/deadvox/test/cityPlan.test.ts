@@ -1,4 +1,4 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { buildRegistry, type ContentSource } from '@skelly/engine/content';
 import {
   buildCityPlan,
   cityGridOf,
@@ -7,13 +7,14 @@ import {
   servicePlacement,
 } from '@skelly/engine/internal/core/cityPlan.ts';
 import { ScenarioCitySite, scenarioCityPopulation } from '@skelly/engine/internal/core/scenarioCity.ts';
-import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import type { ScenarioDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import {
   cellsOf,
   compileAssembly,
   compileTemplate,
   kitSlotChoices,
   placedSpawns,
+  turnFacing,
 } from '@skelly/engine/internal/core/templates.ts';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import {
@@ -33,7 +34,14 @@ import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
-import { defaultStartOf, fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import {
+  defaultStartOf,
+  fixturePool,
+  fixtureScenario,
+  fixtureScenarioSources,
+  fixtureService,
+  fixtureStart,
+} from './fixtures/scenario.ts';
 import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -393,6 +401,51 @@ describe('one finished city plan', () => {
         expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
       });
     });
+  });
+
+  it('turns a declared front to the street a north front faces at the same spot', () => {
+    // Two halls that differ only in the front their access declares, so one seed places them in the same spots and
+    // only the turn differs: the rotation keeps the entrance on the street-facing edge.
+    const hall = (front: 'n' | 's'): TemplateDef => ({
+      id: `fixture_front_${front}`,
+      eligibility: { settlementKinds: ['fixture_city'] },
+      lootContext: fixtureLootContext(),
+      size: [4, 3, 4],
+      palette: { '=': 'fixture_solid' },
+      layers: Array.from({ length: 3 }, () => Array.from({ length: 4 }, () => '====')),
+      access: { ground: 'ground', entrance: [1, 1, 1], storeys: [{ id: 'ground', floor: 1 }], stairs: [], front },
+    });
+    const planOf = (front: 'n' | 's') => {
+      const id = `fixture_front_${front}`;
+      const sources: ContentSource[] = [
+        ...fixtureScenarioSources(
+          profile,
+          fixtureService(),
+          fixturePool([{ ref: { kind: 'template', id }, weight: 1 }]),
+        ),
+        { source: `front-turn-${front}.json`, data: { templates: [hall(front)] } },
+      ];
+      const built = buildRegistry(sources);
+      if (built.issues.length > 0) {
+        throw new Error(JSON.stringify(built.issues));
+      }
+      return buildCityPlan({
+        seed: 73,
+        registry: built.registry,
+        floor,
+        grid: { ...fixtureGrid, templates: [{ id, weight: 1 }] },
+        maxStoreys: 4,
+        scenario: profile,
+      }).placements.filter((placement) => placement.template.id.split('×')[0] === id);
+    };
+    const north = planOf('n');
+    const south = planOf('s');
+    expect(south.length).toBeGreaterThan(0);
+    expect(south.length).toEqual(north.length);
+    for (const [twin, front] of north.map((placement, index) => [placement, south[index]!] as const)) {
+      expect(front.origin).toEqual(twin.origin);
+      expect(turnFacing('s', front.turn)).toEqual(turnFacing('n', twin.turn));
+    }
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {

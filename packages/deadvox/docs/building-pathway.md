@@ -8,6 +8,7 @@ read_if:
   - you give a house type a cellar twin, or tune how often a site draws it
   - you copy layers between pieces, or wonder what a layer mark claims
   - you place a briefed building in a look fixture's layout
+  - you declare or turn a building's front edge, or wonder which edge its entrance must reach
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -177,11 +178,18 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **doorways**: every alternative of a doorway slot leaves the doorway passable; see
   [Doorways](#doorways).
 - **entrance**: a body walking from the entrance through reserved circulation and doorways
-  must reach the ground storey's north edge, because a city plan turns each building so that
-  its north edge at turn 0 faces the street (`packages/engine/src/core/cityPlan.ts`,
-  `fillRow` and `SIDES`). It is the footprint-edge test every template passes, narrowed to
-  the street side and to cells no variant can block
-  (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`).
+  must reach an opening on the building's declared front edge, because a city plan turns
+  each building so that edge, not north, faces the street
+  (`packages/engine/src/core/cityPlan.ts`, `fillRow` and `frontTurn`). The building's own
+  `access.front` declares the edge; absent means north. One authority: the building owns
+  its front, and neither a site nor a placement declares a competing one; placement only
+  turns the declared front where it turned north before. The rule holds in the building's
+  own frame, so it survives any turn a placement gives it. It is the footprint-edge test
+  every template passes, narrowed to the front edge and to cells no variant can block
+  (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). The walk
+  proves the entrance opens on the front edge, not that a road reaches it: a local
+  approach from the road connection to the front door, such as a trail or steps, is
+  separate content that would attach at that front-edge opening.
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
@@ -220,9 +228,10 @@ What stays with BR's contact-sheet review:
   required fixture stands in: the services rule proves a fixture is reachable in the house,
   because rooms have no extent the check could test membership against;
 - whether the street opening reads as the front door: the check proves a walk reaches the
-  street edge, not that the door the facade shows is the one used;
-- answers placed by layout sites rather than city plans, whose street side the layout
-  decides: the entrance rule assumes the city plan's turn.
+  declared front edge, not that the door the facade shows is the one used;
+- answers placed by layout sites rather than city plans, whose rotation the layout author
+  chooses: the entrance rule reads the declared front in the building's own frame and says
+  nothing about which way a layout turns that front.
 
 ## Doorways
 
@@ -475,8 +484,9 @@ baseline it is judged against, and each house's cellar twin behind them; see
 `mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet`.
 
 **The entrance rule's turn.** Holdout and the look fixture turn the house by their own
-rules, not by a city plan's, so its north edge facing the road is the author's placement
-there, not something the fit check proves.
+rules, not by a city plan's, so which way its declared front faces the road is the
+author's placement there, not something the fit check proves: the rule only holds the
+entrance to the front edge in the house's own frame, whatever turn a placement gives it.
 
 ## Worked example: rural plot
 
