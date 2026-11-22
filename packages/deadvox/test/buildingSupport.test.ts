@@ -6,6 +6,7 @@ import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import type { ContentFile, KitRef, MapAssemblyDef } from '@skelly/engine/internal/core/schema.ts';
 import { createSupport } from '@skelly/engine/internal/core/structureSupport.ts';
 import {
+  type CompiledTemplate,
   cellsOf,
   compileAssembly,
   compileMapPiece,
@@ -123,6 +124,14 @@ const weakestBlocks = (registry: Registry, root: MapAssemblyDef, style: string |
   return weakest;
 };
 
+/** An assembly compiled in one style it is placed in, with the draw the support proof stamps. */
+const built = (registry: Registry, id: string, style: string | undefined): CompiledTemplate =>
+  compileAssembly(registry, registry.mapAssemblies.get(id)!, {
+    seed: 0,
+    siteId: `support:${id}`,
+    ...(style === undefined ? {} : { style }),
+  });
+
 /**
  * The solid cells of an assembly, built in one style it is placed in and set whole on natural ground, that the support
  * rule drops in its weakest variant. A slot's alternatives agree on which cells are solid
@@ -130,13 +139,13 @@ const weakestBlocks = (registry: Registry, root: MapAssemblyDef, style: string |
  * gives it. A shorter span never lets more cells hold, so when that holds every variant does; it may fail cells no one
  * draw weakens together, never pass one a draw drops. A style changes the blocks, so each style is built.
  */
-const unsupported = (registry: Registry, id: string, style: string | undefined): Vec3[] => {
+const unsupported = (
+  registry: Registry,
+  id: string,
+  style: string | undefined,
+  template = built(registry, id, style),
+): Vec3[] => {
   const assembly = registry.mapAssemblies.get(id)!;
-  const template = compileAssembly(registry, assembly, {
-    seed: 0,
-    siteId: `support:${id}`,
-    ...(style === undefined ? {} : { style }),
-  });
   const placement = { template, origin: [0, 0, 0] as Vec3, turn: 0 as const };
   const surface = template.groundLayer ?? 0;
   const ground = registry.blocks.findIndex(({ solid }) => solid);
@@ -207,21 +216,33 @@ const briefedBuilds = (): Map<string, { registry: Registry; id: string; style: s
   return builds;
 };
 
-/** How many solid cells drop, or undefined for a style the building cannot be built in: validate reports that. */
+/**
+ * How many solid cells drop, or undefined for a style the building cannot be built in, which validate's styles rule
+ * reports. Only the compile is excused; an error in the support proof itself is the test's to report.
+ */
 const droppedCells = (registry: Registry, id: string, style: string | undefined): number | undefined => {
+  let template: CompiledTemplate;
   try {
-    return unsupported(registry, id, style).length;
+    template = built(registry, id, style);
   } catch {
     return undefined;
   }
+  return unsupported(registry, id, style, template).length;
 };
 
 it('holds every building that answers a brief, intact on natural ground, under the support rule', () => {
   const unskipped: string[] = [];
   const failing: Record<string, number> = {};
   const stillFailing = new Set<string>();
+  const errors: Record<string, string> = {};
   for (const [key, { registry, id, style }] of briefedBuilds()) {
-    const dropped = droppedCells(registry, id, style);
+    let dropped: number | undefined;
+    try {
+      dropped = droppedCells(registry, id, style);
+    } catch (error) {
+      errors[key] = error instanceof Error ? error.message : String(error);
+      continue;
+    }
     if (dropped === undefined) {
       continue;
     }
@@ -234,6 +255,7 @@ it('holds every building that answers a brief, intact on natural ground, under t
       stillFailing.add(id);
     }
   }
+  expect(errors, 'support proofs that threw, by building and style').toEqual({});
   expect(unskipped.length, 'some building that is not skipped is checked').toBeGreaterThan(0);
   expect(failing).toEqual({});
   expect(
