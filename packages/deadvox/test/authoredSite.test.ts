@@ -14,6 +14,7 @@ import {
 } from '@skelly/engine/internal/core/authoredTerrain.mjs';
 import { couldFit } from '@skelly/engine/internal/core/items.ts';
 import { lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
+import { layoutApproaches } from '@skelly/engine/internal/core/lotApproach.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { siteGenerationOf } from '@skelly/engine/internal/core/sitePalette.ts';
@@ -1377,7 +1378,7 @@ it('uses the vegetation density query for cloneable baseline cover and mandatory
   }
 });
 
-// Each declared way answers one march: the columns north of a hall's front, at the doorway's x, from the doorstep
+// Each declared way answers one march: the columns out along a hall's front, at the doorway's x, from the doorstep
 // to the road, all read off the site the layout builds. Nothing pins the fixture's numbers; the hall's own
 // position and the road the terrain draws carry the case.
 describe('a building type declares its local way from the road connection to its door', () => {
@@ -1386,12 +1387,17 @@ describe('a building type declares its local way from the road connection to its
   const site = new AuthoredSite(1, local, scale, plot);
   const terrain = terrainFor(site, local, scale, site.seed).surface!;
 
-  /** The doorway's x and every column north of it from the doorstep, until past the layout's north bound. */
-  const frontLine = (templateId: string): { doorX: number; columns: number[] } => {
+  /** The doorway's x and the columns from the doorstep out along the hall's front, until past the layout's bound;
+   * `out` names the front's outward direction in columns, so a turned hall marches its own way. */
+  const frontLine = (templateId: string, out: -1 | 1): { doorX: number; columns: number[] } => {
     const building = plot.buildings.find((candidate) => candidate.template === templateId)!;
-    const doorX = Math.floor(building.position[0] / scale.blockSize) + 3;
+    const originX = Math.floor(building.position[0] / scale.blockSize);
+    // The hall's two-cell doorway centres on cells 2 and 3 of a six-wide front; a half turn mirrors it.
+    const doorX = originX + (out === -1 ? 3 : 2);
+    const face = Math.floor(building.position[2] / scale.blockSize) + (out === -1 ? -1 : 6);
+    const bound = (out === -1 ? plot.bounds.z0 : plot.bounds.z1) / scale.blockSize;
     const columns: number[] = [];
-    for (let z = Math.floor(building.position[2] / scale.blockSize) - 1; z >= plot.bounds.z0; z--) {
+    for (let z = face; out === -1 ? z >= bound : z <= bound; z += out) {
       columns.push(z);
     }
     return { doorX, columns };
@@ -1400,7 +1406,7 @@ describe('a building type declares its local way from the road connection to its
   it('trods a declared trail from the road connection to the door, and only there', () => {
     const dirt = local.blockIds.get('dirt')!;
     const asphalt = local.blockIds.get('asphalt')!;
-    const { doorX, columns } = frontLine('door_trail_hall');
+    const { doorX, columns } = frontLine('door_trail_hall', 1);
     const tops = columns.map((z) => terrain.top(doorX, z));
     const roadAt = tops.indexOf(asphalt);
     expect(roadAt).toBeGreaterThan(0);
@@ -1415,7 +1421,7 @@ describe('a building type declares its local way from the road connection to its
     const stone = local.blockIds.get('dressed_stone')!;
     const asphalt = local.blockIds.get('asphalt')!;
     const building = plot.buildings.find((candidate) => candidate.template === 'door_steps_hall')!;
-    const { doorX, columns } = frontLine('door_steps_hall');
+    const { doorX, columns } = frontLine('door_steps_hall', -1);
     const tops = columns.map((z) => terrain.top(doorX, z));
     const heights = columns.map((z) => terrain.height(doorX, z, plot.ground));
     const roadAt = tops.indexOf(asphalt);
@@ -1430,5 +1436,21 @@ describe('a building type declares its local way from the road connection to its
       expect(heights[i]! - heights[i + 1]!).toBeGreaterThanOrEqual(0);
       expect(heights[i]! - heights[i + 1]!).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('places the doorstep on the turned front face', () => {
+    // The trail hall is turned a half turn, so its front is its south face and its door faces the southern road.
+    const building = plot.buildings.find((candidate) => candidate.template === 'door_trail_hall')!;
+    const placements = plot.buildings.map((candidate) => placementOf(local, candidate, plot.lootContext));
+    const { trails } = layoutApproaches(local, plot, placements);
+    const bounds = buildingBounds(building, local.mapAssemblies.get('door_trail_hall')!.size);
+    const trail = trails.find(({ points }) => points.at(-1)![0] >= bounds.x0 && points.at(-1)![0] <= bounds.x1)!;
+    const door = trail.points.at(-1)!;
+    const connection = trail.points[0]!;
+    // The doorstep stands on the turned face's line, at the doorway's midline, and the connection lies beyond it.
+    expect(door[1]).toBe(bounds.z1);
+    expect(door[0]).toBeGreaterThanOrEqual(bounds.x0);
+    expect(door[0]).toBeLessThanOrEqual(bounds.x1);
+    expect(connection[1]).toBeGreaterThan(bounds.z1);
   });
 });

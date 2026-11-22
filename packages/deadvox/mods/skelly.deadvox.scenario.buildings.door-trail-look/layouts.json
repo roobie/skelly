@@ -6,12 +6,12 @@
         "x0": -28,
         "x1": 16,
         "z0": -14,
-        "z1": 16
+        "z1": 24
       },
       "buildings": [
         {
-          "position": [-20, 21, 0],
-          "rotation": 0,
+          "position": [-20, 21, 6],
+          "rotation": 180,
           "template": "door_trail_hall"
         },
         {
@@ -42,6 +42,11 @@
       "tracks": [
         {
           "points": [[-25, -8], [13, -8]],
+          "surface": "asphalt",
+          "width": 6
+        },
+        {
+          "points": [[-25, 16], [13, 16]],
           "surface": "asphalt",
           "width": 6
         }

@@ -73,9 +73,13 @@ const approachCells = (
     return undefined;
   }
   const [dx, dz] = NORMAL[turnFacing(access.front ?? 'n', placement.turn)];
+  // Place the opening first, then step out along the turned normal in world cells: the normal is already in world
+  // frame, so adding it before `placedPoint` would turn it a second time and land the doorstep inside a turned
+  // building.
+  const placed = placedPoint(placement, opening);
   return {
     approach: access.approach,
-    door: placedPoint(placement, [opening[0] + dx, opening[1], opening[2] + dz]),
+    door: [placed[0] + dx, placed[1], placed[2] + dz],
     normal: [dx, dz],
   };
 };
