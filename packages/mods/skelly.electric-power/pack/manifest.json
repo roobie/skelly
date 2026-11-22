@@ -28,6 +28,50 @@
     {
       "kind": "content",
       "path": "thermal-plant.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-electric-power.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bearing_oiler.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exciter_brush_set.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/field_fuse.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/governor_linkage.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bearing_oiler.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exciter_brush_set.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/field_fuse.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/governor_linkage.glb"
     }
   ],
   "id": "skelly.electric-power",

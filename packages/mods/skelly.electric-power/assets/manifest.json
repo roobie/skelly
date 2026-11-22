@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/bearing_oiler.glb",
+        "assets/models/exciter_brush_set.glb",
+        "assets/models/field_fuse.glb",
+        "assets/models/governor_linkage.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built assets",
+      "url": "https://github.com/roobie/skelly-assets"
+    }
+  ]
+}

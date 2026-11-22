@@ -153,6 +153,20 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       assert.ok(model && Object.keys(model.parts ?? {}).length > 0, `${id}: empty model`);
     }
   });
+  it('draws every serviceable housing spare from a consumed thing export', () => {
+    const spares = new Set(
+      [...registry.partBlueprints.values()].flatMap(({ slots }) => slots.flatMap(({ accepts }) => accepts)),
+    );
+    assert.ok(spares.size > 0, 'no serviceable housing spares');
+    for (const id of spares) {
+      const item = registry.items.get(id);
+      assert.ok(item?.model, `${id}: missing spare model`);
+      assert.ok(
+        exported.some((out) => out.id === item.model),
+        `${id}: no consumed thing export`,
+      );
+    }
+  });
   it('resolves every figure part to an exported model holding each named anchor and rig part', () => {
     assert.ok(registry.figures.size > 0, 'the base content must author a figure');
     for (const part of figureParts) {

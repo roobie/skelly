@@ -69,6 +69,38 @@
           },
           "id": "control",
           "item": "instrument_fixture_control"
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [-15, 42, -3]
+          },
+          "id": "exciter_brush_set",
+          "item": "exciter_brush_set"
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [-13, 42, -3]
+          },
+          "id": "governor_linkage",
+          "item": "governor_linkage"
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [-11, 42, -3]
+          },
+          "id": "field_fuse",
+          "item": "field_fuse"
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [-9, 42, -3]
+          },
+          "id": "bearing_oiler",
+          "item": "bearing_oiler"
         }
       ],
       "recipes": [

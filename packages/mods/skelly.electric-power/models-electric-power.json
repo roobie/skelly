@@ -1,0 +1,72 @@
+{
+  "models": [
+    {
+      "file": "assets/models/exciter_brush_set.glb",
+      "grip": {
+        "at": [0, 0.037999999999999999, -0.016],
+        "turn": [90, 0, 0]
+      },
+      "hold": "upright",
+      "id": "exciter_brush_set",
+      "itemPresentation": {
+        "materials": ["mineral", "metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/governor_linkage.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [90, 0, 0]
+      },
+      "hold": "upright",
+      "id": "governor_linkage",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/field_fuse.glb",
+      "grip": {
+        "at": [0, 0.043000000000000003, 0],
+        "turn": [90, 0, 0]
+      },
+      "hold": "upright",
+      "id": "field_fuse",
+      "itemPresentation": {
+        "materials": ["mineral", "metal", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/bearing_oiler.glb",
+      "grip": {
+        "at": [0, 0.10000000000000001, 0],
+        "turn": [90, 0, 0]
+      },
+      "hold": "upright",
+      "id": "bearing_oiler",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "fuel", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 90
+    }
+  ]
+}

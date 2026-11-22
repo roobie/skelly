@@ -1,0 +1,8 @@
+{
+  "assets/models/bearing_oiler.glb": { "materials": ["brass-dull", "glass-grey", "fuel-amber", "steel-grey"] },
+  "assets/models/exciter_brush_set.glb": { "materials": ["paint-charcoal", "brass-dull", "steel-grey", "copper"] },
+  "assets/models/field_fuse.glb": {
+    "materials": ["ceramic-white", "steel-grey", "paper-pages-cream", "paint-charcoal"]
+  },
+  "assets/models/governor_linkage.glb": { "materials": ["steel-grey", "brass-dull"] }
+}

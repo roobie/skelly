@@ -124,7 +124,7 @@ local recipes = [
 ];
 
 shape.colliding(breach.breaking(itemPolicy.itemPack({
-  items: [slot.part + { category: 'material' } for slot in slots],
+  items: [slot.part + { category: 'material', model: slot.part.id } for slot in slots],
   recipeCategories: [{ id: 'plant_parts', label: 'Plant parts', parent: 'supplies', order: 50 }],
   recipes: recipes,
   powerDevices: [{
