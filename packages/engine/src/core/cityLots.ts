@@ -3,7 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ScenarioRouteSpace } from './scenarioRoute.ts';
 import type { CityScenarioDef, MapPoolDef, PerimeterCrossingDef } from './schema.ts';
-import { eligibilityExclusion } from './settlementPools.ts';
+import { eligibilityExclusion, lotAdmissionFit } from './settlementPools.ts';
 import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedPoint } from './templates.ts';
 
@@ -66,8 +66,8 @@ export const lotChoices = (registry: Registry, city: LotContext, lot: Lot): Choi
     lot.source.kind === 'pool'
       ? (registry.mapPools.get(lot.source.id)?.choices ?? [])
       : [{ ref: lot.source, weight: 1 }];
-  const [along, depth] = lot.turn % 2 === 0 ? lot.size : [lot.size[1], lot.size[0]];
-  return choices.filter(({ ref }) => eligibilityExclusion(registry, ref, kind, { along, depth }) === undefined);
+  const fit = lotAdmissionFit(lot);
+  return choices.filter(({ ref }) => eligibilityExclusion(registry, ref, kind, fit) === undefined);
 };
 
 const sourceIssues = (registry: Registry, city: LotContext, lot: Lot, path: string): Issue[] => {

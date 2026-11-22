@@ -39,6 +39,10 @@ const FACINGS: readonly Facing[] = ['n', 'e', 's', 'w'];
 
 export const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
 
+/** The turn that puts `facing` where `target` already faces: the inverse of `turnFacing`. */
+export const turnToward = (facing: Facing, target: Facing): Turn =>
+  ((FACINGS.indexOf(target) - FACINGS.indexOf(facing) + 4) % 4) as Turn;
+
 /** A piece's cells as [x, y, z], seen from the template after its authored pose. */
 export const pieceSize = (size: readonly [number, number, number], facing: Facing, tip?: Tip): Vec3 => {
   let tipped: Vec3 = [size[0], size[1], size[2]];
@@ -353,9 +357,15 @@ export interface Placement {
   readonly turn: Turn;
 }
 
-/** Width along x and depth along z once turned. */
-export const footprint = ({ template, turn }: TerrainPlacement): [number, number] =>
-  turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
+/** Width along x and depth along z once turned; reads any template or definition shape that carries a size. */
+export const footprint = ({
+  template,
+  turn,
+}: {
+  readonly template: { readonly size: Vec3 };
+  readonly origin?: Vec3;
+  readonly turn: Turn;
+}): [number, number] => (turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]]);
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
 export const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
