@@ -29,7 +29,7 @@ import type { SimSeconds } from './time.ts';
 /** Events systems emit. Sound choices and their hearing stimuli are committed before playback. */
 export type SimEvent =
   | { kind: 'interrupt'; reason: string }
-  | { kind: 'damage'; amount: number; cause: string }
+  | { kind: 'damage'; amount: number; cause: string; continuous?: boolean }
   | { kind: 'death'; cause: string }
   | ({ kind: 'sound' } & SoundEmission)
   | { kind: 'noise'; event: SoundId; position: Vec3; id: number; radiusMetres: number; expiresAt: number };
@@ -271,8 +271,8 @@ export class Simulation {
   }
 
   /** Takes health (a fall, food poisoning, later a bite); at 0 you die of `cause`. */
-  hurt(amount: number, cause: string): void {
-    this.takeDamage(cause, () => this.body.damageHealth(amount));
+  hurt(amount: number, cause: string, continuous = false): void {
+    this.takeDamage(cause, () => this.body.damageHealth(amount), true, continuous);
   }
 
   /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
@@ -414,13 +414,13 @@ export class Simulation {
     );
   }
 
-  private takeDamage(cause: string, apply: () => number, interrupt = true): void {
+  private takeDamage(cause: string, apply: () => number, interrupt = true, continuous = false): void {
     if (this.dead || this.godMode) {
       return;
     }
     const applied = apply();
     if (applied > 0) {
-      this.emit({ kind: 'damage', amount: applied, cause });
+      this.emit({ kind: 'damage', amount: applied, cause, ...(continuous ? { continuous } : {}) });
     }
     if (this.body.health <= 0) {
       this.die(cause);

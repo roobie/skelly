@@ -14,4 +14,5 @@ export const KNOWN_SCHEDULER_IDS: ReadonlySet<string> = new Set([
   'player',
   'handling',
   'firearms',
+  'support',
 ]);

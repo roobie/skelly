@@ -15,9 +15,13 @@ export const installColumn = (world: World, column: readonly Chunk[]): Chunk[] =
 
 type CanonicalWorld = World & Pick<TerrainRead, 'renderOnly'>;
 
+/** Natural-ground chunks kept for support queries; a support search reaches only a few chunks around its cell. */
+const NATURAL_CACHE_CHUNKS = 64;
+
 /** A transaction-local view; scratch generation neither publishes terrain nor rolls authored supply. */
 export class CanonicalTerrain {
   private readonly scratch = new Map<string, Chunk[]>();
+  private readonly natural = new Map<string, Chunk>();
 
   readonly world: CanonicalWorld;
   readonly terrain: TerrainEvaluator;
@@ -68,6 +72,24 @@ export class CanonicalTerrain {
     const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     if (!chunk) {
       throw new Error(`Terrain query outside world height: ${x},${y},${z}`);
+    }
+    return chunk.get(toLocal(x), toLocal(y), toLocal(z));
+  }
+
+  /**
+   * The natural ground's block at a cell, before any structure is stamped in: a pure function of the plan, so the
+   * cache only saves regeneration and never changes an answer.
+   */
+  naturalBlock(x: number, y: number, z: number): number {
+    const cell: [number, number, number] = [toChunk(x), toChunk(y), toChunk(z)];
+    const key = cell.join(',');
+    let chunk = this.natural.get(key);
+    if (!chunk) {
+      if (this.natural.size >= NATURAL_CACHE_CHUNKS) {
+        this.natural.delete(this.natural.keys().next().value!);
+      }
+      chunk = this.terrain.generateBaseChunk(cell);
+      this.natural.set(key, chunk);
     }
     return chunk.get(toLocal(x), toLocal(y), toLocal(z));
   }

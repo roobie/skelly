@@ -30,6 +30,7 @@ export interface FurnitureMover {
   readonly others: Iterable<Body>;
   readonly stamina: number;
   readonly beforeRelocate?: (entity: BlockEntity) => void;
+  readonly crush?: (path: Vec3, pathSize: Vec3, landing: Vec3, size: Vec3) => void;
 }
 
 /** Old appliance service, then old food environment, are settled before a piece moves, falls or is destroyed. */
@@ -329,14 +330,26 @@ const settle = (
 
 /** Why a piece can't fall to a height: someone is in its path. */
 const fallRefusal = (mover: FurnitureMover, entity: BlockEntity, y: number): string | undefined => {
-  const messages = messagesOf(mover.inventory);
   const path: Vec3 = [entity.pos[0], y, entity.pos[2]];
   const pathSize: Vec3 = [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]];
+  return fallingBoxRefusal(mover, path, pathSize);
+};
+
+export const fallingBoxRefusal = (mover: FurnitureMover, path: Vec3, pathSize: Vec3): string | undefined => {
+  const messages = messagesOf(mover.inventory);
   mover.readBox?.(path, pathSize);
+  if (mover.crush) {
+    return undefined;
+  }
   if (boxIntersectsBody(path, pathSize, mover.player)) {
     return messages.fallsOnPlayer;
   }
   return anyBodyIn(path, pathSize, mover.others) ? messages.fallsOnOther : undefined;
+};
+
+const crushFall = (mover: FurnitureMover, entity: BlockEntity, y: number): void => {
+  const landing: Vec3 = [entity.pos[0], y, entity.pos[2]];
+  mover.crush?.(landing, [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]], landing, entity.size);
 };
 
 /** Items that lie in no pile, such as a ruined piece's contents and debris, and where they may land, nearest first. */
@@ -716,6 +729,7 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
     inventory.entities.destroy(piece);
   }
   for (const { entity: fallen, y } of falls) {
+    crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
   inventory.shiftPiles(moves.filter(({ loose }) => !loose));
@@ -771,6 +785,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
   beforeRelocating(mover, [entity, ...falls.map((fall) => fall.entity)]);
   inventory.entities.lift(entity, floorLocked);
   for (const { entity: fallen, y } of falls) {
+    crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
   inventory.shiftPiles(moves);
@@ -862,6 +877,7 @@ export const slideFurniture = (
     beforeRelocating(mover, [entity, ...falls.map((fall) => fall.entity)]);
     inventory.entities.slide(entity, pos);
     for (const { entity: fallen, y } of falls) {
+      crushFall(mover, fallen, y);
       inventory.entities.drop(fallen, y);
     }
     inventory.shiftPiles(moves);

@@ -10,6 +10,7 @@ import type { Item } from './items.ts';
 import { rotatedSize, rotationOf } from './orientation.ts';
 import type { Body } from './physics.ts';
 import type { ColumnSource } from './site.ts';
+import { createSupport, terrainSupportView } from './structureSupport.ts';
 import { type PlacementBox, placementCells, validWorldDestination, type WorldDestination } from './worldDestination.ts';
 
 export interface WorldPlacement {
@@ -106,6 +107,9 @@ export const createWorldPlacement = ({
   supply?: { owner: ReturnType<typeof createColumnSupply>; source: ColumnSource };
 }): WorldPlacement => {
   const noRoom = () => claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages.noRoom;
+  /** A block may go only where it would be held; furniture never holds terrain, so pieces don't count. */
+  const supported = (cell: Readonly<Vec3>, block: number): boolean =>
+    createSupport(inventory.registry, terrainSupportView(terrain, { cell, block })).holds(cell);
   const inspect = (recipe: RecipeDef, destination: SiteDestination, work?: Item) => {
     const box = boxOf(inventory, recipe, destination);
     if (box.pos.some((value, axis) => !Number.isSafeInteger(Math.ceil(value + box.size[axis]!)))) {
@@ -148,6 +152,16 @@ export const createWorldPlacement = ({
     }
     return { box, cells, projection };
   };
+  /** Room comes first, so a taken cell reads as taken rather than as unsupported. */
+  const admit = (recipe: RecipeDef, destination: SiteDestination, work?: Item) => {
+    const admission = inspect(recipe, destination, work);
+    if (admission.refusal || !('block' in recipe.result)) {
+      return admission;
+    }
+    return supported(destination.pos, inventory.registry.blockIds.get(recipe.result.block)!)
+      ? admission
+      : { refusal: coreMessage(inventory.registry, 'placementUnsupported') };
+  };
   const refusal = (recipe: RecipeDef, destination: WorldDestination, work?: Item): string | undefined => {
     if (!validWorldDestination(destination, recipe)) {
       return coreMessage(inventory.registry, 'placementTargetRequired');
@@ -164,12 +178,13 @@ export const createWorldPlacement = ({
           : undefined)
       );
     }
-    return inspect(recipe, destination, work).refusal;
+    return admit(recipe, destination, work).refusal;
   };
   /** Publishes an admitted block or piece; its cells are already ensured. */
   const build = (recipe: RecipeDef, destination: SiteDestination, box: PlacementBox): void => {
     if ('block' in recipe.result) {
       terrain.world.setBlock(...destination.pos, inventory.registry.blockIds.get(recipe.result.block)!);
+      terrain.world.support.markPlaced(destination.pos);
     } else if ('entity' in recipe.result && destination.kind === 'entity') {
       const entity = inventory.entities.add({
         type: recipe.result.entity,
@@ -200,7 +215,7 @@ export const createWorldPlacement = ({
       if (!validWorldDestination(destination, recipe)) {
         return coreMessage(inventory.registry, 'placementTargetRequired');
       }
-      const admission = inspect(recipe, destination, work);
+      const admission = admit(recipe, destination, work);
       if (admission.refusal || !admission.box) {
         return admission.refusal;
       }

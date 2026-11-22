@@ -339,6 +339,10 @@
           "gasp": "breath_gasp",
           "inhale": "breath_inhale"
         },
+        "continuousDamage": {
+          "event": "player_hurt_light",
+          "minIntervalSimSeconds": 2
+        },
         "hurt": {
           "heavy": "player_hurt_heavy",
           "heavyAtDamage": 15,

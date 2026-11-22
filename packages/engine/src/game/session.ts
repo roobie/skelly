@@ -31,7 +31,13 @@ import {
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
-import { type BashOutcome, BlockEntities, type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import {
+  type BashOutcome,
+  BlockEntities,
+  type BlockEntity,
+  boxIntersectsBody,
+  searchTime,
+} from '../core/blockEntities.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -40,6 +46,7 @@ import { claimed, claimedId } from '../core/capabilities.ts';
 import type { CastShotEnd } from '../core/castVolleys.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { collapseBlockingCells, reachableCollapseExit, refreshBurial } from '../core/collapse.ts';
 import {
   type LightBlocking,
   terrainSolid,
@@ -136,7 +143,7 @@ import type { ActorBody } from '../core/schema/actors.ts';
 import type { EventRuleDef } from '../core/schema.ts';
 import { severedItem } from '../core/severedItem.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
-import { Simulation } from '../core/sim.ts';
+import { type SimEvent, Simulation, type Timed } from '../core/sim.ts';
 import type { SimulationWorld } from '../core/simulationTerrain.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -154,7 +161,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { strikeTerrain } from '../core/terrainStrike.ts';
+import { cascadeSupport, strikeTerrain } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -1065,7 +1072,9 @@ export const createSession = (options: SessionOptions) => {
     if (reason) {
       return reason;
     }
+    world.rubble.release(cell);
     const edited = world.setBlock(cell[0], cell[1], cell[2], 0);
+    world.support.lost(registry, [...cell]);
     options.onTerrainEdited?.(edited);
     return undefined;
   };
@@ -1121,12 +1130,14 @@ export const createSession = (options: SessionOptions) => {
       body: mobBody,
       noiseRadiusMetres,
       soundPitchMultiplier,
+      minimumIntervalSimSeconds,
     }: SoundEmissionMeta & {
       player: boolean;
       body?: ActorBody;
+      minimumIntervalSimSeconds?: number;
     },
   ): boolean => {
-    const selected = soundPicker.pick(event, time);
+    const selected = soundPicker.pick(event, time, minimumIntervalSimSeconds);
     if (!selected) {
       return false;
     }
@@ -1185,6 +1196,21 @@ export const createSession = (options: SessionOptions) => {
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
+  const playDamageSound = (event: Timed<Extract<SimEvent, { kind: 'damage' }>>): void => {
+    if (event.continuous) {
+      const continuous = bodyTuning.sounds.continuousDamage;
+      admitSound(continuous.event, chest(), event.time, {
+        player: true,
+        listenerRelative: true,
+        minimumIntervalSimSeconds: continuous.minIntervalSimSeconds,
+      });
+    } else {
+      playPlayerSound(
+        bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+        event.time,
+      );
+    }
+  };
   const awardInventoryPractice = (): void => {
     if (inventorySkillId !== undefined) {
       const training = skillActivityPractice(registry, inventorySkillId, 'handling');
@@ -1732,6 +1758,10 @@ export const createSession = (options: SessionOptions) => {
     if (!result) {
       return false;
     }
+    if (result.cause === 'canopy') {
+      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
+      return true;
+    }
     if (result.outcome === 'broken') {
       options.onTerrainEdited?.(result.edited);
     }
@@ -1743,6 +1773,80 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  inventory.buried = () => body.buried !== undefined;
+  const collapseSolid = (x: number, y: number, z: number): boolean =>
+    (options.terrainDestruction
+      ? registry.blocks[options.terrainDestruction.terrain.getBlock(x, y, z)]!.solid
+      : physicalSolid(x, y, z)) ||
+    entities.isSolid(x, y, z) ||
+    vehicleOccupancy.isSolid(x, y, z);
+  const crushBodies = (path: Vec3, pathSize: Vec3, landing: Vec3, size: Vec3): void => {
+    const tuning = claimed(registry.supportTuning, 'support');
+    if (!tuning) {
+      throw new Error('A collapse needs support tuning');
+    }
+    const victims = [...actorSystem.store.entries()];
+    const bodies = [body, ...victims.map(([, actor]) => actor.body)];
+    for (const victim of bodies.filter((candidate) => boxIntersectsBody(path, pathSize, candidate))) {
+      const actor = victims.find(([, candidate]) => candidate.body === victim);
+      if (actor) {
+        actorSystem.injureVitals(actor[0], tuning.crushDamage, 'crush');
+      } else {
+        sim.hit(tuning.crushDamage, tuning.crushCause, 'torso', { kind: 'crush' });
+      }
+      if (actor && !actorSystem.store.get(actor[0])) {
+        continue;
+      }
+      const exit =
+        !victim.buried &&
+        reachableCollapseExit({
+          body: victim,
+          path,
+          size: pathSize,
+          solid: collapseSolid,
+          others: bodies.filter((other) => other !== victim),
+          stride: tuning.pushStepMetres / s,
+          budget: tuning.pushSearchCells,
+        });
+      if (exit) {
+        victim.pos = exit;
+        victim.vel = [0, 0, 0];
+        continue;
+      }
+      victim.pos[1] = Math.min(victim.pos[1], landing[1]);
+      victim.buried = [...(victim.buried ?? []), ...collapseBlockingCells(landing, size)];
+      victim.vel = [0, 0, 0];
+    }
+  };
+  /** Runs the saved support cascade up to its per-tick cap; the rest continues next tick. */
+  const cascadeTick = (): void => {
+    const context = options.terrainDestruction;
+    const tuning = claimed(registry.supportTuning, 'support');
+    if (!(context && tuning)) {
+      throw new Error('A support cascade needs a terrain destruction owner and support tuning');
+    }
+    const result = cascadeSupport(
+      {
+        terrain: context.terrain,
+        project: () => columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      tuning.cascadeCellsPerTick,
+    );
+    if (result.edited.length > 0) {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+  };
+  sim.scheduler.register({
+    id: 'support',
+    rate: PHYSICS_RATE,
+    enabled: () => world.support.cascading,
+    tick: cascadeTick,
+  });
   /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
@@ -2135,6 +2239,7 @@ export const createSession = (options: SessionOptions) => {
     player: body,
     others: standingActorBodies(),
     stamina: sim.needs.stamina,
+    crush: crushBodies,
     beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
   });
   const boxCentre = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3 => [
@@ -2552,7 +2657,12 @@ export const createSession = (options: SessionOptions) => {
     const tick = playerTick;
     playerTick += 1;
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
-    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
+    const moving =
+      playerInput.active &&
+      !playerInput.inputLocked &&
+      !sim.body.actionRefusal &&
+      !traps.holds(undefined) &&
+      !body.buried;
     const intent = moving ? playerInput.intent : IDLE;
     if (
       trapInterrupts.read().some((event) => event.kind === 'interrupt') ||
@@ -2688,9 +2798,18 @@ export const createSession = (options: SessionOptions) => {
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
+      const tuning = claimed(registry.supportTuning, 'support');
+      if (refreshBurial(body, collapseSolid)) {
+        sim.hurt(tuning!.suffocationDamagePerSimSecond * dt, tuning!.suffocationCause, true);
+      }
+      for (const [id, actor] of [...actorSystem.store.entries()]) {
+        if (refreshBurial(actor.body, collapseSolid) && actor.type.breathes) {
+          actorSystem.injureVitals(id, tuning!.suffocationDamagePerSimSecond * dt);
+        }
+      }
       const step = preparePlayerStep(dt, time);
       applyAimViewPitchShift();
-      if (!playerInput?.worldReady) {
+      if (!playerInput?.worldReady || body.buried) {
         return;
       }
       advancePlayerMovement(dt, time, step);
@@ -2892,6 +3011,7 @@ export const createSession = (options: SessionOptions) => {
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     world.rubble.restoreState(restored.world.rubble, registry, options.onRestoreIssue);
+    world.support.restoreState(restored.world.support, registry, options.onRestoreIssue);
     actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
     playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);
@@ -3328,10 +3448,7 @@ export const createSession = (options: SessionOptions) => {
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(
-            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
-            event.time,
-          );
+          playDamageSound(event);
         }
       }
     },
@@ -3344,10 +3461,7 @@ export const createSession = (options: SessionOptions) => {
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(
-            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
-            event.time,
-          );
+          playDamageSound(event);
         }
       }
     },
