@@ -39,6 +39,8 @@ const mod = (id: string, starts: unknown[], extra: Record<string, unknown> = {})
   ...extra,
 });
 const startMod = mod('fixture.start-mod', [row('fixture_start_mod_start')]);
+// The shipped look fixture this file guards the link minting for; see `docs/PROCESS.md`, "Reviews by eye and by play".
+const doorTrailLook = 'skelly.deadvox.scenario.buildings.door-trail-look';
 const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], {
   defaultStart: 'fixture_scenario_start',
   dependencies: ['skelly.deadvox'],
@@ -158,6 +160,13 @@ const picked = withReusedBuilds(() => ({
   stackedReversed: select(new URLSearchParams(), [folder!, startMod.id]),
   stage: stage(),
   committed: new Map(scenarios.map(([id]) => [id, selectBundledMods(productModIntake, [id])] as const)),
+  lookLinked: selectBundledMods(
+    productModIntake,
+    [],
+    [],
+    startModFromUrl(new URLSearchParams({ 'start-mod': doorTrailLook })),
+  ),
+  lookListed: selectBundledMods(productModIntake, [doorTrailLook]),
 }));
 
 describe('start-mod parameter', () => {
@@ -248,6 +257,23 @@ describe('start-mod parameter', () => {
     expect(startOf(picked.scenarioOnly).startId).toBe('fixture_scenario_start');
     const { plain } = picked;
     expect(startOf(plain).startId).toBe(plain.content.defaultStart);
+  });
+
+  it('starts a shipped look fixture only when the link names it as start-mod, not as a listed mod', () => {
+    // A look link that lists the fixture pack in `mods` admits its site without selecting its start, so the run
+    // keeps the product default and the tester spawns at the entry pack's default site instead of the fixture.
+    const linked = picked.lookLinked;
+    expect(linked.issues).toEqual([]);
+    expect(linked.startModRows).toBeUndefined();
+    const config = configFromUrl(new URLSearchParams(), { debug: true }, linked.content, ragdollSweepViewer);
+    expect(config.site).toBe('doorTrailLook');
+    expect(config.start).toBe(parseTimeOfDay('12:00'));
+    const listed = picked.lookListed;
+    expect(listed.issues).toEqual([]);
+    expect(listed.content.startModStart).toBeUndefined();
+    expect(configFromUrl(new URLSearchParams(), { debug: true }, listed.content, ragdollSweepViewer).startId).toBe(
+      listed.content.defaultStart,
+    );
   });
 
   it('gives an inline start mod a save identity that changes only with its data', async () => {

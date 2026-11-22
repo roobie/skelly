@@ -16,6 +16,7 @@ import { couldFit } from '@skelly/engine/internal/core/items.ts';
 import { lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
 import { layoutApproaches } from '@skelly/engine/internal/core/lotApproach.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { yawToward } from '@skelly/engine/internal/core/showroom.ts';
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { siteGenerationOf } from '@skelly/engine/internal/core/sitePalette.ts';
 import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';
@@ -1452,5 +1453,20 @@ describe('a building type declares its local way from the road connection to its
     expect(door[0]).toBeGreaterThanOrEqual(bounds.x0);
     expect(door[0]).toBeLessThanOrEqual(bounds.x1);
     expect(connection[1]).toBeGreaterThan(bounds.z1);
+  });
+
+  it('stands the look link spawn on the north road, facing both halls', () => {
+    const asphalt = local.blockIds.get('asphalt')!;
+    const [spawnX, , spawnZ] = site.spawn.pos;
+    expect(terrain.top(Math.floor(spawnX / scale.blockSize), Math.floor(spawnZ / scale.blockSize))).toBe(asphalt);
+    for (const building of plot.buildings) {
+      const bounds = buildingBounds(building, local.mapAssemblies.get(building.template)!.size);
+      // The spawn stands north of every hall, so the road under it is the north road, and each hall lies ahead
+      // of the spawn, so one view from the road reads both fronts.
+      expect(spawnZ).toBeLessThan(bounds.z0);
+      const centre: [number, number, number] = [(bounds.x0 + bounds.x1) / 2, 0, (bounds.z0 + bounds.z1) / 2];
+      const turn = Math.abs(site.spawn.yaw - yawToward(site.spawn.pos, centre));
+      expect(Math.min(turn, 2 * Math.PI - turn)).toBeLessThan(Math.PI / 2);
+    }
   });
 });
