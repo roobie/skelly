@@ -3,7 +3,7 @@ local assets = import '../assets/manifest.json';
 manifest(
   id='skelly.natural-world',
   tier='theme',
-  content=['block-materials', 'natural-blocks', 'vegetation', 'furniture-materials', 'natural-sounds', 'sounds-furniture'],
+  content=['block-materials', 'natural-blocks', 'vegetation', 'furniture-materials', 'natural-sounds', 'sounds-furniture', 'support'],
   assets=assets,
   json=['assets/manifest.json'],
   dependencies=['skelly.audio.impact', 'skelly.materials', 'skelly.melee-classes', 'skelly.sound-families'],

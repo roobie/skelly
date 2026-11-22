@@ -7,7 +7,7 @@ import { type SavedColumn, World } from './world.ts';
 
 export interface SimulationWorld
   extends TerrainRead,
-    Pick<World, 'blockDamage' | 'rubble' | 'setBlock' | 'snapshotColumns' | 'restoreColumns'> {}
+    Pick<World, 'blockDamage' | 'rubble' | 'support' | 'setBlock' | 'snapshotColumns' | 'restoreColumns'> {}
 
 /** Owns terrain facts and publication; neither reads nor waits for render residency. */
 export class SimulationTerrain implements SimulationWorld {
@@ -31,6 +31,9 @@ export class SimulationTerrain implements SimulationWorld {
   }
   get rubble(): World['rubble'] {
     return this.state.rubble;
+  }
+  get support(): World['support'] {
+    return this.state.support;
   }
 
   arrive(cx: number, cz: number): void {

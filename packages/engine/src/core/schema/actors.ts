@@ -272,6 +272,7 @@ export const ActorSchema = strictObject({
   /** Innate attribute values every individual of this type spawns with; an attribute left out is average. */
   attributes: AttributeValues,
   model: BODY_PLAN,
+  breathes: optional(vBoolean(), true),
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
   /**
    * The uniform scale a fused mass's built body was baked at, not a further multiplier: resizing changes the body in

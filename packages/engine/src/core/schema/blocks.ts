@@ -16,7 +16,18 @@ import {
 } from 'valibot';
 import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
-import { Color, Count, Fraction, Id, Name, NonNegative, Positive, PositiveGameMinutes } from './primitives.ts';
+import { capabilityField } from './capability.ts';
+import {
+  Color,
+  Count,
+  Fraction,
+  Id,
+  Name,
+  NonNegative,
+  Positive,
+  PositiveGameMinutes,
+  PositiveRealSeconds,
+} from './primitives.ts';
 
 // ---- blocks ----
 
@@ -99,6 +110,30 @@ export const BlockMaterialSchema = strictObject({
   cracks: CrackPatternSchema,
 });
 
+/** How a support cascade paces itself (`packages/deadvox/SLICE-5.md`, "Support"). */
+export const SupportTuningSchema = strictObject({
+  id: Id,
+  capability: capabilityField('supportTuning'),
+  /** Most cascade cells judged in one physics tick; the rest wait for the next tick, so a cascade never stalls a tick. */
+  cascadeCellsPerTick: pipe(Count, minValue(1)),
+  /** Most cells one strike reads, the trunk cell included, when looking for canopy on a trunk; a search that runs out refuses the blow. */
+  trunkSearchCells: pipe(Count, minValue(1)),
+  crushDamage: NonNegative,
+  crushCause: Name,
+  suffocationDamagePerSimSecond: NonNegative,
+  suffocationCause: Name,
+  pushStepMetres: Positive,
+  pushSearchCells: pipe(Count, minValue(1)),
+  buriedMurk: pipe(Fraction, maxValue(0.95)),
+  buriedAudioCutoffHz: Positive,
+  buriedVignette: strictObject({
+    strength: Fraction,
+    pulseDepth: Fraction,
+    pulsePeriodRealSeconds: PositiveRealSeconds,
+    color: Color,
+  }),
+});
+
 export const BlockSchema = strictObject({
   id: Id,
   material: Id,
@@ -139,6 +174,8 @@ export const BlockSchema = strictObject({
   pattern: optional(picklist(BLOCK_PATTERNS)),
   /** Whether render-only site weathering may affect this built material. */
   weatherable: optional(vBoolean()),
+  /** A tree's part: a trunk that carries canopy refuses a blow, so felling stays a separate system. */
+  tree: optional(picklist(['trunk', 'canopy'])),
   /** Four-colour palette read only by the `camo` surface pattern. */
   patternPalette: optional(tuple([Color, Color, Color, Color])),
   /** Washout amount in [0, 1], read only by the `camo` surface pattern. */

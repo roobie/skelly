@@ -34,6 +34,7 @@ export const CONTENT_CAPABILITIES = {
   graphics: { graphics: 'required' },
   look: { defaultLook: 'required' },
   powerTuning: { power: 'optional' },
+  supportTuning: { support: 'optional' },
   weathering: { defaultWeathering: 'required' },
 } as const;
 
@@ -67,6 +68,7 @@ const requiredForStack = (registry: Registry, section: string, requirement: stri
   requirement === 'required' ||
   (section === 'skillProgression' && registry.skills.size > 0) ||
   (section === 'powerTuning' && registry.powerDevices.size > 0) ||
+  (section === 'supportTuning' && [...registry.blockMaterials.values()].some(({ breakable }) => breakable)) ||
   (section === 'siteGeneration' && registry.starts.size + registry.layouts.size + registry.scenarios.size > 0);
 
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {

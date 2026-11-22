@@ -1334,6 +1334,10 @@ export class ActorSystem {
     this.agent.indexIdleSoundDensity();
     for (const [id, actor] of entries) {
       this.captureRenderPrevious(actor, time);
+      if (actor.body.buried) {
+        this.holdBuried(actor);
+        continue;
+      }
       if (actor.incapacitated) {
         this.tickIncapacitated(actor, dt);
         continue;
@@ -1355,7 +1359,7 @@ export class ActorSystem {
     }
     this.agent.processChainStimuli(time);
     for (const [id, actor] of entries) {
-      if (actor.incapacitated) {
+      if (actor.incapacitated || actor.body.buried) {
         continue;
       }
       scratch.id = id;
@@ -1978,6 +1982,10 @@ export class ActorSystem {
     for (const [id, actor] of entries) {
       groundedAtTickStart.set(actor, actor.body.onGround);
       this.captureRenderPrevious(actor, time);
+      if (actor.body.buried) {
+        this.holdBuried(actor);
+        continue;
+      }
       if (actor.incapacitated) {
         this.tickIncapacitated(actor, dt);
         continue;
@@ -1999,7 +2007,7 @@ export class ActorSystem {
     }
     this.agent.processChainStimuli(time);
     for (const [id, actor] of entries) {
-      if (actor.incapacitated) {
+      if (actor.incapacitated || actor.body.buried) {
         continue;
       }
       scratch.id = id;
@@ -2150,7 +2158,7 @@ export class ActorSystem {
 
   /** A projectile's hit, through the region damage and carving path melee uses, without a swing's stagger. */
   private projectileStrike(
-    { id, actor, region, cell }: RegionHit,
+    { id, actor, region, cell }: Pick<RegionHit, 'id' | 'actor' | 'region' | 'cell'>,
     { amount, kind, position, direction }: { amount: number; kind: DamageKind; position: Vec3; direction: Vec3 },
   ): void {
     const damage = damageToActor(actor.type, amount, kind, actorRegionClass(region) as BodyRegion);
@@ -2684,6 +2692,40 @@ export class ActorSystem {
       this.rollDismember(id, actor, killed, hit);
     }
     return this.resolveRegionDamage(id, actor, region, healthAfter);
+  }
+
+  private holdBuried(actor: Actor): void {
+    actor.horizontalSpeed = 0;
+    actor.body.vel = [0, 0, 0];
+    actor.attackWindup = 0;
+    actor.spitWindup = 0;
+    actor.pounceSimSeconds = undefined;
+  }
+
+  injureVitals(id: EntityId, damage: number, kind?: DamageKind): void {
+    const actor = this.store.get(id);
+    if (!actor || damage <= 0) {
+      return;
+    }
+    const region = (Object.keys(actor.regions) as ActorHitRegion[]).find(
+      (key) => lethalRegion(actor.type, key) && actor.regions[key]! > 0,
+    );
+    if (!region) {
+      return;
+    }
+    if (kind) {
+      this.projectileStrike(
+        { id, actor, region, cell: undefined },
+        {
+          amount: damage,
+          kind,
+          position: actor.body.pos,
+          direction: [0, -1, 0],
+        },
+      );
+    } else {
+      this.resolveRegionDamage(id, actor, region, this.damageRegion(actor, region, damage));
+    }
   }
 
   /** Takes health from an actor's legs not yet destroyed, shared between them, as a hit there would. */

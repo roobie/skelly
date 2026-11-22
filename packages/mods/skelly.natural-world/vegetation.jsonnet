@@ -10,6 +10,7 @@ local box(position, size) = { position: position, size: size };
   blocks: [
     {
       id: 'tree_trunk', material: 'timber',
+      tree: 'trunk',
       name: 'Tree trunk',
       color: '#62503b',
       solid: true,
@@ -21,6 +22,7 @@ local box(position, size) = { position: position, size: size };
     },
     {
       id: 'tree_branch', material: 'timber',
+      tree: 'canopy',
       name: 'Tree branch',
       color: '#705941',
       solid: true,
@@ -32,6 +34,7 @@ local box(position, size) = { position: position, size: size };
     },
     {
       id: 'leaves', material: 'textile',
+      tree: 'canopy',
       name: 'Leaves',
       color: '#526b3d',
       solid: false,

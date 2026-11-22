@@ -6,6 +6,7 @@ import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import type { DisassemblyOutput } from './disassembly.ts';
+import type { PlacedState } from './items.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
@@ -57,7 +58,7 @@ export interface RubbleEpisode {
 export interface SavedRubble {
   nextEpoch: number;
   /** Cell-change stamps also retain ended episodes, so a read-only review detects replacement before a job pins. */
-  entries: { cell: Vec3; epoch: number }[];
+  entries: { cell: Vec3; epoch: number; buried?: PlacedState[] | undefined }[];
 }
 
 const warnRestoreIssue = (issue: string): void => {
@@ -73,13 +74,39 @@ const validCell = (cell: Readonly<Vec3>): boolean => cell.length === 3 && cell.e
  * The standing block still decides what is rubble; a stamp alone never makes a cell rubble.
  */
 export class Rubble {
-  private readonly entries = new Map<string, { cell: Vec3; epoch: number }>();
+  private readonly entries = new Map<string, SavedRubble['entries'][number]>();
   private nextEpoch = 1;
 
   private readonly world: World;
 
   constructor(world: World) {
     this.world = world;
+  }
+
+  contents(cell: Readonly<Vec3>): readonly PlacedState[] {
+    return this.entries.get(keyOf(cell))?.buried ?? [];
+  }
+
+  bury(cell: Readonly<Vec3>, items: readonly PlacedState[]): void {
+    if (items.length === 0) {
+      return;
+    }
+    const entry = this.entries.get(keyOf(cell));
+    if (!entry) {
+      throw new Error('Burial needs a changed rubble cell');
+    }
+    entry.buried = [...(entry.buried ?? []), ...structuredClone(items)];
+    this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
+  }
+
+  release(cell: Readonly<Vec3>): PlacedState[] {
+    const entry = this.entries.get(keyOf(cell));
+    const items = entry?.buried ?? [];
+    if (entry) {
+      entry.buried = undefined;
+      this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
+    }
+    return items;
   }
 
   /** Read-only replacement stamp; absent on an unchanged cell without a pinned job. */
@@ -115,7 +142,7 @@ export class Rubble {
     if (this.nextEpoch >= Number.MAX_SAFE_INTEGER) {
       throw new Error('Rubble episodes exhausted');
     }
-    this.entries.set(keyOf(cell), { cell: [...cell] as Vec3, epoch: this.nextEpoch });
+    this.entries.set(keyOf(cell), { ...this.entries.get(keyOf(cell)), cell: [...cell] as Vec3, epoch: this.nextEpoch });
     this.nextEpoch += 1;
   }
 
@@ -123,6 +150,7 @@ export class Rubble {
     const entries = [...this.entries].map(([key, entry]) => ({
       cell: key.split(',').map(Number) as Vec3,
       epoch: entry.epoch,
+      ...(entry.buried ? { buried: structuredClone(entry.buried) } : {}),
     }));
     entries.sort((a, b) => a.cell[1] - b.cell[1] || a.cell[0] - b.cell[0] || a.cell[2] - b.cell[2]);
     return freezeSnapshot({ nextEpoch: this.nextEpoch, entries });
@@ -142,7 +170,7 @@ export class Rubble {
       throw new Error('Invalid next rubble episode');
     }
     const epochs = new Set<number>();
-    for (const { cell, epoch } of state.entries) {
+    for (const { cell, epoch, buried } of state.entries) {
       const key = keyOf(cell);
       if (
         !(
@@ -159,7 +187,10 @@ export class Rubble {
         issues.push(`Dropped invalid rubble episode at ${key}`);
         continue;
       }
-      this.entries.set(key, { cell: [...cell] as Vec3, epoch });
+      if (buried && !standingRubble(this.world, registry, cell)) {
+        throw new Error(`Buried contents without rubble at ${key}`);
+      }
+      this.entries.set(key, { cell: [...cell] as Vec3, epoch, ...(buried ? { buried: structuredClone(buried) } : {}) });
       epochs.add(epoch);
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
@@ -180,6 +211,7 @@ export interface RubbleClearing {
   /** The rubble block standing at a cell, where rubble stands there and its column is loaded. */
   readonly standing: (cell: Readonly<Vec3>) => string | undefined;
   readonly review: (cell: Readonly<Vec3>) => Readonly<{ block: string; epoch: number }> | undefined;
+  readonly contents: (cell: Readonly<Vec3>) => readonly PlacedState[];
   /** Pins the cell's rubble episode for a job, minting one where rubble stands unrecorded. */
   readonly pin: (cell: Readonly<Vec3>) => RubbleEpisode | undefined;
   readonly refusal: (cell: Readonly<Vec3>, epoch?: number) => string | undefined;
@@ -210,6 +242,7 @@ export const worldRubbleClearing = (
   };
   return {
     standing: (cell) => standingRubble(world, registry, cell),
+    contents: (cell) => world.rubble.contents(cell),
     review: (cell) => reviewRubble(world, registry, cell),
     pin: (cell) => {
       if (standingRubble(world, registry, cell) === undefined) {
