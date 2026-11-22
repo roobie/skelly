@@ -72,6 +72,19 @@
         [
           ",,,,,,,,,,,,",
           "############",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "############"
+        ],
+        [
+          ",,,,,,,,,,,,",
+          "############",
           "#...j..j...#",
           "#...j..j...#",
           "#...j..j...#",
@@ -183,6 +196,19 @@
           [
             "............",
             "SSSSSSSSSSSS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SAAAAAAAAAAS",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "............",
+            "SSSSSSSSSSSS",
             "SAAASAASAAAS",
             "SAAASAASAAAS",
             "SAAASAASAAAS",
@@ -260,7 +286,7 @@
         }
       },
       "ports": [],
-      "size": [12, 8, 11],
+      "size": [12, 9, 11],
       "style": "works_brick"
     },
     {

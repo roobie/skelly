@@ -616,7 +616,11 @@ because standards read the answer's.
 joists under the slab run from the front wall to the back wall, either side of the aisle, as in
 a works store of the period, and every slab cell is within its span of a joist or a wall
 ([Fit check](#fit-check), support). The joists span the shorter way, within what steel spans,
-and they keep to the course above the racking, so the aisle and the racks below stay as they were.
+and they keep above the racking, so the aisle and the racks below stay as they were.
+
+**A clear course under the joists.** Racks and joists filling the room to the slab left it
+cramped, so the walls rise one course past the racking and the door, which keep their height;
+the wall runs on over the door as its lintel.
 
 **North front.** The door opens north, so the entrance rule holds as it does for a city
 building; Holdout turns the stores by its own placement, so which way the door faces there is
