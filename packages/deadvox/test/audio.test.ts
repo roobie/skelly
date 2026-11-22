@@ -51,6 +51,7 @@ describe('GameAudio Web Audio compatibility', () => {
     const transforms: number[][] = [];
     class LegacyAudioContext {
       state = 'suspended';
+      sampleRate = 48_000;
       destination = {};
       listener = {
         setPosition: (...values: number[]) => transforms.push(values),
@@ -58,6 +59,9 @@ describe('GameAudio Web Audio compatibility', () => {
       };
       createGain() {
         return { gain: { value: 0 }, connect: () => undefined };
+      }
+      createBiquadFilter() {
+        return { type: 'lowpass', frequency: { value: 0 }, connect: () => undefined, disconnect: () => undefined };
       }
       resume() {
         this.state = 'running';

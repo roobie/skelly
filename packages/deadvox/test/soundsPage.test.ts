@@ -16,11 +16,15 @@ class SuspendedAudioContext {
     context = this;
   }
   state = 'suspended';
+  sampleRate = 48_000;
   destination = {};
   listener = { setPosition: () => undefined, setOrientation: () => undefined };
   decodeAudioData = vi.fn(() => Promise.resolve({} as AudioBuffer));
   createGain() {
     return { gain: { value: 0 }, connect: () => undefined };
+  }
+  createBiquadFilter() {
+    return { type: 'lowpass', frequency: { value: 0 }, connect: () => undefined, disconnect: () => undefined };
   }
   resume() {
     return Promise.resolve();

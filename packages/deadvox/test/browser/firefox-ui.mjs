@@ -1095,10 +1095,10 @@ try {
       }
       animation.pause();
       animation.currentTime = 0;
-      const trough = Number(getComputedStyle(view, '::before').opacity);
+      const trough = Number(getComputedStyle(view, '::after').opacity);
       animation.currentTime = (vignette.pulsePeriodRealSeconds * 1000) / 2;
-      const peak = Number(getComputedStyle(view, '::before').opacity);
-      const vignetteStyle = getComputedStyle(view, '::before');
+      const peak = Number(getComputedStyle(view, '::after').opacity);
+      const vignetteStyle = getComputedStyle(view, '::after');
       const gradient = vignetteStyle.backgroundImage;
       const period = Number.parseFloat(vignetteStyle.animationDuration);
       animation.play();
@@ -1108,11 +1108,13 @@ try {
           peak,
           gradient,
           period,
+          layer: vignetteStyle.zIndex,
           color: getComputedStyle(document.body).getPropertyValue('--buried-vignette-color').trim(),
           expected: vignette,
         },
         buried: session.body.buried !== undefined,
-        opacity: Number(getComputedStyle(view, '::after').opacity),
+        opacity: Number(getComputedStyle(view, '::before').opacity),
+        murkLayer: getComputedStyle(view, '::before').zIndex,
         expectedOpacity: tuning.buriedMurk,
         cutoff: nodes.burial.frequency.value,
         expectedCutoff: tuning.buriedAudioCutoffHz,
@@ -1124,6 +1126,8 @@ try {
     assert.equal(buriedPresentation.opacity, buriedPresentation.expectedOpacity);
     const { vignette } = buriedPresentation;
     assert.match(vignette.gradient, /radial-gradient/);
+    assert.equal(buriedPresentation.murkLayer, 'auto');
+    assert.equal(vignette.layer, 'auto', 'the after vignette paints above the before murk by tree order');
     assert.equal(vignette.color, vignette.expected.color);
     assert.equal(vignette.period, vignette.expected.pulsePeriodRealSeconds);
     assert.ok(vignette.peak > vignette.trough, 'the vignette visibly pulses');

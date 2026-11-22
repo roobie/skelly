@@ -288,7 +288,7 @@ body:not(.menu-pointer-locked) .fact-detail:hover > .fact-detail-copy {
 #view canvas {
   display: block;
 }
-body.buried #view::after {
+body.buried #view::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -296,11 +296,10 @@ body.buried #view::after {
   opacity: var(--buried-murk, 0);
   pointer-events: none;
 }
-body.buried #view::before {
+body.buried #view::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
   background: radial-gradient(ellipse at center, transparent, var(--buried-vignette-color));
   animation: buried-vignette var(--buried-vignette-period) ease-in-out infinite;
   pointer-events: none;

@@ -143,7 +143,7 @@ import type { ActorBody } from '../core/schema/actors.ts';
 import type { EventRuleDef } from '../core/schema.ts';
 import { severedItem } from '../core/severedItem.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
-import { Simulation } from '../core/sim.ts';
+import { type SimEvent, Simulation, type Timed } from '../core/sim.ts';
 import type { SimulationWorld } from '../core/simulationTerrain.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -1196,7 +1196,7 @@ export const createSession = (options: SessionOptions) => {
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
-  const playDamageSound = (event: { amount: number; time: number; continuous?: boolean }): void => {
+  const playDamageSound = (event: Timed<Extract<SimEvent, { kind: 'damage' }>>): void => {
     if (event.continuous) {
       const continuous = bodyTuning.sounds.continuousDamage;
       admitSound(continuous.event, chest(), event.time, {
