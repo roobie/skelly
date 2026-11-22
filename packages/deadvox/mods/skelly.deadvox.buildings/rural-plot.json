@@ -112,8 +112,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -259,8 +259,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -398,8 +398,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -575,8 +575,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -744,8 +744,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -876,8 +876,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -1000,8 +1000,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -1162,8 +1162,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }

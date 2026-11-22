@@ -64,6 +64,54 @@
         ]
       },
       "anchors": {
+        "woodshed": {
+          "at": [4, 1, 1],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_woodshed",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "rural_woodshed",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [8, 6, 5],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "woodshed_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 6, 5],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [3, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
         "garage": {
           "at": [3, 1, 6],
           "kind": "standing"
@@ -184,7 +232,7 @@
     },
     {
       "anchors": {},
-      "id": "woodshed",
+      "id": "woodshed_shell",
       "layers": [
         ["pppppppp", "pppppppp", "pppppppp", "pppppppp", "pppppppp"],
         ["w______w", "w______w", "wLLLMMMw", "wLLLMMMw", "wwwwwwww"],

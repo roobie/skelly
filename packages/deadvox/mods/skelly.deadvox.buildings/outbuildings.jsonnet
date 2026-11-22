@@ -59,7 +59,7 @@ local outhouse = {
   joins: [], anchors: {}, ports: [],
 };
 // An open-fronted lean-to of boards under a sheet roof, logs stacked along its back wall.
-local woodshed = piece('woodshed', [8, 6, 5], [
+local woodshedShell = piece('woodshed_shell', [8, 6, 5], [
   ['pppppppp' for _ in std.range(1, 5)],
 ] + [
   ['w______w', 'w______w', 'wLLLMMMw', 'wLLLMMMw', 'wwwwwwww']
@@ -71,6 +71,14 @@ local woodshed = piece('woodshed', [8, 6, 5], [
   L: { furniture: 'log_pile' },
   M: { furniture: 'log_pile' },
 });
+local woodshed = {
+  id: 'rural_woodshed', brief: 'rural_woodshed', eligibility: { settlementKinds: ['rural'] }, lootContext: context,
+  size: [8, 6, 5],
+  slots: [{ id: 'shell', at: [0, 0, 0], size: [8, 6, 5], turn: 0, choices: only('piece', 'woodshed_shell') }],
+  joins: [], ports: [],
+  anchors: { woodshed: { kind: 'standing', at: [4, 1, 1] } },
+  access: { ground: 'ground', entrance: [3, 1, 1], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+};
 // A dug well: a stone curb under a plank lid, two posts carrying the winch beam and a small sheet roof.
 local well = piece('well', [4, 7, 4], [
   ['cccc', 'cccc', 'cccc', 'cccc'],
@@ -128,6 +136,6 @@ local coopSite = piece('chicken_coop_site', [4, 4, 4], [[',,,,' for _ in std.ran
       path: { role: 'support', block: 'dirt' },
     },
   }],
-  mapPieces: [outhouseShell, woodshed, well, garageShell, coopSite] + outhouseDoors,
-  mapAssemblies: [outhouse, garage],
+  mapPieces: [outhouseShell, woodshedShell, well, garageShell, coopSite] + outhouseDoors,
+  mapAssemblies: [outhouse, woodshed, garage],
 }

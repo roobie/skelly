@@ -198,6 +198,31 @@
       "tags": ["late_modern", "nordic", "balkan"]
     },
     {
+      "cover": "The log stacks stop shots and hide a crouching body; the open front gives no way to shut anyone out.",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "facade": "An open front of boards on two end walls under a sheet roof, the cut ends of the stacked logs showing.",
+      "id": "rural_woodshed",
+      "plot": {
+        "along": 10,
+        "depth": 7
+      },
+      "program": {
+        "woodshed": {
+          "purpose": "The stove's firewood, split and stacked dry against the back wall under the roof."
+        }
+      },
+      "references": [
+        "Finnish and Swedish country yards of the 1950s to 1980s: an open-fronted board lean-to across the yard from the house, the winter's split logs stacked to the roof along its back.",
+        "Balkan and Austrian village yards of the same decades: a plank shed under a sheet roof beside the house, open to the yard so the wood dries, with the chopping block in front."
+      ],
+      "setting": "modern_1980s",
+      "storeys": [1, 1],
+      "styles": ["rural_outbuilding"],
+      "tags": ["late_modern", "postwar", "nordic", "balkan", "central_european"]
+    },
+    {
       "cover": "Brick walls stop shots and the one door is the only way in, so whoever is inside is as easily shut in as kept safe; the racks along the walls break the sightline from the door to the back corners.",
       "eligibility": {
         "settlementKinds": ["rural"]

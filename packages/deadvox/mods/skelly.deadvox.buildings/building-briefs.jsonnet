@@ -150,6 +150,28 @@ local flatRoofHouse = {
       cover: 'Blockwork stops shots, and the open bay shows the whole inside from the road; the crate at the back ' +
              'is the only thing to crouch behind.',
     },
+    // A woodshed any country yard can set across from its house's back door. Its room asks no service: no shared piece
+    // serves keeping firewood, and a log pile is the stock itself, not furniture stock is kept on or in.
+    {
+      id: 'rural_woodshed',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'postwar', 'nordic', 'balkan', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 10, depth: 7 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        woodshed: { purpose: 'The stove\'s firewood, split and stacked dry against the back wall under the roof.' },
+      },
+      references: [
+        'Finnish and Swedish country yards of the 1950s to 1980s: an open-fronted board lean-to across the yard ' +
+        'from the house, the winter\'s split logs stacked to the roof along its back.',
+        'Balkan and Austrian village yards of the same decades: a plank shed under a sheet roof beside the house, ' +
+        'open to the yard so the wood dries, with the chopping block in front.',
+      ],
+      facade: 'An open front of boards on two end walls under a sheet roof, the cut ends of the stacked logs showing.',
+      cover: 'The log stacks stop shots and hide a crouching body; the open front gives no way to shut anyone out.',
+    },
     // A works stores holds whatever the works it stands beside keeps in stock; what that is belongs to the answer's
     // racking, not to the brief. See `packages/deadvox/docs/building-pathway.md`, "Worked example: works stores".
     {

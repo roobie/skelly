@@ -57,7 +57,7 @@ local plot(id, outhouse, garage, cellar) =
       slot('walk', at(0, 0, 0), paths.size, 'piece', paths.id),
       slot('coop', yard(0, 0, 18), [4, 4, 4], 'piece', 'chicken_coop_site'),
       slot('well', yard(5, 0, 18), [4, 7, 4], 'piece', 'well'),
-      slot('woodshed', yard(12, 0, 18), [8, 6, 5], 'piece', 'woodshed'),
+      slot('woodshed', yard(12, 0, 18), [8, 6, 5], 'assembly', 'rural_woodshed'),
     ] + (if outhouse then [slot('outhouse', yard(14, 0, 30), [4, 7, 4], 'assembly', 'outhouse')] else [])
     + (if garage then [
          slot('garage', at(22, 0, 2), [8, 7, 12], 'assembly', 'rural_garage'),
