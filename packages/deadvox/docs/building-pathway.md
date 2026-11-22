@@ -240,8 +240,16 @@ One rule is proved by a test beside validate rather than by validate itself:
   so a building that stands only until something nearby breaks is not intact. The test stamps
   each answer as placement does and asks the production rule about every solid cell
   (`test/buildingSupport.test.ts`; `packages/engine/src/core/structureSupport.ts`,
-  `createSupport`). One draw per answer stands for all, because the slot contract keeps solid
-  support equal across a slot's variants. A slab or floor wider than its material spans needs
+  `createSupport`). The support rule reads only whether a block is solid and how far its
+  material spans. A slot's alternatives must agree on which cells are solid
+  (`packages/engine/src/core/templates.ts`, `resolveSlot`) but not on how far their materials
+  span, so one draw proves nothing for the others. The test
+  gives each solid cell the least span any alternative builds there, walking every alternative
+  as the services rule does; a shorter span never lets more cells hold, so when that weakest
+  building holds, every variant does. The proof is sound but not complete: it may fail a
+  building whose weak cells no one draw combines, never pass one a draw drops. A style changes
+  the blocks, so the test builds each style the answer is placed in, as the styles rule finds
+  them. A slab or floor wider than its material spans needs
   something under it that stands, such as a wall, a column or a beam; a beam beside it in the
   same course does not, because a run only reaches a cell that stands, not one held sideways.
   An answer known not to hold yet is skipped by name, citing the issue that tracks it. A skipped
