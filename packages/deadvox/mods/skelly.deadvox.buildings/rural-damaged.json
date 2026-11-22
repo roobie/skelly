@@ -1,0 +1,1081 @@
+{
+  "mapAssemblies": [
+    {
+      "access": {
+        "entrance": [9, 1, 3],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "bedroom": {
+          "at": [5, 1, 10],
+          "kind": "standing"
+        },
+        "kitchen": {
+          "at": [13, 1, 10],
+          "kind": "standing"
+        },
+        "living_room": {
+          "at": [7, 1, 6],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_flat_roof_house",
+      "condition": {
+        "mean": 0.40000000000000002,
+        "paneThreshold": 0.65000000000000002,
+        "spread": 0.12
+      },
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "rural_flat_roof_house_breached",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [18, 11, 14],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_base",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "base",
+          "size": [18, 1, 14],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_breached_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [18, 6, 14],
+          "turn": 0
+        },
+        {
+          "at": [8, 1, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_front",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "front_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_back",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "back_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 7],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_inner",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bedroom_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [12, 1, 7],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_inner",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "kitchen_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_living",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "living",
+          "size": [14, 6, 5],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_bedroom",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bedroom",
+          "size": [7, 6, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "kitchen",
+          "size": [6, 6, 4],
+          "turn": 0
+        },
+        {
+          "at": [3, 3, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front_west",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [12, 3, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_n_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front_east",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [4, 3, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_s_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "back",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [1, 3, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_absent_west_window",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "west_front",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [1, 3, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_w_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "west_back",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [16, 3, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "east_front",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [16, 3, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_window_e_boarded",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "east_back",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [17, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_downspout",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "downspout",
+          "size": [1, 6, 1],
+          "turn": 0
+        },
+        {
+          "at": [0, 7, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_breached_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 4, 14],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [11, 1, 5],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "bedroom": {
+          "at": [7, 1, 12],
+          "kind": "standing"
+        },
+        "kitchen": {
+          "at": [15, 1, 12],
+          "kind": "standing"
+        },
+        "living_room": {
+          "at": [9, 1, 8],
+          "kind": "standing"
+        },
+        "toilet": {
+          "at": [16, 1, 29],
+          "kind": "standing"
+        },
+        "woodshed": {
+          "at": [16, 1, 19],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_plot",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "rural_plot_privy_breached",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [22, 11, 34],
+      "slots": [
+        {
+          "at": [2, 0, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_roof_house_breached",
+                "kind": "assembly"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "house",
+          "size": [18, 11, 14],
+          "turn": 0
+        },
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_plot_walk",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "walk",
+          "size": [22, 5, 34],
+          "turn": 0
+        },
+        {
+          "at": [0, 0, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "chicken_coop_site",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "coop",
+          "size": [4, 4, 4],
+          "turn": 0
+        },
+        {
+          "at": [5, 0, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "well",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "well",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [12, 0, 18],
+          "choices": [
+            {
+              "ref": {
+                "id": "woodshed",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "woodshed",
+          "size": [8, 6, 5],
+          "turn": 0
+        },
+        {
+          "at": [14, 0, 30],
+          "choices": [
+            {
+              "ref": {
+                "id": "outhouse",
+                "kind": "assembly"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "outhouse",
+          "size": [4, 7, 4],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "aftermath": ["broken"],
+      "anchors": {},
+      "id": "rural_flat_house_breached_shell",
+      "layers": [
+        [
+          "..................",
+          ".sssssss..sssssss.",
+          ".s..............s.",
+          "................s.",
+          "................s.",
+          "................s.",
+          "................s.",
+          ".sii..iiiiii..iis.",
+          ".s.......i......s.",
+          ".s.......i......s.",
+          ".s.......i......s.",
+          ".s.......i......s.",
+          ".ssssssssssss..ss.",
+          ".................."
+        ],
+        [
+          "..................",
+          ".######b..b######.",
+          ".#..............#.",
+          "................#.",
+          "................#.",
+          "................#.",
+          "................#.",
+          ".#ii..iiiiii..ii#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
+          ".############..##.",
+          ".................."
+        ],
+        [
+          "..................",
+          ".##...#b..b#...##.",
+          ".#..............#.",
+          "..................",
+          "..................",
+          "..................",
+          "................#.",
+          ".#ii..iiiiii..ii#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
+          ".###...######..##.",
+          ".................."
+        ],
+        [
+          "..................",
+          ".##...#b..b#...##.",
+          ".#..............#.",
+          "..................",
+          "..................",
+          "..................",
+          "................#.",
+          ".#ii..iiiiii..ii#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
+          ".###...######..##.",
+          ".................."
+        ],
+        [
+          "..................",
+          ".##...#bbbb#...##.",
+          ".#..............#.",
+          "..................",
+          "..................",
+          "..................",
+          "................#.",
+          ".#iiiiiiiiiiiiii#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
+          ".###...##########.",
+          ".................."
+        ],
+        [
+          "..................",
+          ".##fff#bbbb#fff##.",
+          ".#..............#.",
+          "................f.",
+          "................f.",
+          "................f.",
+          "................#.",
+          ".#iiiiiiiiiiiiii#.",
+          ".f.......i......f.",
+          ".f.......i......f.",
+          ".f.......i......f.",
+          ".#.......i......#.",
+          ".###fff##########.",
+          ".................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            ".......RRRR.......",
+            ".SSSSSSS..SSSSSSS.",
+            ".S......RR......S.",
+            ".A......RRRRRR..S.",
+            ".A......RRRRRR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".SSS..SSSSSS..SSS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".SSSSSSSSSSSS..SS.",
+            ".................."
+          ],
+          [
+            ".......RRRR.......",
+            ".SSSSSSS..SSSSSSS.",
+            ".S......RR......S.",
+            ".A......RRRRRR..S.",
+            ".A......RRRRRR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".SSS..SSSSSS..SSS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".SSSSSSSSSSSS..SS.",
+            ".................."
+          ],
+          [
+            ".......RRRR.......",
+            ".SS...SS..SS...SS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".A..RRRRRR..RR..S.",
+            ".SSS..SSSSSS..SSS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
+            ".SSS...SSSSSS..SS.",
+            ".................."
+          ],
+          [
+            ".......RRRR.......",
+            ".SS...SS..SS...SS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".A..RRRRRR..RR..S.",
+            ".SSS..SSSSSS..SSS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
+            ".SSS...SSSSSS..SS.",
+            ".................."
+          ],
+          [
+            ".......RRRR.......",
+            ".SS...SSSSSS...SS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".A..RRRRRR..RR..S.",
+            ".SSSSSSSSSSSSSSSS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
+            ".SSS...SSSSSSSSSS.",
+            ".................."
+          ],
+          [
+            ".......RRRR.......",
+            ".SSSSSSSSSSSSSSSS.",
+            ".S......RR......S.",
+            ".A......RRRRRR..S.",
+            ".A......RRRRRR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".A..RRRRRR..RR..S.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [18, 6, 14],
+      "style": "rural_render"
+    },
+    {
+      "aftermath": ["broken"],
+      "anchors": {},
+      "id": "rural_flat_house_breached_roof",
+      "layers": [
+        [
+          "cccccccccccccccccc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "....rrrrrrrrrrrrrc",
+          "....rrrrrrrrrrrrrc",
+          "....rrrrrrrrrrrrrc",
+          "....rrrrrrHrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrrrrrrrrP",
+          "cccccccccccccccccc"
+        ],
+        [
+          "..................",
+          ".################.",
+          ".#uuuuuuuuuuuuuu#.",
+          "....uuuuuuuuuuuu#.",
+          "....uuuuuuuuuuuu#.",
+          "....uuuuuuuuuuuu#.",
+          "....uuuuuuHuuuuu#.",
+          ".#uuuuuuuuuuuuuu#.",
+          ".#uuuuuuuuuuuuuu#.",
+          ".#uuuuuuuuuuuuuu#.",
+          ".#uuuuuuuuuuuuuu#.",
+          ".#uuuuuuuuuuuuuu#.",
+          ".################Q",
+          ".................."
+        ],
+        [
+          "..................",
+          ".kkkkkkkkkkkkkkkk.",
+          ".k..............k.",
+          "................k.",
+          "................k.",
+          "................k.",
+          "..........H.....k.",
+          ".k..............k.",
+          ".k..............k.",
+          ".k..............k.",
+          ".k..............k.",
+          ".k..............k.",
+          ".kkkkkkkkkkkkkkkk.",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..........h.......",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "AAAASSSSSSSSSSSSSS",
+            "AAAASSSSSSSSSSSSSS",
+            "AAAASSSSSSSSSSSSSS",
+            "AAAASSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "..................",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".AAASSSSSSSSSSSSS.",
+            ".AAASSSSSSSSSSSSS.",
+            ".AAASSSSSSSSSSSSS.",
+            ".AAASSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSS",
+            ".................."
+          ],
+          [
+            "..................",
+            ".SSSSSSSSSSSSSSSS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".AAAAAAAAAAAAAAAS.",
+            ".AAAAAAAAAAAAAAAS.",
+            ".AAAAAAAAAAAAAAAS.",
+            ".AAAAAAAAASAAAAAS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAAAAAAAAS.",
+            ".SSSSSSSSSSSSSSSS.",
+            ".................."
+          ],
+          [
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..........S.......",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            ".................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
+        },
+        "Q": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "rainwater_head"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [18, 4, 14],
+      "style": "rural_render"
+    },
+    {
+      "aftermath": ["broken"],
+      "anchors": {},
+      "id": "rural_flat_house_absent_west_window",
+      "layers": [[".", ".", "."], [".", ".", "."], [".", ".", "."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["A", "A", "A"], ["A", "A", "A"], ["A", "A", "A"]]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "rural_render"
+    }
+  ]
+}

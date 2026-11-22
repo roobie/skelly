@@ -97,6 +97,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/rural-damaged.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/rural-damaged.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/rural-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/rural-house.json"
     },

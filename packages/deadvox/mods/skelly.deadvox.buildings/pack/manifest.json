@@ -45,6 +45,10 @@
     },
     {
       "kind": "content",
+      "path": "rural-damaged.json"
+    },
+    {
+      "kind": "content",
       "path": "rural-house.json"
     },
     {
