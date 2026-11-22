@@ -19,19 +19,23 @@ local path(id, size, plan) = {
   ownership: { layers: [[std.join('', std.map(claim, std.stringChars(row))) for row in layer] for layer in layers] },
   anchors: {}, ports: [],
 };
-// A house over a cellar is deeper by its area stair, so its yard lies `back` rows further from the road.
-local walkPlan(id, back) = path(id, [22, 5, 34 + back], [
+// A house over a cellar is deeper by its area stair, so its yard lies `back` rows further from the road. Where the
+// outhouse stands, its own stoop is the path's last rows before its door.
+local walkPlan(id, back, privy) = path(id, [22, 5, 34 + back], [
   'dddddddddddddddddddddd',
   'dddddddddddddddddddddd',
 ] + ['dd,,,,,,,,,,,,,,,,,,,,' for _ in std.range(2, 15 + back)] + [
   'dddddddddddddddddddddd',
   'dddddddddddddddddddddd',
 ] + [',,,,,,,,,,,,,,,,,,,,dd' for _ in std.range(18, 27)] + [
-  ',,,,,,,,,,,,,,dddddddd',
-  ',,,,,,,,,,,,,,dddddddd',
-] + [',,,,,,,,,,,,,,,,,,,,,,' for _ in std.range(30, 33)]);
-local walk = walkPlan('rural_plot_walk', 0);
-local cellarWalk = walkPlan('rural_plot_walk_cellar', 2);
+] + [
+  if privy then ',,,,,,,,,,,,,,,,,,dddd' else ',,,,,,,,,,,,,,dddddddd'
+  for _ in [28, 29]
+] +[',,,,,,,,,,,,,,,,,,,,,,' for _ in std.range(30, 33)]);
+local walkOf(privy, cellar) = walkPlan(
+  'rural_plot_walk' + (if privy then '_privy' else '') + (if cellar then '_cellar' else ''), if cellar then 2 else 0, privy
+);
+local walk = walkOf(false, false);
 // The garage's drive joins the road frontage.
 local drive = path('rural_plot_drive', [8, 5, 2], ['dddddddd', 'dddddddd']);
 local slot(id, at, size, kind, ref) = {
@@ -40,7 +44,7 @@ local slot(id, at, size, kind, ref) = {
 // A plot without an outhouse sets the modernised house with its WC. A plot over a cellar sets the house over one,
 // raised so its ground storey stays at the road's level, with the yard behind the house's area stair.
 local plot(id, outhouse, garage, cellar) =
-  local paths = if cellar then cellarWalk else walk;
+  local paths = walkOf(outhouse, cellar);
   local back = paths.size[2] - walk.size[2];
   local lift = if cellar then 8 else 0;
   local at(x, y, z) = [x, y + lift, z];
@@ -58,14 +62,14 @@ local plot(id, outhouse, garage, cellar) =
       slot('coop', yard(0, 0, 18), [4, 4, 4], 'piece', 'chicken_coop_site'),
       slot('well', yard(5, 0, 18), [4, 7, 4], 'piece', 'well'),
       slot('woodshed', yard(12, 0, 18), [8, 6, 5], 'assembly', 'rural_woodshed'),
-    ] + (if outhouse then [slot('outhouse', yard(14, 0, 30), [4, 7, 4], 'assembly', 'outhouse')] else [])
+    ] + (if outhouse then [slot('outhouse', yard(14, 0, 28), [4, 7, 6], 'assembly', 'outhouse')] else [])
     + (if garage then [
          slot('garage', at(22, 0, 2), [8, 7, 12], 'assembly', 'rural_garage'),
          slot('drive', at(22, 0, 0), [8, 5, 2], 'piece', 'rural_plot_drive'),
        ] else []),
     joins: [],
     // The house's rooms where its slot sets them, and the yard's. The toilet is the privy or the house's WC; the
-    // privy's seat fills the floor behind its door, so the privy's toilet stands on the path at the door.
+    // privy's toilet stands where the privy's own brief puts it, on its stoop at the door.
     anchors: {
       living_room: { kind: 'standing', at: at(9, 1, 8) },
       bedroom: { kind: 'standing', at: at(7, 1, 12) },
@@ -90,7 +94,7 @@ local plots = [
 local cellars = [false, true];
 local plotId(row, cellar) = row.id + (if cellar then '_cellar' else '');
 {
-  mapPieces: [walk, cellarWalk, drive],
+  mapPieces: [walkOf(privy, cellar) for privy in [false, true] for cellar in [false, true]] + [drive],
   mapAssemblies: [plot(plotId(row, cellar), row.outhouse, row.garage, cellar) for row in plots for cellar in cellars],
   // Most rural houses have an outhouse, since an indoor WC is mostly a town comfort in the setting. A third of
   // every kind stand over a cellar, so a cellar is a find in most villages without changing the yard's mix.

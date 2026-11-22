@@ -1,7 +1,27 @@
 {
   "mapAssemblies": [
     {
-      "anchors": {},
+      "access": {
+        "entrance": [2, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "toilet": {
+          "at": [2, 1, 1],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_privy",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
       "id": "outhouse",
       "joins": [],
       "lootContext": {
@@ -9,7 +29,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [4, 7, 4],
+      "size": [4, 7, 6],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -23,11 +43,11 @@
             }
           ],
           "id": "shell",
-          "size": [4, 7, 4],
+          "size": [4, 7, 6],
           "turn": 0
         },
         {
-          "at": [1, 1, 0],
+          "at": [1, 1, 2],
           "choices": [
             {
               "ref": {
@@ -153,13 +173,13 @@
       "anchors": {},
       "id": "outhouse_shell",
       "layers": [
-        ["pppp", "pppp", "pppp", "pppp"],
-        ["w,,w", "wPPw", "wPPw", "wwww"],
-        ["w,,w", "wPPw", "wPPw", "wwww"],
-        ["w,,w", "w..w", "w..w", "wwww"],
-        ["w,,w", "w..w", "w..w", "wwww"],
-        ["wwww", "w..w", "w..w", "wwww"],
-        ["rrrr", "rrrr", "rrrr", "rrrr"]
+        ["dddd", "dddd", "pppp", "pppp", "pppp", "pppp"],
+        ["____", "____", "w,,w", "wPPw", "wPPw", "wwww"],
+        ["____", "____", "w,,w", "wPPw", "wPPw", "wwww"],
+        ["____", "____", "w,,w", "w..w", "w..w", "wwww"],
+        ["____", "____", "w,,w", "w..w", "w..w", "wwww"],
+        [",,,,", ",,,,", "wwww", "w..w", "w..w", "wwww"],
+        [",,,,", ",,,,", "rrrr", "rrrr", "rrrr", "rrrr"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -167,13 +187,13 @@
       },
       "ownership": {
         "layers": [
-          ["SSSS", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SAAS", "SAAS", "SSSS"],
-          ["S..S", "SAAS", "SAAS", "SSSS"],
-          ["SSSS", "SAAS", "SAAS", "SSSS"],
-          ["SSSS", "SSSS", "SSSS", "SSSS"]
+          ["SSSS", "SSSS", "SSSS", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SAAS", "SAAS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SAAS", "SAAS", "SSSS"],
+          ["....", "....", "SSSS", "SAAS", "SAAS", "SSSS"],
+          ["....", "....", "SSSS", "SSSS", "SSSS", "SSSS"]
         ]
       },
       "palette": {
@@ -201,6 +221,10 @@
           "material": "curb",
           "role": "shell"
         },
+        "d": {
+          "material": "path",
+          "role": "support"
+        },
         "k": {
           "material": "slab",
           "role": "support"
@@ -227,7 +251,7 @@
         }
       },
       "ports": [],
-      "size": [4, 7, 4],
+      "size": [4, 7, 6],
       "style": "rural_outbuilding"
     },
     {
@@ -281,6 +305,10 @@
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -358,6 +386,10 @@
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -618,6 +650,10 @@
           "material": "curb",
           "role": "shell"
         },
+        "d": {
+          "material": "path",
+          "role": "support"
+        },
         "e": {
           "facing": "n",
           "furniture": "shelf",
@@ -698,6 +734,10 @@
           "material": "curb",
           "role": "shell"
         },
+        "d": {
+          "material": "path",
+          "role": "support"
+        },
         "k": {
           "material": "slab",
           "role": "support"
@@ -763,6 +803,10 @@
           "material": "curb",
           "role": "shell"
         },
+        "d": {
+          "material": "path",
+          "role": "support"
+        },
         "k": {
           "material": "slab",
           "role": "support"
@@ -824,6 +868,10 @@
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",

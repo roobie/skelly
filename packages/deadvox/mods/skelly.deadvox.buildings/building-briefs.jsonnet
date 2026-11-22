@@ -172,6 +172,30 @@ local flatRoofHouse = {
       facade: 'An open front of boards on two end walls under a sheet roof, the cut ends of the stacked logs showing.',
       cover: 'The log stacks stop shots and hide a crouching body; the open front gives no way to shut anyone out.',
     },
+    // A privy any country yard can set at its far end, for a house with no indoor WC.
+    {
+      id: 'rural_privy',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'postwar', 'nordic', 'balkan', 'mediterranean', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 6, depth: 8 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        toilet: {
+          purpose: 'The household\'s toilet: a plank seat over the pit, reached from the trodden ground at its door.',
+          serves: ['toilet'],
+        },
+      },
+      references: [
+        'Balkan and Greek village yards of the 1950s to 1980s: a plank privy over a dug pit at the far end of the ' +
+        'yard, its door facing the house.',
+        'Finnish and Swedish country outhouses of the same decades: a narrow board hut under a sheet roof, one seat ' +
+        'and a hinged plank door, kept on after many houses had a WC.',
+      ],
+      facade: 'A narrow plank hut, a little taller than a man, with one plank door under a sheet roof.',
+      cover: 'Thin boards hide a body but stop little; the one door leaves whoever is inside nowhere else to go.',
+    },
     // A works stores holds whatever the works it stands beside keeps in stock; what that is belongs to the answer's
     // racking, not to the brief. See `packages/deadvox/docs/building-pathway.md`, "Worked example: works stores".
     {

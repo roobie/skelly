@@ -223,6 +223,32 @@
       "tags": ["late_modern", "postwar", "nordic", "balkan", "central_european"]
     },
     {
+      "cover": "Thin boards hide a body but stop little; the one door leaves whoever is inside nowhere else to go.",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "facade": "A narrow plank hut, a little taller than a man, with one plank door under a sheet roof.",
+      "id": "rural_privy",
+      "plot": {
+        "along": 6,
+        "depth": 8
+      },
+      "program": {
+        "toilet": {
+          "purpose": "The household's toilet: a plank seat over the pit, reached from the trodden ground at its door.",
+          "serves": ["toilet"]
+        }
+      },
+      "references": [
+        "Balkan and Greek village yards of the 1950s to 1980s: a plank privy over a dug pit at the far end of the yard, its door facing the house.",
+        "Finnish and Swedish country outhouses of the same decades: a narrow board hut under a sheet roof, one seat and a hinged plank door, kept on after many houses had a WC."
+      ],
+      "setting": "modern_1980s",
+      "storeys": [1, 1],
+      "styles": ["rural_outbuilding"],
+      "tags": ["late_modern", "postwar", "nordic", "balkan", "mediterranean", "central_european"]
+    },
+    {
       "cover": "Brick walls stop shots and the one door is the only way in, so whoever is inside is as easily shut in as kept safe; the racks along the walls break the sightline from the door to the back corners.",
       "eligibility": {
         "settlementKinds": ["rural"]
