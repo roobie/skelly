@@ -233,7 +233,8 @@ One rule is proved by a test beside validate rather than by validate itself:
   support equal across a slot's variants. A slab or floor wider than its material spans needs
   something under it that stands, such as a wall, a column or a beam; a beam beside it in the
   same course does not, because a run only reaches a cell that stands, not one held sideways.
-  An answer known not to hold yet is skipped by name with the change that makes it hold.
+  An answer known not to hold yet is skipped by name, citing the issue that tracks it. A skipped
+  answer that holds, or that no pack declares, fails the test, so a skip ends with its fix.
 
 What stays with BR's contact-sheet review:
 
