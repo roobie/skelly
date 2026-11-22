@@ -6,7 +6,7 @@
 import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
-import { templateCondition } from './conditionDistribution.ts';
+import { conditionAt, templateCondition } from './conditionDistribution.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
@@ -240,29 +240,33 @@ export const furnitureOf = (
     registry,
     seed,
     placedPieces(placement)
-      .filter((piece) => toChunk(piece.pos[0]) === cx && toChunk(piece.pos[2]) === cz)
-      .map((piece) => ({
-        spec: {
-          type: piece.furniture,
-          pos: piece.pos,
-          size: piece.size,
-          facing: piece.facing,
-          ...(piece.tip ? { tip: piece.tip } : {}),
-          ...(piece.lock ? { lock: piece.lock } : {}),
-          ...(piece.boarding ? { boarding: { ...piece.boarding } } : {}),
-          ...(piece.fixed ? { fixed: true as const } : {}),
-          ...(placement.template.condition && registry.furniture.get(piece.furniture)?.window
-            ? {
-                initialCondition: {
-                  value: templateCondition(seed, placement, piece.pos),
-                  paneThreshold: placement.template.condition.paneThreshold,
-                },
-              }
-            : {}),
-        },
-        ...(piece.wear === undefined ? {} : { wear: piece.wear }),
-        loot: [],
-      })),
+      .map((piece, index) => ({ piece, local: placement.template.pieces[index]!.pos }))
+      .filter(({ piece }) => toChunk(piece.pos[0]) === cx && toChunk(piece.pos[2]) === cz)
+      .map(({ piece, local }) => {
+        const condition = conditionAt(placement.template, local);
+        return {
+          spec: {
+            type: piece.furniture,
+            pos: piece.pos,
+            size: piece.size,
+            facing: piece.facing,
+            ...(piece.tip ? { tip: piece.tip } : {}),
+            ...(piece.lock ? { lock: piece.lock } : {}),
+            ...(piece.boarding ? { boarding: { ...piece.boarding } } : {}),
+            ...(piece.fixed ? { fixed: true as const } : {}),
+            ...(condition && registry.furniture.get(piece.furniture)?.window
+              ? {
+                  initialCondition: {
+                    value: templateCondition(seed, placement, local),
+                    paneThreshold: condition.paneThreshold,
+                  },
+                }
+              : {}),
+          },
+          ...(piece.wear === undefined ? {} : { wear: piece.wear }),
+          loot: [],
+        };
+      }),
     points,
   );
 

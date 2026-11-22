@@ -77,6 +77,7 @@ const { registry, issues } = buildFixtureRegistry([
         {
           id: 'window_test_boards',
           name: 'Test boards',
+          fits: 'window',
           color: '#806040',
           thicknessBlocks: 0.1,
           boards: [
@@ -84,11 +85,21 @@ const { registry, issues } = buildFixtureRegistry([
             { from: 0.55, height: 0.35 },
           ],
         },
+        {
+          id: 'window_test_curtain',
+          name: 'Test curtain',
+          fits: 'window',
+          color: '#705080',
+          thicknessBlocks: 0.05,
+          boards: [{ from: 0, height: 1 }],
+          curtain: { gatheredShare: 0.1, handlingSimSeconds: 0.1 },
+        },
       ],
     },
   },
 ]);
 const BOARDING = { type: 'window_test_boards', side: 'front' } as const;
+const CURTAIN = { type: 'window_test_curtain', side: 'back' } as const;
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
@@ -110,6 +121,28 @@ const beside = (entity: BlockEntity, face: 'front' | 'back'): Vec3 => {
   return entity.pos.map(
     (value, axis) => value + entity.size[axis]! / 2 + normal[axis]! * (face === 'front' ? -2 : 2),
   ) as Vec3;
+};
+/** Whether a body of `height` walks through a north-facing window from its front to its back. */
+const crosses = (entities: BlockEntities, entity: BlockEntity, height: number, blockSize = 0.5): boolean => {
+  const spec = entities.defOf(entity).window!;
+  const radius = spec.frameWidthBlocks * 2;
+  const padding = radius * 2;
+  const destination = entity.pos[2] + entity.size[2] + padding;
+  const rim = spec.frameWidthBlocks + (entity.window!.open ? 0 : spec.sashWidthBlocks);
+  const body = {
+    pos: [entity.pos[0] + entity.size[0] / 2, entity.pos[1] + rim + CONTACT_SKIN * 2, entity.pos[2] - padding] as Vec3,
+    vel: [0, 0, 0] as Vec3,
+    halfWidth: radius,
+    height,
+    onGround: false,
+  };
+  stepBodyHorizontal(body, {
+    dx: 0,
+    dz: destination - body.pos[2],
+    isSolid: entities.isSolid.bind(entities),
+    params: { gravity: 0, stepHeight: 0, shapeOf: apertureShapes(entities, () => false, blockSize) },
+  });
+  return body.pos[2] > entity.pos[2] + entity.size[2];
 };
 const breakPane = (entities: BlockEntities, entity: BlockEntity) =>
   entities.hitWindowPane(entity, { force: registry.furniture.get(entity.type)!.window!.breakForce, continuation: 0 });
@@ -232,30 +265,7 @@ describe('fitted windows', () => {
     const spec = entities.defOf(entity).window!;
     const clearance = entity.size[1] - 2 * spec.frameWidthBlocks;
     const leeway = spec.passageLeewayMetres / blockSize;
-    const shapeOf = apertureShapes(entities, () => false, blockSize);
-    const cross = (height: number) => {
-      const radius = spec.frameWidthBlocks * 2;
-      const padding = radius * 2;
-      const destination = entity.pos[2] + entity.size[2] + padding;
-      const body = {
-        pos: [
-          entity.pos[0] + entity.size[0] / 2,
-          entity.pos[1] + spec.frameWidthBlocks + CONTACT_SKIN * 2,
-          entity.pos[2] - padding,
-        ] as Vec3,
-        vel: [0, 0, 0] as Vec3,
-        halfWidth: radius,
-        height,
-        onGround: false,
-      };
-      stepBodyHorizontal(body, {
-        dx: 0,
-        dz: destination - body.pos[2],
-        isSolid: entities.isSolid.bind(entities),
-        params: { gravity: 0, stepHeight: 0, shapeOf },
-      });
-      return body.pos[2] > entity.pos[2] + entity.size[2];
-    };
+    const cross = (height: number) => crosses(entities, entity, height);
     expect(cross(clearance + leeway / 2)).toBe(true);
     expect(cross(clearance * 1.5)).toBe(false);
     expect(cross(clearance / 2)).toBe(true);
@@ -404,12 +414,12 @@ describe('boarded windows', () => {
   });
 
   it('lands unaimed blows on the boards as the window’s own damage, while aimed glass still breaks', () => {
-    const plain = make().entity;
+    const plain = make();
     const { entities, entity } = boarded();
-    expect(blowLandsOnPane(plain, undefined)).toBe(true);
-    expect(blowLandsOnPane(entity, undefined)).toBe(false);
-    expect(blowLandsOnPane(entity, 'board')).toBe(false);
-    expect(blowLandsOnPane(entity, 'pane')).toBe(true);
+    expect(blowLandsOnPane(plain.entities, plain.entity, undefined)).toBe(true);
+    expect(blowLandsOnPane(entities, entity, undefined)).toBe(false);
+    expect(blowLandsOnPane(entities, entity, 'board')).toBe(false);
+    expect(blowLandsOnPane(entities, entity, 'pane')).toBe(true);
     expect(entities.bash(entity, entities.defOf(entity).breach.durability)).toBe('ruined');
   });
 
@@ -421,5 +431,86 @@ describe('boarded windows', () => {
     const state = structuredClone(entities.snapshotState());
     state.entities[0]!.boarding = BOARDING;
     expect(() => BlockEntities.restoreState(registry, state)).toThrow('Invalid boarding');
+  });
+});
+
+describe('window curtains', () => {
+  /** A shut window whose pane is gone, so only the curtain hung closed on its back could stop a body. */
+  const curtained = () => {
+    const made = make();
+    breakPane(made.entities, made.entity);
+    const refusal = made.entities.board(made.entity, CURTAIN.side, CURTAIN.type);
+    if (refusal) {
+      throw new Error(refusal);
+    }
+    return { ...made, from: beside(made.entity, 'back') };
+  };
+  const world = new World();
+  const blocking = (entities: BlockEntities) => ({
+    body: worldSolid(world, registry, entities)(2, 2, 0),
+    sight: worldOpaque(world, registry, entities)(2, 2, 0),
+    light: worldLightBlocking(world, registry, entities)(2, 2, 0),
+  });
+
+  it('stops sight and light but not bodies while closed, and lets both through once open, across a save', () => {
+    const { entities, entity, from } = curtained();
+    expect(blocking(entities)).toEqual({ body: false, sight: true, light: true });
+    expect(crosses(entities, entity, 1)).toBe(true);
+    expect(entities.operateWindow(entity, 'openCurtain', from, [])).toBeUndefined();
+    const restored = BlockEntities.restoreState(registry, structuredClone(entities.snapshotState()));
+    expect(blocking(restored)).toEqual({ body: false, sight: false, light: false });
+    expect(restored.operateWindow(restored.byUid(entity.uid)!, 'closeCurtain', from, [])).toBeUndefined();
+    expect(blocking(restored)).toEqual({ body: false, sight: true, light: true });
+  });
+
+  it('lets a blow aimed at a closed curtain break the glass behind it, leaving the window undamaged', () => {
+    const runtime = createRuntime(undefined, false, undefined, { registry });
+    const { entities, entity } = make('n', 'low', 'back', runtime.inventory);
+    expect(entities.board(entity, 'front', CURTAIN.type)).toBeUndefined();
+    // From two blocks out on the front face, at the window's middle, straight at it.
+    const centre: Vec3 = [entity.pos[0] + entity.size[0] / 2, entity.pos[1] + entity.size[1] / 2, entity.pos[2]];
+    const picked = pickFurnitureHit({
+      entities,
+      origin: [centre[0], centre[1], centre[2] - 2],
+      direction: [0, 0, 1],
+      maxDistance: 4,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+    expect(picked).toMatchObject({ entity, part: 'curtain' });
+    expect(runtime.session.bashFurniture(entity, pane.breakForce, picked!.part)).toBe('broken');
+    expect(entity.window).toMatchObject({ pane: 'missing' });
+    expect(entity.damage).toBeUndefined();
+  });
+
+  it('keeps an open curtain aimable where its halves gather, from the face it hangs on', () => {
+    const { entities, entity, from } = curtained();
+    expect(entities.operateWindow(entity, 'openCurtain', from, [])).toBeUndefined();
+    const half = windowParts(entity, entities.defOf(entity), 1, entities.boardingOf(entity)).find(
+      ({ kind }) => kind === 'curtain',
+    )!.box;
+    // The west half's middle, in world blocks; the window faces north, so its back is +z.
+    const across = half.pivot[0] + half.center[0];
+    const picked = pickFurnitureHit({
+      entities,
+      origin: [across, entity.pos[1] + entity.size[1] / 2, entity.pos[2] + 3],
+      direction: [0, 0, -1],
+      maxDistance: 4,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+    expect(picked).toMatchObject({ entity, part: 'curtain' });
+  });
+
+  it('hangs a curtain on an open window, whose sash boards would nail open', () => {
+    const { entities, entity } = make();
+    const from = beside(entity, 'back');
+    entities.operateWindow(entity, 'unlatch', from, []);
+    entities.operateWindow(entity, 'open', from, []);
+    expect(entities.boardingRefusal(entity, BOARDING.type)).toBe(coreMessage(registry, 'windowOpen'));
+    expect(entities.board(entity, CURTAIN.side, CURTAIN.type)).toBeUndefined();
+    expect(
+      BlockEntities.restoreState(registry, structuredClone(entities.snapshotState())).byUid(entity.uid),
+    ).toMatchObject({ boarding: CURTAIN, window: { open: true } });
   });
 });

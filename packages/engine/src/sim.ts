@@ -167,3 +167,4 @@ export { selectPrimaryAction } from './game/primaryAction.ts';
 export { restKindForFurniture } from './game/rest.ts';
 export { ACTIVE_ACTOR_RATE } from './game/simulationRates.ts';
 export { Survival } from './game/survival.ts';
+export { windowOperation } from './game/windowAction.ts';

@@ -53,6 +53,7 @@ export const compileOwnership = (
         reserved[index] = Number(mark === 'R');
         if (mark !== '.') {
           provenance[index] = {
+            ...(template.condition ? { condition: template.condition } : {}),
             owner: template.id,
             source,
             variant: template.id,

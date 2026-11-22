@@ -1,0 +1,356 @@
+{
+  "buildingBriefs": [
+    {
+      "cover": "Masonry walls and a slab roof enclose the room.",
+      "eligibility": {
+        "settlementKinds": ["condition_fixture"]
+      },
+      "facade": "One window and an open entrance.",
+      "id": "condition_pavilion",
+      "plot": {
+        "along": 8,
+        "depth": 7
+      },
+      "program": {
+        "room": {
+          "purpose": "A sheltered standing space."
+        }
+      },
+      "references": ["A small windowed masonry pavilion, used to compare condition without changing geometry."],
+      "setting": "condition_fixture",
+      "storeys": [1, 1],
+      "styles": ["condition_pavilion_style"],
+      "tags": ["fixture"]
+    }
+  ],
+  "mapAssemblies": [
+    {
+      "anchors": {},
+      "condition": {
+        "mean": 1,
+        "paneThreshold": 0.5,
+        "spread": 0
+      },
+      "id": "condition_pavilion_window_owner",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_window",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "frame",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [6, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "room": {
+          "at": [6, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "condition_pavilion",
+      "condition": {
+        "mean": 1,
+        "paneThreshold": 0.5,
+        "spread": 0
+      },
+      "eligibility": {
+        "settlementKinds": ["condition_fixture"]
+      },
+      "id": "condition_pavilion_intact",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [8, 7, 7],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 7, 7],
+          "turn": 0
+        },
+        {
+          "at": [1, 2, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_window",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "window",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [6, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "room": {
+          "at": [6, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "condition_pavilion",
+      "condition": {
+        "mean": 0.20000000000000001,
+        "paneThreshold": 0.5,
+        "spread": 0.10000000000000001
+      },
+      "eligibility": {
+        "settlementKinds": ["condition_fixture"]
+      },
+      "id": "condition_pavilion_worn",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [8, 7, 7],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 7, 7],
+          "turn": 0
+        },
+        {
+          "at": [1, 2, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_window",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "window",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [6, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "room": {
+          "at": [6, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "condition_pavilion",
+      "condition": {
+        "mean": 0,
+        "paneThreshold": 0.5,
+        "spread": 0
+      },
+      "eligibility": {
+        "settlementKinds": ["condition_fixture"]
+      },
+      "id": "condition_pavilion_nested",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [8, 7, 7],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 7, 7],
+          "turn": 0
+        },
+        {
+          "at": [1, 2, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "condition_pavilion_window_owner",
+                "kind": "assembly"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "window",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "condition_pavilion_shell",
+      "layers": [
+        ["########", "########", "########", "########", "########", "########", "########"],
+        ["#####..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["########", "########", "########", "########", "########", "########", "########"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["SSSSSRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
+          ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
+          ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
+          ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
+          ["SSSSSSSS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SSSSSSSS"],
+          ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "wall",
+          "role": "shell"
+        },
+        ".": {
+          "material": "air",
+          "role": "opening"
+        }
+      },
+      "ports": [],
+      "size": [8, 7, 7],
+      "style": "condition_pavilion_style"
+    },
+    {
+      "anchors": {},
+      "id": "condition_pavilion_window",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "condition_pavilion_style"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "air": {
+          "block": "air",
+          "role": "opening"
+        },
+        "wall": {
+          "block": "brick",
+          "role": "shell"
+        }
+      },
+      "id": "condition_pavilion_style"
+    }
+  ],
+  "worldSettings": [
+    {
+      "buildingCulture": "Windowed pavilion.",
+      "era": "Unspecified.",
+      "id": "condition_fixture",
+      "region": "Fixture yard.",
+      "settlementKinds": ["condition_fixture"],
+      "tags": {
+        "fixture": "Condition comparison."
+      }
+    }
+  ]
+}

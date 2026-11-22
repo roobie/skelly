@@ -18,8 +18,8 @@ export interface WorldPlacement {
   place: (recipe: RecipeDef, destination: WorldDestination, work: Item) => string | undefined;
 }
 
-type SiteDestination = Exclude<WorldDestination, { kind: 'door' }>;
-type DoorDestination = Extract<WorldDestination, { kind: 'door' }>;
+type SiteDestination = Exclude<WorldDestination, { kind: 'opening' }>;
+type OpeningDestination = Extract<WorldDestination, { kind: 'opening' }>;
 
 const boxOf = (inventory: Inventory, recipe: RecipeDef, destination: SiteDestination): PlacementBox => ({
   pos: [...destination.pos],
@@ -29,7 +29,7 @@ const boxOf = (inventory: Inventory, recipe: RecipeDef, destination: SiteDestina
       : [1, 1, 1],
 });
 
-/** Other unfinished world work whose destination is taken by `taken`, so two jobs can't claim one site or door. */
+/** Other unfinished world work whose destination is taken by `taken`, so two jobs can't claim one site or opening. */
 const reservedByWork = (
   inventory: Inventory,
   taken: (destination: WorldDestination, recipe: RecipeDef) => boolean,
@@ -52,34 +52,45 @@ const reservedByWork = (
 const cellsTaken = (inventory: Inventory, cells: readonly Vec3[]) => {
   const keys = new Set(cells.map((cell) => cell.join(',')));
   return (destination: WorldDestination, recipe: RecipeDef): boolean =>
-    destination.kind !== 'door' &&
+    destination.kind !== 'opening' &&
     [...placementCells(boxOf(inventory, recipe, destination))].some((cell) => keys.has(cell.join(',')));
 };
 
-/** Boards go on a standing upright door within reach that no other job holds. */
-const doorRefusal = (
+/** A cover goes on a standing door or window it fits, within reach, that no other job holds. */
+const openingRefusal = (
   inventory: Inventory,
-  destination: DoorDestination,
+  type: string,
+  destination: OpeningDestination,
   work: Item | undefined,
 ): string | undefined => {
   const { entities, registry } = inventory;
-  const door = entities.byUid(destination.uid);
-  if (!(door && entities.stands(door))) {
+  const opening = entities.byUid(destination.uid);
+  if (!(opening && entities.stands(opening))) {
     return coreMessage(registry, 'placementTargetRequired');
   }
-  const refusal = entities.boardingRefusal(door);
+  const refusal = entities.boardingRefusal(opening, type);
   if (refusal) {
     return refusal;
   }
-  if (![...placementCells(door)].some((cell) => inventory.canReachCell(cell))) {
+  if (![...placementCells(opening)].some((cell) => inventory.canReachCell(cell))) {
     return coreMessage(registry, 'outOfReach');
   }
   const { reserved } = claimed(registry.ui, 'interface')!.furnitureMoveMessages;
-  if (entities.useRefusal(door)) {
+  if (entities.useRefusal(opening)) {
     return reserved;
   }
-  const sameDoor = (other: WorldDestination) => other.kind === 'door' && other.uid === destination.uid;
-  return reservedByWork(inventory, sameDoor, work) ? reserved : undefined;
+  const same = (other: WorldDestination) => other.kind === 'opening' && other.uid === destination.uid;
+  return reservedByWork(inventory, same, work) ? reserved : undefined;
+};
+
+/** Boards across a window close it to bodies, so none may stand in its opening; a curtain stops no body. */
+const occupiedWindow = (inventory: Inventory, type: string, uid: number, bodies: Iterable<Body>): boolean => {
+  const opening = inventory.entities.byUid(uid)!;
+  return (
+    opening.window !== undefined &&
+    !inventory.registry.boardings.get(type)!.curtain &&
+    [...bodies].some((body) => inventory.entities.bodyIntersects(opening, body))
+  );
 };
 
 export const createWorldPlacement = ({
@@ -155,9 +166,19 @@ export const createWorldPlacement = ({
     if (!validWorldDestination(destination, recipe)) {
       return coreMessage(inventory.registry, 'placementTargetRequired');
     }
-    return destination.kind === 'door'
-      ? doorRefusal(inventory, destination, work)
-      : admit(recipe, destination, work).refusal;
+    if (destination.kind === 'opening') {
+      if (!('boarding' in recipe.result)) {
+        return coreMessage(inventory.registry, 'placementTargetRequired');
+      }
+      const { boarding } = recipe.result;
+      return (
+        openingRefusal(inventory, boarding, destination, work) ??
+        (occupiedWindow(inventory, boarding, destination.uid, bodies())
+          ? coreMessage(inventory.registry, 'windowOccupied')
+          : undefined)
+      );
+    }
+    return admit(recipe, destination, work).refusal;
   };
   /** Publishes an admitted block or piece; its cells are already ensured. */
   const build = (recipe: RecipeDef, destination: SiteDestination, box: PlacementBox): void => {
@@ -177,18 +198,18 @@ export const createWorldPlacement = ({
       entity.searched = true;
     }
   };
-  const board = (recipe: RecipeDef, destination: DoorDestination, work: Item): string | undefined => {
+  const board = (recipe: RecipeDef, destination: OpeningDestination, work: Item): string | undefined => {
     const reason = refusal(recipe, destination, work);
-    if (reason || !('doorBoarding' in recipe.result)) {
+    if (reason || !('boarding' in recipe.result)) {
       return reason ?? coreMessage(inventory.registry, 'placementTargetRequired');
     }
-    const door = inventory.entities.byUid(destination.uid)!;
-    return inventory.entities.board(door, destination.side, recipe.result.doorBoarding);
+    const opening = inventory.entities.byUid(destination.uid)!;
+    return inventory.entities.board(opening, destination.side, recipe.result.boarding);
   };
   return {
     refusal,
     place: (recipe, destination, work): string | undefined => {
-      if (destination.kind === 'door') {
+      if (destination.kind === 'opening') {
         return board(recipe, destination, work);
       }
       if (!validWorldDestination(destination, recipe)) {

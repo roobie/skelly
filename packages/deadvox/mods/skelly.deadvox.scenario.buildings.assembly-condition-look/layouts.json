@@ -1,0 +1,44 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -18,
+        "x1": 18,
+        "z0": -10,
+        "z1": 12
+      },
+      "buildings": [
+        {
+          "position": [-14, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_intact"
+        },
+        {
+          "position": [-4, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_worn"
+        },
+        {
+          "position": [6, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_nested"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "assemblyConditionLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [0, 21.5, -4]
+      },
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
+    }
+  ]
+}

@@ -118,6 +118,7 @@ import {
   selectPrimaryAction,
   stageMarkArea,
   unarmedMeleeWeapon,
+  windowOperation,
 } from '@skelly/engine/sim';
 import {
   caseLandingCue,
@@ -131,7 +132,7 @@ import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
 import { fittedOpening, vehicleName } from '@skelly/engine/vehicles';
 import {
   type BlockEntity,
-  boardable,
+  boardingFits,
   CitySite,
   cellCondition,
   columnArrival,
@@ -148,6 +149,7 @@ import {
   turnFacing,
   type Vec3,
   type WorldDestination,
+  windowParts,
 } from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { programsByName } from '../render/gpuPrograms.ts';
@@ -2516,24 +2518,22 @@ const startPlayWith = (
       : fillHint(screenText.vehicle.inspect, { key, part, vehicle: name });
   };
 
-  const windowUseText = (entity: BlockEntity): HintText => {
-    const state = entity.window!;
-    let operation = coreLabel(registry, state.open ? 'close' : 'open');
-    if (state.latched) {
-      operation = coreLabel(registry, 'unlatch');
-    }
-    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+  type FurniturePart = Extract<InteractionTarget, { kind: 'furniture' }>['part'];
+  /** The window hint names what use and hold do to the aimed part, so aiming at the curtain cloth shows its toggle. */
+  const windowUseText = (entity: BlockEntity, part: FurniturePart | undefined): HintText => {
+    const operation = coreLabel(registry, windowOperation(entities, entity, false, part));
+    const held = coreLabel(registry, windowOperation(entities, entity, true, part));
     const key = keyCap(inputBindings, 'world.interact');
-    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: held })}`;
   };
 
-  /** Describes the displayed action for the selected target. */
-  const useText = (entity: BlockEntity): HintText => {
+  /** Describes the displayed action for the selected target, and for a window, its aimed part. */
+  const useText = (entity: BlockEntity, part?: FurniturePart): HintText => {
     if (session.isObjective(entity)) {
       return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
     }
     if (entity.window) {
-      return windowUseText(entity);
+      return windowUseText(entity, part);
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2571,12 +2571,19 @@ const startPlayWith = (
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
   };
+  /** A window's input carries the aimed curtain cloth, since aim decides whether it works the curtain or the window. */
+  const windowPayload = (entity: BlockEntity, part: FurniturePart, mode: 'pocket' | 'wield'): ReplayActionPayload => ({
+    kind: 'furniture.interact',
+    entityUid: entity.uid,
+    ...(mode === 'wield' ? { alternatives: true } : {}),
+    ...(part === 'curtain' ? { part } : {}),
+  });
   const furniturePayload = (
     { entity, part }: Extract<InteractionTarget, { kind: 'furniture' }>,
     mode: 'pocket' | 'wield',
   ): ReplayActionPayload | undefined => {
     if (entity.window) {
-      return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
+      return windowPayload(entity, part, mode);
     }
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
@@ -2843,12 +2850,16 @@ const startPlayWith = (
   /** The face a turn step flips a boarding to. */
   const flipSide = (side: DoorSide): DoorSide => (side === 'front' ? 'back' : 'front');
 
-  /** The aimed boardable leaf and the face that faces the builder, flipped by an odd number of turn steps. */
-  const boardingDestination = (turns: number): WorldDestination => {
+  /** The aimed coverable opening and the face that faces the builder, flipped by an odd number of turn steps. */
+  const boardingDestination = (recipe: RecipeDef, turns: number): WorldDestination => {
     const target = interactionTargetAt();
-    const leaf = target?.kind === 'furniture' && boardable(entities.defOf(target.entity)) ? target.entity : undefined;
-    const near = (leaf && entities.sideOf(leaf, body.pos)) ?? 'front';
-    return { kind: 'door', uid: leaf?.uid ?? 0, side: turns % 2 === 1 ? flipSide(near) : near };
+    const boarding = 'boarding' in recipe.result ? registry.boardings.get(recipe.result.boarding) : undefined;
+    const opening =
+      target?.kind === 'furniture' && boarding && boardingFits(entities.defOf(target.entity), boarding)
+        ? target.entity
+        : undefined;
+    const near = (opening && entities.sideOf(opening, body.pos)) ?? 'front';
+    return { kind: 'opening', uid: opening?.uid ?? 0, side: turns % 2 === 1 ? flipSide(near) : near };
   };
 
   /** The aimed cell, with the result's front facing its builder and its box centred on the aim. */
@@ -2866,19 +2877,19 @@ const startPlayWith = (
 
   /**
    * Where the picked recipe would build now: the aimed cell with its ghost's front facing the builder, or the aimed
-   * boardable leaf with the face that faces the builder. An item result is no placement recipe, so its destination
+   * opening a cover fits, with the face that faces the builder. An item result is no placement recipe, so its destination
    * is the one the engine refuses as absent.
    */
   const placementDestination = (recipe: RecipeDef, turns: number): WorldDestination => {
     const { result } = recipe;
-    if ('doorBoarding' in result) {
-      return boardingDestination(turns);
+    if ('boarding' in result) {
+      return boardingDestination(recipe, turns);
     }
     if ('block' in result) {
       return { kind: 'cell', pos: aimedCell() };
     }
     if (!('entity' in result)) {
-      return { kind: 'door', uid: 0, side: 'front' };
+      return { kind: 'opening', uid: 0, side: 'front' };
     }
     return pieceDestination(result.entity, turns);
   };
@@ -2923,7 +2934,7 @@ const startPlayWith = (
       return;
     }
     placementPicking = undefined;
-    const leaf = pick.destination.kind === 'door' ? entities.byUid(pick.destination.uid) : undefined;
+    const leaf = pick.destination.kind === 'opening' ? entities.byUid(pick.destination.uid) : undefined;
     craftPanel.pinPlacement(pick.recipe.id, pick.destination, leaf && entities.defOf(leaf).name);
     screen.openOnTab('crafting');
   };
@@ -2945,16 +2956,22 @@ const startPlayWith = (
         },
       ];
     }
-    if (destination.kind !== 'door' || !('doorBoarding' in result)) {
+    if (destination.kind !== 'opening' || !('boarding' in result)) {
       return [];
     }
     const leaf = entities.byUid(destination.uid);
-    const boarding = registry.boardings.get(result.doorBoarding);
+    const boarding = registry.boardings.get(result.boarding);
     if (!(leaf && boarding)) {
       return [];
     }
     const boarded = { ...leaf, boarding: { side: destination.side, type: boarding.id } };
-    return doorBoardingBoxes(boarded, panelFor(boarded, entities.defOf(boarded), s), boarding, s);
+    const definition = entities.defOf(boarded);
+    if (definition.window) {
+      return windowParts(boarded, definition, s, boarding)
+        .filter(({ kind }) => kind === 'board' || kind === 'batten' || kind === 'curtain')
+        .map(({ box }) => box);
+    }
+    return doorBoardingBoxes(boarded, panelFor(boarded, definition, s), boarding, s);
   };
 
   /** Stands the see-through result at the picked destination, tinted by the engine's answer for that spot. */
@@ -2971,10 +2988,10 @@ const startPlayWith = (
         : { boxes: ghostBoxes(pick.recipe, pick.destination), valid };
     view.placementGhost.update(draw);
   };
-  /** The destination's footprint in blocks: the piece's turned size, the aimed cell, or the boarded leaf itself. */
+  /** The destination's footprint in blocks: the piece's turned size, the aimed cell, or the covered opening itself. */
   const placementBounds = (pick: NonNullable<ReturnType<typeof placementPick>>): { pos: Vec3; size: Vec3 } => {
     const { destination } = pick;
-    if (destination.kind === 'door') {
+    if (destination.kind === 'opening') {
       const leaf = entities.byUid(destination.uid);
       return { pos: leaf?.pos ?? [0, 0, 0], size: leaf?.size ?? [0, 0, 0] };
     }
@@ -3049,10 +3066,13 @@ const startPlayWith = (
     const selected = actionMenu.choice(furnitureMenuEntries(entity));
     return selected ? html`${key}: ${selected.label} ${pieceName(entity)}` : useText(entity);
   };
-  const furnitureInteractionHint = (entity: BlockEntity): HintText => {
+  const furnitureInteractionHint = (entity: BlockEntity, part?: FurniturePart): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return openFurnitureMenuHint(entity, key);
+    }
+    if (entity.window) {
+      return useText(entity, part);
     }
     if (furnitureActions(entity).length > 0) {
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`;
@@ -3113,7 +3133,7 @@ const startPlayWith = (
       case 'item':
         return fillHint(lines.hints.groundItem, { key, item: inventory.name(target.item) });
       case 'furniture':
-        return powerControlHint(target) ?? furnitureInteractionHint(target.entity);
+        return powerControlHint(target) ?? furnitureInteractionHint(target.entity, target.part);
       case 'body':
         return downedBodyHint(target.id);
       case 'vehicle':

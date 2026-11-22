@@ -84,8 +84,8 @@
         "sawing": 1
       },
       "result": {
-        "count": 1,
-        "doorBoarding": "wood_door_boarding"
+        "boarding": "wood_door_boarding",
+        "count": 1
       },
       "searchTerms": ["build", "fortify"],
       "skills": {

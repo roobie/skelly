@@ -100,20 +100,36 @@ export const drawCondition = (mean: number, spread: number, rng: Rng): number =>
   return a >= b ? 1 / (1 + exp(b - a)) : exp(a - b) / (1 + exp(a - b));
 };
 
+interface ConditionedTemplate {
+  readonly id?: string;
+  readonly size: readonly number[];
+  readonly condition?: { readonly mean: number; readonly spread: number; readonly paneThreshold: number };
+  readonly provenance?: readonly (
+    | { readonly condition?: ConditionedTemplate['condition']; readonly owner: string }
+    | undefined
+  )[];
+}
+
+export const conditionAt = (
+  template: ConditionedTemplate,
+  cell: readonly number[],
+): ConditionedTemplate['condition'] => {
+  const [x, y, z] = cell;
+  const index = x! + template.size[0]! * (z! + template.size[2]! * y!);
+  return template.provenance ? template.provenance[index]?.condition : template.condition;
+};
+
 /** Independent draws cannot consume another cell's stream or depend on column arrival order. */
 export const templateCondition = (
   seed: number,
   placement: {
-    readonly template: {
-      readonly id?: string;
-      readonly condition?: { readonly mean: number; readonly spread: number };
-    };
+    readonly template: ConditionedTemplate;
     readonly origin: readonly number[];
     readonly turn: number;
   },
   cell: readonly number[],
 ): number => {
-  const policy = placement.template.condition;
+  const policy = conditionAt(placement.template, cell);
   if (policy && !placement.template.id) {
     throw new Error('A conditioned template needs an identity');
   }

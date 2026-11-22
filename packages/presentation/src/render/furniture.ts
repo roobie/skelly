@@ -482,6 +482,8 @@ export class FurnitureMeshes {
       pane: glass,
       // Blows on a boarded window land on its boards, so they show the wear; there are boards only with a boarding.
       board: this.damageLook(entity, this.material(boarding?.color ?? def.color), def),
+      batten: this.material(boarding?.battens?.color ?? def.color),
+      curtain: this.material(boarding?.color ?? def.color),
     };
     const add = (box: DoorPanelBox, material: MeshLambertMaterial): Mesh => {
       const pivot = new Group();

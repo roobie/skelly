@@ -4,6 +4,7 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { registerWindowAction } from '@skelly/engine/internal/game/windowAction.ts';
 import { firearmHandlingFor, HandlingQueue, Inventory, PILE_GRID, repairCeiling } from '@skelly/engine/inventory';
 import { createCommandRouter, createSession, type Session } from '@skelly/engine/session';
 import { Character, dominantSide, offSide, PlayerTickActions, realSeconds, type Simulation } from '@skelly/engine/sim';
@@ -176,6 +177,71 @@ describe('command router furniture choices', () => {
     router.applyScreenCommand({ kind: 'furniture.interact', entityUid: piece.uid, alternatives: true });
     expect(offered).toHaveLength(1);
     expect(offered[0]).toContain('repair');
+  });
+});
+
+describe('command router window aim', () => {
+  const windowDef = [...registry.furniture.values()].find((def) => def.window?.initialPane === 'intact')!;
+  const curtainDef = [...registry.boardings.values()].find((def) => def.curtain)!;
+  /** A shut, latched window hung with a curtain, worked from its inside face through the real window action. */
+  const curtained = (open: boolean) => {
+    const inventory = new Inventory(registry);
+    const window = inventory.entities.add({
+      type: windowDef.id,
+      pos: [0, 0, 0],
+      size: [...windowDef.size],
+      facing: 'n',
+      fixed: true,
+    })!;
+    const inside: Vec3 = [window.size[0] / 2, 1, windowDef.window!.inside === 'back' ? 3 : -2];
+    const refusal =
+      inventory.entities.board(window, 'back', curtainDef.id) ??
+      (open ? inventory.entities.operateWindow(window, 'openCurtain', inside, []) : undefined);
+    if (refusal) {
+      throw new Error(refusal);
+    }
+    inventory.actorPosition = () => inside;
+    inventory.canReachEntity = () => true;
+    const queue = new HandlingQueue(inventory);
+    registerWindowAction(queue, inventory, () => []);
+    const session = {
+      inventory,
+      entities: inventory.entities,
+      queue,
+      isObjective: () => false,
+      rest: { action: undefined },
+      sim: { time: 0, compression: { admitKey: () => true } },
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({ session: () => session, inventory: () => inventory, sim: () => session.sim }),
+    );
+    const press = (payload: { alternatives?: true; part?: 'curtain' }) => {
+      router.applyScreenCommand({ kind: 'furniture.interact', entityUid: window.uid, ...payload });
+      queue.tick(Math.max(windowDef.window!.handlingSimSeconds, curtainDef.curtain!.handlingSimSeconds) + 1);
+    };
+    return { entities: inventory.entities, window, press };
+  };
+
+  it('toggles the curtain on use aimed at its cloth and leaves the sash shut and latched', () => {
+    const { entities, window, press } = curtained(true);
+    press({ part: 'curtain' });
+    expect(entities.curtainClosed(window)).toBe(true);
+    expect(window.window).toMatchObject({ open: false, latched: true });
+    press({ part: 'curtain' });
+    expect(entities.curtainClosed(window)).toBe(false);
+    expect(window.window).toMatchObject({ open: false, latched: true });
+  });
+
+  it('works the window on use and hold aimed away from the cloth, leaving a closed curtain closed', () => {
+    const { entities, window, press } = curtained(false);
+    press({});
+    expect(window.window).toMatchObject({ latched: false, open: false });
+    press({});
+    expect(window.window).toMatchObject({ open: true });
+    press({});
+    press({ alternatives: true });
+    expect(window.window).toMatchObject({ open: false, latched: true });
+    expect(entities.curtainClosed(window)).toBe(true);
   });
 });
 
