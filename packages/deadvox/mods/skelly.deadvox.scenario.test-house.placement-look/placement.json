@@ -1,0 +1,98 @@
+{
+  "recipes": [
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "placement_look_wall",
+      "placementReviewOrder": "spot-first",
+      "qualities": {},
+      "result": {
+        "block": "plank_wall",
+        "count": 1
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {},
+      "tags": ["wood"],
+      "timeGameMinutes": 0.5
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 12,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "build_wood_shelf",
+      "placementReviewOrder": "review-first",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "entity": "shelf"
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 0.5
+    },
+    {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 3,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 12,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "board_up_door",
+      "placementReviewOrder": "spot-first",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "boarding": "wood_door_boarding",
+        "count": 1
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 0.5
+    }
+  ]
+}

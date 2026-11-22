@@ -253,6 +253,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.assembly-condition-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.boarded-door-look/kits.json"
     },
@@ -503,6 +519,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.condition-look/condition-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.condition-look/condition-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.condition-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.condition-look/pack/manifest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.jsonnet",
@@ -909,6 +933,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/housing-slots.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/housing-slots.json"
     },
@@ -1017,6 +1053,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/placement.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/placement.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.placement-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/pack/manifest.json"
     },
@@ -1097,6 +1149,26 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-buried-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-buried-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-buried-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-buried-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.support-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/layouts.json"
     },
@@ -1119,6 +1191,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/wear-slots.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/wear-slots.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-kit-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/layouts.jsonnet",
@@ -1475,6 +1559,22 @@
     {
       "source": "packages/mods/skelly.body/wield-motions.jsonnet",
       "output": "packages/mods/skelly.body/wield-motions.json"
+    },
+    {
+      "source": "packages/mods/skelly.building-blocks/building-blocks.jsonnet",
+      "output": "packages/mods/skelly.building-blocks/building-blocks.json"
+    },
+    {
+      "source": "packages/mods/skelly.building-blocks/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.building-blocks/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.chemical-lights/chemical-lights-items.jsonnet",
+      "output": "packages/mods/skelly.chemical-lights/chemical-lights-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.chemical-lights/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.chemical-lights/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.containers/assets/manifest.jsonnet",
@@ -1915,6 +2015,10 @@
     {
       "source": "packages/mods/skelly.natural-world/sounds-furniture.jsonnet",
       "output": "packages/mods/skelly.natural-world/sounds-furniture.json"
+    },
+    {
+      "source": "packages/mods/skelly.natural-world/support.jsonnet",
+      "output": "packages/mods/skelly.natural-world/support.json"
     },
     {
       "source": "packages/mods/skelly.natural-world/vegetation.jsonnet",

@@ -38,6 +38,7 @@ const { registry, issues } = buildFixtureRegistry([
         {
           id: BOARDING.type,
           name: 'Fixture boards',
+          fits: 'door',
           color: '#808080',
           thicknessBlocks: 0.1,
           boards: [{ from: 0, height: 1 }],

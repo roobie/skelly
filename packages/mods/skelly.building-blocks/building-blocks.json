@@ -1,0 +1,207 @@
+{
+  "blocks": [
+    {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "planks",
+      "material": "timber",
+      "name": "Wooden planks",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "plank_wall",
+      "material": "timber",
+      "name": "Plank wall",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "plank_floor",
+      "material": "timber",
+      "name": "Plank floor",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#9c4f3a",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "brick",
+      "material": "masonry",
+      "name": "Brick",
+      "pattern": "brick",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#d9d4c7",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "plaster",
+      "material": "masonry",
+      "name": "Plaster",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#cfd6da",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "tiles",
+      "material": "masonry",
+      "name": "Tiles",
+      "pattern": "tiles",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#5b6f9a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_leaves"
+      },
+      "id": "fabric",
+      "material": "textile",
+      "name": "Fabric",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#4a4b50",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "roof",
+      "material": "masonry",
+      "name": "Roofing",
+      "pattern": "shingles",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#6b4f4a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_leaves"
+      },
+      "id": "carpet",
+      "material": "textile",
+      "name": "Carpet",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#e6e2d8",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "window_frame",
+      "material": "timber",
+      "name": "Window frame",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#5f6b58",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "cobblestone_mossy",
+      "material": "masonry",
+      "name": "Mossy cobblestone",
+      "pattern": "cobble",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#bcab8a",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "dressed_stone",
+      "material": "masonry",
+      "name": "Dressed stone",
+      "pattern": "dressed",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#9b8d6a",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_dirt",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "sandbag",
+      "material": "soil",
+      "name": "Sandbag",
+      "solid": true,
+      "weatherable": false
+    }
+  ]
+}

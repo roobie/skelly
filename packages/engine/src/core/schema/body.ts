@@ -28,6 +28,7 @@ import {
   PositiveRealSeconds,
   PositiveSimSeconds,
   SimRate,
+  SimSeconds,
 } from './primitives.ts';
 
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) => record(Id, value);
@@ -167,6 +168,7 @@ export const BodyTuningSchema = pipe(
     capability: capabilityField('body'),
     sounds: strictObject({
       hurt: strictObject({ light: Id, heavy: Id, heavyAtDamage: NonNegative }),
+      continuousDamage: strictObject({ event: Id, minIntervalSimSeconds: SimSeconds }),
       strain: Id,
       landing: Id,
       block: strictObject({ full: Id, partial: Id }),

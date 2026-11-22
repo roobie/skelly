@@ -66,7 +66,7 @@ describe('content-owned item and world policies', () => {
     { corpse: { figure: 'fixture_figure', outfit: 'fixture_outfit' }, solid: false },
     { vehicle: { blueprint: 'fixture_vehicle', removed: [], solidFill: 0.5 } },
   ])('refuses body glow on a separately rendered furniture path: %j', (look) => {
-    const light = { color: '#ffd080', intensity: 1, radius: 2 };
+    const light = { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40 };
     const furniture = {
       id: 'fixture_glow',
       name: 'Fixture',

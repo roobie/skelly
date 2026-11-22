@@ -19,7 +19,7 @@ import {
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
 import { decimalText, fillText, volumeText } from '@skelly/engine/text';
-import type { BlockEntity } from '@skelly/engine/world';
+import type { BlockEntity, WorldDestination } from '@skelly/engine/world';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
@@ -107,6 +107,8 @@ export interface CraftRow {
   condition?: { now: ConditionBand; after: ConditionBand };
   /** A part service's slot and part: the band of the part leaving, or of the spare going in when one is in reach. */
   part?: { slot: string; condition?: ConditionBand };
+  /** A placement recipe's review: its authored order and the pinned spot's name, none while no spot is pinned. */
+  placement?: { order: 'spot-first' | 'review-first'; pinned: boolean; spot?: string };
   /** Where a fit's spare lies, worded. */
   where?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
@@ -180,11 +182,18 @@ export const takeApartRow = (
   const projection = cell ? crafting.previewTakeApartCell(target.cell) : crafting.previewTakeApartEntity(target.uid);
   const plan = 'plan' in projection ? projection.plan : projection.work;
   const { refusal } = projection;
-  const itemName = cell
-    ? registry.blocks[registry.blockIds.get(target.block)!]!.name
-    : registry.furniture.get(target.type)!.name;
-  const gameSeconds =
-    plan?.timeGameMinutes ?? (cell ? 0 : pieceRecoveryWork(registry, target.type)?.timeGameMinutes) ?? 0;
+  let itemName: string;
+  let gameSeconds: number;
+  if (cell) {
+    itemName = registry.blocks[registry.blockIds.get(target.block)!]!.name;
+    gameSeconds = plan?.timeGameMinutes ?? 0;
+  } else {
+    itemName = target.boarding
+      ? registry.boardings.get(target.boarding.type)!.name
+      : registry.furniture.get(target.type)!.name;
+    gameSeconds =
+      plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type, target.boarding?.type)?.timeGameMinutes ?? 0;
+  }
   return {
     id: `take_apart:${cell ? target.cell.join(',') : target.uid}`,
     name: fillText(text.takeApartName, { item: itemName }),
@@ -236,6 +245,37 @@ export const pieceWorkRow = (
   };
 };
 
+/** A placement recipe's review fields: its authored order with its pinned spot's name, and why that spot can't take the piece now. */
+const placementRow = (
+  registry: Registry,
+  id: string,
+  {
+    preview,
+    prefer,
+    sources,
+  }: {
+    preview:
+      | { destination: WorldDestination; spot?: string; crafting: Pick<CraftCommands, 'previewPlacement'> }
+      | undefined;
+    prefer: CraftPreference | undefined;
+    sources: CraftSources | undefined;
+  },
+): { placement: NonNullable<CraftRow['placement']>; reason: string | undefined } | undefined => {
+  const order = registry.recipes.get(id)?.placementReviewOrder;
+  if (!order) {
+    return undefined;
+  }
+  const placement = {
+    order,
+    pinned: preview !== undefined,
+    ...(preview?.spot === undefined ? {} : { spot: preview.spot }),
+  };
+  if (!preview) {
+    return { placement, reason: order === 'review-first' ? craftingText(registry).noSpotPicked : undefined };
+  }
+  return { placement, reason: preview.crafting.previewPlacement(id, preview.destination, prefer, sources).refusal };
+};
+
 export const craftRows = ({
   registry,
   character,
@@ -244,6 +284,7 @@ export const craftRows = ({
   sources = {},
   startReason,
   entityRepair,
+  placementPreview,
   cellRepair,
   recipeIds,
   allKnown = false,
@@ -255,6 +296,12 @@ export const craftRows = ({
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
   entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
+  /** The selected placement recipe's pinned spot, judged live; a spot-first recipe without one reviews as its Pick-a-spot. */
+  placementPreview?: {
+    destination: WorldDestination;
+    spot?: string;
+    crafting: Pick<CraftCommands, 'previewPlacement'>;
+  };
   cellRepair?: { target: import('./cellWork.ts').CellWorldWork; crafting: Pick<CraftCommands, 'previewCellRepair'> };
   recipeIds?: readonly string[];
   /** The all-known view reviews every known recipe; those that cannot start from the catalogue read as refused. */
@@ -289,6 +336,21 @@ export const craftRows = ({
       const text = craftingText(registry);
       const itemName = repairTargetName(registry, recipe);
       const world = previewWorld(id, prefer);
+      const placement = placementRow(registry, id, { preview: placementPreview, prefer, sources: sources[id] });
+      /** A review's own reason: a world repair's live refusal, a placement's spot answer, or the plan's. */
+      const rowReason = (): string | undefined => {
+        if (world) {
+          return world.refusal;
+        }
+        if (placement) {
+          return placement.reason;
+        }
+        return recipeStartReason(recipe, result, reach, {
+          startReason: startsElsewhere(recipe, text, allKnown) ?? startReason,
+          noRepairTarget: text.noRepairTarget,
+          ceiling: repairCeiling(registry, recipe),
+        });
+      };
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
@@ -296,13 +358,8 @@ export const craftRows = ({
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         length: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
         ...(world?.condition ? { condition: world.condition } : {}),
-        reason: world
-          ? world.refusal
-          : recipeStartReason(recipe, result, reach, {
-              startReason: startsElsewhere(recipe, text, allKnown) ?? startReason,
-              noRepairTarget: text.noRepairTarget,
-              ceiling: repairCeiling(registry, recipe),
-            }),
+        ...(placement ? { placement: placement.placement } : {}),
+        reason: rowReason(),
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',

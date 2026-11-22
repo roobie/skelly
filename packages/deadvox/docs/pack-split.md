@@ -1,6 +1,7 @@
 ---
 read_if:
   - you split Deadvox content into theme, product and scenario mods (#637)
+  - you place an era-free building block or decide which pack holds a block
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
@@ -205,6 +206,11 @@ because a mod of its own would add a dependency and narrow nothing that matters.
 with a model, `skelly.body` too, loads inventory tuning and the work-in-progress item. See
 `packages/mods/skelly.inventory/item-wear.jsonnet`, `classes`.
 
+**Chemical lights.** Snap lights belong in `skelly.chemical-lights`, while flame lights,
+igniters and their recipes belong in `skelly.light-sources`. Snap lights need no flame or
+igniter, so a stack can carry them without fire. Their models remain declared by
+`skelly.light-sources` until their asset release moves them.
+
 **Food.** Packaged means any wrapped or canned food, and `skelly.packaged-foods` depends on
 `skelly.hand-tools` so a tool-opened can always finds an opener. Portions stay with their
 vessel. The release ships the packaged foods' models in the `skelly.basic-foods` pack, so
@@ -287,8 +293,11 @@ synthesis. Receivers name the released surface they sound like in one table, so 
 reaches every receiver of that surface; see `packages/mods/skelly.audio.impact/landings.libsonnet`
 and `packages/engine/src/game/audioPresentation.ts`, `caseLandingCue`.
 
-**Terrain, sites and transport.** Natural blocks and vegetation are shared content;
-manufactured materials may be thematic. A site's distribution and authored run remain
+**Terrain, sites and transport.** Natural blocks and vegetation are shared content, and so
+are the building blocks with no era of their own: they sit in `skelly.building-blocks`, so any
+stack loads them without present-day surfaces, while the industrial surfaces stay in
+`skelly.manufactured-blocks`. See `packages/mods/skelly.building-blocks/pack/manifest.jsonnet`, `dependencies`, and
+`packages/mods/skelly.manufactured-blocks/pack/manifest.jsonnet`, `dependencies`. A site's distribution and authored run remain
 product or scenario content even when its component definitions are shared. A scenario
 that wants a wreck in a base site places it there, so the wreck family keeps one owner,
 with no hole in its generated set and no twin row; the cost is that base sites have no

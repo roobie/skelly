@@ -422,11 +422,13 @@ local unshaped = [
     },
   ],
   furniture: breach.breakable(basics.furniture + unshaped),
-  // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room.
+  // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room. The window
+  // covers read apart at a glance: gapped pale planks, one grey sheet on dark battens, and a dull drawn cloth.
   boardings: [
     {
       id: 'wood_door_boarding',
       name: 'Wooden door boarding',
+      fits: 'door',
       color: '#a0763f',
       thicknessBlocks: 0.12,
       boards: [
@@ -434,10 +436,19 @@ local unshaped = [
         { from: 0.45, height: 0.1 },
         { from: 0.75, height: 0.1 },
       ],
+      takeApart: {
+        timeGameMinutes: 10,
+        skill: 'crafting',
+        yields: [
+          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
+        ],
+      },
     },
     {
       id: 'wood_window_boarding',
       name: 'Wooden window boarding',
+      fits: 'window',
       color: '#a0763f',
       thicknessBlocks: 0.12,
       boards: [
@@ -446,6 +457,36 @@ local unshaped = [
         { from: 0.54, height: 0.16 },
         { from: 0.78, height: 0.16 },
       ],
+      takeApart: {
+        timeGameMinutes: 10,
+        skill: 'crafting',
+        yields: [
+          { item: 'wooden_plank', count: 3, fractions: recovered, rounding: 'floor' },
+          { item: 'nails', count: 12, fractions: recovered, rounding: 'floor' },
+        ],
+      },
+    },
+    {
+      id: 'sheet_window_panel',
+      name: 'Sheet metal window panel',
+      fits: 'window',
+      color: '#8c949a',
+      thicknessBlocks: 0.04,
+      boards: [{ from: 0.02, height: 0.96 }],
+      battens: {
+        color: '#6e5232',
+        thicknessBlocks: 0.1,
+        strips: [{ from: 0.02, width: 0.12 }, { from: 0.44, width: 0.12 }, { from: 0.86, width: 0.12 }],
+      },
+    },
+    {
+      id: 'window_curtain',
+      name: 'Window curtain',
+      fits: 'window',
+      color: '#7b6a8c',
+      thicknessBlocks: 0.05,
+      boards: [{ from: 0.04, height: 0.92 }],
+      curtain: { gatheredShare: 0.16, handlingSimSeconds: 1 },
     },
   ],
 }

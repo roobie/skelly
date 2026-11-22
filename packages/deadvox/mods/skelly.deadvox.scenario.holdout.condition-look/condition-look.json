@@ -1,0 +1,181 @@
+{
+  "scenarios": [
+    {
+      "anchors": [],
+      "asks": [
+        {
+          "at": [0, 0],
+          "id": "shelter",
+          "kind": "place",
+          "template": "holdout_house"
+        }
+      ],
+      "body": "player",
+      "bounds": {
+        "x0": -40,
+        "x1": 40,
+        "z0": -40,
+        "z1": 40
+      },
+      "compression": "player",
+      "decalLimit": 48,
+      "eventRules": [],
+      "ground": 21,
+      "guarantee": {},
+      "hordeCountBudget": 64,
+      "id": "holdout_condition_look",
+      "kind": "composedSite",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "outbreakAgeGameHours": 2880,
+      "placement": {
+        "apronMetres": 2,
+        "attempts": 1000
+      },
+      "population": {
+        "authoredMarkers": false
+      },
+      "settlementKind": "rural",
+      "start": {
+        "ask": "shelter"
+      },
+      "woodlands": []
+    }
+  ],
+  "starts": [
+    {
+      "allSkills": 10,
+      "debugOnly": true,
+      "defaultForSite": true,
+      "density": null,
+      "id": "holdoutconditionlook",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "repairkit",
+          "item": "repair_kit"
+        },
+        {
+          "count": 12,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "scrap",
+          "item": "scrap_metal"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "repair_brick",
+        "repair_planks",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "assemble_fastener_pack",
+        "rag_to_cloth_strip",
+        "build_plank_wall",
+        "build_plank_floor",
+        "build_wood_door",
+        "build_wood_shelf",
+        "board_up_door",
+        "board_up_window",
+        "panel_window",
+        "hang_window_curtain",
+        "repair_plank_wall",
+        "repair_plank_floor",
+        "repair_improvised_wood_door",
+        "repair_wood_shelf",
+        "cut_sheet_metal_torch",
+        "cut_sheet_metal_saw",
+        "cut_small_sheet_torch",
+        "cut_small_sheet_saw",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "holdout_condition_look",
+      "skills": {},
+      "startTimeGameTimeOfDay": "12:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}

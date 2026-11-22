@@ -55,6 +55,7 @@
     cancel: 'Cancel ({key})',
     activate: '{key}: activate {name}',
     setDown: '{key}: set down {name}',
+    buildHere: '{key}: build {name} here',
     groundItem: '{key}: pocket {item} · {key} (hold): wield',
     downedBody: '{key}: {finish} · {key} (hold): dismember',
     downedBodyRefused: '{key}: {finish} · {key} (hold): dismember — {reason}',

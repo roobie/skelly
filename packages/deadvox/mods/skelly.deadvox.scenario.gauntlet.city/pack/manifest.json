@@ -2,6 +2,7 @@
   "dependencies": [
     "skelly.basic-foods",
     "skelly.body",
+    "skelly.building-blocks",
     "skelly.crafting",
     "skelly.deadvox.actors",
     "skelly.deadvox.buildings",
@@ -20,6 +21,7 @@
     "skelly.household-electrical",
     "skelly.inventory",
     "skelly.keys",
+    "skelly.chemical-lights",
     "skelly.light-sources",
     "skelly.manufactured-blocks",
     "skelly.materials",

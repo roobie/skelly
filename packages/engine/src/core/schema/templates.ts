@@ -212,12 +212,16 @@ export const BuildingEligibilitySchema = strictObject({
   settlementKinds: pipe(array(Id), nonEmpty()),
 });
 
+const ConditionSchema = strictObject({ mean: Fraction, spread: Fraction, paneThreshold: Fraction });
+
 export const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
   eligibility: optional(BuildingEligibilitySchema),
   /** The most storeys the stress-test city stacks this template to; absent means no limit. */
   maxStoreys: optional(pipe(Count, minValue(1), maxValue(8))),
+  /** Initial block and window-frame condition; panes below the authored threshold start missing. */
+  condition: optional(ConditionSchema),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
@@ -310,6 +314,7 @@ export const MapPieceSchema = pipe(
     lootContext: LootContextSchema,
     size: KitSize,
     style: Id,
+    condition: optional(ConditionSchema),
     aftermath: AftermathTags,
     palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
     layers: array(array(string())),
@@ -373,6 +378,7 @@ export const MapAssemblySchema = strictObject({
   eligibility: optional(BuildingEligibilitySchema),
   /** The building brief this assembly answers. */
   brief: optional(Id),
+  condition: optional(ConditionSchema),
   aftermath: AftermathTags,
   /** Odds for every slot this assembly and its nested assemblies draw, over the scopes around it. */
   aftermathOdds: optional(AftermathOddsSchema),

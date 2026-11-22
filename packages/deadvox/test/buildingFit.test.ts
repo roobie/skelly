@@ -376,6 +376,7 @@ const doorContent = (): Partial<ContentFile> => {
       {
         id: 'fixture_boards',
         name: 'Boards',
+        fits: 'door',
         color: '#808080',
         thicknessBlocks: 0.1,
         boards: [{ from: 0, height: 1 }],

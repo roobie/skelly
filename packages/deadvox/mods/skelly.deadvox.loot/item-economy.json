@@ -85,6 +85,12 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "wooden_plank",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "wood_offcut",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1183,18 +1189,6 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
-      "id": "glowstick",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "road_flare",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "lighter",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1207,7 +1201,13 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
-      "id": "wooden_plank",
+      "id": "glowstick",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "road_flare",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

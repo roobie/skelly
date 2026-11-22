@@ -221,6 +221,8 @@ export interface WorkRelease {
   feet: Vec3;
   calendar?: number;
   retirePiece?: (entity: BlockEntity) => string | undefined;
+  /** Removes the named boarding while keeping its host in place. */
+  removeBoarding?: (entity: BlockEntity, boarding: string) => string | undefined;
   /** Clears the rubble cell a finished take-apart names; a refusal keeps the job, paused, to finish once it clears. */
   clearRubble?: (cell: Readonly<Vec3>, epoch: number) => string | undefined;
 }
@@ -336,6 +338,7 @@ export class Inventory {
   canReachCell: (cell: Readonly<Vec3>) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
+  buried: () => boolean = () => false;
   worldPlacement: WorldPlacement | undefined;
   /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
   rubble: RubbleClearing | undefined;
@@ -1069,6 +1072,19 @@ export class Inventory {
     return this.piles.get(pileKey(pos));
   }
 
+  buryPile(pos: Readonly<Vec3>): ReturnType<typeof snapshotPlaced>[] {
+    const pile = this.pileAt(pos);
+    if (!pile) {
+      return [];
+    }
+    const buried = pile.items.map((placed) => snapshotPlaced(placed, this.foodClock()));
+    for (const placed of [...pile.items]) {
+      this.remove({ kind: 'pile', pile, placed });
+    }
+    this.version += 1;
+    return buried;
+  }
+
   /** Moves piled items to other piles at the given spots, as when the furniture under them is moved. */
   shiftPiles(moves: readonly { placed: Placed; to: Vec3; at: Spot }[]): void {
     for (const { placed } of moves) {
@@ -1789,6 +1805,7 @@ export class Inventory {
       return {
         kind: 'pieceDisassembly',
         furniture: plan.entity.type,
+        ...(plan.boarding ? { boarding: plan.boarding } : {}),
         skillLevel: plan.skillLevel,
         toolLevels: { ...plan.toolLevels },
         outputs: plan.outputs.map((output) => ({ ...output })),
@@ -2114,7 +2131,13 @@ export class Inventory {
       throw new Error('A finished part service releases through its slot');
     }
     if (payload.kind !== 'craft') {
-      return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
+      const outputs = payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
+      if (payload.kind === 'cellDisassembly') {
+        outputs.push(
+          ...(this.rubble?.contents(payload.cell) ?? []).map(({ item }) => restoreItem(this.registry, item)),
+        );
+      }
+      return outputs;
     }
     if (payload.repairTarget !== undefined) {
       return [];
@@ -2298,8 +2321,43 @@ export class Inventory {
     this.version += 1;
   }
 
+  private completePieceDisassembly({
+    payload,
+    at,
+    work,
+    finish,
+    retirePiece,
+    removeBoarding,
+  }: {
+    payload: NonNullable<Item['work']>;
+    at: Location;
+    work: Item;
+    finish: boolean;
+    retirePiece: WorkRelease['retirePiece'] | undefined;
+    removeBoarding: WorkRelease['removeBoarding'] | undefined;
+  }): void {
+    if (!(finish && payload.kind === 'pieceDisassembly' && at.kind === 'pieceWork')) {
+      return;
+    }
+    if (payload.boarding) {
+      const refusal = removeBoarding
+        ? removeBoarding(at.entity, payload.boarding)
+        : 'No boarding remover for a piece taken apart';
+      if (refusal) {
+        this.entities.hostWork(at.entity, work);
+        throw new Error(refusal);
+      }
+      return;
+    }
+    this.retireHost(at.entity, work, retirePiece);
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece, clearRubble }: WorkRelease): void {
+  releaseWork(
+    work: Item,
+    finish: boolean,
+    { feet, calendar = 0, retirePiece, removeBoarding, clearRubble }: WorkRelease,
+  ): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
@@ -2328,9 +2386,7 @@ export class Inventory {
       commitBalances(balances);
     }
     this.remove(at);
-    if (finish && payload.kind === 'pieceDisassembly' && at.kind === 'pieceWork') {
-      this.retireHost(at.entity, work, retirePiece);
-    }
+    this.completePieceDisassembly({ payload, at, work, finish, retirePiece, removeBoarding });
     work.work = undefined;
     this.applyWorkRepair(payload, target, finish);
     this.version += 1;
@@ -3586,7 +3642,7 @@ const validWorkTarget = (
       target.cell.length === 3 &&
       target.cell.every(Number.isSafeInteger) &&
       Number.isSafeInteger(target.epoch) &&
-      target.epoch >= 1 &&
+      target.epoch >= 0 &&
       recipe?.repair?.block !== undefined
     );
   }
@@ -3770,7 +3826,7 @@ const validatePieceDisassemblyWorkItem = (
   registry: Registry,
   work: Extract<NonNullable<ItemState['work']>, { kind: 'pieceDisassembly' }>,
 ): void => {
-  const recovery = pieceRecoveryWork(registry, work.furniture);
+  const recovery = pieceRecoveryWork(registry, work.furniture, work.boarding);
   if (
     !recovery ||
     work.components.length > 0 ||

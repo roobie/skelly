@@ -121,6 +121,7 @@
         "windupSimSeconds": 0.5
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a leaper",
       "chaseMotion": {

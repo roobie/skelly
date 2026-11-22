@@ -63,6 +63,7 @@ export type SaveContentKind =
   | 'block'
   | 'item'
   | 'furniture'
+  | 'boarding'
   | 'climbable'
   | 'actor'
   | 'sound'
@@ -146,6 +147,7 @@ interface WirePayload {
     rolledColumns: string[];
     blockDamage: SaveSnapshot['world']['blockDamage'];
     rubble: SaveSnapshot['world']['rubble'];
+    support: SaveSnapshot['world']['support'];
   };
   character: {
     id: string;
@@ -175,7 +177,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 71;
+export const SAVE_SCHEMA_VERSION = 73;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -321,6 +323,7 @@ const body = obj({
   halfDepth: opt(positive),
   height: positive,
   onGround: bool,
+  buried: opt(arr(tuple(safeInt, safeInt, safeInt), 1)),
 });
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
@@ -538,7 +541,7 @@ itemSchema = obj({
         repairTarget: opt(
           union(
             obj({ kind: enumeration(['item', 'entity']), uid: positiveInt }),
-            obj({ kind: enumeration(['cell']), cell: tuple(safeInt, safeInt, safeInt), epoch: positiveInt }),
+            obj({ kind: enumeration(['cell']), cell: tuple(safeInt, safeInt, safeInt), epoch: nonNegativeInt }),
           ),
         ),
         repairAmount: opt(positive),
@@ -564,6 +567,7 @@ itemSchema = obj({
       obj({
         kind: enumeration(['pieceDisassembly']),
         furniture: str({ id: true }),
+        boarding: opt(str({ id: true })),
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
@@ -638,7 +642,7 @@ const blockEntitySchema = obj({
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
-  boarding: opt(obj({ side: enumeration(['front', 'back']), type: str({ id: true }) })),
+  boarding: opt(obj({ side: enumeration(['front', 'back']), type: str({ id: true }), open: opt(enumeration([true])) })),
   pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
   housing: opt(arr(obj({ slot: str({ id: true }), item: opt(lazy(() => itemSchema)) }))),
@@ -978,7 +982,13 @@ const blockDamageSchema = obj({
 
 const rubbleSchema = obj({
   nextEpoch: positiveInt,
-  entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), epoch: safeInt })),
+  entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), epoch: safeInt, buried: opt(placedGrid) })),
+});
+
+const supportSchema = obj({
+  placed: arr(tuple(safeInt, safeInt, safeInt)),
+  frontier: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), lostFloor: bool })),
+  lost: arr(tuple(safeInt, safeInt, safeInt)),
 });
 
 const wirePayloadSchema = obj({
@@ -1020,6 +1030,7 @@ const wirePayloadSchema = obj({
     rolledColumns: arr(str({ nonEmpty: true })),
     blockDamage: blockDamageSchema,
     rubble: rubbleSchema,
+    support: supportSchema,
   }),
   character: obj({
     id: str({ nonEmpty: true }),
@@ -1437,6 +1448,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       rolledColumns: [...snapshot.world.rolledColumns],
       blockDamage: structuredClone(snapshot.world.blockDamage),
       rubble: structuredClone(snapshot.world.rubble),
+      support: structuredClone(snapshot.world.support),
     },
     character: {
       id: snapshot.character.id,
@@ -1513,6 +1525,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
       rubble: structuredClone(wire.world.rubble),
+      support: structuredClone(wire.world.support),
     },
     character: {
       ...wire.character,
@@ -1720,10 +1733,15 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   validateActionReferences(snapshot);
   assertCastState(snapshot);
   collectItemIds(
-    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
+    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles, 'character.inventory', snapshot.world.rubble),
     snapshot.character.inventory.nextItemUid,
   );
-  for (const { item, path } of savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)) {
+  for (const { item, path } of savedItemTree(
+    snapshot.character.inventory,
+    snapshot.world.vehicles,
+    'character.inventory',
+    snapshot.world.rubble,
+  )) {
     if (item.firearm) {
       if (item.count !== 1) {
         throw new Error(`Mechanical firearm state needs one item at ${path}`);
@@ -1836,7 +1854,14 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   ) {
     throw new Error('Running forcing action cannot use compression');
   }
-  const tree = [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)];
+  const tree = [
+    ...savedItemTree(
+      snapshot.character.inventory,
+      snapshot.world.vehicles,
+      'character.inventory',
+      snapshot.world.rubble,
+    ),
+  ];
   validateFoodWatermarks(snapshot, tree);
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
@@ -1872,12 +1897,27 @@ function grabbedLadder(
     : undefined;
 }
 
+function validatePieceDisassemblyReferences(
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'pieceDisassembly' }>,
+  path: string,
+  check: (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string) => void,
+): void {
+  check('furniture', work.furniture, `${path}.furniture`);
+  if (work.boarding) {
+    check('boarding', work.boarding, `${path}.boarding`);
+  }
+  work.outputs.forEach((output, index) => {
+    check('item', output.item, `${path}.outputs[${index}].item`);
+  });
+}
+
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
   vehicles: VehicleInstancesState,
+  rubble: SaveSnapshot['world']['rubble'],
   check: (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string, item?: ItemState) => void,
 ): void {
-  for (const { item, path } of savedItemTree(state, vehicles)) {
+  for (const { item, path } of savedItemTree(state, vehicles, 'character.inventory', rubble)) {
     check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
@@ -1907,10 +1947,7 @@ function validateItemContentReferences(
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
     } else if (item.work?.kind === 'pieceDisassembly') {
-      check('furniture', item.work.furniture, `${path}.work.furniture`);
-      item.work.outputs.forEach((output, index) => {
-        check('item', output.item, `${path}.work.outputs[${index}].item`);
-      });
+      validatePieceDisassemblyReferences(item.work, `${path}.work`, check);
     } else if (item.work?.kind === 'cellDisassembly') {
       check('block', item.work.block, `${path}.work.block`);
       item.work.outputs.forEach((output, index) => {
@@ -1988,7 +2025,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   validateProgressionReferences(snapshot.character.progression, check);
   validateDamageReferences(snapshot, check);
-  validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
+  validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, snapshot.world.rubble, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {
     if (vehicle.blueprint !== undefined) {
       check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
@@ -2084,6 +2121,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         rolledColumns: arr(str({ nonEmpty: true })),
         blockDamage: blockDamageSchema,
         rubble: rubbleSchema,
+        support: supportSchema,
       }),
       character: obj({
         id: str({ nonEmpty: true }),
@@ -2131,7 +2169,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   }
   assertVehicleState(snapshot.world.vehicles);
   collectItemIds(
-    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
+    savedItemTree(snapshot.character.inventory, snapshot.world.vehicles, 'character.inventory', snapshot.world.rubble),
     snapshot.character.inventory.nextItemUid,
   );
   const blockEntities = snapshot.character.inventory.entities;

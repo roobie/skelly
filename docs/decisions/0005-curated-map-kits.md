@@ -3,6 +3,7 @@ read_if:
   - you author map pieces, assemblies or intended site routes
   - you change template ownership, circulation, descent lids or deterministic selection
   - you author road gates, road profiles or a piece's road route
+  - you author or change owner-scoped building condition
 ---
 
 # 5. Curated spaces with exclusive ownership
@@ -67,6 +68,23 @@ Extend the existing template compiler and city plan rather than creating another
 engine. Compiled ownership and provenance travel with the geometry so diagnostics can
 explain both claimed solids and reserved voids. See `packages/engine/src/core/templates.ts`,
 `compileTemplate` and `stampPlacement`, and `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`.
+
+## Condition ownership
+
+Condition belongs to the nearest declaring piece or assembly, not the outermost
+building. An undeclared child inherits its enclosing owner's policy; a child's explicit
+policy replaces that policy in full, including the pane threshold. This lets a compound
+weather its buildings independently without copying their geometry. Ownership follows
+the compiled cells through nesting and rotation, so adjacent owners cannot lend each
+other wear. See `packages/engine/src/core/templates.ts`, `composeAssemblyVoxels`, and
+`packages/engine/src/core/conditionDistribution.ts`, `conditionAt`.
+
+Condition removes no blocks and changes no housing parts: a worn solid remains standing
+and repairable, while authored breaches remain literal geometry. Baseline block damage stays
+derived rather than saved, so merely visiting a building cannot grow the changed-cell
+ledger. Player repairs override that baseline; windows retain their frame and pane save
+owner. See `packages/engine/src/core/templateDamage.ts`, `templateDamageSource`, and
+`packages/engine/src/core/site.ts`, `furnitureOf`.
 
 ## City storey boundaries
 

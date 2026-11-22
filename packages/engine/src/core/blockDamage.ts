@@ -140,6 +140,13 @@ export interface DamageEntry {
   readonly epoch: number;
 }
 
+export interface GeneratedBlockDamage {
+  readonly has: (cell: Readonly<Vec3>) => boolean;
+  readonly get: (cell: Readonly<Vec3>) => number | undefined;
+  readonly cells: () => Iterable<Vec3>;
+  readonly ensure: (cell: Readonly<Vec3>) => void;
+}
+
 export interface SavedBlockDamage {
   nextEpoch: number;
   entries: { cell: Vec3; damage: number; epoch: number }[];
@@ -161,10 +168,31 @@ const materialAt = (world: World, registry: Registry, cell: Readonly<Vec3>): Blo
   return block?.solid ? registry.blockMaterials.get(block.material) : undefined;
 };
 
+const savedDamageFits = (
+  world: World,
+  registry: Registry,
+  { cell, damage, epoch }: DamageEntry & { readonly cell: Readonly<Vec3> },
+): boolean => {
+  if (!(validCell(cell) && Number.isFinite(damage))) {
+    return false;
+  }
+  if (damage === 0) {
+    return epoch === 0 && world.getChunk(toChunk(cell[0]), toChunk(cell[1]), toChunk(cell[2])) !== undefined;
+  }
+  const material = materialAt(world, registry, cell);
+  return material !== undefined && damage > 0 && damage <= material.durability;
+};
+
 /** World-owned damaged-cell identities. Full damage is retained until destruction is admitted. */
 export class BlockDamage {
   private readonly entries = new Map<string, DamageEntry>();
   private nextEpoch = 1;
+  private generated?: GeneratedBlockDamage;
+
+  bindGenerated(source: GeneratedBlockDamage): void {
+    this.generated = source;
+    this.version += 1;
+  }
   /** Goes up whenever any cell's damage changes, so a view redraws damage only then. */
   version = 0;
 
@@ -175,13 +203,28 @@ export class BlockDamage {
   }
 
   get(cell: Readonly<Vec3>): Readonly<DamageEntry> | undefined {
-    return this.entries.get(keyOf(cell));
+    const changed = this.entries.get(keyOf(cell));
+    if (changed) {
+      return changed.damage > 0 ? changed : undefined;
+    }
+    const damage = this.generated?.get(cell);
+    return damage !== undefined && damage > 0 ? { damage, epoch: 0 } : undefined;
   }
 
   /** Every damaged cell with its damage, in no set order. */
   *damaged(): Generator<readonly [Vec3, Readonly<DamageEntry>]> {
     for (const [key, entry] of this.entries) {
-      yield [key.split(',').map(Number) as Vec3, entry];
+      if (entry.damage > 0) {
+        yield [key.split(',').map(Number) as Vec3, entry];
+      }
+    }
+    for (const cell of this.generated?.cells() ?? []) {
+      if (!this.entries.has(keyOf(cell))) {
+        const entry = this.get(cell);
+        if (entry) {
+          yield [cell, entry];
+        }
+      }
     }
   }
 
@@ -211,7 +254,14 @@ export class BlockDamage {
 
   /** Replacement and completed repair end the identity, even when the same block is later rebuilt here. */
   clear(cell: Readonly<Vec3>): void {
-    if (this.entries.delete(keyOf(cell))) {
+    const changed = this.entries.delete(keyOf(cell));
+    // An explicit zero suppresses the generated baseline after repair or replacement, including across saves.
+    const generated = this.generated?.has(cell) === true;
+    if (generated) {
+      this.generated!.ensure(cell);
+      this.entries.set(keyOf(cell), Object.freeze({ damage: 0, epoch: 0 }));
+    }
+    if (changed || generated) {
       this.version += 1;
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
@@ -221,7 +271,7 @@ export class BlockDamage {
    * does. `epoch` pins which damage episode may be mended, so a replacement block's fresh damage refuses. `floor` is
    * the damage the repair's condition ceiling leaves; mending stops there. */
   repair(cell: Readonly<Vec3>, epoch: number, amount: number, floor = 0): boolean {
-    const entry = this.entries.get(keyOf(cell));
+    const entry = this.get(cell);
     if (
       !(validCell(cell) && entry && entry.epoch === epoch && Number.isFinite(amount) && amount > 0) ||
       entry.damage <= floor
@@ -233,6 +283,7 @@ export class BlockDamage {
       this.clear(cell);
       return true;
     }
+    this.generated?.ensure(cell);
     this.entries.set(keyOf(cell), Object.freeze({ damage: remaining, epoch: entry.epoch }));
     this.version += 1;
     this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
@@ -245,7 +296,7 @@ export class BlockDamage {
     return freezeSnapshot({ nextEpoch: this.nextEpoch, entries });
   }
 
-  /** Columns are restored first. Corrupt entries are reported and dropped, never regenerated. */
+  /** Restore columns first so overrides can be checked against retained blocks. */
   restoreState(
     state: Readonly<SavedBlockDamage>,
     registry: Registry,
@@ -261,18 +312,11 @@ export class BlockDamage {
     const epochs = new Set<number>();
     for (const { cell, damage, epoch } of state.entries) {
       const key = keyOf(cell);
-      const material = validCell(cell) ? materialAt(this.world, registry, cell) : undefined;
       if (
-        !(
-          material &&
-          Number.isFinite(damage) &&
-          damage > 0 &&
-          damage <= material.durability &&
-          Number.isSafeInteger(epoch)
-        ) ||
-        epoch < 1 ||
+        !(savedDamageFits(this.world, registry, { cell, damage, epoch }) && Number.isSafeInteger(epoch)) ||
+        epoch < 0 ||
         epoch >= state.nextEpoch ||
-        epochs.has(epoch) ||
+        (epoch > 0 && epochs.has(epoch)) ||
         this.entries.has(key)
       ) {
         issues.push(`Dropped invalid block damage at ${key}`);
@@ -280,7 +324,9 @@ export class BlockDamage {
       }
       this.entries.set(key, Object.freeze({ damage, epoch }));
       this.version += 1;
-      epochs.add(epoch);
+      if (epoch > 0) {
+        epochs.add(epoch);
+      }
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
     this.nextEpoch = state.nextEpoch;

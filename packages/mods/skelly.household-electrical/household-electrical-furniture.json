@@ -78,7 +78,8 @@
           "emissive": 0.69999999999999996,
           "intensity": 15.9,
           "offset": [0, 2, 0],
-          "radius": 8
+          "radius": 8,
+          "seenFrom": 80
         }
       },
       "size": [1, 3, 1]

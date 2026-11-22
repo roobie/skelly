@@ -46,6 +46,8 @@ export const contentLookup = (registry: Registry, ...[kind, id, item]: SaveConte
       return wornOccupancyIssue(registry, id, item) === undefined;
     case 'furniture':
       return registry.furniture.has(id);
+    case 'boarding':
+      return registry.boardings.has(id);
     case 'climbable':
       return Boolean(registry.furniture.get(id)?.climbable);
     case 'actor':

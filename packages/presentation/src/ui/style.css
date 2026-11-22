@@ -288,6 +288,31 @@ body:not(.menu-pointer-locked) .fact-detail:hover > .fact-detail-copy {
 #view canvas {
   display: block;
 }
+body.buried #view::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #40382d;
+  opacity: var(--buried-murk, 0);
+  pointer-events: none;
+}
+body.buried #view::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent, var(--buried-vignette-color));
+  animation: buried-vignette var(--buried-vignette-period) ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes buried-vignette {
+  0%,
+  100% {
+    opacity: calc(var(--buried-vignette-strength) * (1 - var(--buried-vignette-pulse-depth)));
+  }
+  50% {
+    opacity: var(--buried-vignette-strength);
+  }
+}
 body.unconscious::after {
   content: "";
   position: fixed;
@@ -2122,6 +2147,15 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 .craft-components {
   margin: calc(var(--ui-spacing) * 0.5rem) 0;
+}
+.craft-spot {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
+}
+.craft-spot-name {
+  overflow-wrap: anywhere;
 }
 .craft-gap {
   color: #efb78b;

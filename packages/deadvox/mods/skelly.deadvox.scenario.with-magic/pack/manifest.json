@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.deadvox", "skelly.deadvox.magic"],
+  "dependencies": ["skelly.building-blocks", "skelly.deadvox", "skelly.deadvox.magic"],
   "files": [
     {
       "kind": "content",

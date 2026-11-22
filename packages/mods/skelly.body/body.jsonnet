@@ -1,4 +1,5 @@
 // The player's body (`packages/deadvox/DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
+local hurtLight = std.filter(function(sound) sound.id == 'player_hurt_light', (import 'body-sounds.jsonnet').sounds)[0];
 local normalSleepGameHours = 8;
 local normalSleep = 100 / normalSleepGameHours;
 local responses(blunt, cut, pierce, acid) = {
@@ -10,7 +11,8 @@ local responses(blunt, cut, pierce, acid) = {
   body: [{
     id: 'player',
     sounds: {
-      hurt: { light: 'player_hurt_light', heavy: 'player_hurt_heavy', heavyAtDamage: 15 },
+      hurt: { light: hurtLight.id, heavy: 'player_hurt_heavy', heavyAtDamage: 15 },
+      continuousDamage: { event: hurtLight.id, minIntervalSimSeconds: hurtLight.minIntervalSimSeconds * 10 },
       strain: 'player_strain', landing: 'player_landing_hard',
       block: { full: 'player_block_full', partial: 'player_block_partial' },
       breath: { inhale: 'breath_inhale', exhale: 'breath_exhale', gasp: 'breath_gasp' },

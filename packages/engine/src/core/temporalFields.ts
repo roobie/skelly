@@ -30,6 +30,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'look[].mobActors.launchSpinRadiansPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'supportTuning[].suffocationDamagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'supportTuning[].buriedVignette.pulsePeriodRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   {
     path: 'furniture[].power.instruments.dial.swayPeriodSimSeconds',
@@ -176,6 +183,8 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.salvageTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'recipes.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.takeApart.yield.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  { path: 'boardings.takeApart.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  { path: 'boardings[].curtain.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'partBlueprints[].slots[].service.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'blockMaterials.rubbleClearTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.door.methods.*.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -275,6 +284,12 @@ export const TEMPORAL_FIELDS = [
   {
     path: 'figures[].aimPose.ads.viewBlend.blendBackRealSeconds',
     clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
+  {
+    path: 'body[].sounds.continuousDamage.minIntervalSimSeconds',
+    clock: 'Sim',
     unit: 'Seconds',
     dimension: 'duration',
   },

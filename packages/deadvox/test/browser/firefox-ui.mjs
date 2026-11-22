@@ -1065,6 +1065,77 @@ try {
       assert.equal(Number(await reloadedWeatheringGroup.locator('#weathering-strength').inputValue()), sliderNext);
       assert.deepEqual(pageErrors, []);
     }
+    await page.goto(
+      browserStageUrl(
+        'firefox-ui',
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.support-buried-look',
+          hash: playHash,
+          harness: { 'play-test': 1 },
+        }),
+      ),
+    );
+    await startPlay();
+    await waitForWorldLoaded(page);
+    await page.waitForFunction(() => document.body.classList.contains('buried'));
+    const buriedPresentation = await page.evaluate(() => {
+      const { session, engine, audio } = globalThis.skellyPlayTest;
+      const [tuning] = engine.registry.supportTuning.values();
+      const nodes = Reflect.get(audio, 'nodes');
+      const view = document.querySelector('#view');
+      if (!(tuning && nodes && view)) {
+        throw new Error('Buried presentation was not initialized');
+      }
+      const vignette = tuning.buriedVignette;
+      const animation = view
+        .getAnimations({ subtree: true })
+        .find((entry) => entry instanceof CSSAnimation && entry.animationName === 'buried-vignette');
+      if (!animation) {
+        throw new Error('Buried vignette is not animated');
+      }
+      animation.pause();
+      animation.currentTime = 0;
+      const trough = Number(getComputedStyle(view, '::after').opacity);
+      animation.currentTime = (vignette.pulsePeriodRealSeconds * 1000) / 2;
+      const peak = Number(getComputedStyle(view, '::after').opacity);
+      const vignetteStyle = getComputedStyle(view, '::after');
+      const gradient = vignetteStyle.backgroundImage;
+      const period = Number.parseFloat(vignetteStyle.animationDuration);
+      animation.play();
+      return {
+        vignette: {
+          trough,
+          peak,
+          gradient,
+          period,
+          layer: vignetteStyle.zIndex,
+          color: getComputedStyle(document.body).getPropertyValue('--buried-vignette-color').trim(),
+          expected: vignette,
+        },
+        buried: session.body.buried !== undefined,
+        opacity: Number(getComputedStyle(view, '::before').opacity),
+        murkLayer: getComputedStyle(view, '::before').zIndex,
+        expectedOpacity: tuning.buriedMurk,
+        cutoff: nodes.burial.frequency.value,
+        expectedCutoff: tuning.buriedAudioCutoffHz,
+        outputGain: nodes.master.gain.value,
+      };
+    });
+    assert.equal(buriedPresentation.buried, true);
+    assert.ok(buriedPresentation.opacity > 0 && buriedPresentation.opacity < 1, 'murky view is not black');
+    assert.equal(buriedPresentation.opacity, buriedPresentation.expectedOpacity);
+    const { vignette } = buriedPresentation;
+    assert.match(vignette.gradient, /radial-gradient/);
+    assert.equal(buriedPresentation.murkLayer, 'auto');
+    assert.equal(vignette.layer, 'auto', 'the after vignette paints above the before murk by tree order');
+    assert.equal(vignette.color, vignette.expected.color);
+    assert.equal(vignette.period, vignette.expected.pulsePeriodRealSeconds);
+    assert.ok(vignette.peak > vignette.trough, 'the vignette visibly pulses');
+    assert.ok(Math.abs(vignette.peak - vignette.expected.strength) < 1e-6);
+    assert.ok(Math.abs(vignette.trough - vignette.expected.strength * (1 - vignette.expected.pulseDepth)) < 1e-6);
+    assert.equal(buriedPresentation.cutoff, buriedPresentation.expectedCutoff);
+    assert.ok(buriedPresentation.outputGain > 0, 'burial muffles rather than muting output');
+    assert.deepEqual(pageErrors, []);
     process.stdout.write(
       runWeatheringTestPage
         ? 'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n'

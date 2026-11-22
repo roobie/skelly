@@ -53,7 +53,9 @@ export const jobName = (registry: Registry, work: NonNullable<Item['work']>): st
     case 'disassembly':
       return registry.items.get(work.source)!.name;
     case 'pieceDisassembly':
-      return registry.furniture.get(work.furniture)!.name;
+      return work.boarding === undefined
+        ? registry.furniture.get(work.furniture)!.name
+        : registry.boardings.get(work.boarding)!.name;
     case 'cellDisassembly':
       return registry.blocks[registry.blockIds.get(work.block)!]!.name;
     case 'partService':
@@ -186,6 +188,9 @@ export class CraftCommands {
   }
   /** `taken` is the one held item a Start may escrow from the hands; see `Inventory.handsFreeBut`. */
   startReason(taken?: Item): string | undefined {
+    if (this.inventory.buried()) {
+      return coreMessage(this.inventory.registry, 'handsBusy');
+    }
     if (!this.inventory.handsFreeBut(taken)) {
       return coreMessage(this.inventory.registry, 'handsFull');
     }

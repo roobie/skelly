@@ -179,6 +179,7 @@ export interface SpawnMarker extends SpawnTimeWindowField {
 }
 
 export interface VoxelProvenance {
+  readonly condition?: TemplateDef['condition'];
   readonly owner: string;
   readonly source: string;
   readonly variant: string;
@@ -187,6 +188,7 @@ export interface VoxelProvenance {
 }
 
 export interface CompiledTemplate {
+  readonly condition?: { readonly mean: number; readonly spread: number; readonly paneThreshold: number };
   readonly lootContext: LootContext;
   readonly id: string;
   readonly size: Vec3;
@@ -330,6 +332,7 @@ export const compileTemplate = (
   return {
     id: template.id,
     lootContext: template.lootContext,
+    ...(template.condition ? { condition: template.condition } : {}),
     ...templateEnvelope(template),
     blocks,
     ...(ground.includes(1) ? { ground } : {}),
@@ -355,7 +358,7 @@ export const footprint = ({ template, turn }: TerrainPlacement): [number, number
   turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
-const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
+export const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
   const [sx, , sz] = size;
   switch (turn) {
     case 1:
@@ -370,7 +373,7 @@ const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] 
 };
 
 /** The template cell that lands on (u, v) relative to the origin: the inverse of `turned`. */
-const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number] => {
+export const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number] => {
   const [sx, , sz] = size;
   switch (turn) {
     case 1:
@@ -468,6 +471,7 @@ const compilePieceTemplate = (registry: Registry, piece: MapPieceDef, styleId: s
     lootContext: piece.lootContext,
     size: piece.size,
     layers: piece.layers,
+    ...(piece.condition ? { condition: piece.condition } : {}),
     ...(piece.decals ? { decals: piece.decals } : {}),
     palette,
     ownership: piece.ownership,
@@ -918,6 +922,13 @@ const composeAssemblyVoxels = (
     };
     composePlacement(slot, placement, voxels, collide);
   }
+  if (assembly.condition) {
+    for (const [index, entry] of voxels.provenance.entries()) {
+      if (entry && !entry.condition) {
+        voxels.provenance[index] = { ...entry, condition: assembly.condition };
+      }
+    }
+  }
   const { size: _size, ...composed } = voxels;
   return composed;
 };
@@ -1099,6 +1110,7 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
     ).flat(),
     id: `${template.id}×${storeys}`,
     lootContext: template.lootContext,
+    ...(template.condition ? { condition: template.condition } : {}),
     size: [sx, height, sz],
     blocks,
     pieces,

@@ -1,6 +1,8 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
+    "skelly.building-blocks",
+    "skelly.chemical-lights",
     "skelly.containers",
     "skelly.deadvox.buildings",
     "skelly.deadvox.scenario.test-house",
