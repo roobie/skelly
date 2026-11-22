@@ -296,6 +296,24 @@ body.buried #view::after {
   opacity: var(--buried-murk, 0);
   pointer-events: none;
 }
+body.buried #view::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent, var(--buried-vignette-color));
+  animation: buried-vignette var(--buried-vignette-period) ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes buried-vignette {
+  0%,
+  100% {
+    opacity: calc(var(--buried-vignette-strength) * (1 - var(--buried-vignette-pulse-depth)));
+  }
+  50% {
+    opacity: var(--buried-vignette-strength);
+  }
+}
 body.unconscious::after {
   content: "";
   position: fixed;

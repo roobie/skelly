@@ -9,7 +9,7 @@ read_if:
   - you're authoring the shelter's starting block condition or broken panes
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing where Holdout players find building tools or fasteners
-  - you're changing collapse displacement, burial, suffocation or buried-player presentation
+  - you're changing collapse displacement, burial, suffocation, continuous-damage audio or buried-player presentation
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
   - you're changing structure support, cascade landing, buried contents or their clearing
@@ -168,9 +168,17 @@ unbuilt. Unanswered gates block only their dependent work.
   Self-dig-out remains open and is not implemented. See
   `packages/engine/src/core/collapse.ts`, `reachableCollapseExit` and `refreshBurial`,
   and `packages/engine/src/game/session.ts`, `crushBodies`.
-  A buried player's view is murky, not black, and sound is muffled: bodily presentation
-  communicates confinement without taking away the view. Content owns both strengths;
-  neither changes simulation hearing or visibility. See
+  Continuous damage needs its own voice. The hurt voice substitutes for the unsourced
+  recording, with a simulation-time throttle so an ongoing condition does not sound like
+  repeated blows. Content selects the voice and interval; one-off impacts keep their
+  ordinary sound timing. See `packages/engine/src/game/session.ts`, `playDamageSound`,
+  `packages/engine/src/core/soundPicker.ts`, `SoundPicker.pick`, and
+  `packages/engine/src/core/schema/body.ts`, `BodyTuningSchema`.
+  A buried player's murky, not black, view gains a strong pulsing vignette; muffled sound
+  and the enclosing visual pulse communicate confinement without taking away the view.
+  Content owns their strengths, pulse and colour. These presentation effects do not
+  change simulation hearing or visibility. See
+  `packages/presentation/src/presentation/play.ts`, `updateBuriedPresentation`,
   `packages/presentation/src/presentation/audio.ts`, `GameAudio.setBuriedCutoff`, and
   `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
   See `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.

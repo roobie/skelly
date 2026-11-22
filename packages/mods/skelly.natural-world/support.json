@@ -3,6 +3,12 @@
     {
       "buriedAudioCutoffHz": 400,
       "buriedMurk": 0.69999999999999996,
+      "buriedVignette": {
+        "color": "#100c08",
+        "pulseDepth": 0.40000000000000002,
+        "pulsePeriodRealSeconds": 1.6000000000000001,
+        "strength": 0.94999999999999996
+      },
       "capability": "support",
       "cascadeCellsPerTick": 64,
       "crushCause": "falling rubble",

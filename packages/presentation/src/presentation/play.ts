@@ -3752,6 +3752,13 @@ const startPlayWith = (
     document.body.classList.toggle('buried', body.buried !== undefined);
     document.body.style.setProperty('--buried-murk', String(body.buried ? tuning!.buriedMurk : 0));
     audio.setBuriedCutoff(body.buried ? tuning!.buriedAudioCutoffHz : undefined);
+    if (tuning) {
+      const vignette = tuning.buriedVignette;
+      document.body.style.setProperty('--buried-vignette-strength', String(vignette.strength));
+      document.body.style.setProperty('--buried-vignette-pulse-depth', String(vignette.pulseDepth));
+      document.body.style.setProperty('--buried-vignette-period', `${vignette.pulsePeriodRealSeconds}s`);
+      document.body.style.setProperty('--buried-vignette-color', vignette.color);
+    }
   };
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();

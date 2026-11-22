@@ -17,7 +17,17 @@ import {
 import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { capabilityField } from './capability.ts';
-import { Color, Count, Fraction, Id, Name, NonNegative, Positive, PositiveGameMinutes } from './primitives.ts';
+import {
+  Color,
+  Count,
+  Fraction,
+  Id,
+  Name,
+  NonNegative,
+  Positive,
+  PositiveGameMinutes,
+  PositiveRealSeconds,
+} from './primitives.ts';
 
 // ---- blocks ----
 
@@ -116,6 +126,12 @@ export const SupportTuningSchema = strictObject({
   pushSearchCells: pipe(Count, minValue(1)),
   buriedMurk: pipe(Fraction, maxValue(0.95)),
   buriedAudioCutoffHz: Positive,
+  buriedVignette: strictObject({
+    strength: Fraction,
+    pulseDepth: Fraction,
+    pulsePeriodRealSeconds: PositiveRealSeconds,
+    color: Color,
+  }),
 });
 
 export const BlockSchema = strictObject({

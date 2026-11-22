@@ -1130,12 +1130,14 @@ export const createSession = (options: SessionOptions) => {
       body: mobBody,
       noiseRadiusMetres,
       soundPitchMultiplier,
+      minimumIntervalSimSeconds,
     }: SoundEmissionMeta & {
       player: boolean;
       body?: ActorBody;
+      minimumIntervalSimSeconds?: number;
     },
   ): boolean => {
-    const selected = soundPicker.pick(event, time);
+    const selected = soundPicker.pick(event, time, minimumIntervalSimSeconds);
     if (!selected) {
       return false;
     }
@@ -1194,6 +1196,21 @@ export const createSession = (options: SessionOptions) => {
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
+  const playDamageSound = (event: { amount: number; time: number; continuous?: boolean }): void => {
+    if (event.continuous) {
+      const continuous = bodyTuning.sounds.continuousDamage;
+      admitSound(continuous.event, chest(), event.time, {
+        player: true,
+        listenerRelative: true,
+        minimumIntervalSimSeconds: continuous.minIntervalSimSeconds,
+      });
+    } else {
+      playPlayerSound(
+        bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+        event.time,
+      );
+    }
+  };
   const awardInventoryPractice = (): void => {
     if (inventorySkillId !== undefined) {
       const training = skillActivityPractice(registry, inventorySkillId, 'handling');
@@ -2783,7 +2800,7 @@ export const createSession = (options: SessionOptions) => {
       lastPlayerStep = time;
       const tuning = claimed(registry.supportTuning, 'support');
       if (refreshBurial(body, collapseSolid)) {
-        sim.hurt(tuning!.suffocationDamagePerSimSecond * dt, tuning!.suffocationCause);
+        sim.hurt(tuning!.suffocationDamagePerSimSecond * dt, tuning!.suffocationCause, true);
       }
       for (const [id, actor] of [...actorSystem.store.entries()]) {
         if (refreshBurial(actor.body, collapseSolid) && actor.type.breathes) {
@@ -3431,10 +3448,7 @@ export const createSession = (options: SessionOptions) => {
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(
-            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
-            event.time,
-          );
+          playDamageSound(event);
         }
       }
     },
@@ -3447,10 +3461,7 @@ export const createSession = (options: SessionOptions) => {
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(
-            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
-            event.time,
-          );
+          playDamageSound(event);
         }
       }
     },

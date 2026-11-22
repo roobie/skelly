@@ -1086,7 +1086,31 @@ try {
       if (!(tuning && nodes && view)) {
         throw new Error('Buried presentation was not initialized');
       }
+      const vignette = tuning.buriedVignette;
+      const animation = view
+        .getAnimations({ subtree: true })
+        .find((entry) => entry instanceof CSSAnimation && entry.animationName === 'buried-vignette');
+      if (!animation) {
+        throw new Error('Buried vignette is not animated');
+      }
+      animation.pause();
+      animation.currentTime = 0;
+      const trough = Number(getComputedStyle(view, '::before').opacity);
+      animation.currentTime = (vignette.pulsePeriodRealSeconds * 1000) / 2;
+      const peak = Number(getComputedStyle(view, '::before').opacity);
+      const vignetteStyle = getComputedStyle(view, '::before');
+      const gradient = vignetteStyle.backgroundImage;
+      const period = Number.parseFloat(vignetteStyle.animationDuration);
+      animation.play();
       return {
+        vignette: {
+          trough,
+          peak,
+          gradient,
+          period,
+          color: getComputedStyle(document.body).getPropertyValue('--buried-vignette-color').trim(),
+          expected: vignette,
+        },
         buried: session.body.buried !== undefined,
         opacity: Number(getComputedStyle(view, '::after').opacity),
         expectedOpacity: tuning.buriedMurk,
@@ -1098,6 +1122,13 @@ try {
     assert.equal(buriedPresentation.buried, true);
     assert.ok(buriedPresentation.opacity > 0 && buriedPresentation.opacity < 1, 'murky view is not black');
     assert.equal(buriedPresentation.opacity, buriedPresentation.expectedOpacity);
+    const { vignette } = buriedPresentation;
+    assert.match(vignette.gradient, /radial-gradient/);
+    assert.equal(vignette.color, vignette.expected.color);
+    assert.equal(vignette.period, vignette.expected.pulsePeriodRealSeconds);
+    assert.ok(vignette.peak > vignette.trough, 'the vignette visibly pulses');
+    assert.ok(Math.abs(vignette.peak - vignette.expected.strength) < 1e-6);
+    assert.ok(Math.abs(vignette.trough - vignette.expected.strength * (1 - vignette.expected.pulseDepth)) < 1e-6);
     assert.equal(buriedPresentation.cutoff, buriedPresentation.expectedCutoff);
     assert.ok(buriedPresentation.outputGain > 0, 'burial muffles rather than muting output');
     assert.deepEqual(pageErrors, []);

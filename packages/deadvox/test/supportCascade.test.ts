@@ -266,8 +266,12 @@ describe('support cascade', () => {
     expect(restored.session.crafting.previewTakeApartCell(cell).refusal).toBeDefined();
     const { health } = restored.session.sim.body;
     const tuning = [...restored.registry.supportTuning.values()][0]!;
+    const reader = restored.session.sim.events.reader();
     restored.session.sim.scheduler.advance(health / tuning.suffocationDamagePerSimSecond + 1);
     expect(restored.session.sim.dead?.cause).toBe(tuning.suffocationCause);
+    const damage = reader.read().filter((event) => event.kind === 'damage');
+    expect(damage.length).toBeGreaterThan(0);
+    expect(damage.every((event) => event.continuous)).toBe(true);
   });
 
   it('frees an unbreathing victim when another actor takes its rubble apart', async () => {

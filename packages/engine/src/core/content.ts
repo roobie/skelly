@@ -3237,8 +3237,9 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
     }
   };
   for (const body of registry.body.values()) {
-    const { hurt, block, breath, strain, landing } = body.sounds;
+    const { hurt, block, breath, strain, landing, continuousDamage } = body.sounds;
     group('body', body.id, '.sounds', { strain, landing });
+    group('body', body.id, '.sounds.continuousDamage', { event: continuousDamage.event });
     group('body', body.id, '.sounds.hurt', { light: hurt.light, heavy: hurt.heavy });
     group('body', body.id, '.sounds.block', block);
     group('body', body.id, '.sounds.breath', breath);
