@@ -17,8 +17,8 @@ belong to the ordinary building kit. See `condition-look.jsonnet` and
 `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`.
 
 Judge whether the broken wall and roof read as one breach, whether the bearing
-partitions leave the house usable, and whether remaining frames and cracked surfaces
-make repair targets clear. Check room and yard approaches on foot, not by teleporting
+partitions leave the house usable, whether the corner corbels suit the cornice, and
+whether remaining frames and cracked surfaces make repair targets clear. Check room and yard approaches on foot, not by teleporting
 past an obstruction. Repair a damaged timber floor or lintel through its work review;
 after Save and Continue, the repair should persist without changing untouched
 condition. The shared repair recipes do not promise repair for every wall material.

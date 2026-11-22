@@ -224,6 +224,39 @@ local roof = piece('rural_flat_house_roof', [18, 4, 14], [
   withFlue(ringClaim('A'), 'S'),
   withFlue([outside for _ in std.range(0, 13)], 'S'),
 ]) + { palette+: chimney + rainwater };
+// A corner projects diagonally past both walls. A corbel tied to the wall top
+// gives its adjacent slab cell direct bearing instead of relying on diagonal span.
+local cornerCorbels = piece('rural_flat_house_corner_corbels', [18, 1, 14], [[
+  '.=..............=.',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '.=..............=.',
+]], [[
+  '.S..............S.',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '.S..............S.',
+]]);
 // The downspout's run down the wall, to the ground beside the back corner.
 local downspout = piece('rural_flat_house_downspout', [1, 6, 1], [['P'] for _ in std.range(1, 6)],
   [['S'] for _ in std.range(1, 6)]) + { palette+: rainwater };
@@ -427,6 +460,7 @@ local house(id, shellId, back, anchors) = {
     window('west_back', [1, 3, 8], 'w'),
     window('east_front', [16, 3, 3], 'e'),
     window('east_back', [16, 3, 8], 'e'),
+    slot('corner_corbels', [0, 6, 0], cornerCorbels.size, only(cornerCorbels.id)),
     slot('downspout', [17, 1, 12], [1, 6, 1], only('rural_flat_house_downspout')),
     slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
   ],
@@ -482,6 +516,7 @@ local houses = [
     shell('rural_flat_house_shell', plans.twoRooms),
     shell('rural_flat_house_wc_shell', plans.withWc),
     roof,
+    cornerCorbels,
     downspout,
     living,
     bedroom,

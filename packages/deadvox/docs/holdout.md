@@ -71,7 +71,9 @@ The architecture belongs in the buildings pack because the same damaged rural ho
 must be useful to other scenarios and products. Structural corrections belong in the
 common intact house before its breached twin, not in a private shelter fork. Bearing
 partitions and their lintel protect the existing central walk while supporting the
-front-room slab; see `mods/skelly.deadvox.buildings/rural-house.jsonnet`, `shell`.
+front-room slab. Concrete corbels tied to the wall tops carry the projecting corners
+without requiring a special support rule for this building. See
+`mods/skelly.deadvox.buildings/rural-house.jsonnet`, `shell` and `cornerCorbels`.
 The buildings' fit proves room and fitting reach, not structural support or operational
 power. See `packages/engine/src/core/structureSupport.ts`, `createSupport`.
 

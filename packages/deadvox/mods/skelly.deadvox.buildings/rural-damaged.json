@@ -401,6 +401,21 @@
           "turn": 0
         },
         {
+          "at": [0, 6, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_corner_corbels",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "corner_corbels",
+          "size": [18, 1, 14],
+          "turn": 0
+        },
+        {
           "at": [17, 1, 12],
           "choices": [
             {
