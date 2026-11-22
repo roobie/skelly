@@ -622,13 +622,19 @@ try {
   await tapAction(page, 'inventory.put-target');
   await page.waitForFunction(
     (uid) => {
-      const { session } = globalThis.skellyPlayTest;
+      const { screen, session } = globalThis.skellyPlayTest;
       const item = session.inventory.itemByUid(uid);
-      return item !== undefined && session.inventory.locate(item)?.kind === 'furniture';
+      return (
+        item !== undefined &&
+        session.inventory.locate(item)?.kind === 'furniture' &&
+        !session.queue.busy &&
+        screen.listedItems.some((candidate) => candidate.uid === uid)
+      );
     },
     stowedUid,
     { timeout: 10_000 },
   );
+  await select(stowedUid);
   await pressAction(page, 'inventory.best-pocket');
   await page.waitForFunction(
     (uid) => {
