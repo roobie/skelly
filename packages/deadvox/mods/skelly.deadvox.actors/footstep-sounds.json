@@ -199,6 +199,12 @@
       "sound": "shambler_step_stone"
     },
     {
+      "block": "steel_joist",
+      "family": "shambler",
+      "id": "8_shambler_steel_joist",
+      "sound": "shambler_step_stone"
+    },
+    {
       "block": "timber_rubble",
       "family": "shambler",
       "id": "8_shambler_timber_rubble",

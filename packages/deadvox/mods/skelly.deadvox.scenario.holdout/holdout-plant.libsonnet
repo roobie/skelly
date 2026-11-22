@@ -69,33 +69,39 @@ local tools = [
   { item: 'screwdriver', condition: 1 },
   { item: 'adjustable_pliers', condition: 1 },
 ];
-local storesRoom = [
-  '########',
-  '#SS..aa#',
-  '#......#',
-  '#cc....#',
-  '#cc....#',
-  '###DD###',
+// The plant's stores are the shared works stores, racked with the plant's own supplies: the spares on one shelf, the
+// inputs and tools on the other, a crate of spares beside the aisle.
+local works = import '../skelly.deadvox.buildings/works-stores.libsonnet';
+local stocked = {
+  S: { furniture: 'shelf', facing: 'n', items: spares, loot: 'plant_spares' },
+  a: { furniture: 'shelf', facing: 'n', items: inputs + tools, loot: 'building_tools' },
+  c: { furniture: 'crate', loot: 'plant_spares' },
+};
+local rackingFloor = [
+  '....__....',
+  '....__....',
+  '..cc__....',
+  '..cc__....',
+  '....__....',
+  '.________.',
+  '.________.',
+  '.SS....aa.',
 ];
-local storesTop = [
-  '########',
-  '#SS..aa#',
-  '#......#',
-  '#......#',
-  '#......#',
-  '###DD###',
+local rackingTop = [
+  '....__....',
+  '....__....',
+  '....__....',
+  '....__....',
+  '....__....',
+  '.________.',
+  '.________.',
+  '.SS....aa.',
 ];
-local stores = hall(
-  'holdout_plant_stores',
-  [8, 6, 6],
-  {
-    S: { furniture: 'shelf', facing: 's', items: spares, loot: 'plant_spares' },
-    a: { furniture: 'shelf', facing: 's', items: inputs + tools, loot: 'building_tools' },
-    c: { furniture: 'crate', loot: 'plant_spares' },
-  },
-  ['########', '#kkkkkk#', '#kkkkkk#', '#kkkkkk#', '#kkkkkk#', '########'],
-  [storesRoom, storesRoom, storesTop],
-  storesTop,
-  [4, 1, 4],
-);
-{ plant: plant, stores: stores }
+local racking = works.racking('holdout_plant_stores_racking', [rackingFloor, rackingFloor, rackingTop, rackingTop], stocked);
+{
+  plant: plant,
+  hall: hall,
+  supplies: { spares: spares, inputs: inputs, tools: tools, stocked: stocked },
+  storesRacking: racking,
+  stores: works.answer('holdout_plant_stores', racking.id),
+}

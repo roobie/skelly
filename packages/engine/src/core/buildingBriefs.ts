@@ -33,7 +33,7 @@ type Free = (cell: Vec3) => boolean;
 type FitReport = (rule: FitRule, path: string, detail: string, choice?: string) => void;
 
 /** The styles an assembly is placed in from outside: unstyled, and every ref elsewhere that names it with a style. */
-const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | undefined)[] => {
+export const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | undefined)[] => {
   const refs = [
     ...[...registry.mapPools.values()].flatMap((pool) => pool.choices.map(({ ref }) => ref)),
     ...[...registry.mapAssemblies.values()]

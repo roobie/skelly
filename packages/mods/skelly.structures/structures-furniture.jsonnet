@@ -52,6 +52,7 @@ local crate = {
   name: 'Crate',
   size: [2, 2, 2],
   color: '#9a7b4f',
+  serves: ['storage'],
   wear: { from: 0.1, to: 0.6 },
   shape: [
     { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
