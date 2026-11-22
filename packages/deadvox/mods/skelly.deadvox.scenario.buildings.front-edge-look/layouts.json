@@ -1,0 +1,45 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -28,
+        "x1": 16,
+        "z0": -14,
+        "z1": 12
+      },
+      "buildings": [
+        {
+          "position": [-20, 21, 0],
+          "rotation": 180,
+          "template": "front_hall_south"
+        },
+        {
+          "position": [-15, 21, 0],
+          "rotation": 0,
+          "template": "front_hall_north"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "frontEdgeLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-17, 21.5, -4]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-25, -8], [13, -8]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

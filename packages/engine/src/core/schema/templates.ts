@@ -167,6 +167,12 @@ export const StairSchema = strictObject({
 export const TemplateAccessSchema = strictObject({
   ground: Id,
   entrance: CellPosition,
+  /**
+   * The footprint edge the building declares as its front, where its entrance opens; absent means north. The
+   * building's own access is the one authority: no site or placement declares a competing front, and placement only
+   * turns this edge where it turned north before (`packages/engine/src/core/cityPlan.ts`, `frontTurn`).
+   */
+  front: optional(picklist(['n', 'e', 's', 'w'])),
   storeys: pipe(array(strictObject({ id: Id, floor: Count })), nonEmpty()),
   stairs: array(StairSchema),
 });

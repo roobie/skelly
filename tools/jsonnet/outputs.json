@@ -349,6 +349,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/templates.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/buildings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/buildings.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.json"
     },

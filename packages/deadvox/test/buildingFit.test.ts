@@ -59,6 +59,58 @@ const freeFloorNook = (id: string, boxed: boolean): Piece => {
   };
 };
 
+/**
+ * A tiny hall whose only ground-storey opening is a south doorway two cells wide, with two cells of wall beyond
+ * the walk on north and west, so the entrance walk reaches the south edge alone; `open: false` walls it shut.
+ */
+const frontHall = (id: string, open: boolean): Piece => {
+  const doorway = open ? '==..==' : '======';
+  const passage = open ? 'SSRRSS' : 'SSSSSS';
+  const walls = ['======', '======', '==...=', '==...=', '==...=', doorway];
+  const claims = ['SSSSSS', 'SSSSSS', 'SSRRRS', 'SSRRRS', 'SSRRRS', passage];
+  return {
+    id,
+    style: roomA.style,
+    size: [6, 5, 6],
+    lootContext: roomA.lootContext,
+    palette: { ...roomA.palette },
+    layers: [['======', '======', '======', '======', '======', '======'], walls, walls, walls, walls],
+    ownership: {
+      layers: [['SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS', 'SSSSSS'], claims, claims, claims, claims],
+    },
+    anchors: {},
+    ports: [],
+  };
+};
+
+/** The hall as an answer whose declared front edge is `front`, over the open or shut doorway piece. */
+const frontAnswer = (front: 'n' | 'e' | 's' | 'w', open = true): Assembly => ({
+  id: 'fixture_answer',
+  brief: 'fixture_brief',
+  eligibility: { settlementKinds: ['fixture_kind'] },
+  lootContext: route.lootContext,
+  size: [6, 5, 6],
+  slots: [
+    {
+      id: 'hall',
+      at: [0, 0, 0],
+      size: [6, 5, 6],
+      turn: 0,
+      choices: [{ ref: { kind: 'piece', id: open ? 'front_hall' : 'front_hall_shut' }, weight: 1 }],
+    },
+  ],
+  joins: [],
+  anchors: { entry: { kind: 'standing', at: [3, 1, 4] }, objective: { kind: 'standing', at: [4, 1, 3] } },
+  ports: [],
+  access: { ground: 'ground', entrance: [3, 1, 4], storeys: [{ id: 'ground', floor: 1 }], stairs: [], front },
+});
+
+const frontContent = (): Partial<ContentFile> => ({
+  mapPieces: [...KITS.mapPieces!, frontHall('front_hall', true), frontHall('front_hall_shut', false)],
+});
+
+const frontBrief = (): Brief => brief({ plot: { along: 6, depth: 6 } });
+
 const [, , NOOK_AT] = route.size;
 
 /** The route answer with a nook slot behind its front room, built from `choices`. */
@@ -213,8 +265,9 @@ describe('building fit check', () => {
     expect(issues[0]!.message).toContain('style "fixture_third"');
   });
 
-  it('reports an entrance that reaches no opening on the street edge', () => {
-    // Two empty rows on the north side leave the entrance no floor to walk to the street edge.
+  it('reports an entrance that reaches no opening on the front edge it defaults to', () => {
+    // Two empty rows on the north side leave the entrance no floor to walk to the north edge, which is the front an
+    // answer without `access.front` declares.
     const setback = 2;
     const shifted = structuredClone(route);
     const issues = fitIssues(
@@ -235,6 +288,21 @@ describe('building fit check', () => {
       }),
       brief({ plot: { along: route.size[0], depth: route.size[2] + setback } }),
     );
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.access.entrance`, rule: 'entrance' }]);
+  });
+
+  it('accepts an entrance on the edge the building declares as its front', () => {
+    // The hall's walk reaches only its south edge, and that is the edge it declares.
+    expect(contentIssues(frontAnswer('s'), frontBrief(), frontContent())).toEqual([]);
+  });
+
+  it('reports an entrance that reaches no opening on the declared front edge', () => {
+    const issues = fitIssues(frontAnswer('n'), frontBrief(), frontContent());
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.access.entrance`, rule: 'entrance' }]);
+  });
+
+  it('reports a front entrance the building itself obstructs', () => {
+    const issues = fitIssues(frontAnswer('s', false), frontBrief(), frontContent());
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.access.entrance`, rule: 'entrance' }]);
   });
 
