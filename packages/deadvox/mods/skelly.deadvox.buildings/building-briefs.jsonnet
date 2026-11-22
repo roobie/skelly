@@ -125,6 +125,31 @@ local flatRoofHouse = {
         'water main or a septic tank reached the house, the old privy left in the yard or pulled down.',
       ],
     },
+    // A garage any country plot can set beside its house; its shelf and crate hold a household's odds and ends.
+    {
+      id: 'rural_garage',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'nordic', 'balkan'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 10, depth: 14 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        garage: {
+          purpose: 'One car\'s bay open to the road, with a shelf and a crate of tools, tins and spares at the back.',
+          serves: ['storage'],
+        },
+      },
+      references: [
+        'Finnish and Swedish country houses of the 1960s to 1980s: a separate single garage of blockwork beside the ' +
+        'house once the family had a car, under a shallow sheet roof.',
+        'Yugoslav village plots of the same decades: an owner-built blockwork garage at the road frontage, often ' +
+        'with no door hung, its back wall lined with a shelf of jars, tins and tools.',
+      ],
+      facade: 'A plain blockwork box end-on to the road: one open bay under a lintel and a thin sheet roof.',
+      cover: 'Blockwork stops shots, and the open bay shows the whole inside from the road; the crate at the back ' +
+             'is the only thing to crouch behind.',
+    },
     // A works stores holds whatever the works it stands beside keeps in stock; what that is belongs to the answer's
     // racking, not to the brief. See `packages/deadvox/docs/building-pathway.md`, "Worked example: works stores".
     {

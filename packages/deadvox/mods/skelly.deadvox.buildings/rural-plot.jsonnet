@@ -60,7 +60,7 @@ local plot(id, outhouse, garage, cellar) =
       slot('woodshed', yard(12, 0, 18), [8, 6, 5], 'piece', 'woodshed'),
     ] + (if outhouse then [slot('outhouse', yard(14, 0, 30), [4, 7, 4], 'assembly', 'outhouse')] else [])
     + (if garage then [
-         slot('garage', at(22, 0, 2), [8, 7, 12], 'piece', 'garage'),
+         slot('garage', at(22, 0, 2), [8, 7, 12], 'assembly', 'rural_garage'),
          slot('drive', at(22, 0, 0), [8, 5, 2], 'piece', 'rural_plot_drive'),
        ] else []),
     joins: [],

@@ -172,6 +172,32 @@
       "tags": ["late_modern", "balkan", "mediterranean", "nordic"]
     },
     {
+      "cover": "Blockwork stops shots, and the open bay shows the whole inside from the road; the crate at the back is the only thing to crouch behind.",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "facade": "A plain blockwork box end-on to the road: one open bay under a lintel and a thin sheet roof.",
+      "id": "rural_garage",
+      "plot": {
+        "along": 10,
+        "depth": 14
+      },
+      "program": {
+        "garage": {
+          "purpose": "One car's bay open to the road, with a shelf and a crate of tools, tins and spares at the back.",
+          "serves": ["storage"]
+        }
+      },
+      "references": [
+        "Finnish and Swedish country houses of the 1960s to 1980s: a separate single garage of blockwork beside the house once the family had a car, under a shallow sheet roof.",
+        "Yugoslav village plots of the same decades: an owner-built blockwork garage at the road frontage, often with no door hung, its back wall lined with a shelf of jars, tins and tools."
+      ],
+      "setting": "modern_1980s",
+      "storeys": [1, 1],
+      "styles": ["rural_outbuilding"],
+      "tags": ["late_modern", "nordic", "balkan"]
+    },
+    {
       "cover": "Brick walls stop shots and the one door is the only way in, so whoever is inside is as easily shut in as kept safe; the racks along the walls break the sightline from the door to the back corners.",
       "eligibility": {
         "settlementKinds": ["rural"]

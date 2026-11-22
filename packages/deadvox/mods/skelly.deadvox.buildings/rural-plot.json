@@ -428,8 +428,8 @@
           "choices": [
             {
               "ref": {
-                "id": "garage",
-                "kind": "piece"
+                "id": "rural_garage",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -605,8 +605,8 @@
           "choices": [
             {
               "ref": {
-                "id": "garage",
-                "kind": "piece"
+                "id": "rural_garage",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -1015,8 +1015,8 @@
           "choices": [
             {
               "ref": {
-                "id": "garage",
-                "kind": "piece"
+                "id": "rural_garage",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -1177,8 +1177,8 @@
           "choices": [
             {
               "ref": {
-                "id": "garage",
-                "kind": "piece"
+                "id": "rural_garage",
+                "kind": "assembly"
               },
               "weight": 1
             }

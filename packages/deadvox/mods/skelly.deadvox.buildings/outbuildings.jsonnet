@@ -15,6 +15,7 @@ local palette = {
   c: { role: 'shell', material: 'curb' },
   p: { role: 'interior_floor', material: 'floor' },
   k: { role: 'support', material: 'slab' },
+  b: { role: 'support', material: 'lintel' },
   l: { role: 'trim', material: 'lid' },
   r: { role: 'roof', material: 'sheet' },
 };
@@ -83,23 +84,32 @@ local well = piece('well', [4, 7, 4], [
   ['rrrr', 'rrrr', 'rrrr', 'rrrr'],
 ]);
 // A single blockwork garage with its opening to the road, no door hung, and a shelf and a crate of odds and
-// ends at the back.
-local garageWalls(back) = ['m......m' for _ in std.range(0, 8)] + back + ['mmmmmmmm'];
-local garage = piece('garage', [8, 7, 12], [
+// ends at the back. The bay is reserved up to the lintel, so the walk from the opening reaches both. The opening is
+// wider than blockwork spans, so a steel lintel carries the course over it.
+local garageWalls(bay, back) = ['m' + bay + 'm' for _ in std.range(0, 8)] + back + ['mmmmmmmm'];
+local garageShell = piece('garage_shell', [8, 7, 12], [
   ['kkkkkkkk' for _ in std.range(1, 12)],
 ] + [
-  garageWalls(['m....xxm', 'mee..xxm'])
+  garageWalls('______', ['m____xxm', 'mee__xxm'])
   for _ in [1, 2]
 ] + [
-  garageWalls(['m......m', 'mee....m'])
+  garageWalls('______', ['m______m', 'mee____m'])
   for _ in [3, 4]
 ] + [
-  ['mmmmmmmm'] + garageWalls(['m......m', 'm......m'])[1:],
+  ['mbbbbbbm'] + garageWalls('......', ['m......m', 'm......m'])[1:],
   ['rrrrrrrr' for _ in std.range(1, 12)],
 ], {
   e: { furniture: 'shelf', facing: 'n', loot: 'shelf' },
   x: { furniture: 'crate', loot: 'junk' },
 });
+local garage = {
+  id: 'rural_garage', brief: 'rural_garage', eligibility: { settlementKinds: ['rural'] }, lootContext: context,
+  size: [8, 7, 12],
+  slots: [{ id: 'shell', at: [0, 0, 0], size: [8, 7, 12], turn: 0, choices: only('piece', 'garage_shell') }],
+  joins: [], ports: [],
+  anchors: { garage: { kind: 'standing', at: [3, 1, 6] } },
+  access: { ground: 'ground', entrance: [3, 1, 1], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+};
 // The chicken coop's site: claims nothing, so the yard shows through until the coop's model takes the slot.
 local coopSite = piece('chicken_coop_site', [4, 4, 4], [[',,,,' for _ in std.range(1, 4)] for _ in std.range(1, 4)]);
 {
@@ -112,11 +122,12 @@ local coopSite = piece('chicken_coop_site', [4, 4, 4], [[',,,,' for _ in std.ran
       curb: { role: 'shell', block: 'dressed_stone' },
       floor: { role: 'interior_floor', block: 'plank_floor' },
       slab: { role: 'support', block: 'concrete' },
+      lintel: { role: 'support', block: 'steel_joist' },
       lid: { role: 'trim', block: 'planks' },
       sheet: { role: 'roof', block: 'galvanized' },
       path: { role: 'support', block: 'dirt' },
     },
   }],
-  mapPieces: [outhouseShell, woodshed, well, garage, coopSite] + outhouseDoors,
-  mapAssemblies: [outhouse],
+  mapPieces: [outhouseShell, woodshed, well, garageShell, coopSite] + outhouseDoors,
+  mapAssemblies: [outhouse, garage],
 }
