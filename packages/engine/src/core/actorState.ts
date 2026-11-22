@@ -302,7 +302,12 @@ export const projectSnapshot = <Source extends object>(
 
 const actorSnapshotProjectors = {
   type: (actor) => actor.type.id,
-  body: (actor) => ({ ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] }),
+  body: (actor) => ({
+    ...actor.body,
+    pos: [...actor.body.pos],
+    vel: [...actor.body.vel],
+    ...(actor.body.buried ? { buried: actor.body.buried.map((cell) => [...cell]) } : {}),
+  }),
   facing: (actor) => [...actor.facing],
   dismemberRng: (actor) => [...actor.dismemberRng.state()] as RngState,
   spitRng: (actor) => [...actor.spitRng.state()] as RngState,

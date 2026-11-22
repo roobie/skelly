@@ -202,7 +202,7 @@ describe('debug and fixture starts', () => {
       const body = new Body(claimed(registry.body, 'player')!);
       applyStartState(
         inventory,
-        { ...start, kit: [], wounds: [], blockDamage: [] },
+        { ...start, kit: [], wounds: [], blockDamage: [], supportLoss: [] },
         {
           fresh: true,
           character,

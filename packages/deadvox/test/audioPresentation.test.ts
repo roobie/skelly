@@ -97,6 +97,70 @@ const fixture = (suppressed = false): Registry => {
   return suppressed ? withDefaultAttachment(registry, 'fixture_carbine', 'fixture_suppressor').registry : registry;
 };
 
+describe('continuous damage audio presentation', () => {
+  it('throttles the selected continuous voice over simulation time without throttling one-off hurt', () => {
+    const ordinaryInterval = 1 / 8;
+    const throttle = 10;
+    const windows = 3;
+    const sample = (isContinuous: boolean) => {
+      const registry = fixture();
+      for (const id of ['fixture_report', 'fixture_quiet_report']) {
+        registry.sounds.set(id, { ...registry.sounds.get(id)!, minIntervalSimSeconds: simSeconds(ordinaryInterval) });
+      }
+      const body = [...registry.body.values()].find((entry) => entry.capability === 'player')!;
+      registry.body.set(body.id, {
+        ...body,
+        sounds: {
+          ...body.sounds,
+          hurt: { ...body.sounds.hurt, light: 'fixture_report' },
+          continuousDamage: {
+            event: 'fixture_quiet_report',
+            minIntervalSimSeconds: simSeconds(ordinaryInterval * throttle),
+          },
+        },
+      });
+      const played: SoundEmission[] = [];
+      const session = createSession({
+        registry,
+        actorFigureFiles: stackActorFigureFiles(registry),
+        world: new World(),
+        isSolid: () => false,
+        isOpaque: () => false,
+        scale: makeScale(0.5),
+        seed: 73,
+        start: 43_200,
+        spawn: [0, 4, 0],
+        ready: () => false,
+        controls: {
+          active: () => true,
+          intent: () => IDLE,
+          yaw: () => 0,
+          pitch: () => 0,
+          walking: () => false,
+          descending: () => false,
+        },
+        audio: { play: (sound) => played.push(sound) },
+        notice: () => undefined,
+        onRead: () => undefined,
+      });
+      for (let tick = 0; tick < throttle * windows; tick++) {
+        session.sim.hurt(0.01, 'fixture damage', isContinuous);
+        session.frame(ordinaryInterval);
+      }
+      const { sounds } = registry.body.get(body.id)!;
+      const event = isContinuous ? sounds.continuousDamage.event : sounds.hurt.light;
+      return played.filter((sound) => sound.event === event);
+    };
+    const continuous = sample(true);
+    const ordinary = sample(false);
+    expect(continuous).toHaveLength(windows);
+    expect(ordinary).toHaveLength(continuous.length * throttle);
+    for (let index = 1; index < continuous.length; index++) {
+      expect(continuous[index]!.time - continuous[index - 1]!.time).toBeCloseTo(ordinaryInterval * throttle);
+    }
+  });
+});
+
 describe('firearm audio presentation', () => {
   it('selects fixture reports through nested suppressors and actor perspective', () => {
     const registry = fixture();

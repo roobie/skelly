@@ -338,6 +338,7 @@ export class Inventory {
   canReachCell: (cell: Readonly<Vec3>) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
+  buried: () => boolean = () => false;
   worldPlacement: WorldPlacement | undefined;
   /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
   rubble: RubbleClearing | undefined;
@@ -1069,6 +1070,19 @@ export class Inventory {
 
   pileAt(pos: Readonly<Vec3>): Pile | undefined {
     return this.piles.get(pileKey(pos));
+  }
+
+  buryPile(pos: Readonly<Vec3>): ReturnType<typeof snapshotPlaced>[] {
+    const pile = this.pileAt(pos);
+    if (!pile) {
+      return [];
+    }
+    const buried = pile.items.map((placed) => snapshotPlaced(placed, this.foodClock()));
+    for (const placed of [...pile.items]) {
+      this.remove({ kind: 'pile', pile, placed });
+    }
+    this.version += 1;
+    return buried;
   }
 
   /** Moves piled items to other piles at the given spots, as when the furniture under them is moved. */
@@ -2117,7 +2131,13 @@ export class Inventory {
       throw new Error('A finished part service releases through its slot');
     }
     if (payload.kind !== 'craft') {
-      return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
+      const outputs = payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
+      if (payload.kind === 'cellDisassembly') {
+        outputs.push(
+          ...(this.rubble?.contents(payload.cell) ?? []).map(({ item }) => restoreItem(this.registry, item)),
+        );
+      }
+      return outputs;
     }
     if (payload.repairTarget !== undefined) {
       return [];

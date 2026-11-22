@@ -191,6 +191,7 @@ export const savedItemTree = (
   state: InventoryState,
   vehicles?: import('./vehicleInstances.ts').VehicleInstancesState,
   prefix = 'character.inventory',
+  rubble?: import('./rubble.ts').SavedRubble,
 ) => {
   function* roots() {
     yield* itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
@@ -208,7 +209,21 @@ export const savedItemTree = (
       prefix,
     );
   }
-  return walkItemTree(roots());
+  function* ownedRoots() {
+    yield* roots();
+    yield* itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
+      {
+        hands: {},
+        worn: {},
+        entities: [],
+        piles: (rubble?.entries ?? [])
+          .filter((entry) => entry.buried)
+          .map((entry) => ({ pos: entry.cell, items: entry.buried! })),
+      },
+      'world.rubble',
+    );
+  }
+  return walkItemTree(ownedRoots());
 };
 
 /** Transient validation set, not a live UID registry. */

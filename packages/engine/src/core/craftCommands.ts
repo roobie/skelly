@@ -188,6 +188,9 @@ export class CraftCommands {
   }
   /** `taken` is the one held item a Start may escrow from the hands; see `Inventory.handsFreeBut`. */
   startReason(taken?: Item): string | undefined {
+    if (this.inventory.buried()) {
+      return coreMessage(this.inventory.registry, 'handsBusy');
+    }
     if (!this.inventory.handsFreeBut(taken)) {
       return coreMessage(this.inventory.registry, 'handsFull');
     }

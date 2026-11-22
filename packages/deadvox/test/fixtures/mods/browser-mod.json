@@ -141,6 +141,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.29999999999999999
       },
+      "breathes": false,
       "canJumpObstacles": true,
       "capability": ["settlementHorde", "settlementWanderer"],
       "cause": "a shambler",

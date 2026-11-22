@@ -1396,6 +1396,7 @@ const startPlayWith = (
       character: session.character,
       body: sim.body,
       damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
+      loseSupport: (cell) => engine.simulationWorld.support.lost(registry, cell),
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
@@ -3746,6 +3747,19 @@ const startPlayWith = (
       positionMetres: pos.map((v) => v * s) as Vec3,
     }));
 
+  const updateBuriedPresentation = (): void => {
+    const tuning = claimed(registry.supportTuning, 'support');
+    document.body.classList.toggle('buried', body.buried !== undefined);
+    document.body.style.setProperty('--buried-murk', String(body.buried ? tuning!.buriedMurk : 0));
+    audio.setBuriedCutoff(body.buried ? tuning!.buriedAudioCutoffHz : undefined);
+    if (tuning) {
+      const vignette = tuning.buriedVignette;
+      document.body.style.setProperty('--buried-vignette-strength', String(vignette.strength));
+      document.body.style.setProperty('--buried-vignette-pulse-depth', String(vignette.pulseDepth));
+      document.body.style.setProperty('--buried-vignette-period', `${vignette.pulsePeriodRealSeconds}s`);
+      document.body.style.setProperty('--buried-vignette-color', vignette.color);
+    }
+  };
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -3803,6 +3817,7 @@ const startPlayWith = (
     const unconsciousPresentation = sim.body.unconscious && !sim.dead;
     document.body.classList.toggle('unconscious', unconsciousPresentation);
     audio.setOutputMuted(unconsciousPresentation);
+    updateBuriedPresentation();
     audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     audio.updateLoops(worldLoops());

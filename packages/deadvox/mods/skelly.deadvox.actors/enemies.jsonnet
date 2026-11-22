@@ -65,7 +65,7 @@ local bite = {
                { region: 'torso', weight: 2 }, { region: 'head', weight: 1 }],
 };
 local shambler = {
-  id: 'shambler', name: 'Shambler', cause: 'a shambler', model: 'humanoid',
+  id: 'shambler', name: 'Shambler', cause: 'a shambler', model: 'humanoid', breathes: false,
   figureSeeds: figureSeeds, strength: 5, canJumpObstacles: true, spawnWeight: 1,
   footstepSound: 'shambler',
   sounds: { idle: 'shambler_idle', alert: 'shambler_alert', attack: 'shambler_attack', hurt: 'shambler_hurt' },
@@ -129,7 +129,7 @@ local actors = [
     dismember: { chance: 0.05, headOnKillChance: 0.15 },
   },
   shambler + {
-    id: 'amalgam', name: 'Amalgam', cause: 'an amalgam', model: 'fused-mass', canJumpObstacles: false,
+    id: 'amalgam', name: 'Amalgam', cause: 'an amalgam', model: 'fused-mass', breathes: false, canJumpObstacles: false,
     strength: 0, locomotion: 'omnidirectional', bodyScale: 4, soundPitchMultiplier: 0.5, authoredOnly: true,
     // A fused mass of bodies collapses as one janky physics prop, so its corpse freezes where it died (#1679).
     deathFall: 'frozen',
@@ -146,7 +146,7 @@ local actors = [
     carving: { radiusMetresPerDamage: 0.0023, maxRadiusMetres: 0.75, interiorColor: '#7a1c16' },
   },
   shambler + {
-    id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', figureSeeds: acidFigureSeeds, authoredOnly: true,
+    id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', breathes: false, figureSeeds: acidFigureSeeds, authoredOnly: true,
     deathFall: 'baked',
     acidBody: {
       color: '#9ad21e', charge: { idle: 0.5, charged: 2.5 }, light: { intensity: 0.31, radiusMetres: 3 },

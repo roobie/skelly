@@ -141,6 +141,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.29999999999999999
       },
+      "breathes": false,
       "canJumpObstacles": true,
       "capability": ["settlementHorde", "settlementWanderer"],
       "cause": "a shambler",
@@ -516,6 +517,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a military shambler",
       "chaseMotion": {
@@ -890,6 +892,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a farmer shambler",
       "chaseMotion": {
@@ -1264,6 +1267,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a worker shambler",
       "chaseMotion": {
@@ -1638,6 +1642,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a medic shambler",
       "chaseMotion": {
@@ -2012,6 +2017,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a brute shambler",
       "chaseMotion": {
@@ -2382,6 +2388,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.25
       },
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a runner",
       "chaseMotion": {
@@ -2718,6 +2725,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.40000000000000002
       },
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "a crawler",
       "chaseMotion": {
@@ -3063,6 +3071,7 @@
       },
       "authoredOnly": true,
       "bodyScale": 4,
+      "breathes": false,
       "canJumpObstacles": false,
       "carving": {
         "interiorColor": "#7a1c16",
@@ -3425,6 +3434,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "breathes": false,
       "canJumpObstacles": true,
       "cause": "an acid zombie",
       "chaseMotion": {

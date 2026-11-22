@@ -109,7 +109,7 @@ export class SoundPicker {
     }
   }
 
-  pick(event: SoundId, now: number): SoundPick | undefined {
+  pick(event: SoundId, now: number, minimumIntervalSimSeconds = 0): SoundPick | undefined {
     const sound = this.sounds.get(event);
     if (!sound || sound.variants.length === 0) {
       return undefined;
@@ -123,7 +123,7 @@ export class SoundPicker {
       };
       this.states.set(event, state);
     }
-    if (now - state.lastPlayedAt < sound.minIntervalSimSeconds) {
+    if (now - state.lastPlayedAt < Math.max(sound.minIntervalSimSeconds, minimumIntervalSimSeconds)) {
       return undefined;
     }
 

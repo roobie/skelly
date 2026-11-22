@@ -30,6 +30,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'look[].mobActors.launchSpinRadiansPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'supportTuning[].suffocationDamagePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'supportTuning[].buriedVignette.pulsePeriodRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   {
     path: 'furniture[].power.instruments.dial.swayPeriodSimSeconds',
@@ -277,6 +284,12 @@ export const TEMPORAL_FIELDS = [
   {
     path: 'figures[].aimPose.ads.viewBlend.blendBackRealSeconds',
     clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
+  {
+    path: 'body[].sounds.continuousDamage.minIntervalSimSeconds',
+    clock: 'Sim',
     unit: 'Seconds',
     dimension: 'duration',
   },
