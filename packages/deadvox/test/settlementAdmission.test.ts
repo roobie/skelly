@@ -113,6 +113,30 @@ describe('settlement collection admission', () => {
     );
   });
 
+  it('admits an east-front building by its front-facing footprint, not its authored extents', () => {
+    const { sources, data } = fixture();
+    const house = data.templates!.find(({ id }) => id === 'fixture_house')!;
+    // A hall 4 wide and 10 deep whose declared front is east: a city row turns it to stand 10 along the row and 4
+    // deep, so admission must refuse the authored extents' pairing, not the building.
+    house.size = [4, 3, 10];
+    house.layers = Array.from({ length: 3 }, () => Array.from({ length: 10 }, () => '===='));
+    house.access = {
+      ground: 'ground',
+      entrance: [1, 1, 1],
+      storeys: [{ id: 'ground', floor: 1 }],
+      stairs: [],
+      front: 'e',
+    };
+    data.mapPools = [fixturePool([{ ref: { kind: 'template', id: house.id }, weight: 1 }])];
+    const admitted = buildRegistry(sources);
+    expect(admitted.issues).toEqual([]);
+    const scenario = data.scenarios![0]!;
+    if (scenario.kind !== 'assembledCity') {
+      throw new Error('Expected city fixture');
+    }
+    expect(cityGridOf(admitted.registry, scenario.city).templates.map(({ id }) => id)).toEqual([house.id]);
+  });
+
   it('does not count benchmark-only candidates as playable scenario sources', () => {
     const { sources, data } = fixture();
     data.cityBenchmarks = [{ ...benchmark(), settlementKind: 'fixture_benchmark_kind' }];

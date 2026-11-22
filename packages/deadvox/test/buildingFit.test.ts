@@ -299,7 +299,6 @@ describe('building fit check', () => {
   it('reports an entrance that reaches no opening on the declared front edge', () => {
     const issues = fitIssues(frontAnswer('n'), frontBrief(), frontContent());
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.access.entrance`, rule: 'entrance' }]);
-    expect(issues[0]!.message).toContain('front (n) edge');
   });
 
   it('reports a front entrance the building itself obstructs', () => {

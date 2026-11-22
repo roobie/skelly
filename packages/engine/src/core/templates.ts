@@ -357,9 +357,15 @@ export interface Placement {
   readonly turn: Turn;
 }
 
-/** Width along x and depth along z once turned. */
-export const footprint = ({ template, turn }: TerrainPlacement): [number, number] =>
-  turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
+/** Width along x and depth along z once turned; reads any template or definition shape that carries a size. */
+export const footprint = ({
+  template,
+  turn,
+}: {
+  readonly template: { readonly size: Vec3 };
+  readonly origin?: Vec3;
+  readonly turn: Turn;
+}): [number, number] => (turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]]);
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
 export const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {

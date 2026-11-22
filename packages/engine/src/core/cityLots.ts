@@ -66,8 +66,10 @@ export const lotChoices = (registry: Registry, city: LotContext, lot: Lot): Choi
     lot.source.kind === 'pool'
       ? (registry.mapPools.get(lot.source.id)?.choices ?? [])
       : [{ ref: lot.source, weight: 1 }];
-  const [along, depth] = lot.turn % 2 === 0 ? lot.size : [lot.size[1], lot.size[0]];
-  return choices.filter(({ ref }) => eligibilityExclusion(registry, ref, kind, { along, depth }) === undefined);
+  // The lot's own turn stands the building, so both sides rotate together: the reserved rect as authored, the
+  // building at the lot's turn, not at its front-facing one.
+  const fit = { along: lot.size[0], depth: lot.size[1], turn: lot.turn };
+  return choices.filter(({ ref }) => eligibilityExclusion(registry, ref, kind, fit) === undefined);
 };
 
 const sourceIssues = (registry: Registry, city: LotContext, lot: Lot, path: string): Issue[] => {

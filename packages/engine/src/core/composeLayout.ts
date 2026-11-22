@@ -10,7 +10,7 @@ import { snapToPlacementGrid } from './placementGrid.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { KitPort, MapAssemblyDef, MapPoolDef, SiteLayoutDef } from './schema.ts';
-import { eligibilityExclusion } from './settlementPools.ts';
+import { eligibilityExclusion, frontFacingTurn } from './settlementPools.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import type { Rect } from './site.ts';
 import { rectsOverlap } from './site.ts';
@@ -18,6 +18,7 @@ import {
   type CompiledTemplate,
   compileAssembly,
   contentPointer,
+  footprint,
   type Placement,
   placedPoint,
   placedPort,
@@ -62,8 +63,11 @@ const askBuildingIssues = (registry: Registry, { scenario, ask, path }: AskSite,
   }
   const { definition } = source;
   const issues: Issue[] = [];
-  // An ask reserves its own footprint, so only the settlement kind can exclude it.
-  const fit = { along: definition.size[0], depth: definition.size[2] };
+  // An ask reserves its own footprint, so only the settlement kind can exclude it; the fit and the turn agree so the
+  // size test stays vacuous whatever edge the building declares its front.
+  const turn = frontFacingTurn(definition.access?.front);
+  const [along, depth] = footprint({ template: definition, turn });
+  const fit = { along, depth, turn };
   const excluded =
     definition.eligibility && eligibilityExclusion(registry, ref, ask.settlementKind ?? scenario.settlementKind, fit);
   if (excluded) {
