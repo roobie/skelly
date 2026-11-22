@@ -24,7 +24,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
  */
 /** @typedef {{ id: number; callback: FrameRequestCallback }} QueuedFrame */
 /** @typedef {ReturnType<typeof buildTestHouseRangeRoute>['waypoints'][number]} RouteWaypoint */
-/** @typedef {'rightHand' | 'idle' | 'itemGone' | 'tubeLoaded' | 'chamberRound'} WorkCondition */
+/** @typedef {'rightHand' | 'idle' | 'itemGone' | 'furniture' | 'pocket' | 'tubeLoaded' | 'chamberRound'} WorkCondition */
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const noonStart = {
@@ -361,6 +361,53 @@ try {
     }, uid);
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
+  /** @type {{ complete: boolean; seconds: number; frames: number; queueBusy: boolean }[]} */
+  const handlingWaits = [];
+  /**
+   * @param {WorkCondition} wantedCondition
+   * @param {Item['uid']} wantedUid
+   */
+  const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
+    const result = await page.evaluate(
+      ({ condition, uid, futureSeconds }) => {
+        const { session } = globalThis.skellyPlayTest;
+        const complete = () => {
+          const item = session.inventory.itemByUid(uid);
+          switch (condition) {
+            case 'rightHand':
+              return !session.queue.busy && session.inventory.hands.right?.uid === uid;
+            case 'idle':
+              return !session.queue.busy;
+            case 'itemGone':
+              return item === undefined;
+            case 'furniture':
+            case 'pocket':
+              return !session.queue.busy && session.inventory.locate(item)?.kind === condition;
+            case 'tubeLoaded':
+              return (item?.firearm?.tube?.length ?? 0) > 0;
+            case 'chamberRound':
+              return !session.queue.busy && item?.firearm?.chamber === 'round';
+            default:
+              throw new Error(`Unknown simulation-work condition: ${condition}`);
+          }
+        };
+        if (!(complete() || session.queue.busy)) {
+          session.frame(1 / 60);
+        }
+        const seconds = session.queue.remaining + futureSeconds;
+        const frameLimit = Math.max(1, Math.ceil(seconds / 0.1) + 2);
+        let frames = 0;
+        while (!complete() && frames < frameLimit) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        return { complete: complete(), seconds, frames, queueBusy: session.queue.busy };
+      },
+      { condition: wantedCondition, uid: wantedUid, futureSeconds: extraSeconds },
+    );
+    handlingWaits.push(result);
+    assert.equal(result.complete, true, `simulation work did not finish deterministically: ${JSON.stringify(result)}`);
+  };
   /** @param {RouteWaypoint} waypoint */
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
@@ -620,31 +667,9 @@ try {
     input.click();
   });
   await tapAction(page, 'inventory.put-target');
-  await page.waitForFunction(
-    (uid) => {
-      const { screen, session } = globalThis.skellyPlayTest;
-      const item = session.inventory.itemByUid(uid);
-      return (
-        item !== undefined &&
-        session.inventory.locate(item)?.kind === 'furniture' &&
-        !session.queue.busy &&
-        screen.listedItems.some((candidate) => candidate.uid === uid)
-      );
-    },
-    stowedUid,
-    { timeout: 10_000 },
-  );
-  await select(stowedUid);
+  await waitForWork('furniture', stowedUid);
   await pressAction(page, 'inventory.best-pocket');
-  await page.waitForFunction(
-    (uid) => {
-      const { session } = globalThis.skellyPlayTest;
-      const item = session.inventory.itemByUid(uid);
-      return item !== undefined && session.inventory.locate(item)?.kind === 'pocket';
-    },
-    stowedUid,
-    { timeout: 10_000 },
-  );
+  await waitForWork('pocket', stowedUid);
   /** @param {string} tab */
   const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
@@ -869,47 +894,6 @@ try {
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !globalThis.skellyPlayTest.screen.isOpen);
   await page.setViewportSize({ width: 1280, height: 900 });
-  /** @type {{ complete: boolean; seconds: number; frames: number; queueBusy: boolean }[]} */
-  const handlingWaits = [];
-  /**
-   * @param {WorkCondition} wantedCondition
-   * @param {Item['uid']} wantedUid
-   */
-  const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
-    const result = await page.evaluate(
-      ({ condition, uid, futureSeconds }) => {
-        const { session } = globalThis.skellyPlayTest;
-        const complete = () => {
-          const item = session.inventory.itemByUid(uid);
-          switch (condition) {
-            case 'rightHand':
-              return !session.queue.busy && session.inventory.hands.right?.uid === uid;
-            case 'idle':
-              return !session.queue.busy;
-            case 'itemGone':
-              return item === undefined;
-            case 'tubeLoaded':
-              return (item?.firearm?.tube?.length ?? 0) > 0;
-            case 'chamberRound':
-              return !session.queue.busy && item?.firearm?.chamber === 'round';
-            default:
-              throw new Error(`Unknown simulation-work condition: ${condition}`);
-          }
-        };
-        const seconds = session.queue.remaining + futureSeconds;
-        const frameLimit = Math.max(1, Math.ceil(seconds / 0.1) + 2);
-        let frames = 0;
-        while (!complete() && frames < frameLimit) {
-          session.frame(0.1);
-          frames += 1;
-        }
-        return { complete: complete(), seconds, frames, queueBusy: session.queue.busy };
-      },
-      { condition: wantedCondition, uid: wantedUid, futureSeconds: extraSeconds },
-    );
-    handlingWaits.push(result);
-    assert.equal(result.complete, true, `simulation work did not finish deterministically: ${JSON.stringify(result)}`);
-  };
   /** @param {Item['uid']} uid */
   const waitForHands = async (uid) => {
     const admission = await page.evaluate((wanted) => {
