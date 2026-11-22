@@ -5,13 +5,14 @@ import { type PlacementLootSource, pieceItemIssues, placementLootIssues } from '
 import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { StartDef } from './schema/starts.ts';
-import type { CityScenarioDef, FixedLootOverrideDef, ScenarioDef } from './schema.ts';
-import { admittedChoices, cityRowDepth } from './settlementPools.ts';
+import type { CityScenarioDef, FixedLootOverrideDef, ScenarioDef, TemplateDef } from './schema.ts';
+import { admittedChoices, cityRowDepth, frontFacingTurn } from './settlementPools.ts';
 import {
   type CompiledTemplate,
   cellsOf,
   compileAssembly,
   compileTemplate,
+  footprint,
   type Placement,
   pieceSize,
   placedGroundLoot,
@@ -86,6 +87,15 @@ const leadPlacementIssues = (scenario: CityScenarioDef, index: number, size: Vec
     : [];
 };
 
+/**
+ * An incidental utility fills an ordinary city row with its declared front to the street, so its front-facing
+ * footprint must fit the row the fill turns it into.
+ */
+const incidentalFitsRow = (template: TemplateDef, city: CityScenarioDef['city']): boolean => {
+  const [along, depth] = footprint({ template, turn: frontFacingTurn(template.access?.front) });
+  return along <= city.blockX - 2 * city.pad && 2 * depth <= city.blockZ - 2 * city.pad;
+};
+
 const extraTemplateIssues = (
   registry: Registry,
   scenario: CityScenarioDef,
@@ -122,7 +132,7 @@ const extraTemplateIssues = (
     ) {
       issues.push([path, 'landmark must fit outside every service turn in the reserved block']);
     }
-  } else if (template.size[0] > city.blockX - 2 * city.pad || 2 * template.size[2] > city.blockZ - 2 * city.pad) {
+  } else if (!incidentalFitsRow(template, city)) {
     issues.push([path, 'incidental utility must fit an ordinary city row']);
   }
   return issues;
