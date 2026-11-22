@@ -4,7 +4,7 @@ manifest(
   tier='theme',
   content=['basic-recipes-items', 'basic-recipes-furniture', 'basic-recipes-construction'],
   dependencies=[
-    'skelly.crafting', 'skelly.flame-tools', 'skelly.hand-tools', 'skelly.inventory', 'skelly.manufactured-blocks', 'skelly.materials', 'skelly.medicine',
+    'skelly.containers', 'skelly.crafting', 'skelly.flame-tools', 'skelly.hand-tools', 'skelly.inventory', 'skelly.manufactured-blocks', 'skelly.materials', 'skelly.medicine',
     'skelly.natural-world', 'skelly.readables', 'skelly.structures', 'skelly.wearables',
   ],
 )
