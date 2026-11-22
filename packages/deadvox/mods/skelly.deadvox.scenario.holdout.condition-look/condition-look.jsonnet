@@ -19,6 +19,7 @@ local pocket = { kind: 'pocket', parent: 'backpack', pocket: 0 };
       { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
       { id: 'repairkit', item: 'repair_kit', condition: 1, destination: pocket },
       { id: 'scrap', item: 'scrap_metal', count: 12, destination: pocket },
+      { id: 'planks', item: 'wooden_plank', count: 2, destination: pocket },
     ],
   }],
 }

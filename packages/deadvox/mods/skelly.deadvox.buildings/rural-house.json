@@ -2073,7 +2073,7 @@
           ".================.",
           ".=pppppppppppppp=.",
           ".=pppppppppppppp=.",
-          ".=pppppppppppppp=.",
+          ".=======pppppp===.",
           ".=pppppppppppppp=.",
           ".=pppppppppppppp=.",
           ".================.",
@@ -2161,6 +2161,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -2176,7 +2180,7 @@
           ".sssssss..sssssss.",
           ".s..............s.",
           ".s..............s.",
-          ".s..............s.",
+          ".siiiiii......iis.",
           ".s..............s.",
           ".s..............s.",
           ".sii..iiiiii..iis.",
@@ -2192,7 +2196,7 @@
           ".######b..b######.",
           ".#..............#.",
           ".#..............#.",
-          ".#..............#.",
+          ".#iiiiii......ii#.",
           ".#..............#.",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
@@ -2208,7 +2212,7 @@
           ".##...#b..b#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
@@ -2224,7 +2228,7 @@
           ".##...#b..b#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
@@ -2240,7 +2244,7 @@
           ".##...#bbbb#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
@@ -2256,7 +2260,7 @@
           ".##fff#bbbb#fff##.",
           ".#..............#.",
           ".f..............f.",
-          ".f..............f.",
+          ".fiiiiiiwwwwwwiif.",
           ".f..............f.",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
@@ -2279,7 +2283,7 @@
             ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSRRRRRRSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSS..SSSSSS..SSS.",
@@ -2295,7 +2299,7 @@
             ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSRRRRRRSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSS..SSSSSS..SSS.",
@@ -2311,7 +2315,7 @@
             ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSS..SSSSSS..SSS.",
@@ -2327,7 +2331,7 @@
             ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSS..SSSSSS..SSS.",
@@ -2343,7 +2347,7 @@
             ".SS...SSSSSS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
@@ -2359,7 +2363,7 @@
             ".SSSSSSSSSSSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSSSSSSSSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
@@ -2424,6 +2428,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -2439,7 +2447,7 @@
           ".sssssss..sssssss.",
           ".s..............s.",
           ".s..............s.",
-          ".s..............s.",
+          ".siiiiii......iis.",
           ".s..............s.",
           ".s..............s.",
           ".sii..ii..ii..iis.",
@@ -2455,7 +2463,7 @@
           ".######b..b######.",
           ".#..............#.",
           ".#..............#.",
-          ".#..............#.",
+          ".#iiiiii......ii#.",
           ".#..............#.",
           ".#..............#.",
           ".#ii..ii..ii..ii#.",
@@ -2471,7 +2479,7 @@
           ".##...#b..b#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#ii..ii..ii..ii#.",
@@ -2487,7 +2495,7 @@
           ".##...#b..b#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#ii..ii..ii..ii#.",
@@ -2503,7 +2511,7 @@
           ".##...#bbbb#...##.",
           ".#..............#.",
           "..................",
-          "..................",
+          "..iiiiii......ii..",
           "..................",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
@@ -2519,7 +2527,7 @@
           ".##fff#bbbb#fff##.",
           ".#..............#.",
           ".f..............f.",
-          ".f..............f.",
+          ".fiiiiiiwwwwwwiif.",
           ".f..............f.",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
@@ -2542,7 +2550,7 @@
             ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSRRRRRRSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSS..SS..SS..SSS.",
@@ -2558,7 +2566,7 @@
             ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSRRRRRRSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSS..SS..SS..SSS.",
@@ -2574,7 +2582,7 @@
             ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSS..SS..SS..SSS.",
@@ -2590,7 +2598,7 @@
             ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSS..SS..SS..SSS.",
@@ -2606,7 +2614,7 @@
             ".SS...SSSSSS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
-            "........RRRRRR....",
+            "..SSSSSSRRRRRRSS..",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
@@ -2622,7 +2630,7 @@
             ".SSSSSSSSSSSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
-            ".S......RRRRRR..S.",
+            ".SSSSSSSSSSSSSSSS.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
@@ -2687,6 +2695,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -2904,6 +2916,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -2983,6 +2999,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -2993,12 +3013,12 @@
       "anchors": {},
       "id": "rural_flat_house_living",
       "layers": [
-        [".aaaa.--ee....", ".aaaa.------..", "......------..", "..------OO--xx", "..------OO--xx"],
-        [".aaaa.--ee....", ".aaaa.------..", "......------..", "..------OO--xx", "..------OO--xx"],
-        ["......--ee....", "......------..", "......------..", "..------OO--..", "..------OO--.."],
-        ["......--ee....", "......------..", "......------..", "..------..--..", "..------H.--.."],
-        ["......--......", "......------..", "......------..", "..------..--..", "..------H.--.."],
-        ["......--......", "......------..", "......------..", "..------..--..", "..------H.--.."]
+        [".aaaa.--ee....", ".aaaa.------..", "--------------", "..------OO--xx", "..------OO--xx"],
+        [".aaaa.--ee....", ".aaaa.------..", "--------------", "..------OO--xx", "..------OO--xx"],
+        ["......--ee....", "......------..", "--------------", "..------OO--..", "..------OO--.."],
+        ["......--ee....", "......------..", "--------------", "..------..--..", "..------H.--.."],
+        ["......--......", "......------..", "--------------", "..------..--..", "..------H.--.."],
+        ["......--......", "......------..", "--------------", "..------..--..", "..------H.--.."]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -3006,12 +3026,12 @@
       },
       "ownership": {
         "layers": [
-          ["ASSSSA..SSAAAA", "ASSSSA......AA", "AAAAAA......AA", "AA......SS..SS", "AA......SS..SS"],
-          ["ASSSSA..SSAAAA", "ASSSSA......AA", "AAAAAA......AA", "AA......SS..SS", "AA......SS..SS"],
-          ["AAAAAA..SSAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......SS..AA", "AA......SS..AA"],
-          ["AAAAAA..SSAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"],
-          ["AAAAAA..AAAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"],
-          ["AAAAAA..AAAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"]
+          ["ASSSSA..SSAAAA", "ASSSSA......AA", "..............", "AA......SS..SS", "AA......SS..SS"],
+          ["ASSSSA..SSAAAA", "ASSSSA......AA", "..............", "AA......SS..SS", "AA......SS..SS"],
+          ["AAAAAA..SSAAAA", "AAAAAA......AA", "..............", "AA......SS..AA", "AA......SS..AA"],
+          ["AAAAAA..SSAAAA", "AAAAAA......AA", "..............", "AA......AA..AA", "AA......SA..AA"],
+          ["AAAAAA..AAAAAA", "AAAAAA......AA", "..............", "AA......AA..AA", "AA......SA..AA"],
+          ["AAAAAA..AAAAAA", "AAAAAA......AA", "..............", "AA......AA..AA", "AA......SA..AA"]
         ]
       },
       "palette": {
@@ -3095,6 +3115,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         },
         "x": {
           "furniture": "crate",
@@ -3311,6 +3335,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -3507,6 +3535,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -3608,6 +3640,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -3919,6 +3955,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4020,6 +4060,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4273,6 +4317,10 @@
           "material": "roofing",
           "role": "roof"
         },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
+        },
         "x": {
           "furniture": "crate",
           "loot": "junk"
@@ -4422,6 +4470,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4495,6 +4547,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4568,6 +4624,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4638,6 +4698,10 @@
         "u": {
           "material": "roofing",
           "role": "roof"
+        },
+        "w": {
+          "material": "bearing_lintel",
+          "role": "support"
         }
       },
       "ports": [],
@@ -4936,6 +5000,10 @@
   "mapStyles": [
     {
       "bindings": {
+        "bearing_lintel": {
+          "block": "planks",
+          "role": "support"
+        },
         "coping": {
           "block": "concrete",
           "role": "trim"
@@ -4994,6 +5062,10 @@
     {
       "aftermath": ["boarded"],
       "bindings": {
+        "bearing_lintel": {
+          "block": "planks",
+          "role": "support"
+        },
         "coping": {
           "block": "concrete",
           "role": "trim"

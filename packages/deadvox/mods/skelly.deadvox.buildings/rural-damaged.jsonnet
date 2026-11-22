@@ -6,23 +6,23 @@ local roof = named(houses.mapPieces, 'rural_flat_house_roof');
 local house = named(houses.mapAssemblies, 'rural_flat_roof_house');
 local plot = named(plots.mapAssemblies, 'rural_plot_privy');
 local condition = { mean: 0.4, spread: 0.12, paneThreshold: 0.65 };
-// Only the west front wall is breached. The unchanged back plan remains the intact
-// shell's own plan, so changing a partition cannot silently fork its damaged twin.
+// The bearing strip and back plan stay the intact shell's own plans, so a
+// structural correction cannot silently fork the damaged twin.
 local fronts = [
-  ['..................', '.sssssss..sssssss.', '.s..............s.', '................s.', '................s.', '................s.', '................s.'],
-  ['..................', '.######b..b######.', '.#..............#.', '................#.', '................#.', '................#.', '................#.'],
-  ['..................', '.##...#b..b#...##.', '.#..............#.', '..................', '..................', '..................', '................#.'],
-  ['..................', '.##...#b..b#...##.', '.#..............#.', '..................', '..................', '..................', '................#.'],
-  ['..................', '.##...#bbbb#...##.', '.#..............#.', '..................', '..................', '..................', '................#.'],
-  ['..................', '.##fff#bbbb#fff##.', '.#..............#.', '................f.', '................f.', '................f.', '................#.'],
+  ['..................', '.sssssss..sssssss.', '.s..............s.', '................s.', shell.layers[0][4], '................s.', '................s.'],
+  ['..................', '.######b..b######.', '.#..............#.', '................#.', shell.layers[1][4], '................#.', '................#.'],
+  ['..................', '.##...#b..b#...##.', '.#..............#.', '..................', shell.layers[2][4], '..................', '................#.'],
+  ['..................', '.##...#b..b#...##.', '.#..............#.', '..................', shell.layers[3][4], '..................', '................#.'],
+  ['..................', '.##...#bbbb#...##.', '.#..............#.', '..................', shell.layers[4][4], '..................', '................#.'],
+  ['..................', '.##fff#bbbb#fff##.', '.#..............#.', '................f.', shell.layers[5][4], '................f.', '................#.'],
 ];
 local claims = [
-  ['.......RRRR.......', '.SSSSSSS..SSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', '.A......RRRRRR..S.', '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
-  ['.......RRRR.......', '.SSSSSSS..SSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', '.A......RRRRRR..S.', '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
-  ['.......RRRR.......', '.SS...SS..SS...SS.', '.S......RR......S.', '........RRRRRR....', '........RRRRRR....', '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
-  ['.......RRRR.......', '.SS...SS..SS...SS.', '.S......RR......S.', '........RRRRRR....', '........RRRRRR....', '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
-  ['.......RRRR.......', '.SS...SSSSSS...SS.', '.S......RR......S.', '........RRRRRR....', '........RRRRRR....', '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
-  ['.......RRRR.......', '.SSSSSSSSSSSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', '.A......RRRRRR..S.', '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SSSSSSS..SSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', shell.ownership.layers[0][4], '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SSSSSSS..SSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', shell.ownership.layers[1][4], '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SS...SS..SS...SS.', '.S......RR......S.', '........RRRRRR....', shell.ownership.layers[2][4], '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SS...SS..SS...SS.', '.S......RR......S.', '........RRRRRR....', shell.ownership.layers[3][4], '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SS...SSSSSS...SS.', '.S......RR......S.', '........RRRRRR....', shell.ownership.layers[4][4], '....RRRRRR..RR....', '.A..RRRRRR..RR..S.'],
+  ['.......RRRR.......', '.SSSSSSSSSSSSSSSS.', '.S......RR......S.', '.A......RRRRRR..S.', shell.ownership.layers[5][4], '.A..RRRRRR..RR..S.', '.A..RRRRRR..RR..S.'],
 ];
 local breachedShell = shell + {
   id: 'rural_flat_house_breached_shell',

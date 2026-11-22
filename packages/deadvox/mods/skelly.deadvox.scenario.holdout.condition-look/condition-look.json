@@ -125,6 +125,16 @@
           },
           "id": "scrap",
           "item": "scrap_metal"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "planks",
+          "item": "wooden_plank"
         }
       ],
       "recipes": [
