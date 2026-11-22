@@ -121,6 +121,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/village-shop.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/works-stores.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/works-stores.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.json"
     },
@@ -347,6 +351,22 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/templates.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/templates.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/buildings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/buildings.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet",
@@ -579,6 +599,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/restoration.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/restoration.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.stores-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.jsonnet",

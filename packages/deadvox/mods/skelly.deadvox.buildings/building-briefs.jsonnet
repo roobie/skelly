@@ -125,6 +125,38 @@ local flatRoofHouse = {
         'water main or a septic tank reached the house, the old privy left in the yard or pulled down.',
       ],
     },
+    // A works stores holds whatever the works it stands beside keeps in stock; what that is belongs to the answer's
+    // racking, not to the brief. See `packages/deadvox/docs/building-pathway.md`, "Worked example: works stores".
+    {
+      id: 'works_stores',
+      setting: 'modern_1980s',
+      tags: ['postwar', 'late_modern', 'nordic', 'balkan', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 14, depth: 13 },
+      styles: ['works_brick'],
+      storeys: [1, 1],
+      program: {
+        service_aisle: {
+          purpose: 'The clear way in from the door between the racks, wide enough to carry a part or a crate out.',
+        },
+        stores_room: {
+          purpose: 'The racked floor where the works keeps its spares, fittings and consumables, on shelves along ' +
+                   'the walls and in crates on the floor.',
+          serves: ['storage'],
+        },
+      },
+      references: [
+        'Stores sheds beside rural electricity works, pumping stations and small hydro stations of the 1950s to ' +
+        '1980s: a one-storey brick or blockwork box under a flat concrete roof, one solid door at the end facing ' +
+        'the works, no windows at eye height.',
+        'Spares stores of municipal and co-operative works yards of the same decades in Finland, Yugoslavia and ' +
+        'Austria: shelving along the walls for spare parts and fittings, crates of consumables on the floor and a ' +
+        'clear aisle from the door.',
+      ],
+      facade: 'A plain brick end to the works: one solid timber door in the middle, no windows, and the felt-covered roof slab as a thin dark line along the top.',
+      cover: 'Brick walls stop shots and the one door is the only way in, so whoever is inside is as easily shut ' +
+             'in as kept safe; the racks along the walls break the sightline from the door to the back corners.',
+    },
     {
       id: 'village_shop',
       setting: 'modern_1980s',

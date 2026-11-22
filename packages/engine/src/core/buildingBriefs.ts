@@ -33,7 +33,7 @@ type Free = (cell: Vec3) => boolean;
 type FitReport = (rule: FitRule, path: string, detail: string, choice?: string) => void;
 
 /** The styles an assembly is placed in from outside: unstyled, and every ref elsewhere that names it with a style. */
-const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | undefined)[] => {
+export const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | undefined)[] => {
   const refs = [
     ...[...registry.mapPools.values()].flatMap((pool) => pool.choices.map(({ ref }) => ref)),
     ...[...registry.mapAssemblies.values()]
@@ -177,10 +177,12 @@ const builtFitIssues = (
     report('entrance', '.access', 'declares no entrance');
     return;
   }
-  // A city plan turns every building so its north edge at turn 0 faces the street; see
-  // `packages/engine/src/core/cityPlan.ts`, `fillRow` and `SIDES`.
-  if (!templateEntranceEdges(registry, template, doorway).has('n')) {
-    report('entrance', '.access.entrance', 'entrance reaches no ground-storey opening on the street (north) edge');
+  // A city plan turns every building so its declared front, not its north edge, faces the street; see
+  // `packages/engine/src/core/cityPlan.ts`, `fillRow`, `SIDES` and `frontTurn`. The building's own access declares
+  // that front, so the rule holds through whatever turn a placement gives it.
+  const front = access.front ?? 'n';
+  if (!templateEntranceEdges(registry, template, doorway).has(front)) {
+    report('entrance', '.access.entrance', `entrance reaches no ground-storey opening on its front (${front}) edge`);
   }
   const route = templateStandingRouteBeside(registry, template, doorway);
   for (const room of rooms) {

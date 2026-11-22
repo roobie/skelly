@@ -22,6 +22,7 @@
         "lift": "furniture_scrape"
       },
       "name": "Crate",
+      "serves": ["storage"],
       "shape": [
         {
           "position": [0.15000000000000002, 0.050000000000000003, 0.10000000000000001],
