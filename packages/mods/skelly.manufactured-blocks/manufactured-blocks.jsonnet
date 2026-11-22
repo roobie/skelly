@@ -11,6 +11,7 @@ local materials = {
   siding_red: 'timber', siding_blue: 'timber',
   galvanized: 'metal', bitumen_felt: 'masonry',
   hazard_yellow: 'metal', chain_link: 'metal', camo_woodland: 'timber',
+  steel_joist: 'metal',
 };
 local block(id, name, color, surface, extra={}) =
   { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' } + landings.forBlock(materials[id]), footsteps: footstepEvents[surface] } + extra;
@@ -29,6 +30,8 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     // The felt is laid over a slab, so a cell of it breaks and falls as the masonry it covers.
     block('bitumen_felt', 'Bitumen roofing felt', '#3a3a3c', 'stone', { pattern: 'noise', weatherable: true }),
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
+    // A rolled steel section in red-oxide primer: a beam that carries a slab across a room wider than masonry spans.
+    block('steel_joist', 'Steel joist', '#6e4436', 'stone', { weatherable: false }),
     block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
       weatherable: false,
       opaque: false,

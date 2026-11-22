@@ -1,0 +1,409 @@
+{
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "works_stores_shell",
+      "layers": [
+        [
+          ",,,======,,,",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============",
+          "============"
+        ],
+        [
+          ",,,______,,,",
+          "#####--#####",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "############"
+        ],
+        [
+          ",,,______,,,",
+          "#####--#####",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "############"
+        ],
+        [
+          ",,,______,,,",
+          "#####--#####",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "############"
+        ],
+        [
+          ",,,______,,,",
+          "#####--#####",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "#----------#",
+          "############"
+        ],
+        [
+          ",,,,,,,,,,,,",
+          "############",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "############"
+        ],
+        [
+          ",,,,,,,,,,,,",
+          "############",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "#rrrrrrrrrr#",
+          "############"
+        ],
+        [
+          ",,,,,,,,,,,,",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc",
+          "cccccccccccc"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "...SSSSSS...",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "...RRRRRR...",
+            "SSSSS..SSSSS",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "...RRRRRR...",
+            "SSSSS..SSSSS",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "...RRRRRR...",
+            "SSSSS..SSSSS",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "...RRRRRR...",
+            "SSSSS..SSSSS",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "S..........S",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "............",
+            "SSSSSSSSSSSS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "............",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS"
+          ],
+          [
+            "............",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS",
+            "SSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "walls",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [12, 8, 11],
+      "style": "works_brick"
+    },
+    {
+      "anchors": {},
+      "id": "works_stores_door",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "walls",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "n",
+          "furniture": "wood_door"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "works_brick"
+    },
+    {
+      "aftermath": ["broken"],
+      "anchors": {},
+      "id": "works_stores_door_missing",
+      "layers": [[".."], [".."], [".."], [".."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
+      },
+      "palette": {
+        "#": {
+          "material": "walls",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "works_brick"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "footing": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
+          "role": "support"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        },
+        "roof_deck": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "roofing": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "walls": {
+          "block": "brick",
+          "role": "shell"
+        }
+      },
+      "id": "works_brick"
+    }
+  ]
+}

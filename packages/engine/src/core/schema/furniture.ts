@@ -245,7 +245,8 @@ const SlotAnchorSchema = strictObject({
 });
 
 /**
- * Content-named services, such as a toilet or cooking, that a home needs; furniture serves them and briefs require them
+ * Content-named services, such as a toilet, cooking or storage, that a building needs; furniture serves them and briefs
+ * require them. A service claims a reachable fitting, never that it works
  * (`packages/deadvox/docs/building-pathway.md`, "Services").
  */
 export const ServicesSchema = pipe(

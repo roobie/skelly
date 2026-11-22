@@ -65,6 +65,10 @@
     },
     {
       "kind": "content",
+      "path": "works-stores.json"
+    },
+    {
+      "kind": "content",
       "path": "world-settings.json"
     },
     {
