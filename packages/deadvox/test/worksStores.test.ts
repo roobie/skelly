@@ -23,6 +23,7 @@ if (restoration.kind !== 'composedSite') {
 const stores = restoration.asks
   .map(({ template }) => (template === undefined ? undefined : registry.mapAssemblies.get(template)))
   .find((assembly) => assembly?.brief !== undefined)!;
+const unreachableStorage = /breaks the services rule .*no piece serving "storage" stands beside a walk/;
 
 it('fits Holdout plant stores to the brief they answer', () => {
   expect(stores, 'the restoration fixture places a briefed stores').toBeDefined();
@@ -37,7 +38,7 @@ it('fails the storage service of a stores whose only shelf no body can stand bes
   const issues = buildingBriefIssues(overlayContent(baseRegistry(), [{ source: 'boxed-stores', data: fixture }]));
   const own = issues.filter(({ id }) => id === boxed).map(({ message }) => message);
   expect(own).toHaveLength(1);
-  expect(own[0]).toMatch(/breaks the services rule .*no piece serving "storage" stands beside a walk/);
+  expect(own[0]).toMatch(unreachableStorage);
 });
 
 it('keeps every stocked piece of the restoration stores beside a walk from its door', () => {
