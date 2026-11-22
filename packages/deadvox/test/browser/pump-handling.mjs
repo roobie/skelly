@@ -382,7 +382,7 @@ try {
               return item === undefined;
             case 'furniture':
             case 'pocket':
-              return !session.queue.busy && session.inventory.locate(item)?.kind === condition;
+              return item !== undefined && !session.queue.busy && session.inventory.locate(item)?.kind === condition;
             case 'tubeLoaded':
               return (item?.firearm?.tube?.length ?? 0) > 0;
             case 'chamberRound':
