@@ -14,6 +14,8 @@ read_if:
   - you set a house on a plot with outbuildings, or decide how often a site draws each variant
   - a building needs a door, window or fitting, and you decide whether it is shared or its own
   - you hang a door on a briefed building's walk, or decide what a doorway slot may hold
+  - you brief a building that is not a home, such as a works stores or a plant hall, or give machinery a service
+  - a scenario stocks a shared building with its own supplies, or decides where that building's kit lives
 ---
 
 # Building pathway
@@ -124,22 +126,31 @@ already passes; a few short rows in the bundle cost less than that machinery. Se
 
 ## Services
 
-A house is plausible when the things its people needed are there and can be reached: a
-toilet, somewhere to wash, a stove. Checking that by eye on every variant does not scale, so
-the requirement is written down and the fit check proves it; the rest of the furnishing is
-still judged by eye.
+A building is plausible when the things its people needed are there and can be reached: a
+toilet, somewhere to wash, a stove in a house; shelving in a stores. Checking that by eye on
+every variant does not scale, so the requirement is written down and the fit check proves it;
+the rest of the furnishing is still judged by eye.
 
 A service is a content-named need, not an engine enum, so a setting from another era or
-culture can add its own without engine changes. Furniture declares the services it provides
-(`packages/engine/src/core/schema/furniture.ts`, `ServicesSchema`), and brief rooms and
-setting standards require them. A service resolves when some furniture serves it, so a
-requirement nothing can satisfy is an issue at the brief, not a fit failure at every answer.
-The services a brief can ask for are the ones shared fixtures already serve, so a brief is
-written against them; see `packages/mods/skelly.structures/structures-fixtures.jsonnet`,
-`serves`.
+culture, or another product, can add its own without engine changes. Furniture declares the
+services it provides (`packages/engine/src/core/schema/furniture.ts`, `ServicesSchema`), and
+brief rooms and setting standards require them. A service resolves when some furniture serves
+it, so a requirement nothing can satisfy is an issue at the brief, not a fit failure at every
+answer. The services a brief can ask for are the ones shared furniture already serves, so a
+brief is written against them; see `packages/mods/skelly.structures/structures-fixtures.jsonnet`
+and `packages/mods/skelly.structures/structures-furniture.jsonnet`, `serves`.
 
-A piece serves whatever its condition, because a damaged toilet still marks where the
-toilet was, and the house's plausibility is about how it was built, not what became of it.
+A service means one thing: a fitting that serves it stands where a body walking in can reach
+it. It never means the fitting works, holds stock or is connected, because the fit check
+proves how a building was built, not what became of it or what runs in it. So a piece serves
+whatever its condition: a damaged toilet still marks where the toilet was. The furniture that
+does the job owns the label, and the label names the job, never a piece: shelves and crates
+serve `storage` because stock is kept on and in them, while a wardrobe or a kitchen cupboard,
+which has a container too, does not; a container is a fact of the piece, not the job a room
+asks of it. Installed machinery joins the same way, with no second
+mechanism: a generator that serves `generation` lets a plant hall's brief ask for a reachable
+generator, and a broken one still passes, since whether it produces is the plant's
+restoration, proved by its own owners (`test/partService.test.ts`).
 
 Beds declare no service, because their `rest` already says they are slept in
 (`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`).
@@ -538,6 +549,40 @@ door, and the services walk crosses the doorway to the seat.
 
 **Seen through its look fixture.** Every plot the pool can draw stands along two roads, each
 plot's cellar twin behind it, so one walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
+
+## Worked example: works stores
+
+A one-room brick stores beside a works, answering its own brief; see
+`mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `works_stores`, and
+`mods/skelly.deadvox.buildings/works-stores.libsonnet`. Holdout's plant stores are its first
+answer; see `mods/skelly.deadvox.scenario.holdout/holdout-plant.libsonnet`, `stores`.
+
+**A stores is its own brief.** A plant hall and its stores have different programs, a machine
+room and a racked store, so each gets its own brief and changes to one stay local; a shared
+hall brief would prove neither was a plant or a stores.
+
+**The brief knows no scenario.** Its rooms are the racked floor and the aisle to it, and its one
+service is `storage` ([Services](#services)), so any scenario's stores can answer it. What the
+racks hold is the answer's, not the brief's: a fit check cannot prove that a stock repairs
+anything, and the brief would otherwise carry one scenario's machinery into every other.
+
+**The kit is shared, the stock is the scenario's.** The buildings pack ships the brief, the
+shell, the door and the constructor; a scenario adds its answer by racking the room with its
+own piece, so its supplies keep the owners and the exact pieces they had, and the next works
+reuses the shell rather than drawing one. Holdout's racking keeps its spares, its inputs and
+tools and its crate of spares where they were, on the same furniture with the same loot.
+
+**Usage is the answer's.** The answer is looted as Industrial, so the setting's standards for
+homes do not apply to it ([World settings](#world-settings)); the brief has no usage of its own,
+because standards read the answer's.
+
+**North front.** The door opens north, so the entrance rule holds as it does for a city
+building; Holdout turns the stores by its own placement, so which way the door faces there is
+the look fixture's to show, not something the fit check proves.
+
+**Seen through its look fixture.** Holdout's stores stand beside the hand-drawn stores they
+replaced, both doors toward the player and both stocked, so one look compares them; see
+`mods/skelly.deadvox.scenario.holdout.stores-look/layouts.jsonnet`.
 
 ## Worked example: village shop
 

@@ -1,4 +1,298 @@
 {
+  "mapAssemblies": [
+    {
+      "access": {
+        "entrance": [6, 1, 4],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "service_aisle": {
+          "at": [6, 1, 6],
+          "kind": "standing"
+        },
+        "stores_room": {
+          "at": [6, 1, 8],
+          "kind": "standing"
+        }
+      },
+      "brief": "works_stores",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "holdout_plant_stores",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ports": [],
+      "size": [12, 8, 11],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "works_stores_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [12, 8, 11],
+          "turn": 0
+        },
+        {
+          "at": [5, 1, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "works_stores_door",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "works_stores_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "holdout_plant_stores_racking",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "racking",
+          "size": [10, 5, 8],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "holdout_plant_stores_racking",
+      "layers": [
+        [
+          "....__....",
+          "....__....",
+          "..cc__....",
+          "..cc__....",
+          "....__....",
+          ".________.",
+          ".________.",
+          ".SS....aa."
+        ],
+        [
+          "....__....",
+          "....__....",
+          "..cc__....",
+          "..cc__....",
+          "....__....",
+          ".________.",
+          ".________.",
+          ".SS....aa."
+        ],
+        [
+          "....__....",
+          "....__....",
+          "....__....",
+          "....__....",
+          "....__....",
+          ".________.",
+          ".________.",
+          ".SS....aa."
+        ],
+        [
+          "....__....",
+          "....__....",
+          "....__....",
+          "....__....",
+          "....__....",
+          ".________.",
+          ".________.",
+          ".SS....aa."
+        ],
+        ["..........", "..........", "..........", "..........", "..........", "..........", "..........", ".........."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AASSRRAAAA",
+            "AASSRRAAAA",
+            "AAAARRAAAA",
+            "ARRRRRRRRA",
+            "ARRRRRRRRA",
+            "ASSAAAASSA"
+          ],
+          [
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AASSRRAAAA",
+            "AASSRRAAAA",
+            "AAAARRAAAA",
+            "ARRRRRRRRA",
+            "ARRRRRRRRA",
+            "ASSAAAASSA"
+          ],
+          [
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "ARRRRRRRRA",
+            "ARRRRRRRRA",
+            "ASSAAAASSA"
+          ],
+          [
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "AAAARRAAAA",
+            "ARRRRRRRRA",
+            "ARRRRRRRRA",
+            "ASSAAAASSA"
+          ],
+          [
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA",
+            "AAAAAAAAAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "walls",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "S": {
+          "facing": "n",
+          "furniture": "shelf",
+          "items": [
+            {
+              "condition": 1,
+              "item": "exciter_brush_set"
+            },
+            {
+              "condition": 1,
+              "item": "governor_linkage"
+            },
+            {
+              "count": 2,
+              "item": "field_fuse"
+            }
+          ],
+          "loot": "plant_spares"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "a": {
+          "facing": "n",
+          "furniture": "shelf",
+          "items": [
+            {
+              "count": 2,
+              "item": "aa_battery"
+            },
+            {
+              "count": 2,
+              "item": "copper_wire"
+            },
+            {
+              "count": 2,
+              "item": "small_spring"
+            },
+            {
+              "count": 1,
+              "item": "fastener_pack"
+            },
+            {
+              "count": 2,
+              "item": "scrap_metal"
+            },
+            {
+              "count": 2,
+              "item": "fuse"
+            },
+            {
+              "condition": 1,
+              "item": "screwdriver"
+            },
+            {
+              "condition": 1,
+              "item": "adjustable_pliers"
+            }
+          ],
+          "loot": "building_tools"
+        },
+        "c": {
+          "furniture": "crate",
+          "loot": "plant_spares"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [10, 5, 8],
+      "style": "works_brick"
+    }
+  ],
   "scenarios": [
     {
       "anchors": [
@@ -1574,103 +1868,6 @@
         "k": "concrete"
       },
       "size": [12, 6, 9]
-    },
-    {
-      "access": {
-        "entrance": [4, 1, 4],
-        "ground": "ground",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "ground"
-          }
-        ]
-      },
-      "id": "holdout_plant_stores",
-      "layers": [
-        ["########", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "########"],
-        ["########", "#SS..aa#", "#......#", "#cc....#", "#cc....#", "###DD###"],
-        ["########", "#SS..aa#", "#......#", "#cc....#", "#cc....#", "###DD###"],
-        ["########", "#SS..aa#", "#......#", "#......#", "#......#", "###DD###"],
-        ["########", "#SS..aa#", "#......#", "#......#", "#......#", "###DD###"],
-        ["########", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "########"]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "palette": {
-        "#": "brick",
-        ".": "air",
-        "D": {
-          "furniture": "wood_door"
-        },
-        "S": {
-          "facing": "s",
-          "furniture": "shelf",
-          "items": [
-            {
-              "condition": 1,
-              "item": "exciter_brush_set"
-            },
-            {
-              "condition": 1,
-              "item": "governor_linkage"
-            },
-            {
-              "count": 2,
-              "item": "field_fuse"
-            }
-          ],
-          "loot": "plant_spares"
-        },
-        "a": {
-          "facing": "s",
-          "furniture": "shelf",
-          "items": [
-            {
-              "count": 2,
-              "item": "aa_battery"
-            },
-            {
-              "count": 2,
-              "item": "copper_wire"
-            },
-            {
-              "count": 2,
-              "item": "small_spring"
-            },
-            {
-              "count": 1,
-              "item": "fastener_pack"
-            },
-            {
-              "count": 2,
-              "item": "scrap_metal"
-            },
-            {
-              "count": 2,
-              "item": "fuse"
-            },
-            {
-              "condition": 1,
-              "item": "screwdriver"
-            },
-            {
-              "condition": 1,
-              "item": "adjustable_pliers"
-            }
-          ],
-          "loot": "building_tools"
-        },
-        "c": {
-          "furniture": "crate",
-          "loot": "plant_spares"
-        },
-        "k": "concrete"
-      },
-      "size": [8, 6, 6]
     }
   ]
 }
