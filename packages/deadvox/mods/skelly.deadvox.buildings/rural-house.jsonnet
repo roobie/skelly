@@ -433,7 +433,14 @@ local house(id, shellId, back, anchors) = {
     kitchen: { kind: 'standing', at: [13, 1, 10] },
   } + anchors,
   ports: [],
-  access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+  access: {
+    ground: 'ground',
+    entrance: [9, 1, 3],
+    // The door's own way to the road: a trodden dirt trail, the surface the rural lots already walk.
+    approach: { kind: 'trail', surface: 'dirt' },
+    storeys: [{ id: 'ground', floor: 1 }],
+    stairs: [],
+  },
 };
 // The house over a cellar answers its twin's brief: the house rises a storey onto the
 // cellar, the area stair takes the strip behind it, and the cellar's door, room and

@@ -37,7 +37,7 @@ import {
   World,
 } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { baseContentSources } from './baseContentFiles.ts';
+import { baseContentSources, doorTrailLookSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { terrainFor } from './fixtures/terrain.ts';
@@ -1375,4 +1375,60 @@ it('uses the vegetation density query for cloneable baseline cover and mandatory
   } finally {
     spy.mockRestore();
   }
+});
+
+// Each declared way answers one march: the columns north of a hall's front, at the doorway's x, from the doorstep
+// to the road, all read off the site the layout builds. Nothing pins the fixture's numbers; the hall's own
+// position and the road the terrain draws carry the case.
+describe('a building type declares its local way from the road connection to its door', () => {
+  const local = buildRegistry(doorTrailLookSources()).registry;
+  const plot = local.layouts.get('doorTrailLook')!;
+  const site = new AuthoredSite(1, local, scale, plot);
+  const terrain = terrainFor(site, local, scale, site.seed).surface!;
+
+  /** The doorway's x and every column north of it from the doorstep, until past the layout's north bound. */
+  const frontLine = (templateId: string): { doorX: number; columns: number[] } => {
+    const building = plot.buildings.find((candidate) => candidate.template === templateId)!;
+    const doorX = Math.floor(building.position[0] / scale.blockSize) + 3;
+    const columns: number[] = [];
+    for (let z = Math.floor(building.position[2] / scale.blockSize) - 1; z >= plot.bounds.z0; z--) {
+      columns.push(z);
+    }
+    return { doorX, columns };
+  };
+
+  it('trods a declared trail from the road connection to the door, and only there', () => {
+    const dirt = local.blockIds.get('dirt')!;
+    const asphalt = local.blockIds.get('asphalt')!;
+    const { doorX, columns } = frontLine('door_trail_hall');
+    const tops = columns.map((z) => terrain.top(doorX, z));
+    const roadAt = tops.indexOf(asphalt);
+    expect(roadAt).toBeGreaterThan(0);
+    // The way runs whole from the doorstep to the road's edge, and the road, not the trail, covers what follows.
+    expect(tops.slice(0, roadAt).every((top) => top === dirt)).toBe(true);
+    // The way stays local: columns off the doorway's line keep the ground the terrain would show.
+    const beside = columns.map((z) => terrain.top(doorX + 3, z));
+    expect(beside.slice(0, roadAt)).not.toContain(dirt);
+  });
+
+  it('climbs declared steps from the road connection up to the door', () => {
+    const stone = local.blockIds.get('dressed_stone')!;
+    const asphalt = local.blockIds.get('asphalt')!;
+    const building = plot.buildings.find((candidate) => candidate.template === 'door_steps_hall')!;
+    const { doorX, columns } = frontLine('door_steps_hall');
+    const tops = columns.map((z) => terrain.top(doorX, z));
+    const heights = columns.map((z) => terrain.height(doorX, z, plot.ground));
+    const roadAt = tops.indexOf(asphalt);
+    expect(roadAt).toBeGreaterThan(0);
+    expect(tops.slice(0, roadAt).every((top) => top === stone)).toBe(true);
+    // The doorstep stands at the door's own ground, and the way meets the road at the road's own ground.
+    expect(heights[0]).toBe(Math.round(building.position[1] / scale.blockSize));
+    expect(Math.min(...heights.slice(0, roadAt + 1))).toBe(heights[roadAt]);
+    expect(heights[0]! - heights[roadAt]!).toBeGreaterThan(0);
+    // Going north toward the road the climb only descends, one tread at a time.
+    for (let i = 0; i < roadAt; i++) {
+      expect(heights[i]! - heights[i + 1]!).toBeGreaterThanOrEqual(0);
+      expect(heights[i]! - heights[i + 1]!).toBeLessThanOrEqual(1);
+    }
+  });
 });

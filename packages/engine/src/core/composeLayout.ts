@@ -469,6 +469,8 @@ function resolveAnchors({
     ],
     lots: layout.buildings.map((building, i) => lotOf(building, rects[i]!)),
     tracks: layout.tracks.map((track) => ({ ...track, surface: registry.blockIds.get(track.surface) })),
+    // Anchor resolution only needs the ground's shape; a composed site's ways arrive with its sites.
+    approaches: [],
     catalogue: undefined,
   };
   const ground = createAuthoredGround(groundData);

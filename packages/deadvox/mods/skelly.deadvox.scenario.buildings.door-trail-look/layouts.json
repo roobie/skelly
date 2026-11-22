@@ -1,0 +1,52 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -28,
+        "x1": 16,
+        "z0": -14,
+        "z1": 16
+      },
+      "buildings": [
+        {
+          "position": [-20, 21, 0],
+          "rotation": 0,
+          "template": "door_trail_hall"
+        },
+        {
+          "position": [0, 24, 2],
+          "rotation": 0,
+          "template": "door_steps_hall"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "doorTrailLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-9, 21.5, -9]
+      },
+      "terrain": [
+        {
+          "centre": [1.5, 3.5],
+          "kind": "hill",
+          "radii": [7, 7],
+          "rise": 3
+        }
+      ],
+      "tracks": [
+        {
+          "points": [[-25, -8], [13, -8]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

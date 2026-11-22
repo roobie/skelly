@@ -2,6 +2,10 @@
   "mapAssemblies": [
     {
       "access": {
+        "approach": {
+          "kind": "trail",
+          "surface": "dirt"
+        },
         "entrance": [9, 1, 3],
         "ground": "ground",
         "stairs": [],
@@ -451,6 +455,10 @@
     },
     {
       "access": {
+        "approach": {
+          "kind": "trail",
+          "surface": "dirt"
+        },
         "entrance": [9, 1, 3],
         "ground": "ground",
         "stairs": [],
@@ -942,6 +950,10 @@
     },
     {
       "access": {
+        "approach": {
+          "kind": "trail",
+          "surface": "dirt"
+        },
         "entrance": [9, 9, 3],
         "ground": "ground",
         "stairs": [],
@@ -1482,6 +1494,10 @@
     },
     {
       "access": {
+        "approach": {
+          "kind": "trail",
+          "surface": "dirt"
+        },
         "entrance": [9, 9, 3],
         "ground": "ground",
         "stairs": [],
