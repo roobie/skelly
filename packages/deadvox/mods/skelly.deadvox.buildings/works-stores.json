@@ -72,14 +72,14 @@
         [
           ",,,,,,,,,,,,",
           "############",
-          "#----------#",
-          "#----------#",
-          "#----------#",
-          "#----------#",
-          "#----------#",
-          "#----------#",
-          "#----------#",
-          "#----------#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
+          "#...j..j...#",
           "############"
         ],
         [
@@ -183,14 +183,14 @@
           [
             "............",
             "SSSSSSSSSSSS",
-            "S..........S",
-            "S..........S",
-            "S..........S",
-            "S..........S",
-            "S..........S",
-            "S..........S",
-            "S..........S",
-            "S..........S",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
+            "SAAASAASAAAS",
             "SSSSSSSSSSSS"
           ],
           [
@@ -250,6 +250,10 @@
           "material": "roofing",
           "role": "roof"
         },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
         "r": {
           "material": "roof_deck",
           "role": "interior_floor"
@@ -303,6 +307,10 @@
           "material": "roofing",
           "role": "roof"
         },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
         "r": {
           "material": "roof_deck",
           "role": "interior_floor"
@@ -353,6 +361,10 @@
           "material": "roofing",
           "role": "roof"
         },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
         "r": {
           "material": "roof_deck",
           "role": "interior_floor"
@@ -368,6 +380,10 @@
       "bindings": {
         "footing": {
           "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
           "role": "support"
         },
         "opening": {

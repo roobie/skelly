@@ -97,9 +97,7 @@ local rackingTop = [
   '.________.',
   '.SS....aa.',
 ];
-local racking = works.racking('holdout_plant_stores_racking', [rackingFloor, rackingFloor, rackingTop, rackingTop, [
-  '..........' for _ in std.range(1, 8)
-]], stocked);
+local racking = works.racking('holdout_plant_stores_racking', [rackingFloor, rackingFloor, rackingTop, rackingTop], stocked);
 {
   plant: plant,
   hall: hall,

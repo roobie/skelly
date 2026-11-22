@@ -85,7 +85,7 @@
             }
           ],
           "id": "racking",
-          "size": [10, 5, 8],
+          "size": [10, 4, 8],
           "turn": 0
         }
       ]
@@ -126,17 +126,7 @@
           ".________.",
           ".SS....aa."
         ],
-        [
-          "....__....",
-          "....__....",
-          "....__....",
-          "....__....",
-          "....__....",
-          ".________.",
-          ".________.",
-          ".SS....aa."
-        ],
-        ["..........", "..........", "..........", "..........", "..........", "..........", "..........", ".........."]
+        ["....__....", "....__....", "....__....", "....__....", "....__....", ".________.", ".________.", ".SS....aa."]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -183,16 +173,6 @@
             "ARRRRRRRRA",
             "ARRRRRRRRA",
             "ASSAAAASSA"
-          ],
-          [
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA",
-            "AAAAAAAAAA"
           ]
         ]
       },
@@ -283,13 +263,17 @@
           "furniture": "crate",
           "loot": "plant_spares"
         },
+        "j": {
+          "material": "joists",
+          "role": "support"
+        },
         "r": {
           "material": "roof_deck",
           "role": "interior_floor"
         }
       },
       "ports": [],
-      "size": [10, 5, 8],
+      "size": [10, 4, 8],
       "style": "works_brick"
     }
   ],

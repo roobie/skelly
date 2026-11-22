@@ -9,6 +9,7 @@ read_if:
   - you copy layers between pieces, or wonder what a layer mark claims
   - you place a briefed building in a look fixture's layout
   - you build or change the fit check between an assembly and its brief
+  - a briefed building's slab, floor or roof must hold under the support rule
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
   - you set a house on a plot with outbuildings, or decide how often a site draws each variant
@@ -220,6 +221,19 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   is sound but not complete: it may fail a fixture a body could reach, never pass one it
   cannot, and two slots that between them always place a service fail it, so a required
   fixture belongs to one slot's variants.
+
+One rule is proved by a test beside validate rather than by validate itself:
+
+- **support**: an intact briefed building, set whole on natural ground, holds under the support
+  rule, because support and collapse let any cell held up only by luck fall in a later cascade,
+  so a building that stands only until something nearby breaks is not intact. The test stamps
+  each answer as placement does and asks the production rule about every solid cell
+  (`test/buildingSupport.test.ts`; `packages/engine/src/core/structureSupport.ts`,
+  `createSupport`). One draw per answer stands for all, because the slot contract keeps solid
+  support equal across a slot's variants. A slab or floor wider than its material spans needs
+  something under it that stands, such as a wall, a column or a beam; a beam beside it in the
+  same course does not, because a run only reaches a cell that stands, not one held sideways.
+  An answer known not to hold yet is skipped by name with the change that makes it hold.
 
 What stays with BR's contact-sheet review:
 
@@ -576,12 +590,19 @@ tools and its crate of spares where they were, on the same furniture with the sa
 homes do not apply to it ([World settings](#world-settings)); the brief has no usage of its own,
 because standards read the answer's.
 
+**The slab bears on steel joists.** The room is wider than a concrete slab spans, so two steel
+joists under the slab run from the front wall to the back wall, either side of the aisle, as in
+a works store of the period, and every slab cell is within its span of a joist or a wall
+([Fit check](#fit-check), support). The joists span the shorter way, within what steel spans,
+and they keep to the course above the racking, so the aisle and the racks below stay as they were.
+
 **North front.** The door opens north, so the entrance rule holds as it does for a city
 building; Holdout turns the stores by its own placement, so which way the door faces there is
 the look fixture's to show, not something the fit check proves.
 
 **Seen through its look fixture.** Holdout's stores stand beside the hand-drawn stores they
-replaced, both doors toward the player and both stocked, so one look compares them; see
+replaced, both stocked with their doors the same way, and the player starts inside the new
+stores' door under the joists, so one look shows the support and a step outside compares them; see
 `mods/skelly.deadvox.scenario.holdout.stores-look/layouts.jsonnet`.
 
 ## Worked example: village shop

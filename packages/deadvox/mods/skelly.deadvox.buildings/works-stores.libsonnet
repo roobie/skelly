@@ -15,6 +15,7 @@ local palette = {
   '#': { role: 'shell', material: 'walls' },
   '=': { role: 'support', material: 'footing' },
   r: { role: 'interior_floor', material: 'roof_deck' },
+  j: { role: 'support', material: 'joists' },
   c: { role: 'roof', material: 'roofing' },
 };
 local claims(layers) = [
@@ -28,7 +29,8 @@ local piece(id, size, layers, things={}) = {
 };
 
 // The footing runs under the apron in front of the door, so a body stands there; the walls rise through the roof
-// slab and one felt course covers it.
+// slab and one felt course covers it. The slab is wider than concrete spans, so two steel joists under it bear on
+// the front and back walls, either side of the aisle, and every slab cell is within its span of a joist or a wall.
 local apron = ',,,______,,,';
 local shellLayers = [
   [',,,======,,,'] + ['============' for _ in std.range(1, 10)],
@@ -36,7 +38,7 @@ local shellLayers = [
   [apron, '#####--#####'] + ['#----------#' for _ in std.range(2, 9)] + ['############']
   for _ in [1, 2, 3, 4]
 ] + [
-  [',,,,,,,,,,,,', '############'] + ['#----------#' for _ in std.range(2, 9)] + ['############'],
+  [',,,,,,,,,,,,', '############'] + ['#...j..j...#' for _ in std.range(2, 9)] + ['############'],
   [',,,,,,,,,,,,', '############'] + ['#rrrrrrrrrr#' for _ in std.range(2, 9)] + ['############'],
   [',,,,,,,,,,,,'] + ['cccccccccccc' for _ in std.range(1, 10)],
 ];
@@ -62,13 +64,15 @@ local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choic
       walls: { role: 'shell', block: 'brick' },
       footing: { role: 'support', block: 'concrete' },
       roof_deck: { role: 'interior_floor', block: 'concrete' },
+      joists: { role: 'support', block: 'steel_joist' },
       roofing: { role: 'roof', block: 'bitumen_felt' },
     },
   }],
   mapPieces: [shell] + doors,
-  // The racking fills the room inside the walls, [10, 5, 8] from the west wall and the front wall, north at the
-  // door. It keeps the aisle from the door, columns 4 and 5, reserved its whole depth, and the anchors stand on it.
-  racking(id, layers, things):: piece(id, [10, 5, 8], layers, things),
+  // The racking fills the room inside the walls up to the joists, [10, 4, 8] from the west wall and the front wall,
+  // north at the door. It keeps the aisle from the door, columns 4 and 5, reserved its whole depth, and the anchors
+  // stand on it.
+  racking(id, layers, things):: piece(id, [10, 4, 8], layers, things),
   answer(id, racking):: {
     id: id,
     brief: 'works_stores',
@@ -81,7 +85,7 @@ local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choic
         { ref: { kind: 'piece', id: doors[0].id }, weight: 4 },
         { ref: { kind: 'piece', id: doors[1].id }, weight: 1 },
       ]) + { doorway: true },
-      slot('racking', [1, 1, 2], [10, 5, 8], only(racking)),
+      slot('racking', [1, 1, 2], [10, 4, 8], only(racking)),
     ],
     joins: [],
     ports: [],

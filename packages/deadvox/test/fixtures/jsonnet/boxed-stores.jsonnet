@@ -11,7 +11,7 @@ local rows(shelf) = [
   '.________.',
   '..........',
 ];
-local racking = works.racking('fixture_boxed_racking', [rows('SS') for _ in [1, 2, 3, 4]] + [rows('..')], {
+local racking = works.racking('fixture_boxed_racking', [rows('SS') for _ in [1, 2, 3, 4]], {
   S: { furniture: 'shelf', facing: 'n' },
 });
 {

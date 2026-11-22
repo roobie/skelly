@@ -1,5 +1,7 @@
 // The stores look's fixture site: Holdout's plant stores, the works stores answer, beside the hand-drawn stores it
-// replaced, both doors to the player. The baseline is turned so its door, drawn on the south, faces the same way.
+// replaced, both doors the same way. The baseline is turned so its door, drawn on the south, faces like the answer's.
+// The player starts just inside the answer's door, looking down the aisle under the two steel joists that carry its
+// slab; the baseline is a step back out of the door and to the east.
 local plant = import '../skelly.deadvox.scenario.holdout/holdout-plant.libsonnet';
 local supplies = plant.supplies;
 local room = ['########', '#SS..aa#', '#......#', '#cc....#', '#cc....#', '###DD###'];
@@ -31,7 +33,7 @@ local baseline = plant.hall(
       { template: plant.stores.id, position: [-8, 21, 0], rotation: 0 },
       { template: baseline.id, position: [2, 21, 0], rotation: 180 },
     ],
-    player: { position: [-1, 21.5, -3], bearing: 180 },
+    player: { position: [-5, 21.5, 2], bearing: 180 },
     actors: [],
     woodlands: [],
   }],

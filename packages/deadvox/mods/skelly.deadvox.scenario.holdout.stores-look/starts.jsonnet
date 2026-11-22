@@ -1,5 +1,5 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
-// The stores look's start: at noon between the two stores' doors, facing them.
+// The stores look's start: at noon inside the works stores' door, facing down the aisle under the joists.
 {
   starts: [kit.fixture + kit.notSiteDefault + {
     id: 'holdoutstoreslook',
