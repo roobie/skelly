@@ -168,8 +168,9 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **plot**: the footprint and settlement kinds go through admission's own test, which fits the
   footprint the building takes with its declared front to the street, as a city row turns it
   (`packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion` and `frontFacingTurn`);
-  an authored lot admits at its own authored turn instead. So passing the
-  brief and being admitted to a lot of the plot's size cannot disagree.
+  an authored lot admits at its own authored turn instead. Passing the brief and street-row
+  admission of the plot's size cannot disagree; a lot that stands the building at another turn
+  can still refuse it.
 - **storeys**: the count of declared `access.storeys` from the ground storey up, because those
   are the storeys the engine knows, and a cellar is asked for by the brief's cellar rooms.
   Whether they are well formed stays with the map kit check

@@ -9,7 +9,13 @@ import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } 
 import { portalLadderPoint, portalPieceIssues, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
 import { type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { CityBenchmarkDef, CityScenarioDef, MapPoolDef } from './schema.ts';
-import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
+import {
+  type AdmissionFit,
+  admittedChoices,
+  cityRowDepth,
+  eligibilityExclusion,
+  lotAdmissionFit,
+} from './settlementPools.ts';
 import { type Rect, rectsOverlap } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -414,7 +420,7 @@ interface SettlementConsumer {
   path: string;
   pool: string;
   kind: string;
-  fit: { along: number; depth: number };
+  fit: AdmissionFit;
 }
 
 const benchmarkPoolIssues = (registry: Registry, benchmark: CityBenchmarkDef): [string, string][] => {
@@ -457,14 +463,13 @@ const scenarioConsumers = ({ id, city }: CityScenarioDef): SettlementConsumer[] 
     if (lot.source?.kind !== 'pool') {
       continue;
     }
-    const [along, lotDepth] = lot.turn % 2 === 0 ? lot.size : [lot.size[1], lot.size[0]];
     consumers.push({
       section: 'scenarios',
       id,
       path: `.city.lots[${index}].source`,
       pool: lot.source.id,
       kind: city.settlementKind,
-      fit: { along, depth: lotDepth },
+      fit: lotAdmissionFit(lot),
     });
   }
   if (city.ring) {

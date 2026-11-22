@@ -3,7 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ScenarioRouteSpace } from './scenarioRoute.ts';
 import type { CityScenarioDef, MapPoolDef, PerimeterCrossingDef } from './schema.ts';
-import { eligibilityExclusion } from './settlementPools.ts';
+import { eligibilityExclusion, lotAdmissionFit } from './settlementPools.ts';
 import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedPoint } from './templates.ts';
 
@@ -66,9 +66,7 @@ export const lotChoices = (registry: Registry, city: LotContext, lot: Lot): Choi
     lot.source.kind === 'pool'
       ? (registry.mapPools.get(lot.source.id)?.choices ?? [])
       : [{ ref: lot.source, weight: 1 }];
-  // The lot's own turn stands the building, so both sides rotate together: the reserved rect as authored, the
-  // building at the lot's turn, not at its front-facing one.
-  const fit = { along: lot.size[0], depth: lot.size[1], turn: lot.turn };
+  const fit = lotAdmissionFit(lot);
   return choices.filter(({ ref }) => eligibilityExclusion(registry, ref, kind, fit) === undefined);
 };
 

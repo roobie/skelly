@@ -118,8 +118,8 @@ describe('settlement collection admission', () => {
     const house = data.templates!.find(({ id }) => id === 'fixture_house')!;
     // A hall 4 wide and 10 deep whose declared front is east: a city row turns it to stand 10 along the row and 4
     // deep, so admission must refuse the authored extents' pairing, not the building.
-    house.size = [4, 3, 10];
-    house.layers = Array.from({ length: 3 }, () => Array.from({ length: 10 }, () => '===='));
+    house.size = [4, 5, 10];
+    house.layers = Array.from({ length: 5 }, () => Array.from({ length: 10 }, () => '===='));
     house.access = {
       ground: 'ground',
       entrance: [1, 1, 1],
@@ -135,6 +135,42 @@ describe('settlement collection admission', () => {
       throw new Error('Expected city fixture');
     }
     expect(cityGridOf(admitted.registry, scenario.city).templates.map(({ id }) => id)).toEqual([house.id]);
+  });
+
+  it('reports no exclusion when an authored lot is the only consumer an east-front building fits', () => {
+    const { sources, data } = fixture();
+    const house = data.templates!.find(({ id }) => id === 'fixture_house')!;
+    // The hall's front faces east, so it stands 10 along and 4 deep once a placement turns that front to the street.
+    // Its only consumer is an authored lot that stands it at no turn, where it fits exactly as authored.
+    house.size = [4, 5, 10];
+    house.layers = [
+      Array.from({ length: 10 }, () => '===='),
+      ...Array.from({ length: 4 }, () => Array.from({ length: 10 }, () => '....')),
+    ];
+    house.palette = { ...house.palette, '.': 'air' };
+    house.access = {
+      ground: 'ground',
+      entrance: [1, 1, 1],
+      storeys: [{ id: 'ground', floor: 1 }],
+      stairs: [],
+      front: 'e',
+    };
+    data.mapPools = [fixturePool([{ ref: { kind: 'template', id: house.id }, weight: 1 }])];
+    const scenario = data.scenarios![0]!;
+    if (scenario.kind !== 'assembledCity') {
+      throw new Error('Expected city fixture');
+    }
+    scenario.city.fillRows = false;
+    scenario.city.lots = [
+      {
+        id: 'fixture_front_lot',
+        position: [0, 0],
+        size: [4, 10],
+        turn: 0,
+        source: { kind: 'pool', id: 'fixture_pool' },
+      },
+    ];
+    expect(validated(sources)).toEqual([]);
   });
 
   it('does not count benchmark-only candidates as playable scenario sources', () => {

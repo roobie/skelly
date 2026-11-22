@@ -18,6 +18,16 @@ export interface AdmissionFit extends PlotFit {
   readonly turn?: Turn;
 }
 
+/**
+ * The fit an authored lot admits its building against: the reserved rect as authored and the lot's own turn, which is
+ * the turn the lot stands the building at (`packages/engine/src/core/cityLots.ts`, `placedLot`), so an authored
+ * rotation is honoured instead of the front-facing one.
+ */
+export const lotAdmissionFit = (lot: {
+  readonly size: readonly [number, number];
+  readonly turn: Turn;
+}): AdmissionFit => ({ along: lot.size[0], depth: lot.size[1], turn: lot.turn });
+
 export const eligibilityExclusion = (
   registry: Registry,
   ref: MapPoolDef['choices'][number]['ref'],
