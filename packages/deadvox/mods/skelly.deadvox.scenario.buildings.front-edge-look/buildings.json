@@ -1,0 +1,210 @@
+{
+  "buildingBriefs": [
+    {
+      "cover": "Brick walls and a felt roof enclose the room.",
+      "eligibility": {
+        "settlementKinds": ["front_edge_look"]
+      },
+      "facade": "A plain doorway in the front wall.",
+      "id": "front_hall_brief",
+      "plot": {
+        "along": 6,
+        "depth": 6
+      },
+      "program": {
+        "hall": {
+          "purpose": "A single sheltered room entered through its front door."
+        }
+      },
+      "references": ["A small brick utility hall with one doorway in its front wall."],
+      "setting": "front_edge_look",
+      "storeys": [1, 1],
+      "styles": ["front_hall_style"],
+      "tags": ["fixture"]
+    }
+  ],
+  "mapAssemblies": [
+    {
+      "access": {
+        "entrance": [3, 1, 1],
+        "front": "n",
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "hall": {
+          "at": [3, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "front_hall_brief",
+      "eligibility": {
+        "settlementKinds": ["front_edge_look"]
+      },
+      "id": "front_hall_north",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "front_hall_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "hall",
+          "size": [6, 6, 6],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [2, 1, 4],
+        "front": "s",
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "hall": {
+          "at": [2, 1, 2],
+          "kind": "standing"
+        }
+      },
+      "brief": "front_hall_brief",
+      "eligibility": {
+        "settlementKinds": ["front_edge_look"]
+      },
+      "id": "front_hall_south",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "front_hall_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "hall",
+          "size": [6, 6, 6],
+          "turn": 2
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "front_hall_shell",
+      "layers": [
+        ["======", "======", "======", "======", "======", "======"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "wall",
+          "role": "shell"
+        },
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "floor",
+          "role": "support"
+        },
+        "^": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "style": "front_hall_style"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "air": {
+          "block": "air",
+          "role": "opening"
+        },
+        "floor": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "roofing": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "wall": {
+          "block": "brick",
+          "role": "shell"
+        }
+      },
+      "id": "front_hall_style"
+    }
+  ],
+  "worldSettings": [
+    {
+      "buildingCulture": "Small single-storey halls, one doorway each.",
+      "era": "Unspecified.",
+      "id": "front_edge_look",
+      "region": "Fixture yard.",
+      "settlementKinds": ["front_edge_look"],
+      "tags": {
+        "fixture": "Front-edge orientation comparison."
+      }
+    }
+  ]
+}
