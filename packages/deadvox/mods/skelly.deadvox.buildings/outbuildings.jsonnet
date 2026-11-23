@@ -1,6 +1,7 @@
 // Yard outbuildings any house plot can set behind its house: an outhouse, a woodshed with its log pile, a well
 // and a garage, plus the empty site the chicken coop will stand on. Box shapes of the setting's timber,
-// blockwork and stone; each opens north, so a plot turns it to face its yard walk.
+// blockwork and stone; each opens north, so a plot turns it to face its yard walk. The outhouse, the woodshed and
+// the garage answer briefs of their own; see `packages/deadvox/docs/building-pathway.md`, "Worked example: rural plot".
 //
 // Marks state their claims, so the layers and ownership cannot disagree: '_' is air reserved for the walk,
 // ',' leaves the cell to the terrain, '.' is owned air and every other mark is owned.
