@@ -9,7 +9,7 @@ read_if:
 
 Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.lit-window-look#{debug:true}).
 
-At midnight a plank room stands on the test-house lot with one bare window in its west wall and a lamp lit on a
+At midnight a plank room stands on the test-house lot with one bare window in its west wall and an unlit lamp on a
 crate inside. The lamp starts unlit, because fitting a cover is timed work and a lit bare lamp would draw the
 shambler before it finished. The player starts inside, beside the window, with a hammer in hand and a saw and the
 stock for every window cover at their feet. A shambler stands in the yard facing the window, in line with the lamp;
