@@ -8,10 +8,10 @@ read_if:
 
 Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.actor-breach-look#{debug:true}).
 
-At noon, a shambler and a brute shambler stand behind separate one-cell walls, one timber and one masonry, with the player in sight. Every skill is at its top level from the fixture start kit.
+At noon, a shambler stands behind a timber wall span and a brute shambler behind a masonry wall span, with the player in sight. The timber wall carries a timber overhang. Every skill is at its top level from the fixture start kit.
 
 ## Check
 
-1. Watch the shambler remain behind its timber wall and the brute break its masonry wall.
+1. Watch the shambler remain behind the timber wall while the brute breaks through masonry.
 2. After a wall falls, leave the rubble in place. Ordinary actor blows do not clear it.
-3. Use the debug build tool to remove a cell holding any overhang and confirm unsupported cells fall as rubble.
+3. Use the debug build tool to remove a timber wall cell under the overhang and confirm unsupported cells fall as rubble.
