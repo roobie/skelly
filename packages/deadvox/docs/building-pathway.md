@@ -694,9 +694,11 @@ waits on a usage the engine does not have.
 uses the kitchen counter, which reads close enough on the sheet; a shop counter belongs in
 the shared pack when a model is drawn for it ([Shared pieces](#shared-pieces)).
 
-**Seen through its look fixtures.** The shop remains outside settlement pools so its
-comparisons stay staged for review. The dedicated fixture compares it with the hand-drawn
-baseline; see `mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet`.
+**Seen through its look fixtures.** No settlement pool names `village_shop`, so its look
+fixtures are the only places it appears: `skelly.deadvox.scenario.buildings.village-shop-look`
+and `skelly.deadvox.scenario.buildings.misc-support-look`. The dedicated fixture compares it
+with the hand-drawn baseline; see
+`mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet`.
 
 ## Support comparison fixtures
 
