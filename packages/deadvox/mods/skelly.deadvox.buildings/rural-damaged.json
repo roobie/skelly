@@ -514,7 +514,7 @@
           "choices": [
             {
               "ref": {
-                "id": "rural_plot_walk",
+                "id": "rural_plot_walk_privy",
                 "kind": "piece"
               },
               "weight": 1
@@ -559,8 +559,8 @@
           "choices": [
             {
               "ref": {
-                "id": "woodshed",
-                "kind": "piece"
+                "id": "rural_woodshed",
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -570,7 +570,7 @@
           "turn": 0
         },
         {
-          "at": [14, 0, 30],
+          "at": [14, 0, 28],
           "choices": [
             {
               "ref": {
@@ -581,7 +581,7 @@
             }
           ],
           "id": "outhouse",
-          "size": [4, 7, 4],
+          "size": [4, 7, 6],
           "turn": 0
         }
       ]
