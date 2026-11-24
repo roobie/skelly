@@ -11,11 +11,15 @@
           "role": "shell"
         },
         "floor": {
-          "block": "planks",
+          "block": "slab_floor",
           "role": "interior_floor"
         },
         "footing": {
           "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
           "role": "support"
         },
         "opening": {
@@ -27,7 +31,7 @@
           "role": "interior_wall"
         },
         "roof_deck": {
-          "block": "concrete",
+          "block": "slab_deck",
           "role": "interior_floor"
         },
         "roofing_felt": {
@@ -56,11 +60,15 @@
           "role": "shell"
         },
         "floor": {
-          "block": "planks",
+          "block": "slab_floor",
           "role": "interior_floor"
         },
         "footing": {
           "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
           "role": "support"
         },
         "opening": {
@@ -72,7 +80,7 @@
           "role": "interior_wall"
         },
         "roof_deck": {
-          "block": "concrete",
+          "block": "slab_deck",
           "role": "interior_floor"
         },
         "roofing_felt": {

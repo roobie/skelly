@@ -17,6 +17,7 @@ local palette = {
   g: { role: 'support', material: 'lawn' },
   k: { role: 'support', material: 'paving' },
   t: { role: 'trim', material: 'tall_grass' },
+  j: { role: 'support', material: 'beam' },
 };
 local claims(layers) = [
   [std.join('', [std.get({ '-': '.', ',': 'R', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
@@ -61,7 +62,8 @@ local gardens = [
 // Ground storey: an open front room with the stair along its west wall, and a kitchen behind a
 // partition, its back end given to the boiler and fridge. Doorways, window bays, the stair and the
 // furnished zones are holes; a bay sits a metre above its floor, the sill height of a house rather
-// than a shopfront.
+// than a shopfront. Planks cannot reach from the walls or the partition to the stair well, so a steel
+// post beside the stair foot and a beam from it to the partition carry the upper floor.
 local frontDoor = '.#######--#######.';
 local frontDoorBays = '.##---##--##---##.';
 local frontBays = '.##---######---##.';
@@ -74,20 +76,21 @@ local hall = '.#,,,,,,,,i,,---#.';
 local hallThrough = '.#,,,,,,,,-,,---#.';
 local stairFoot = '.#--,,,,,,-,,---#.';
 local stairSide = '.#--,,,,,,i,,---#.';
+local stairPost = '.#--j,,,,,i,,---#.';
+local stairBeam = '.#--jjjjjji,,---#.';
 local room = '.#------,,i,,---#.';
 local roomBay = '.#------,,i,,----.';
 local roomBack = '.#------,,i-----#.';
 local groundShell = [
-  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, roomBack, roomBack, backWall]
+  [frontDoor, hall, hallThrough, stairFoot, stairPost, room, room, room, room, roomBack, roomBack, backWall]
   for _ in std.range(1, 2)
 ] + [
-  [frontDoorBays, hall, hallThrough, stairFoot, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays]
+  [frontDoorBays, hall, hallThrough, stairFoot, stairPost, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays]
   for _ in std.range(1, 2)
 ] + [
-  [frontBays, hall, hall, stairSide, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays],
-] + [
-  [wall, hall, hall, stairSide, stairSide, room, room, room, room, roomBack, roomBack, backWall]
-  for _ in std.range(1, 2)
+  [frontBays, hall, hall, stairSide, stairPost, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays],
+  [wall, hall, hall, stairSide, stairPost, room, room, room, room, roomBack, roomBack, backWall],
+  [wall, hall, hall, stairSide, stairBeam, room, room, room, room, roomBack, roomBack, backWall],
 ];
 
 // The stair rises one block a tread, south along the west wall, onto the upper floor.
@@ -115,7 +118,9 @@ local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flue
 // Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing. The
 // bathroom's back wall bridges the stair well on a header, because the slab under it must stay open
 // where a climbing body's head passes. Bays are the window rows; doorways are holes to head height
-// under a lintel.
+// under a lintel. The roof deck's concrete cannot reach the middle of the front bedroom's ceiling
+// from its walls, so a steel beam crosses its top course from the bathroom partition to the east wall,
+// and the bedroom's zone stops under it.
 local upperBack = '.##########---###P';
 local bathFront = '.#------i-------#.';
 local bathMiddle = '.#--,,--i-------#.';
@@ -139,9 +144,11 @@ local upperShell = [
   for _ in std.range(1, 2)
 ] + [
   [frontBays, bathFront, bathMiddleBay, bathBackBay, overStairBay, landing, partition, landingBay, landingBay, landingBay, landing, upperBack],
-] + [
-  [wall, bathFront, bathMiddle, bathBack, overStair, landing, partition, landing, landing, landing, landing, backWall]
-  for _ in std.range(1, 2)
+  [wall, bathFront, bathMiddle, bathBack, overStair, landing, partition, landing, landing, landing, landing, backWall],
+  [
+    wall, '.#------i.......#.', '.#--,,--i.......#.', '.#--,,iiijjjjjjj#.', '.#iiiii,,.......#.',
+    '.#,,,,i,,.......#.', partition, landing, landing, landing, landing, backWall,
+  ],
 ];
 
 // Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a deck with
@@ -286,15 +293,15 @@ local bedroomThings = radiator + {
 };
 local frontBedroomThings = bedroomThings + { R+: { facing: 's' } };
 local frontBedroom = [
-  piece('gauntlet_villa_front_bedroom_made', [7, 7, 5],
+  piece('gauntlet_villa_front_bedroom_made', [7, 6, 5],
     [['ww.RR..', '.....bb', '.....bb', '.....bb', '.....bb'], ['ww.RR..', '.......', '.......', '.......', '.......']]
     + [['ww.....', '.......', '.......', '.......', '.......'] for _ in std.range(1, 2)]
-    + [air(7, 5) for _ in std.range(1, 3)],
+    + [air(7, 5) for _ in std.range(1, 2)],
     frontBedroomThings),
-  piece('gauntlet_villa_front_bedroom_packed', [7, 7, 5],
+  piece('gauntlet_villa_front_bedroom_packed', [7, 6, 5],
     [['ww.RR..', '.....bb', '..xx.bb', '..xx.bb', '.....bb'], ['ww.RR..', '.......', '..xx...', '..xx...', '.......']]
     + [['ww.....', '.......', '.......', '.......', '.......'] for _ in std.range(1, 2)]
-    + [air(7, 5) for _ in std.range(1, 3)],
+    + [air(7, 5) for _ in std.range(1, 2)],
     frontBedroomThings),
 ];
 // The back bedroom keeps the chimney breast in its back corner beside the desk under the window.
@@ -334,6 +341,7 @@ local materials(facade) = {
   roofing_felt: { role: 'roof', block: 'bitumen_felt' },
   tall_grass: { role: 'trim', block: 'tall_grass' },
   opening: { role: 'opening', block: 'air' },
+  beam: { role: 'support', block: 'steel_joist' },
 };
 {
   mapStyles: [
@@ -366,7 +374,7 @@ local materials(facade) = {
       doorway('front_bedroom_door', [6, 9, 8], 'inner_ew'),
       doorway('back_bedroom_door', [6, 9, 12], 'inner_ew'),
       slot('bathroom', [2, 9, 5], [6, 7, 3], choices(bathroom)),
-      slot('front_bedroom', [9, 9, 5], [7, 7, 5], choices(frontBedroom)),
+      slot('front_bedroom', [9, 9, 5], [7, 6, 5], choices(frontBedroom)),
       slot('back_bedroom', [9, 9, 11], [7, 7, 4], choices(backBedroom)),
       slot('roof', [0, 16, 4], [18, 4, 12], [
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_sheet' }, weight: 3 },

@@ -59,6 +59,7 @@ import {
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
 import { ItemShadowCache } from './itemShadowCache.ts';
+import { ItemShadowCasters } from './itemShadowCasters.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
@@ -524,6 +525,7 @@ export class Shadows {
         material.shadowSide = DoubleSide;
       }
     });
+    const casterIndex = new ItemShadowCasters(casters);
     // Keep the original objects and world matrices: their hooks and renderer upload identities matter.
     // The shadow renderer only walks children; a flat root avoids visiting noncasters on every face.
     const casterScene = Object.create(scene) as Scene;
@@ -555,7 +557,7 @@ export class Shadows {
           body.visible = false;
         }
         try {
-          casterScene.children = casters.filter((caster) => {
+          casterScene.children = casterIndex.query(item).filter((caster) => {
             for (let ancestor: Object3D | null = caster; ancestor; ancestor = ancestor.parent) {
               if (!ancestor.visible) {
                 return false;
@@ -564,21 +566,19 @@ export class Shadows {
             return true;
           });
           const casts = withinRange(item.position, item.distance);
-          const changed =
-            !item.userData.carried &&
-            this.itemCache.changed(
-              index,
-              item,
-              casterScene.children.filter(
-                (caster): caster is Mesh =>
-                  caster instanceof Mesh &&
-                  caster !== meshes.batch &&
-                  caster.layers.test(this.itemView.layers) &&
-                  !caster.layers.isEnabled(SHADOW_CROWD_LAYER),
-              ),
-              [...meshes.shadowInputs(casts), ...this.crowds.flatMap((crowd) => crowd.shadowInputs(casts))],
-            );
-          item.shadow.autoUpdate = Boolean(item.userData.carried);
+          const changed = this.itemCache.changed(
+            index,
+            item,
+            casterScene.children.filter(
+              (caster): caster is Mesh =>
+                caster instanceof Mesh &&
+                caster !== meshes.batch &&
+                caster.layers.test(this.itemView.layers) &&
+                !caster.layers.isEnabled(SHADOW_CROWD_LAYER),
+            ),
+            [...meshes.shadowInputs(casts), ...this.crowds.flatMap((crowd) => crowd.shadowInputs(casts))],
+          );
+          item.shadow.autoUpdate = false;
           item.shadow.needsUpdate = cold || changed;
           if (!(cold || item.shadow.autoUpdate || item.shadow.needsUpdate)) {
             continue;
