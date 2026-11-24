@@ -97,6 +97,22 @@ describe('item shadow maps', () => {
     expect(f.frame()).toEqual([1]);
   });
 
+  it('reuses a stationary carried source but redraws its moving emitter and changing blockers', () => {
+    const f = fixture();
+    f.source.userData.carried = true;
+    const door = f.blocker();
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([0]);
+    f.source.position.x += 1;
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([0]);
+    door.rotation.y = Math.PI / 2;
+    expect(f.frame()).toEqual([1]);
+    door.customDistanceMaterial = new MeshBasicMaterial();
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([1]);
+  });
+
   it('refreshes on the same frame a door closes or a blocker is added or removed', () => {
     const f = fixture();
     const door = f.blocker();

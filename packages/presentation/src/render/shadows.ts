@@ -566,21 +566,19 @@ export class Shadows {
             return true;
           });
           const casts = withinRange(item.position, item.distance);
-          const changed =
-            !item.userData.carried &&
-            this.itemCache.changed(
-              index,
-              item,
-              casterScene.children.filter(
-                (caster): caster is Mesh =>
-                  caster instanceof Mesh &&
-                  caster !== meshes.batch &&
-                  caster.layers.test(this.itemView.layers) &&
-                  !caster.layers.isEnabled(SHADOW_CROWD_LAYER),
-              ),
-              [...meshes.shadowInputs(casts), ...this.crowds.flatMap((crowd) => crowd.shadowInputs(casts))],
-            );
-          item.shadow.autoUpdate = Boolean(item.userData.carried);
+          const changed = this.itemCache.changed(
+            index,
+            item,
+            casterScene.children.filter(
+              (caster): caster is Mesh =>
+                caster instanceof Mesh &&
+                caster !== meshes.batch &&
+                caster.layers.test(this.itemView.layers) &&
+                !caster.layers.isEnabled(SHADOW_CROWD_LAYER),
+            ),
+            [...meshes.shadowInputs(casts), ...this.crowds.flatMap((crowd) => crowd.shadowInputs(casts))],
+          );
+          item.shadow.autoUpdate = false;
           item.shadow.needsUpdate = cold || changed;
           if (!(cold || item.shadow.autoUpdate || item.shadow.needsUpdate)) {
             continue;

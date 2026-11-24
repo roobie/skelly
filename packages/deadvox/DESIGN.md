@@ -2918,8 +2918,9 @@ so block-cell reuse is not a safe shortcut.
 Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
 spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
 Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
-Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
-a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+Every changed emitter or caster within a lamp's radius must reach its visible map: a stale shadow can show light
+through a shut door. Carrying alone does not change a shadow; unchanged drawn inputs can reuse it regardless of
+who holds the source. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
 leaves out its holder, and a dropped lamp's includes the player.
 A cube face must not rediscover distant models that cannot block its source. Conservative world-space bounds
 keep those models out without approximating walls or borrowing sight visibility for shadow occlusion.
