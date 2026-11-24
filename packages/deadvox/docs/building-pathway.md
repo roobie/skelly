@@ -12,6 +12,7 @@ read_if:
   - you give a building's door a local way from the road, or change how trails and steps are placed
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
+  - you choose a floor's material, or a block's look against its material
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
   - you set a house on a plot with outbuildings, or decide how often a site draws each variant
@@ -267,6 +268,11 @@ One rule is proved by a test beside validate rather than by validate itself:
   them. A slab or floor wider than its material spans needs
   something under it that stands, such as a wall, a column or a beam; a beam beside it in the
   same course does not, because a run only reaches a cell that stands, not one held sideways.
+  A material's span is how far the real thing reaches, and a block's look is separate from its
+  material. A modern storey floor is a reinforced-concrete slab that spans wall to wall, so it
+  holds a room without columns or joists; its block may wear floorboards or bare concrete over
+  that material. Honest material values keep one support rule, where props the real building
+  lacks would bend the plan to a span it does not have.
   An answer known not to hold yet is skipped by name, citing the issue that tracks it. A skipped
   answer that holds, or that no pack declares, fails the test, so a skip ends with its fix.
 
