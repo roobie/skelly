@@ -75,8 +75,15 @@
             "pos": [-17, 44, 36]
           },
           "id": "roomlamp",
-          "item": "oil_lamp",
-          "lit": true
+          "item": "oil_lamp"
+        },
+        {
+          "destination": {
+            "kind": "pile",
+            "pos": [-18, 42, 37]
+          },
+          "id": "saw",
+          "item": "hand_saw"
         },
         {
           "count": 8,

@@ -52,9 +52,10 @@ const staging = () => {
     .flatMap(([cx, cz]) => site.furnitureIn(cx, cz))
     .filter(({ spec }) => spec.type.includes('window'));
   const shamblers = columns.flatMap(([cx, cz]) => site.actorsIn(cx, cz)).filter(({ type }) => type === 'shambler');
-  const lamp = startsFile.starts[0]!.kit.find(({ id }) => id === 'roomlamp')!.destination.pos as Vec3;
-  if (windows.length !== 1 || shamblers.length !== 1) {
-    throw new Error('the look stages one window and one shambler');
+  const roomLamp = startsFile.starts[0]!.kit.find(({ id }) => id === 'roomlamp')!;
+  const lamp = roomLamp.destination.pos as Vec3;
+  if (windows.length !== 1 || shamblers.length !== 1 || 'lit' in roomLamp) {
+    throw new Error('the look stages one window, one shambler and an unlit lamp');
   }
   const solid = (x: number, y: number, z: number): boolean => {
     for (const each of site.placements) {
@@ -77,8 +78,12 @@ const staging = () => {
   };
 };
 
-/** The look's start at midnight with its shambler spawned as the world spawns it, facing east. */
-const watched = (cover: Cover | undefined, lit: boolean) => {
+/**
+ * The look's check as its README performs it: the start's unlit lamp and cover fitted first, then the lamp lit, and
+ * the shambler watched. `drawn` opens a fitted curtain after lighting. The shambler spawns as the world spawns it,
+ * facing east, and is not drawn before the lamp is lit.
+ */
+const watched = (cover: Cover | undefined, { lit, drawn = false }: { lit: boolean; drawn?: boolean }) => {
   const scene = staging();
   const { registry } = scene;
   const world = new World();
@@ -109,27 +114,38 @@ const watched = (cover: Cover | undefined, lit: boolean) => {
     onRead: () => undefined,
   });
   placed = session.entities;
-  session.entities.add({ ...scene.window, ...(cover ? { boarding: cover } : {}) });
+  const fitted = session.entities.add({ ...scene.window, ...(cover ? { boarding: cover } : {}) });
   const lamp = session.inventory.create('oil_lamp');
-  if (lit && toggleLight(registry, lamp, session.sim.calendar) !== undefined) {
-    throw new Error('the fixture lamp must light');
-  }
   if (!session.inventory.add(lamp, { kind: 'pile', pos: scene.lamp })) {
     throw new Error('the fixture lamp must stand where the start puts it');
   }
   session.sim.paused = false;
   const id = session.actors.add(registry.actors.get('shambler')!, scene.shambler, [1, 0, 0]);
+  const drawnToLamp = () => session.actorStore.get(id)!.agent!.mode === 'investigate';
   session.sim.scheduler.advance(0.1);
-  return session.actorStore.get(id)!.agent!.mode === 'investigate';
+  if (drawnToLamp()) {
+    throw new Error('the shambler must not be drawn before the lamp is lit');
+  }
+  if (lit && toggleLight(registry, lamp, session.sim.calendar) !== undefined) {
+    throw new Error('the fixture lamp must light');
+  }
+  session.sim.scheduler.advance(0.1);
+  if (drawn) {
+    if (drawnToLamp() || session.entities.operateWindow(fitted!, 'openCurtain', scene.player, []) !== undefined) {
+      throw new Error('the curtain must hide the lit lamp, then open');
+    }
+    session.sim.scheduler.advance(0.1);
+  }
+  return drawnToLamp();
 };
 
 describe('a window cover in the light sense, as the lit-window look stages it', () => {
   it('draws the shambler to the lit lamp seen through the bare window', () => {
-    expect(watched(undefined, true)).toBe(true);
+    expect(watched(undefined, { lit: true })).toBe(true);
   });
 
-  it('is not drawn by the player beside the window when the lamp is out', () => {
-    expect(watched(undefined, false)).toBe(false);
+  it('is not drawn by the player beside the window when the lamp stays out', () => {
+    expect(watched(undefined, { lit: false })).toBe(false);
   });
 
   it.each([
@@ -137,10 +153,10 @@ describe('a window cover in the light sense, as the lit-window look stages it', 
     ['a sheet panel', { side: 'front', type: 'sheet_window_panel' }],
     ['a closed curtain', { side: 'back', type: 'window_curtain' }],
   ] as const)('hides the lit lamp behind %s', (_name, cover) => {
-    expect(watched(cover, true)).toBe(false);
+    expect(watched(cover, { lit: true })).toBe(false);
   });
 
-  it('shows the lit lamp again once the curtain is drawn open', () => {
-    expect(watched({ side: 'back', type: 'window_curtain', open: true }, true)).toBe(true);
+  it('shows the lit lamp once the closed curtain is drawn open', () => {
+    expect(watched({ side: 'back', type: 'window_curtain' }, { lit: true, drawn: true })).toBe(true);
   });
 });
