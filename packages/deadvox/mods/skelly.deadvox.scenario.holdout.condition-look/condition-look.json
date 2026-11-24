@@ -1,46 +1,38 @@
 {
-  "scenarios": [
+  "layouts": [
     {
-      "anchors": [],
-      "asks": [
+      "actors": [],
+      "bounds": {
+        "x0": -8,
+        "x1": 38,
+        "z0": -8,
+        "z1": 25
+      },
+      "buildings": [
         {
-          "at": [0, 0],
-          "id": "shelter",
-          "kind": "place",
-          "template": "holdout_house"
+          "position": [0, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_privy_breached"
+        },
+        {
+          "position": [18, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_privy"
         }
       ],
-      "body": "player",
-      "bounds": {
-        "x0": -40,
-        "x1": 40,
-        "z0": -40,
-        "z1": 40
-      },
-      "compression": "player",
-      "decalLimit": 48,
-      "eventRules": [],
+      "demo": true,
       "ground": 21,
-      "guarantee": {},
-      "hordeCountBudget": 64,
       "id": "holdout_condition_look",
-      "kind": "composedSite",
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
-      "outbreakAgeGameHours": 2880,
-      "placement": {
-        "apronMetres": 2,
-        "attempts": 1000
+      "player": {
+        "bearing": 90,
+        "position": [-2, 21.5, 3]
       },
-      "population": {
-        "authoredMarkers": false
-      },
-      "settlementKind": "rural",
-      "start": {
-        "ask": "shelter"
-      },
+      "terrain": [],
+      "tracks": [],
       "woodlands": []
     }
   ],
@@ -133,6 +125,16 @@
           },
           "id": "scrap",
           "item": "scrap_metal"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "planks",
+          "item": "wooden_plank"
         }
       ],
       "recipes": [
