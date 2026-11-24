@@ -1,40 +1,48 @@
 local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet').layouts[0];
-// A closed plank room with one bare window in its north wall, a lamp lit inside by the start, and a shambler in the
-// yard in view of the window. The player stands in the yard facing the window, so each cover fitted over it changes
-// whether the shambler is drawn to the lamp. The door at the far end of the room lets the curtain be reached from
-// its own face. Placing a cover waits for the spot-picking work, so the player fits it with the kit at their feet.
-local air = '.................';
-local wall = 'ppppppppppppppppp';
-local windows = 'pppppppGGGppppppp';
-local side = 'p...............p';
-local door = 'p......DD.......p';
-local yard = {
-  low: [air, '.....z...........', air, air, air],
-  high: [air, air, air, air, air],
-};
-local room(north, south=door) = [north, side, side, side, side, side, south];
+// A closed plank room east of a yard, one bare window in its west wall, a lamp lit on a crate inside, and a shambler
+// in the yard. Spawned actors face east, so the shambler faces the window; it stands on the window's centre row and
+// at the height where its eyes meet the window's centre cell and the lamp, so its sight line to the lamp passes the
+// opening and not the frame or sill. The player starts inside the room beside the window, off that line, so the wall
+// hides them from the shambler and only the lamp can draw it. The door lets the player leave.
+local depth = 17;
+local rows = std.range(0, depth - 1);
+local between(row, low, high) = row >= low && row <= high;
+local isWindowRow(row) = between(row, 7, 9);
+local isCrateRow(row) = between(row, 7, 8);
+local isDoorRow(row) = between(row, 7, 8);
+local shamblerRow = 8;
+
+local yard(row, layer) = if layer == 1 && row == shamblerRow then '...z.' else '.....';
+local westWall(row, layer) = if between(layer, 2, 4) && isWindowRow(row) then 'G' else 'p';
+local eastWall(row, layer) = if between(layer, 1, 4) && isDoorRow(row) then 'D' else 'p';
+local interior(row, layer) = if between(layer, 1, 2) && isCrateRow(row) then '..CC.' else '.....';
+local roomRow(row, layer) =
+  if row == 0 || row == depth - 1 then 'ppppppp'
+  else westWall(row, layer) + interior(row, layer) + eastWall(row, layer);
+local storey(layer) = [yard(row, layer) + roomRow(row, layer) for row in rows];
 {
   templates: [{
     id: 'test_house_lit_window',
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
-    size: [17, 7, 12],
+    size: [12, 7, depth],
     palette: {
       '.': 'air',
       f: 'plank_floor',
       p: 'plank_wall',
-      // A north-facing window's front is the yard, and its back, the latch side, is the room.
-      G: { furniture: 'clear_casement_window', facing: 'n', fixed: true },
-      D: { furniture: 'improvised_wood_door', facing: 's' },
+      // A west-facing window's front is the yard, and its back, the latch side, is the room.
+      G: { furniture: 'clear_casement_window', facing: 'w', fixed: true },
+      D: { furniture: 'improvised_wood_door', facing: 'e' },
+      C: { furniture: 'crate', facing: 'n' },
       z: { spawn: 'shambler' },
     },
     layers: [
-      ['fffffffffffffffff' for _ in std.range(1, 12)],
-      yard.low + room(wall),
-      yard.high + room(windows),
-      [air for _ in std.range(1, 5)] + room(windows),
-      [air for _ in std.range(1, 5)] + room(windows),
-      [air for _ in std.range(1, 5)] + room(wall, wall),
-      [air for _ in std.range(1, 5)] + ['fffffffffffffffff' for _ in std.range(1, 7)],
+      ['ffffffffffff' for _ in rows],
+      storey(1),
+      storey(2),
+      storey(3),
+      storey(4),
+      storey(5),
+      ['.....' + 'fffffff' for _ in rows],
     ],
   }],
   layouts: [layout + {
@@ -42,8 +50,8 @@ local room(north, south=door) = [north, side, side, side, side, side, south];
     buildings: layout.buildings + [
       { template: 'test_house_lit_window', position: [-12, 20.5, 14], rotation: 0 },
     ],
-    // In the yard, in metres where its cells are half-metre blocks, facing the window in the room's north wall.
-    player: { position: [-7.75, 21, 15.75], bearing: 180 },
+    // Inside the room, in the cell east of the window's lower row, facing the window (west).
+    player: { position: [-8.75, 21, 18.75], bearing: 90 },
     showroom: layout.showroom + { slots: [] },
   }],
 }

@@ -1,9 +1,18 @@
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { toggleLight } from '@skelly/engine/inventory';
-import { createSession, IDLE } from '@skelly/engine/session';
-import { Chunk, makeScale, type Vec3, World } from '@skelly/engine/world';
+import { bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
+import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
+import { Chunk, toChunk, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
+import lookManifest from '../mods/skelly.deadvox.scenario.test-house.lit-window-look/pack/manifest.json' with {
+  type: 'json',
+};
+import startsFile from '../mods/skelly.deadvox.scenario.test-house.lit-window-look/starts.json' with { type: 'json' };
+import { productModIntake } from '../src/product/mods.ts';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
-import { startupContent } from './baseRegistry.ts';
+import { withReusedBuilds } from './bundledContentReuse.ts';
 
 vi.mock('@skelly/engine/internal/game/streamer.ts', () => {
   class Streamer {}
@@ -11,41 +20,82 @@ vi.mock('@skelly/engine/internal/game/streamer.ts', () => {
   return { Streamer };
 });
 
-const { registry } = startupContent();
-const shambler = registry.actors.get('shambler')!;
-const windowDef = registry.furniture.get('clear_casement_window')!;
-
 interface Cover {
   side: 'front' | 'back';
   type: string;
   open?: true;
 }
-const WALL_Z = 5;
-const WINDOW_AT: Vec3 = [-1, 1, WALL_Z];
 
-const inWindow = (x: number, y: number, z: number) =>
-  [x, y, z].every((value, axis) => value >= WINDOW_AT[axis]! && value < WINDOW_AT[axis]! + windowDef.size[axis]!);
+/**
+ * The lit-window look as its start plays it: its site's walls and window, its shambler marker, its player spawn and
+ * its lit lamp. A fixture that does not stage the lure it promises is a defect, so the proof runs on its own staging.
+ */
+const staging = () => {
+  const query = new URLSearchParams({ 'start-mod': lookManifest.id, mods: lookManifest.id });
+  const linked = withReusedBuilds(() =>
+    selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: lookManifest.id }),
+  );
+  const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
+  const { registry } = linked.content;
+  const site = new AuthoredSite(config.seed, registry, config.scale, registry.layouts.get(config.site)!);
+  const { blockSize } = config.scale;
+  const placement = site.placements.at(-1)!;
+  const [ox, , oz] = placement.origin;
+  const [sx, , sz] = placement.template.size;
+  const columns: [number, number][] = [];
+  for (let cx = toChunk(ox); cx <= toChunk(ox + sx - 1); cx++) {
+    for (let cz = toChunk(oz); cz <= toChunk(oz + sz - 1); cz++) {
+      columns.push([cx, cz]);
+    }
+  }
+  const windows = columns
+    .flatMap(([cx, cz]) => site.furnitureIn(cx, cz))
+    .filter(({ spec }) => spec.type.includes('window'));
+  const shamblers = columns.flatMap(([cx, cz]) => site.actorsIn(cx, cz)).filter(({ type }) => type === 'shambler');
+  const lamp = startsFile.starts[0]!.kit.find(({ id }) => id === 'roomlamp')!.destination.pos as Vec3;
+  if (windows.length !== 1 || shamblers.length !== 1) {
+    throw new Error('the look stages one window and one shambler');
+  }
+  const solid = (x: number, y: number, z: number): boolean => {
+    for (const each of site.placements) {
+      const block = placedBlockAt(each, [x, y, z]);
+      if (block !== undefined) {
+        return registry.blocks[block]!.solid;
+      }
+    }
+    return y < placement.origin[1];
+  };
+  return {
+    registry,
+    scale: config.scale,
+    seed: config.seed,
+    solid,
+    window: windows[0]!.spec,
+    shambler: shamblers[0]!.pos,
+    lamp,
+    player: site.spawn.pos.map((value) => value / blockSize) as Vec3,
+  };
+};
 
-/** Whether a shambler outside a wall with one window is drawn to a lit lamp inside, given what covers the window. */
-const lureThrough = (cover?: Cover): boolean => {
+/** The look's start at midnight with its shambler spawned as the world spawns it, facing east. */
+const watched = (cover: Cover | undefined, lit: boolean) => {
+  const scene = staging();
+  const { registry } = scene;
   const world = new World();
   world.addChunk(new Chunk(0, 0, 0));
   let placed: ReturnType<typeof createSession>['entities'] | undefined;
-  // The wall stops sight everywhere but the window's opening; only the window entity decides what that opening passes.
-  const isOpaque = (x: number, y: number, z: number) =>
-    y === 0 || placed?.obstructs(x, y, z, 'sight') === true || (z === WALL_Z && y >= 1 && !inWindow(x, y, z));
   const session = createSession({
     registry,
     actorFigureFiles: stackActorFigureFiles(registry),
     world,
-    scale: makeScale(0.5),
-    seed: 7,
-    // Calendar zero is midnight, so the lamp is the only stimulus around.
+    scale: scene.scale,
+    seed: scene.seed,
+    // Calendar zero is midnight, so the lamp is the only light around.
     start: 0,
-    spawn: [0, 1, -20],
+    spawn: scene.player,
     ready: () => true,
-    isSolid: (_x, y) => y === 0,
-    isOpaque,
+    isSolid: scene.solid,
+    isOpaque: (x, y, z) => scene.solid(x, y, z) || placed?.obstructs(x, y, z, 'sight') === true,
     controls: {
       active: () => true,
       intent: () => IDLE,
@@ -59,29 +109,27 @@ const lureThrough = (cover?: Cover): boolean => {
     onRead: () => undefined,
   });
   placed = session.entities;
-  session.entities.add({
-    type: 'clear_casement_window',
-    pos: WINDOW_AT,
-    size: [...windowDef.size] as Vec3,
-    facing: 'n',
-    fixed: true,
-    ...(cover ? { boarding: cover } : {}),
-  });
+  session.entities.add({ ...scene.window, ...(cover ? { boarding: cover } : {}) });
   const lamp = session.inventory.create('oil_lamp');
-  const refusal = toggleLight(registry, lamp, session.sim.calendar);
-  if (refusal !== undefined || !session.inventory.add(lamp, { kind: 'pile', pos: [0, 1, WALL_Z + 3] })) {
-    throw new Error('the fixture lamp must light and stand inside the room');
+  if (lit && toggleLight(registry, lamp, session.sim.calendar) !== undefined) {
+    throw new Error('the fixture lamp must light');
+  }
+  if (!session.inventory.add(lamp, { kind: 'pile', pos: scene.lamp })) {
+    throw new Error('the fixture lamp must stand where the start puts it');
   }
   session.sim.paused = false;
-  // Close enough that the sight line to the lamp on the floor passes through the opening, above its sill.
-  const id = session.actors.add(shambler, [0.5, 1, WALL_Z - 2], [0, 0, 1]);
+  const id = session.actors.add(registry.actors.get('shambler')!, scene.shambler, [1, 0, 0]);
   session.sim.scheduler.advance(0.1);
   return session.actorStore.get(id)!.agent!.mode === 'investigate';
 };
 
-describe('a window cover in the light sense', () => {
-  it('draws a shambler outside to a lit lamp seen through the bare window', () => {
-    expect(lureThrough()).toBe(true);
+describe('a window cover in the light sense, as the lit-window look stages it', () => {
+  it('draws the shambler to the lit lamp seen through the bare window', () => {
+    expect(watched(undefined, true)).toBe(true);
+  });
+
+  it('is not drawn by the player beside the window when the lamp is out', () => {
+    expect(watched(undefined, false)).toBe(false);
   });
 
   it.each([
@@ -89,10 +137,10 @@ describe('a window cover in the light sense', () => {
     ['a sheet panel', { side: 'front', type: 'sheet_window_panel' }],
     ['a closed curtain', { side: 'back', type: 'window_curtain' }],
   ] as const)('hides the lit lamp behind %s', (_name, cover) => {
-    expect(lureThrough(cover)).toBe(false);
+    expect(watched(cover, true)).toBe(false);
   });
 
   it('shows the lit lamp again once the curtain is drawn open', () => {
-    expect(lureThrough({ side: 'back', type: 'window_curtain', open: true })).toBe(true);
+    expect(watched({ side: 'back', type: 'window_curtain', open: true }, true)).toBe(true);
   });
 });

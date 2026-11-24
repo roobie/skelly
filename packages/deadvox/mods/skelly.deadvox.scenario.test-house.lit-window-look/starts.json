@@ -72,7 +72,7 @@
         {
           "destination": {
             "kind": "pile",
-            "pos": [-16, 42, 36]
+            "pos": [-17, 44, 36]
           },
           "id": "roomlamp",
           "item": "oil_lamp",
@@ -82,7 +82,7 @@
           "count": 8,
           "destination": {
             "kind": "pile",
-            "pos": [-17, 42, 31]
+            "pos": [-18, 42, 37]
           },
           "id": "planks",
           "item": "wooden_plank"
@@ -91,7 +91,7 @@
           "count": 40,
           "destination": {
             "kind": "pile",
-            "pos": [-17, 42, 31]
+            "pos": [-18, 42, 37]
           },
           "id": "nails",
           "item": "nails"
@@ -99,7 +99,7 @@
         {
           "destination": {
             "kind": "pile",
-            "pos": [-17, 42, 31]
+            "pos": [-18, 42, 37]
           },
           "id": "sheet",
           "item": "sheet_metal"
@@ -108,7 +108,7 @@
           "count": 6,
           "destination": {
             "kind": "pile",
-            "pos": [-17, 42, 31]
+            "pos": [-18, 42, 37]
           },
           "id": "rags",
           "item": "rag"
@@ -116,7 +116,7 @@
         {
           "destination": {
             "kind": "pile",
-            "pos": [-17, 42, 31]
+            "pos": [-18, 42, 37]
           },
           "id": "cord",
           "item": "nylon_cord"
