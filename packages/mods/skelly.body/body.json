@@ -340,7 +340,7 @@
           "inhale": "breath_inhale"
         },
         "continuousDamage": {
-          "event": "player_hurt_light",
+          "event": "player_suffocate",
           "minIntervalSimSeconds": 2
         },
         "hurt": {

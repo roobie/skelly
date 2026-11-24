@@ -168,10 +168,9 @@ unbuilt. Unanswered gates block only their dependent work.
   Self-dig-out remains open and is not implemented. See
   `packages/engine/src/core/collapse.ts`, `reachableCollapseExit` and `refreshBurial`,
   and `packages/engine/src/game/session.ts`, `crushBodies`.
-  Continuous damage needs its own voice. The hurt voice substitutes for the unsourced
-  recording, with a simulation-time throttle so an ongoing condition does not sound like
-  repeated blows. Content selects the voice and interval; one-off impacts keep their
-  ordinary sound timing. See `packages/engine/src/game/session.ts`, `playDamageSound`,
+  Continuous damage has its own voice, with a simulation-time throttle so an ongoing
+  condition does not sound like repeated blows. Content selects the voice and interval;
+  one-off impacts keep the hurt sound and its ordinary timing. See `packages/engine/src/game/session.ts`, `playDamageSound`,
   `packages/engine/src/core/soundPicker.ts`, `SoundPicker.pick`, and
   `packages/engine/src/core/schema/body.ts`, `BodyTuningSchema`.
   A buried player's murky, not black, view gains a strong pulsing vignette; muffled sound
