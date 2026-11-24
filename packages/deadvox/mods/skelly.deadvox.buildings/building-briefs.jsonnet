@@ -150,8 +150,7 @@ local flatRoofHouse = {
       cover: 'Blockwork stops shots, and the open bay shows the whole inside from the road; the crate at the back ' +
              'is the only thing to crouch behind.',
     },
-    // A woodshed any country yard can set across from its house's back door. Its room asks no service: no shared piece
-    // serves keeping firewood, and a log pile is the stock itself, not furniture stock is kept on or in.
+    // A woodshed any country yard can set across from its house's back door; its room asks for the firewood it keeps.
     {
       id: 'rural_woodshed',
       setting: 'modern_1980s',
@@ -161,7 +160,10 @@ local flatRoofHouse = {
       styles: ['rural_outbuilding'],
       storeys: [1, 1],
       program: {
-        woodshed: { purpose: 'The stove\'s firewood, split and stacked dry against the back wall under the roof.' },
+        woodshed: {
+          purpose: 'The stove\'s firewood, split and stacked dry against the back wall under the roof.',
+          serves: ['firewood'],
+        },
       },
       references: [
         'Finnish and Swedish country yards of the 1950s to 1980s: an open-fronted board lean-to across the yard ' +

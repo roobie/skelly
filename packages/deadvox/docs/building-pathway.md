@@ -569,9 +569,10 @@ outbuilding; the yard around it stays the terrain's.
 in the buildings pack every house pack already depends on, each answering a brief of its own
 (`mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `rural_garage`, `rural_woodshed` and
 `rural_privy`), so any yard can set one and its fit is proven where it is defined, not only
-inside this plot, whose brief reads only the plot's own anchors. The woodshed's room asks no
-service, because a log pile is the stock itself, not furniture stock is kept on or in
-([Services](#services)). The well and the coop's site stay plain pieces, with no room a body
+inside this plot, whose brief reads only the plot's own anchors. The woodshed's room asks for
+`firewood`, which the log pile serves, rather than `storage`: the pile is the fuel stock itself,
+not a place stock is kept on or in, and a later fuel or heat consumer can read the fuel by its own
+name ([Services](#services)). The well and the coop's site stay plain pieces, with no room a body
 uses.
 
 **Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,

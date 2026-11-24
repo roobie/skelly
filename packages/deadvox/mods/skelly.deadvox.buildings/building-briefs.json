@@ -210,7 +210,8 @@
       },
       "program": {
         "woodshed": {
-          "purpose": "The stove's firewood, split and stacked dry against the back wall under the roof."
+          "purpose": "The stove's firewood, split and stacked dry against the back wall under the roof.",
+          "serves": ["firewood"]
         }
       },
       "references": [
