@@ -69,16 +69,20 @@ const runtime = (
     onDetonation,
     onFuseLit,
     intent,
+    terrainDestruction,
+    world = new World(),
   }: {
     onDetonation?: (position: Vec3, radiusMetres: number) => void;
     onFuseLit?: (item: Item) => void;
     intent?: () => MoveIntent;
+    terrainDestruction?: Parameters<typeof createSession>[0]['terrainDestruction'];
+    world?: World;
   } = {},
 ) =>
   createSession({
     registry: content,
     actorFigureFiles: withFixtureFigures(stackActorFigureFiles(content), { [PARTS_FIXTURE]: SHAMBLER.id }),
-    world: new World(),
+    world,
     isSolid,
     isOpaque: () => false,
     scale: makeScale(BLOCK),
@@ -99,6 +103,7 @@ const runtime = (
     onRead: () => undefined,
     ...(onDetonation ? { onDetonation } : {}),
     ...(onFuseLit ? { onFuseLit } : {}),
+    ...(terrainDestruction ? { terrainDestruction } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -397,6 +402,42 @@ describe('hand grenade', () => {
     ];
     expect(cells.length).toBeGreaterThan(1);
     expect(cells.every(({ share }) => share > 0)).toBe(true);
+  });
+
+  it('keeps mirrored walls equally shielded while terrain strikes resolve', () => {
+    const world = new World();
+    const wall = registry.blockIds.get('plank_wall')!;
+    const floor = registry.blockIds.get('concrete')!;
+    for (const x of [-4, -2, 2, 4]) {
+      world.setBlock(x, 0, 0, floor);
+      world.setBlock(x, 1, 0, wall);
+    }
+    world.setBlock(0, 0, 0, floor);
+    const terrain = {
+      world,
+      terrain: { scale: { minCy: 0, maxCy: 0 } },
+      getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
+      naturalBlock: (_x: number, y: number, _z: number) => (y === 0 ? floor : 0),
+      ensureColumn: () => undefined,
+      ensureCell: () => undefined,
+    } as unknown as NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>['terrain'];
+    const source = {
+      furnitureIn: () => [],
+      lootPointsIn: () => [],
+      supplySourcesIn: () => [],
+      actorsIn: () => [],
+    } as NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>['source'];
+    const session = runtime((x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid, undefined, registry, {
+      terrainDestruction: { terrain, source },
+      world,
+    });
+    const grenade = session.inventory.create(GRENADE);
+    expect(session.inventory.add(grenade, { kind: 'pile', pos: [0, 1, 0] })).toBe(true);
+    session.fuses.togglePin(grenade);
+    session.sim.scheduler.advance(FUSE + 0.5);
+    const damage = (x: number) => world.blockDamage.get([x, 1, 0])?.damage ?? 0;
+    expect(damage(-4)).toBe(damage(4));
+    expect(damage(-2)).toBe(damage(2));
   });
 
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
