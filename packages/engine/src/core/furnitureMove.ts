@@ -50,6 +50,7 @@ interface PileMove {
 interface Fall {
   entity: BlockEntity;
   y: number;
+  to?: Vec3;
 }
 
 // A chunk that isn't loaded reads as air, so a fall that finds no floor within this
@@ -604,7 +605,7 @@ export interface RuinDrop {
 
 export interface RuinPlan {
   readonly destroyed: readonly number[];
-  readonly falls: readonly { uid: number; y: number }[];
+  readonly falls: readonly { uid: number; y: number; to?: Vec3 }[];
   readonly moves: readonly PileMove[];
   readonly standIns: ReadonlySet<Placed>;
   readonly dropped: ReadonlySet<Placed>;
@@ -645,11 +646,31 @@ export const planRuin = (
   roots: readonly BlockEntity[],
   affectedPiles: readonly Pile[] = [],
   drops: readonly RuinDrop[] = [],
+  falling?: { readonly entity: BlockEntity; readonly to: Vec3 },
 ): RuinPlan | undefined => {
   const { inventory } = mover;
   const shadow = new Shadow(mover.terrainSolid, inventory.entities, mover.readBox, mover.minY);
   const ordered = [...new Set(roots)].sort(ruinOrder);
-  const { falls, ruined } = settle(mover, shadow, ordered, { ruin: true }) as Settled;
+  const settled = falling
+    ? (settle(mover, shadow, falling.entity, { ruin: true, movedTo: falling.to }) as Settled)
+    : (settle(mover, shadow, ordered, { ruin: true }) as Settled);
+  const falls = [...settled.falls];
+  const ruined = [...settled.ruined];
+  if (falling) {
+    shadow.fill(falling.entity, falling.to, false);
+    const y = shadow.landing(falling.to, falling.entity.size);
+    if (y === undefined) {
+      ruined.push(falling.entity);
+    } else {
+      const path: Vec3 = [falling.to[0], y, falling.to[2]];
+      const pathSize: Vec3 = [falling.entity.size[0], falling.to[1] + falling.entity.size[1] - y, falling.entity.size[2]];
+      if (fallingBoxRefusal(mover, path, pathSize)) {
+        return undefined;
+      }
+      shadow.fill(falling.entity, path, true);
+      falls.push({ entity: falling.entity, y, to: falling.to });
+    }
+  }
   const destroyed = [...ordered, ...ruined];
   const standIns = new Set<Placed>();
   const loose = [
@@ -671,8 +692,11 @@ export const planRuin = (
     return undefined;
   }
   const left = [...destroyed, ...falls.map((fall) => fall.entity)].map(({ pos, size }) => ({ pos, size }));
-  const landed = falls.map(({ entity: fallen, y }) => ({
-    pos: [fallen.pos[0], y, fallen.pos[2]] as Vec3,
+  if (falling) {
+    left.push({ pos: falling.to, size: falling.entity.size });
+  }
+  const landed = falls.map(({ entity: fallen, y, to }) => ({
+    pos: [to?.[0] ?? fallen.pos[0], y, to?.[2] ?? fallen.pos[2]] as Vec3,
     size: fallen.size,
   }));
   const piles = [...new Set([...affectedPiles, ...pilesOver(inventory, [...left, ...landed])])].sort((a, b) =>
@@ -684,7 +708,7 @@ export const planRuin = (
   }
   return {
     destroyed: destroyed.map(({ uid }) => uid),
-    falls: falls.map(({ entity, y }) => ({ uid: entity.uid, y })),
+    falls: falls.map(({ entity, y, to }) => ({ uid: entity.uid, y, ...(to ? { to } : {}) })),
     moves,
     standIns,
     dropped,
@@ -702,7 +726,7 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
     return piece;
   };
   const destroyed = plan.destroyed.map(entity);
-  const falls = plan.falls.map(({ uid, y }) => ({ entity: entity(uid), y }));
+  const falls = plan.falls.map(({ uid, y, to }) => ({ entity: entity(uid), y, to }));
   const piled = new Map([...inventory.piles.values()].flatMap(({ items }) => items.map((p) => [p.item.uid, p])));
   const moves = plan.moves.map((move) => {
     const { placed } = move;
@@ -728,7 +752,10 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
   for (const piece of destroyed) {
     inventory.entities.destroy(piece);
   }
-  for (const { entity: fallen, y } of falls) {
+  for (const { entity: fallen, y, to } of falls) {
+    if (to) {
+      inventory.entities.slide(fallen, to);
+    }
     crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
@@ -845,12 +872,18 @@ export const slideFurniture = (
   if (!shadow.free(pos, entity.size)) {
     return messages.noRoom;
   }
-  if (
-    ![...footprint(entity.pos, entity.size), ...footprint(pos, entity.size)].every(([x, y, z]) =>
-      mover.terrainSolid(x, y - 1, z),
-    )
-  ) {
+  if (!footprint(entity.pos, entity.size).every(([x, y, z]) => mover.terrainSolid(x, y - 1, z))) {
     return messages.floorOnly;
+  }
+  if (!footprint(pos, entity.size).every(([x, y, z]) => mover.terrainSolid(x, y - 1, z))) {
+    const plan = planRuin(mover, [], [], [], { entity, to: pos });
+    if (!plan) {
+      return messages.nowhereToLand;
+    }
+    if (commit) {
+      commitRuin(mover, plan);
+    }
+    return undefined;
   }
   const standing = standRefusal(mover, shadow, pos, entity);
   if (standing) {

@@ -58,6 +58,17 @@ const registry: Registry = {
         massKg: liftKg * 4,
       },
     ],
+    [
+      'slide_fixture_edge',
+      {
+        ...template,
+        id: 'slide_fixture_edge',
+        size: [1, 1, 1] as Vec3,
+        shape: [{ position: [0, 0, 0] as Vec3, size: [1, 1, 1] as Vec3 }],
+        solidFill: 0.1,
+        massKg: liftKg * 4,
+      },
+    ],
   ]),
 };
 const spec = { type: 'slide_fixture', pos: [5, 1, 5] as Vec3, size: [4, 4, 2] as Vec3, facing: 'n' as const };
@@ -462,19 +473,44 @@ describe('floor furniture steps', () => {
     expect(slideFurniture(mover, entity, 'push')).toBe(messages.noRoom);
   });
 
-  it.each(['hole', 'step'] as const)('refuses a %s in the destination floor', (obstacle) => {
+  it('pushes a piece off an edge through the ruin landing plan', () => {
+    const { inventory, mover } = fixture();
+    const edge = inventory.furnish({ type: 'slide_fixture_edge', pos: [15, 1, 5], size: [1, 1, 1], facing: 'n' })!;
+    const terrainSolid = (x: number, y: number) => (y === 0 && x === 15) || (y === -1 && x === 16);
+
+    const crushes: Vec3[] = [];
+    expect(
+      slideFurniture(
+        { ...mover, player: { ...player(), pos: [13, 1, 6] }, terrainSolid, crush: (path) => crushes.push(path) },
+        edge,
+        'push',
+      ),
+    ).toBeUndefined();
+    expect(edge.pos).toEqual([16, 0, 5]);
+    expect(crushes).toEqual([[16, 0, 5]]);
+  });
+
+  it('refuses a blocked step or edge landing without moving the piece', () => {
     const { entity, mover } = fixture();
-    const terrainSolid = (x: number, y: number, z: number) =>
-      (y === 0 && !(obstacle === 'hole' && x === 9 && z === 5)) ||
-      (obstacle === 'step' && x === 9 && y === 1 && z === 5);
-    expect(slideFurniture({ ...mover, terrainSolid }, entity, 'push')).toBe(
-      obstacle === 'hole' ? messages.floorOnly : messages.noRoom,
-    );
+    const step = (x: number, y: number, z: number) => y === 0 || (x === 9 && y === 1 && z === 5);
+    expect(slideFurniture({ ...mover, terrainSolid: step }, entity, 'push')).toBe(messages.noRoom);
     expect(entity.pos).toEqual(spec.pos);
-    expect(liftFurniture(mover, entity, true)).toBeUndefined();
-    expect(advanceFloorLockedPlacement({ ...mover, terrainSolid }, [8, 40, 6])).toEqual({ pos: spec.pos });
-    expect(entity.carried).toBe(true);
-    expect(entity.pos).toEqual(spec.pos);
+
+    const edge = mover.inventory.furnish({ type: 'slide_fixture_edge', pos: [15, 1, 5], size: [1, 1, 1], facing: 'n' })!;
+    const terrainSolid = (x: number, y: number) => (y === 0 && x === 15) || (y === -1 && x === 16);
+    expect(
+      slideFurniture(
+        {
+          ...mover,
+          player: { ...player(), pos: [13, 1, 6] },
+          terrainSolid,
+          others: [{ ...player(), pos: [16.5, 0, 5.5] }],
+        },
+        edge,
+        'push',
+      ),
+    ).toBe(messages.nowhereToLand);
+    expect(edge.pos).toEqual([15, 1, 5]);
   });
 
   it('refuses fastened pieces, carry-sized pieces, exhaustion and destinations occupied by a body', () => {

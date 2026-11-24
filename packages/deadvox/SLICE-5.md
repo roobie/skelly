@@ -612,7 +612,7 @@ rounds are tracked under #1332.
   `packages/engine/src/core/furnitureMove.ts`, `commitRuin` and `crushFall`.
   Ordinary strikes never clear rubble: take-apart is the one clearing verb and recovers
   what the heap holds. Retained crack fraction remains under #1332. Blast by share and
-  breach charges follow, then furniture knock-out and push-off.
+  breach charges follow, then furniture knock-out.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and
