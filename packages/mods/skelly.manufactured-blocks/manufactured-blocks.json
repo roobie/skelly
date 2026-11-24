@@ -143,6 +143,38 @@
       "weatherable": false
     },
     {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "slab_floor",
+      "material": "reinforced_concrete",
+      "name": "Boarded slab floor",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#b5b3ad",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "slab_deck",
+      "material": "reinforced_concrete",
+      "name": "Concrete slab",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
       "color": "#89979a",
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",

@@ -7447,6 +7447,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
