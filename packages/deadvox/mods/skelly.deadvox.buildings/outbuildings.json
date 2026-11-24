@@ -1,7 +1,27 @@
 {
   "mapAssemblies": [
     {
-      "anchors": {},
+      "access": {
+        "entrance": [2, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "toilet": {
+          "at": [2, 1, 1],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_privy",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
       "id": "outhouse",
       "joins": [],
       "lootContext": {
@@ -9,7 +29,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [4, 7, 4],
+      "size": [4, 7, 6],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -23,11 +43,11 @@
             }
           ],
           "id": "shell",
-          "size": [4, 7, 4],
+          "size": [4, 7, 6],
           "turn": 0
         },
         {
-          "at": [1, 1, 0],
+          "at": [1, 1, 2],
           "choices": [
             {
               "ref": {
@@ -50,6 +70,102 @@
           "turn": 0
         }
       ]
+    },
+    {
+      "access": {
+        "entrance": [3, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "woodshed": {
+          "at": [4, 1, 1],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_woodshed",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "rural_woodshed",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [8, 6, 5],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "woodshed_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 6, 5],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [3, 1, 1],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "garage": {
+          "at": [3, 1, 6],
+          "kind": "standing"
+        }
+      },
+      "brief": "rural_garage",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "rural_garage",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [8, 7, 12],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "garage_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [8, 7, 12],
+          "turn": 0
+        }
+      ]
     }
   ],
   "mapPieces": [
@@ -57,13 +173,13 @@
       "anchors": {},
       "id": "outhouse_shell",
       "layers": [
-        ["pppp", "pppp", "pppp", "pppp"],
-        ["w,,w", "wPPw", "wPPw", "wwww"],
-        ["w,,w", "wPPw", "wPPw", "wwww"],
-        ["w,,w", "w..w", "w..w", "wwww"],
-        ["w,,w", "w..w", "w..w", "wwww"],
-        ["wwww", "w..w", "w..w", "wwww"],
-        ["rrrr", "rrrr", "rrrr", "rrrr"]
+        ["dddd", "dddd", "pppp", "pppp", "pppp", "pppp"],
+        ["____", "____", "w,,w", "wPPw", "wPPw", "wwww"],
+        ["____", "____", "w,,w", "wPPw", "wPPw", "wwww"],
+        ["____", "____", "w,,w", "w..w", "w..w", "wwww"],
+        ["____", "____", "w,,w", "w..w", "w..w", "wwww"],
+        [",,,,", ",,,,", "wwww", "w..w", "w..w", "wwww"],
+        [",,,,", ",,,,", "rrrr", "rrrr", "rrrr", "rrrr"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -71,13 +187,13 @@
       },
       "ownership": {
         "layers": [
-          ["SSSS", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SSSS", "SSSS", "SSSS"],
-          ["S..S", "SAAS", "SAAS", "SSSS"],
-          ["S..S", "SAAS", "SAAS", "SSSS"],
-          ["SSSS", "SAAS", "SAAS", "SSSS"],
-          ["SSSS", "SSSS", "SSSS", "SSSS"]
+          ["SSSS", "SSSS", "SSSS", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SSSS", "SSSS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SAAS", "SAAS", "SSSS"],
+          ["RRRR", "RRRR", "S..S", "SAAS", "SAAS", "SSSS"],
+          ["....", "....", "SSSS", "SAAS", "SAAS", "SSSS"],
+          ["....", "....", "SSSS", "SSSS", "SSSS", "SSSS"]
         ]
       },
       "palette": {
@@ -97,9 +213,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -127,12 +251,12 @@
         }
       },
       "ports": [],
-      "size": [4, 7, 4],
+      "size": [4, 7, 6],
       "style": "rural_outbuilding"
     },
     {
       "anchors": {},
-      "id": "woodshed",
+      "id": "woodshed_shell",
       "layers": [
         ["pppppppp", "pppppppp", "pppppppp", "pppppppp", "pppppppp"],
         ["w______w", "w______w", "wLLLMMMw", "wLLLMMMw", "wwwwwwww"],
@@ -174,9 +298,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -247,9 +379,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -282,7 +422,7 @@
     },
     {
       "anchors": {},
-      "id": "garage",
+      "id": "garage_shell",
       "layers": [
         [
           "kkkkkkkk",
@@ -299,63 +439,63 @@
           "kkkkkkkk"
         ],
         [
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m....xxm",
-          "mee..xxm",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m____xxm",
+          "mee__xxm",
           "mmmmmmmm"
         ],
         [
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m....xxm",
-          "mee..xxm",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m____xxm",
+          "mee__xxm",
           "mmmmmmmm"
         ],
         [
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "mee....m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "mee____m",
           "mmmmmmmm"
         ],
         [
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "m......m",
-          "mee....m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "m______m",
+          "mee____m",
           "mmmmmmmm"
         ],
         [
-          "mmmmmmmm",
+          "mbbbbbbm",
           "m......m",
           "m......m",
           "m......m",
@@ -404,59 +544,59 @@
             "SSSSSSSS"
           ],
           [
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAASSS",
-            "SSSAASSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRSSS",
+            "SSSRRSSS",
             "SSSSSSSS"
           ],
           [
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAASSS",
-            "SSSAASSS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRSSS",
+            "SSSRRSSS",
             "SSSSSSSS"
           ],
           [
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SSSAAAAS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSRRRRS",
             "SSSSSSSS"
           ],
           [
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SAAAAAAS",
-            "SSSAAAAS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SRRRRRRS",
+            "SSSRRRRS",
             "SSSSSSSS"
           ],
           [
@@ -502,9 +642,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "e": {
           "facing": "n",
@@ -578,9 +726,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -639,9 +795,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -697,9 +861,17 @@
           "material": "opening",
           "role": "opening"
         },
+        "b": {
+          "material": "lintel",
+          "role": "support"
+        },
         "c": {
           "material": "curb",
           "role": "shell"
+        },
+        "d": {
+          "material": "path",
+          "role": "support"
         },
         "k": {
           "material": "slab",
@@ -753,6 +925,10 @@
         "lid": {
           "block": "planks",
           "role": "trim"
+        },
+        "lintel": {
+          "block": "steel_joist",
+          "role": "support"
         },
         "opening": {
           "block": "air",
