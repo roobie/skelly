@@ -43,10 +43,8 @@ const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
   'rural_flat_roof_house_cellar',
   'rural_flat_roof_house_wc_cellar',
   'rural_plot_privy_cellar',
-  'rural_plot_privy_garage',
   'rural_plot_privy_garage_cellar',
   'rural_plot_wc_cellar',
-  'rural_plot_wc_garage',
   'rural_plot_wc_garage_cellar',
   'village_shop',
 ]);
