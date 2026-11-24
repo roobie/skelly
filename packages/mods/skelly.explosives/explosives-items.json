@@ -8,6 +8,7 @@
           "damage": 180,
           "damageKind": "blunt",
           "impulse": 30,
+          "materialStrength": 180,
           "radiusMetres": 7
         },
         "fragments": {

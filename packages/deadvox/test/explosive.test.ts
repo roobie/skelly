@@ -1,7 +1,7 @@
 import { actorFigure } from '@skelly/engine/content';
 import type { ActorRegions } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { Detonation } from '@skelly/engine/internal/core/actorSystem.ts';
-import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
+import { blastCells, fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { severedItem } from '@skelly/engine/internal/core/severedItem.ts';
@@ -357,6 +357,21 @@ describe('hand grenade', () => {
     expect(resumed.inventory.itemByUid(held.uid)).toBeUndefined();
   });
 
+  it('shares a blast among visible solid cells and leaves cells behind a face shielded', () => {
+    const cells = [
+      ...blastCells({
+        origin: [0.5, 1, 0.5],
+        blast: { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 },
+        blockSize: 1,
+        isSolid: WALL_AT_X2,
+      }),
+    ];
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every(({ cell }) => cell[0] <= 2)).toBe(true);
+    expect(cells.some(({ cell }) => cell[0] === 2)).toBe(true);
+    expect(cells.every(({ share }) => share > 0 && share <= 1)).toBe(true);
+  });
+
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
     const session = runtime();
     const origin: Vec3 = [0, 1, 0];
@@ -364,7 +379,9 @@ describe('hand grenade', () => {
     const far = session.actorStore.get(session.actors.add(SHAMBLER, [-6, 0, 0]))!;
     const beyond = session.actorStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
-    session.actors.detonate(detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }));
+    session.actors.detonate(
+      detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 }),
+    );
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
     );
@@ -379,7 +396,11 @@ describe('hand grenade', () => {
     const open = session.actorStore.get(session.actors.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
     session.actors.detonate(
-      detonation([0.5, 1, 0.5], { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }, 400),
+      detonation(
+        [0.5, 1, 0.5],
+        { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 },
+        400,
+      ),
     );
     expect(healthLost(before[0]!, sheltered.regions)).toBe(0);
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
@@ -396,7 +417,9 @@ describe('hand grenade', () => {
     const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: rags } };
     const id = session.actors.add(type, [1, 0, 0]);
     const actor = session.actorStore.get(id)!;
-    session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
+    session.actors.detonate(
+      detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, materialStrength: 1000, impulse: 1 }),
+    );
     expect(session.actorStore.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));

@@ -533,7 +533,14 @@ const ExplosiveSchema = strictObject({
    * Region health taken from every region of a body whose centre the blast sees, and the push in N·s on it, both
    * falling to none at the radius.
    */
-  blast: strictObject({ damageKind: Id, radiusMetres: Positive, damage: Positive, impulse: Positive }),
+  blast: strictObject({
+    damageKind: Id,
+    radiusMetres: Positive,
+    damage: Positive,
+    /** Strength applied to cells and pieces; body damage stays independent. */
+    materialStrength: Positive,
+    impulse: Positive,
+  }),
   /**
    * Seeded rays through the shot hit test; each takes `damage` from the region it strikes. Every ray is traced
    * against the bodies in range when the charge goes off, so the count sets that moment's cost.

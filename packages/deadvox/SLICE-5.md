@@ -611,8 +611,13 @@ rounds are tracked under #1332.
   fall before damage, so a refused plan cannot hurt or move a victim. See
   `packages/engine/src/core/furnitureMove.ts`, `commitRuin` and `crushFall`.
   Ordinary strikes never clear rubble: take-apart is the one clearing verb and recovers
-  what the heap holds. Retained crack fraction remains under #1332. Blast by share and
-  breach charges follow, then furniture knock-out and push-off.
+  what the heap holds. Retained crack fraction remains under #1332. Blasts strike every
+  solid cell they can see in their radius, sharing material strength by distance, while
+  body damage remains separate. Sight already limits a blast to the faces it reaches, so
+  a second flood path would repeat that boundary; separate strengths let wall-cracking
+  and body harm tune apart as melee terrain impulse and body damage do. Fragments strike
+  the first solid cell on each existing ray by fragment resistance. Breach charges follow,
+  then furniture knock-out and push-off.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and

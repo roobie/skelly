@@ -283,7 +283,7 @@ describe('loot source routing', () => {
       pos,
     );
     session.actors.detonate({
-      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
+      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, materialStrength: 1_000_000, impulse: 1 },
       fragments: { damageKind: 'pierce', origin: [0, 4, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
     return { session, registry, world, block, solid, id, pos, severed, forbidden, play, notice, moveSounds };

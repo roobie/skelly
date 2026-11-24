@@ -4217,7 +4217,7 @@ describe('dismemberment', () => {
     });
     const blastId = blastSystem.add(type, [1, 1, 0], [0, 0, 1]);
     blastSystem.detonate({
-      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
+      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, materialStrength: 1_000_000, impulse: 1 },
       fragments: { damageKind: 'pierce', origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
     expect(blastSystem.store.get(blastId)).toBeUndefined();

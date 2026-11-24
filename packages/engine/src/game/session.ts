@@ -64,7 +64,16 @@ import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { advanceEventRules } from '../core/eventRules.ts';
-import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import {
+  blastCells,
+  blastShare,
+  bodyCentre,
+  type ExplosiveSpec,
+  Fuses,
+  fragmentDirections,
+  fragmentHitsOnBody,
+  inSight,
+} from '../core/explosive.ts';
 import { isLongGun } from '../core/firearmFitting.ts';
 import {
   type FirearmsCombatTuning,
@@ -2133,6 +2142,32 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
+  const strikeExplosiveTerrain = (at: Vec3, spec: ExplosiveSpec, directions: readonly Vec3[]): void => {
+    for (const { cell, share } of blastCells({
+      origin: at,
+      blast: spec.blast,
+      blockSize: s,
+      isSolid: apertureTerrain,
+    })) {
+      strikeTerrainCell(cell, { strength: spec.blast.materialStrength * share, kind: 'blast' });
+    }
+    for (const piece of [...entities.all]) {
+      const centre = boxCentre(piece.pos, piece.size);
+      const share = blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+      if (
+        share > 0 &&
+        inSight(at, centre, (x, y, z) => (entities.at(x, y, z) === piece ? false : physicalSolid(x, y, z)))
+      ) {
+        bashPiece(piece, spec.blast.materialStrength * share);
+      }
+    }
+    for (const direction of directions) {
+      const hit = raycast(at, direction, spec.fragments.rangeMetres / s, apertureTerrain);
+      if (hit) {
+        strikeTerrainCell(hit.block, { strength: spec.fragments.damage, kind: 'fragment' });
+      }
+    }
+  };
   /** The explosive is used up; the blast and its fragments hurt actors and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
@@ -2150,6 +2185,7 @@ export const createSession = (options: SessionOptions) => {
       blast: spec.blast,
       fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
     });
+    strikeExplosiveTerrain(at, spec, directions);
     const centre = bodyCentre(body);
     const blast =
       spec.blast.damage *
