@@ -342,11 +342,11 @@ local wcKitchen = furnished('rural_flat_house_wc_kitchen', [4, 6, 4], [
 });
 // The cellar under a house: stone walls on the house's wall lines over a footing, and
 // one doorway in the back wall, since a house of the setting is entered from its
-// yard, not through its floor. One central pillar carries a timber crosshead below
-// the floor joists, keeping the cellar's walking floor open around it. The crosshead
-// must be below the joists: a sideways-held neighbour cannot anchor their own row.
+// yard, not through its floor. Each joist has its own pillar, so their joined
+// crosshead can sit against the ceiling without a lower bearing course. A sideways-
+// held crosshead alone cannot anchor the joists on that same row.
 local cellarDepth = 8;
-local cellarWall(doorway, crosshead=false) = [
+local cellarWall(doorway) = [
   outside,
   '.ssssssssssssssss.',
   '.s..............s.',
@@ -354,7 +354,7 @@ local cellarWall(doorway, crosshead=false) = [
   '.s..............s.',
   '.s..............s.',
   '.s..............s.',
-  if crosshead then '.s...wwwwwww....s.' else '.s......w.......s.',
+  '.s...w.....w....s.',
   '.s..............s.',
   '.s..............s.',
   '.s..............s.',
@@ -362,7 +362,7 @@ local cellarWall(doorway, crosshead=false) = [
   if doorway then '.s..sssssssssssss.' else '.ssssssssssssssss.',
 ];
 local cellarLayers = [[outside] + ['.================.' for _ in std.range(1, 12)]]
-  + [cellarWall(true) for _ in [1, 2, 3, 4]] + [cellarWall(false), cellarWall(false, true)] + [[
+  + [cellarWall(true) for _ in [1, 2, 3, 4]] + [cellarWall(false) for _ in [5, 6]] + [[
     outside,
     '.ssssssssssssssss.',
     '.s...w.....w....s.',
@@ -370,7 +370,7 @@ local cellarLayers = [[outside] + ['.================.' for _ in std.range(1, 12
     '.s...w.....w....s.',
     '.s...w.....w....s.',
     '.s...w.....w....s.',
-    '.s...w..w..w....s.',
+    '.s...wwwwwww....s.',
     '.s...w.....w....s.',
     '.s...w.....w....s.',
     '.s...w.....w....s.',
@@ -406,19 +406,19 @@ local areaStair = piece('rural_flat_house_area_stair', [18, cellarDepth + 5, 3],
 // without touching the plant.
 local cellarRoom = furnished('rural_flat_house_cellar_room', [14, 7, 10], [
   ['xxyy,,,,,,,,,,', 'xxyy,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------',
-   ',,,,,,-,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------']
+   ',,,-,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------']
   for _ in [1, 2]
 ] + [
   [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------',
-   ',,,,,,-,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------']
+   ',,,-,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------']
   for _ in [3, 4]
 ] + [
   [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,------',
-   ',,,,,,-,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------'],
+   ',,,-,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------'],
   [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,------',
-   ',,,-----------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------'],
+   ',,,-,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------', ',,,,,,,,------'],
   [',,,-,,,,,-,,,,', ',,,-,,,,,-,,,,', ',,,-,,,,,-,,,,', ',,,-,,,,,-,,,,', ',,,-,,,,------',
-   ',,,-,,-,------', ',,,-,,,,------', ',,,-,,,,------', ',,,-,,,,------', ',,,-,,,,------'],
+   ',,,-----------', ',,,-,,,,------', ',,,-,,,,------', ',,,-,,,,------', ',,,-,,,,------'],
 ], {
   x: { furniture: 'crate', loot: 'junk' },
   y: { furniture: 'crate', loot: 'junk' },
@@ -527,7 +527,7 @@ local withCellar(house) = house + {
     slot('area_stair', [0, 0, 13], areaStair.size, only(areaStair.id)),
   ],
   anchors: { [id]: house.anchors[id] + { at: up(house.anchors[id].at) } for id in std.objectFields(house.anchors) }
-           + { cellar: { kind: 'standing', at: [6, 1, 8] } },
+           + { cellar: { kind: 'standing', at: [7, 1, 8] } },
   access: house.access + {
     entrance: up(house.access.entrance),
     storeys: [{ id: 'cellar', floor: 1 }] + [level + { floor: level.floor + cellarDepth } for level in house.access.storeys],
@@ -566,10 +566,14 @@ local houses = [
     cellarWalls,
     areaStair,
     cellarRoom,
-  // The crosshead and east joist pass above the plant's clear floor, not its bulb or boiler.
-  ] + [part + { ownership: { layers: std.slice(part.ownership.layers, 0, 5, 1) + [
-    ['RRRRRA', '..RRRA', 'RRRRRA', 'RRRRRA', 'AAASSS', 'AAASSS'],
-    ['R.RRRA', 'R.RRRA', 'R.SRRA', 'R.RRRA', 'A.AAAA', 'A.AAAA'],
+  // The east pillar leaves the plant's fittings and their access clear; its joist passes beside the bulb.
+  ] + [part + { ownership: { layers: [
+    std.slice(part.ownership.layers[level], 0, 1, 1)
+    + [if level < 4 then 'R.RRRS' else 'R.RRRA']
+    + std.slice(part.ownership.layers[level], 2, 6, 1)
+    for level in std.range(0, 5)
+  ] + [
+    ['R.RRRA', '..RRRA', 'R.SRRA', 'R.RRRA', 'A.AAAA', 'A.AAAA'],
   ] } } for part in cellarPlant.mapPieces] + doors + windows.mapPieces,
   // The house, and the modernised house with its WC, each answering its own brief,
   // and each again over a cellar.
