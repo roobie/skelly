@@ -539,6 +539,8 @@ const ExplosiveSchema = strictObject({
     damage: Positive,
     /** Strength applied to cells and pieces; body damage stays independent. */
     materialStrength: Positive,
+    /** Most terrain and piece blow sounds (and their noise events) one detonation emits. */
+    strikeSoundLimit: Count,
     impulse: Positive,
   }),
   /**

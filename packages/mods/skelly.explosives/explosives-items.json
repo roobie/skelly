@@ -9,7 +9,8 @@
           "damageKind": "blunt",
           "impulse": 30,
           "materialStrength": 180,
-          "radiusMetres": 7
+          "radiusMetres": 7,
+          "strikeSoundLimit": 8
         },
         "fragments": {
           "count": 600,

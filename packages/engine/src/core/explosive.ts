@@ -126,11 +126,16 @@ export function* blastCells({
         }
         const cell: Vec3 = [x, y, z];
         const centre: Vec3 = [x + 0.5, y + 0.5, z + 0.5];
+        const sight: Vec3 = [
+          Math.max(x, Math.min(origin[0], x + 1)),
+          Math.max(y, Math.min(origin[1], y + 1)),
+          Math.max(z, Math.min(origin[2], z + 1)),
+        ];
         const distanceBlocks = Math.hypot(centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]);
         const share = blastShare(blast, distanceBlocks * blockSize);
         if (
           share > 0 &&
-          inSight(origin, centre, (sightX, sightY, sightZ) =>
+          inSight(origin, sight, (sightX, sightY, sightZ) =>
             sightX === x && sightY === y && sightZ === z ? false : isSolid(sightX, sightY, sightZ),
           )
         ) {

@@ -361,7 +361,14 @@ describe('hand grenade', () => {
     const cells = [
       ...blastCells({
         origin: [0.5, 1, 0.5],
-        blast: { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 },
+        blast: {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
         blockSize: 1,
         isSolid: WALL_AT_X2,
       }),
@@ -372,6 +379,26 @@ describe('hand grenade', () => {
     expect(cells.every(({ share }) => share > 0 && share <= 1)).toBe(true);
   });
 
+  it('reaches floor cells in sight along the floor surface', () => {
+    const cells = [
+      ...blastCells({
+        origin: [0.5, 1.25, 0.5],
+        blast: {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
+        blockSize: 1,
+        isSolid: (_x, y) => y === 0,
+      }),
+    ];
+    expect(cells.length).toBeGreaterThan(1);
+    expect(cells.every(({ share }) => share > 0)).toBe(true);
+  });
+
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
     const session = runtime();
     const origin: Vec3 = [0, 1, 0];
@@ -380,7 +407,14 @@ describe('hand grenade', () => {
     const beyond = session.actorStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
     session.actors.detonate(
-      detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 }),
+      detonation(origin, {
+        damageKind: 'blunt',
+        radiusMetres: 6,
+        damage: 20,
+        materialStrength: 20,
+        strikeSoundLimit: 1,
+        impulse: 1,
+      }),
     );
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
@@ -398,7 +432,14 @@ describe('hand grenade', () => {
     session.actors.detonate(
       detonation(
         [0.5, 1, 0.5],
-        { damageKind: 'blunt', radiusMetres: 6, damage: 20, materialStrength: 20, impulse: 1 },
+        {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
         400,
       ),
     );
@@ -418,7 +459,14 @@ describe('hand grenade', () => {
     const id = session.actors.add(type, [1, 0, 0]);
     const actor = session.actorStore.get(id)!;
     session.actors.detonate(
-      detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, materialStrength: 1000, impulse: 1 }),
+      detonation([0, 1, 0], {
+        damageKind: 'blunt',
+        radiusMetres: 6,
+        damage: 1000,
+        materialStrength: 1000,
+        strikeSoundLimit: 1,
+        impulse: 1,
+      }),
     );
     expect(session.actorStore.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
