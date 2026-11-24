@@ -462,6 +462,38 @@ describe('support cascade', () => {
     expect(f.standing().filter(({ held }) => !held)).toEqual([]);
   });
 
+  it('revisits a diagonal dependant when its standing anchor loses its floor but the bent path stays solid', async () => {
+    const options = {
+      layout: (registry: ReturnType<typeof fixtureRegistry>): BlockBox[] => {
+        const post = registry.blockIds.get(POST)!;
+        const beam = registry.blockIds.get(BEAM)!;
+        return [
+          column(9, 3, post),
+          column(11, 2, post),
+          row(10, 11, 3, beam),
+          { min: [9, 1, Z + 1], max: [10, 4, Z + 2], block: post },
+          { min: [10, 3, Z + 1], max: [13, 4, Z + 2], block: beam },
+        ];
+      },
+    };
+    const cut = fixture(1, undefined, false, options);
+    const target: Vec3 = [12, 3, Z + 1];
+    expect(createSupport(cut.registry, terrainSupportView(cut.canonical)).holds(target)).toBe(true);
+    expect(cut.strike([11, 1, Z])).toBe(true);
+    cut.tick();
+    expect(cut.world.support.cascading).toBe(true);
+    const restored = await reload(cut, 1);
+    expect(restored.world.support.snapshotState()).toEqual(cut.world.support.snapshotState());
+    settle(cut);
+    settle(restored);
+    for (const f of [cut, restored]) {
+      expect(f.block([11, 3, Z])).toBe(BEAM);
+      expect(f.block([11, 3, Z + 1])).toBe(BEAM);
+      expect(f.canonical.getBlock(...target)).toBe(0);
+      expect(f.block([12, 1, Z + 1])).toBe(RUBBLE);
+    }
+  });
+
   it('judges each cell by the blocks standing after earlier falls, so the batch size never changes the outcome', async () => {
     const run = async (cap: number | undefined, reloadAfterFirstTick: boolean) => {
       let f = fixture(cap, undefined, true);
