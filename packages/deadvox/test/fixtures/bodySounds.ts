@@ -7,6 +7,7 @@ export const bodySoundIds = (
   ...Object.values(body.heartbeat.sounds),
   body.sounds.hurt.light,
   body.sounds.hurt.heavy,
+  body.sounds.continuousDamage.event,
   body.sounds.strain,
   body.sounds.landing,
   ...Object.values(body.sounds.block),
