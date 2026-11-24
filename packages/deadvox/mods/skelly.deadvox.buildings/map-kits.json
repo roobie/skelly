@@ -2,6 +2,10 @@
   "mapStyles": [
     {
       "bindings": {
+        "bearing_lintel": {
+          "block": "planks",
+          "role": "support"
+        },
         "cap": {
           "block": "concrete",
           "role": "trim"
@@ -16,6 +20,10 @@
         },
         "footing": {
           "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
           "role": "support"
         },
         "opening": {
@@ -47,6 +55,10 @@
     },
     {
       "bindings": {
+        "bearing_lintel": {
+          "block": "planks",
+          "role": "support"
+        },
         "cap": {
           "block": "brick",
           "role": "trim"
@@ -61,6 +73,10 @@
         },
         "footing": {
           "block": "concrete",
+          "role": "support"
+        },
+        "joists": {
+          "block": "steel_joist",
           "role": "support"
         },
         "opening": {
