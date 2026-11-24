@@ -565,9 +565,15 @@ the fit check reads only the plot's anchors.
 entrance, so a dirt path claimed as support under reserved air joins the porch to every
 outbuilding; the yard around it stays the terrain's.
 
-**Outbuildings are shared.** The outbuildings are box-shape pieces in the buildings pack every
-house pack already depends on, so the next plot reuses them rather than drawing its own; the
-log pile is shared furniture beside the other fittings.
+**Outbuildings answer their own briefs.** The garage, the woodshed and the privy are assemblies
+in the buildings pack every house pack already depends on, each answering a brief of its own
+(`mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `rural_garage`, `rural_woodshed` and
+`rural_privy`), so any yard can set one and its fit is proven where it is defined, not only
+inside this plot, whose brief reads only the plot's own anchors. The woodshed's room asks for
+`firewood`, which the log pile serves, rather than `storage`: the pile is the fuel stock itself,
+not a place stock is kept on or in, and a later fuel or heat consumer can read the fuel by its own
+name ([Services](#services)). The well and the coop's site stay plain pieces, with no room a body
+uses.
 
 **Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,
 since nearly every yard had them; the outhouse, the garage and the cellar vary with the pool.
@@ -578,10 +584,11 @@ cellar room for the same reason the house's does.
 **The coop waits for its model.** The chicken coop will be an authored model that BR
 approves, so its slot claims nothing and the yard shows through until then.
 
-**The outhouse has a door.** The outhouse is a small assembly, so its doorway slot travels
-with it to any plot ([Doorways](#doorways)). Its seat fills the floor behind the door, which
-leaves no reserved cell inside to stand in, so the privy's anchor stands on the path at the
-door, and the services walk crosses the doorway to the seat.
+**The privy brings its stoop.** The privy's doorway slot travels with it to any yard
+([Doorways](#doorways)). Its seat fills the floor behind the door, which leaves no reserved
+cell inside to stand in, so the privy carries a trodden stoop before its door, where its
+entrance and its toilet room stand, and the services walk crosses the doorway to the seat. A
+yard that sets it ends its path at the stoop rather than under it.
 
 **Seen through its look fixture.** Every plot the pool can draw stands along two roads, each
 plot's cellar twin behind it, so one walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
