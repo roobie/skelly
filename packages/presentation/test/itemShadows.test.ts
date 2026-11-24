@@ -126,6 +126,28 @@ describe('item shadow maps', () => {
     expect(f.frame()).toEqual([0]);
   });
 
+  it('walks only in-range casters on cube faces while retaining unbounded shader casters', () => {
+    const f = fixture();
+    const local = f.blocker();
+    const remote = Array.from({ length: 12 }, () => f.blocker());
+    remote.forEach((mesh, index) => {
+      mesh.position.set(100 + index, 0, 0);
+    });
+    const unbounded = remote[0]!;
+    unbounded.frustumCulled = false;
+    const edge = remote[1]!;
+    edge.position.x = f.source.distance;
+    f.frame();
+    const { casters } = f.drawn.at(-1)!;
+    expect(casters).toContain(local);
+    expect(casters).toContain(unbounded);
+    expect(casters).toContain(edge);
+    expect(remote.slice(2).filter((mesh) => casters.includes(mesh))).toHaveLength(0);
+    remote[2]!.position.x = 1;
+    expect(f.frame()).toEqual([1]);
+    expect(f.drawn.at(-1)!.casters).toContain(remote[2]);
+  });
+
   it('flattens only visible casters and restores their original child ownership after drawing', () => {
     const f = fixture();
     const parent = f.blocker();

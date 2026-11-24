@@ -2921,6 +2921,11 @@ Returning to view must refresh the map before it is sampled, rather than reveal 
 Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
 a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
 leaves out its holder, and a dropped lamp's includes the player.
+A cube face must not rediscover distant models that cannot block its source. Conservative world-space bounds
+keep those models out without approximating walls or borrowing sight visibility for shadow occlusion.
+Shader-placed casters without ordinary bounds remain under their render owner's per-light selection, so a
+spatial shortcut cannot erase crowd shadows. See `packages/presentation/src/render/itemShadowCasters.ts`,
+`ItemShadowCasters`.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:

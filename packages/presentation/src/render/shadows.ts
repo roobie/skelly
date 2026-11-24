@@ -59,6 +59,7 @@ import {
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
 import { ItemShadowCache } from './itemShadowCache.ts';
+import { ItemShadowCasters } from './itemShadowCasters.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
@@ -524,6 +525,7 @@ export class Shadows {
         material.shadowSide = DoubleSide;
       }
     });
+    const casterIndex = new ItemShadowCasters(casters);
     // Keep the original objects and world matrices: their hooks and renderer upload identities matter.
     // The shadow renderer only walks children; a flat root avoids visiting noncasters on every face.
     const casterScene = Object.create(scene) as Scene;
@@ -555,7 +557,7 @@ export class Shadows {
           body.visible = false;
         }
         try {
-          casterScene.children = casters.filter((caster) => {
+          casterScene.children = casterIndex.query(item).filter((caster) => {
             for (let ancestor: Object3D | null = caster; ancestor; ancestor = ancestor.parent) {
               if (!ancestor.visible) {
                 return false;
