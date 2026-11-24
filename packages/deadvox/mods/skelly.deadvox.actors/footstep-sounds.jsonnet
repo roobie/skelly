@@ -16,7 +16,8 @@ local rows(family, blocksBySound) = [
       'masonry_rubble', 'metal_rubble', 'stone', 'rock', 'asphalt', 'painted_asphalt', 'concrete', 'brick',
       'plaster', 'tiles', 'roof', 'window_frame', 'siding_red', 'siding_blue', 'galvanized', 'bitumen_felt', 'cobblestone_mossy',
       'dressed_stone', 'hazard_yellow', 'chain_link', 'sandbag', 'camo_woodland', 'steel_joist',
+      'reinforced_concrete_rubble', 'slab_deck',
     ],
-    shambler_step_wood: ['timber_rubble', 'planks', 'plank_wall', 'plank_floor', 'tree_trunk', 'tree_branch'],
+    shambler_step_wood: ['timber_rubble', 'planks', 'plank_wall', 'plank_floor', 'slab_floor', 'tree_trunk', 'tree_branch'],
   }),
 }

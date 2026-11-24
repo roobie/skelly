@@ -12290,6 +12290,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -12552,6 +12556,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -12816,6 +12824,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -13089,6 +13101,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -13361,6 +13377,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -13620,6 +13640,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -13884,6 +13908,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -14147,6 +14175,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -14419,6 +14451,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -14684,6 +14720,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -14957,6 +14997,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -15216,6 +15260,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -15480,6 +15528,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -15743,6 +15795,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -16016,6 +16072,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -16288,6 +16348,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -16547,6 +16611,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -16811,6 +16879,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -17084,6 +17156,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -17356,6 +17432,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -17615,6 +17695,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -17879,6 +17963,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -18142,6 +18230,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -18414,6 +18506,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -18679,6 +18775,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -18951,6 +19051,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -19515,6 +19619,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -19643,7 +19751,7 @@
           "#..............#..",
           "#..............#..",
           "#..............#..",
-          "################P."
+          "#####LLLLLL#####P."
         ],
         [
           "..................",
@@ -19817,6 +19925,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -19946,7 +20058,7 @@
           "#..............#..",
           "#..............#..",
           "#..............#..",
-          "################P."
+          "#####LLLLLL#####P."
         ],
         [
           "..................",
@@ -20121,6 +20233,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20208,6 +20324,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20286,6 +20406,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -20366,6 +20490,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20433,6 +20561,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20499,6 +20631,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -20627,6 +20763,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "O": {
           "facing": "e",
@@ -20769,6 +20909,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "O": {
           "facing": "e",
           "fixed": true,
@@ -20909,6 +21053,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "O": {
           "facing": "e",
@@ -21051,6 +21199,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "O": {
           "facing": "e",
           "fixed": true,
@@ -21131,6 +21283,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -21198,6 +21354,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -21262,6 +21422,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -22215,6 +22379,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -22484,6 +22652,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -22763,6 +22935,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -23028,6 +23204,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -23295,6 +23475,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -23571,6 +23755,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -23846,6 +24034,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -24109,6 +24301,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -24381,6 +24577,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",

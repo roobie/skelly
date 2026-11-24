@@ -23,6 +23,7 @@ local materials = [
   material('metal', 9, 400, 180, 4, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6), '#6e6965', 'scrap_metal', 12),
   material('textile', 0, 15, 8, 1, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0), '#68604e', 'cloth_strip', 2),
   material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: 'soil_rubble', breakable: false, rubble: [], cracks+: { steps: [] } },
+  material('reinforced_concrete', 9, 400, 300, 7, resistance(0.2, 0.8, 0.8, 0.15, 0.7, 0, 0.2, 0.8), '#87847d', 'rubble_stone', 15),
 ];
 {
   blockMaterials: materials,
@@ -38,6 +39,7 @@ local materials = [
       [materials[2], 'Broken timber', '#776144', 'footstep_wood'],
       [materials[3], 'Twisted metal', '#6e6965', 'footstep_stone'],
       [materials[4], 'Torn fabric', '#68604e', 'footstep_leaves'],
+      [materials[6], 'Broken slab', '#87847d', 'footstep_stone'],
     ]
   ],
 }

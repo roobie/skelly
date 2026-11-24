@@ -6,6 +6,7 @@ local palette = {
   '#': { role: 'shell', material: 'facade' },
   '=': { role: 'support', material: 'footing' },
   p: { role: 'interior_floor', material: 'floor' },
+  L: { role: 'support', material: 'joists' },
   D: { furniture: 'wood_door' },
   H: { furniture: 'ladder', facing: 'e' },
   P: { furniture: 'downspout', facing: 'e', fixed: true },
@@ -80,6 +81,9 @@ local closed = [
   '#..............#..', '#..............#..', '#..............#H.', '#..............#H.',
   '#..............#..', '#..............#..', '#..............#..', '################..',
 ];
+// Brick cannot reach across the back window bay from its piers, so a steel lintel spans the course
+// over it.
+local lintelled = closed[0:15] + ['#####LLLLLL#####..'];
 local lowerFloor = [
   'pppppppppppppp', 'pppppppppppppp', '...........ppp', '...........ppp',
   'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp',
@@ -182,14 +186,14 @@ local kit = {
     {
       id: 'gauntlet_city_shell_walls', size: [18, 7, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
-      layers: std.map(piped('P'), [doorWall, doorWall, doorWindows, doorWindows, windows, closed, closed]),
+      layers: std.map(piped('P'), [doorWall, doorWall, doorWindows, doorWindows, windows, lintelled, closed]),
       ownership: { layers: std.map(piped('S'), [doorWallMask, doorWallMask, doorWindowMask, doorWindowMask, windowClaims, doorMask, doorMask]) },
       anchors: {}, ports: [],
     },
     {
       id: 'gauntlet_city_upper_shell_walls', size: [18, 7, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
-      layers: std.map(piped('P'), [closed, closed, windows, windows, windows, closed, closed]),
+      layers: std.map(piped('P'), [closed, closed, windows, windows, windows, lintelled, closed]),
       ownership: { layers: std.map(piped('S'), [doorMask, doorMask, windowClaims, windowClaims, windowClaims, doorMask, doorMask]) },
       anchors: {}, ports: [],
     },

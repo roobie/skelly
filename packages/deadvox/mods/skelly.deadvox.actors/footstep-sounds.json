@@ -205,6 +205,18 @@
       "sound": "shambler_step_stone"
     },
     {
+      "block": "reinforced_concrete_rubble",
+      "family": "shambler",
+      "id": "8_shambler_reinforced_concrete_rubble",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "slab_deck",
+      "family": "shambler",
+      "id": "8_shambler_slab_deck",
+      "sound": "shambler_step_stone"
+    },
+    {
       "block": "timber_rubble",
       "family": "shambler",
       "id": "8_shambler_timber_rubble",
@@ -226,6 +238,12 @@
       "block": "plank_floor",
       "family": "shambler",
       "id": "8_shambler_plank_floor",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "slab_floor",
+      "family": "shambler",
+      "id": "8_shambler_slab_floor",
       "sound": "shambler_step_wood"
     },
     {
