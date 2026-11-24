@@ -3924,6 +3924,7 @@
         "lift": "furniture_scrape"
       },
       "name": "Log pile",
+      "serves": ["firewood"],
       "shape": [
         {
           "color": "#6b5137",
