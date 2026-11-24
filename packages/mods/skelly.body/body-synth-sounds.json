@@ -116,6 +116,63 @@
     },
     {
       "category": "body",
+      "description": "Suffocate while buried.",
+      "gain": 0.55000000000000004,
+      "gainJitter": [0.90000000000000002, 1.05],
+      "id": "player_suffocate",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 6
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": [
+        {
+          "jfxr": {
+            "_locked": [],
+            "_name": "Choke",
+            "_version": 1,
+            "amplification": 50,
+            "attack": 0.040000000000000001,
+            "bitCrush": 16,
+            "bitCrushSweep": 0,
+            "compression": 1,
+            "decay": 0.29999999999999999,
+            "flangerOffset": 0,
+            "flangerOffsetSweep": 0,
+            "frequency": 140,
+            "frequencyDeltaSweep": 0,
+            "frequencyJump1Amount": 0,
+            "frequencyJump1Onset": 33,
+            "frequencyJump2Amount": 0,
+            "frequencyJump2Onset": 66,
+            "frequencySweep": 60,
+            "harmonics": 2,
+            "harmonicsFalloff": 0.59999999999999998,
+            "highPassCutoff": 120,
+            "highPassCutoffSweep": 0,
+            "interpolateNoise": true,
+            "lowPassCutoff": 1400,
+            "lowPassCutoffSweep": -600,
+            "normalization": true,
+            "repeatFrequency": 0,
+            "sampleRate": 44100,
+            "squareDuty": 50,
+            "squareDutySweep": 0,
+            "sustain": 0.10000000000000001,
+            "sustainPunch": 0,
+            "tremoloDepth": 60,
+            "tremoloFrequency": 14,
+            "vibratoDepth": 0.20000000000000001,
+            "vibratoFrequency": 9,
+            "waveform": "sawtooth"
+          },
+          "recipe": "choke"
+        }
+      ]
+    },
+    {
+      "category": "body",
       "description": "A held breath gives out at the winded line.",
       "gain": 0.59999999999999998,
       "gainJitter": [0.90000000000000002, 1.05],

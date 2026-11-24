@@ -12,7 +12,7 @@ local responses(blunt, cut, pierce, acid) = {
     id: 'player',
     sounds: {
       hurt: { light: hurtLight.id, heavy: 'player_hurt_heavy', heavyAtDamage: 15 },
-      continuousDamage: { event: hurtLight.id, minIntervalSimSeconds: hurtLight.minIntervalSimSeconds * 10 },
+      continuousDamage: { event: 'player_suffocate', minIntervalSimSeconds: hurtLight.minIntervalSimSeconds * 10 },
       strain: 'player_strain', landing: 'player_landing_hard',
       block: { full: 'player_block_full', partial: 'player_block_partial' },
       breath: { inhale: 'breath_inhale', exhale: 'breath_exhale', gasp: 'breath_gasp' },
