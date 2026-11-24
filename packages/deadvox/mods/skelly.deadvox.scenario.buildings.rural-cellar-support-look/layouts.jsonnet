@@ -8,8 +8,8 @@
     terrain: [],
     tracks: [],
     buildings: [{ template: 'rural_flat_roof_house_wc_cellar', position: [0, 21, 0], rotation: 0 }],
-    // Start beside the posts inside the cellar, where the beams and clear route to the plant are visible.
-    player: { position: [1.75, 17.5, 5.75], bearing: 30 },
+    // Face the central pillar and its crosshead from the cellar door, clear of the plant route.
+    player: { position: [1.75, 17.5, 5.75], bearing: 45 },
     actors: [],
     woodlands: [],
   }],

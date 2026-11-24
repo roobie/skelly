@@ -23,7 +23,7 @@
         "usage": []
       },
       "player": {
-        "bearing": 30,
+        "bearing": 45,
         "position": [1.75, 17.5, 5.75]
       },
       "terrain": [],
