@@ -306,6 +306,38 @@ describe('building fit check', () => {
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.access.entrance`, rule: 'entrance' }]);
   });
 
+  /** The hall's answer with a declared local way from its lot's road connection to its door. */
+  const approachAnswer = (front: 'n' | 's', surface = 'fixture_floor'): Assembly => {
+    const hall = frontAnswer(front);
+    return { ...hall, access: { ...hall.access!, approach: { kind: 'trail', surface } } };
+  };
+
+  it('accepts an approach over a doorway the entrance walk reaches', () => {
+    expect(contentIssues(approachAnswer('s'), frontBrief(), frontContent())).toEqual([]);
+  });
+
+  it('reports an approach whose entrance reaches no opening on the front edge', () => {
+    const issues = contentIssues(approachAnswer('n'), frontBrief(), frontContent());
+    expect(issues.filter(({ message }) => message.includes('declares a way'))).toEqual([
+      {
+        source: 'fit-fixture.json',
+        path: `${ANSWER}.access.approach`,
+        message: 'declares a way but the entrance reaches no ground-storey opening on the front edge',
+      },
+    ]);
+  });
+
+  it('reports an approach surface no block provides', () => {
+    const issues = contentIssues(approachAnswer('s', 'no_such_block'), frontBrief(), frontContent());
+    expect(issues.filter(({ message }) => message.includes('no block'))).toEqual([
+      {
+        source: 'fit-fixture.json',
+        path: `${ANSWER}.access.approach.surface`,
+        message: 'no block "no_such_block"',
+      },
+    ]);
+  });
+
   it('reports a program room without a standing anchor', () => {
     const issues = fitIssues(
       answer(),

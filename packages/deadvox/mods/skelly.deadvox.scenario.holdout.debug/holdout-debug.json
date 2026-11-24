@@ -24,7 +24,7 @@
           "at": [256, 256],
           "id": "shelter",
           "kind": "place",
-          "template": "holdout_house"
+          "template": "rural_plot_privy_breached"
         },
         {
           "distance": {

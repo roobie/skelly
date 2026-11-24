@@ -52,6 +52,7 @@ import { SkillProgressionSchema, SkillSchema } from './skills.ts';
 import { StartSchema } from './starts.ts';
 import {
   AftermathTagSchema,
+  type ApproachSchema,
   type DoorLockSchema,
   type FixedLootItem,
   type KitAnchorSchema,
@@ -251,6 +252,8 @@ export type KitRef = InferOutput<typeof KitRefSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
 
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
+
+export type Approach = InferOutput<typeof ApproachSchema>;
 
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 

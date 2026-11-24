@@ -86,8 +86,10 @@ export const mainSourceOverlays = [
   // Queue retirement and worker replies must match the streamer's revision, not merely its exports.
   'engine:game/terrainJobs.ts',
   'engine:game/terrainProtocol.ts',
-  // Removed object members and changed constructor arguments cannot be repaired by export shims.
+  // Removed object members and changed constructor arguments cannot be repaired by export shims. The base site and
+  // the ground evaluator it calls change their data shape together, so they overlay together.
   'engine:core/authoredSite.ts',
+  'engine:core/authoredTerrainEvaluator.ts',
   'engine:core/citySite.ts',
   'engine:core/forest.ts',
   'engine:core/canonicalTerrain.ts',

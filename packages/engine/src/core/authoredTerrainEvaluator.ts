@@ -10,14 +10,32 @@ import type { TerrainPlacement } from './terrainPlan.ts';
 import { leafLitterAt, stampTrees, TreeIndex, type TreePlacement } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
 
+/** One steps way: the ground climbs in half-metre treads from the road connection to a door above it; see
+ * `packages/engine/src/core/lotApproach.ts`, `layoutApproaches`. */
+export interface GroundApproach {
+  /** The road connection and the doorstep, in metres. */
+  readonly from: LayoutPoint;
+  readonly to: LayoutPoint;
+  /** The way's width in metres. */
+  readonly width: number;
+  /** The tread surface's block, resolved as a track's surface is. */
+  readonly surface: number | undefined;
+  /** The ground at the doorstep, in metres. */
+  readonly floor: number;
+}
+
 export interface AuthoredGroundData {
   readonly blockSize: number;
   readonly seed: number;
   readonly topography: NonNullable<ContentFile['siteGeneration']>[number]['topography'];
   readonly layout: Pick<SiteLayoutDef, 'bounds' | 'ground' | 'terrain' | 'water'>;
-  readonly tracks: readonly (Pick<SiteLayoutDef['tracks'][number], 'points' | 'width'> & {
+  readonly tracks: readonly {
+    readonly points: readonly (readonly [number, number])[];
+    readonly width: number;
     surface: number | undefined;
-  })[];
+  }[];
+  /** The declared approaches whose kind is steps; trails arrive as tracks. */
+  readonly approaches: readonly GroundApproach[];
   readonly protectedBuildings: readonly Rect[];
   readonly spawnPoints: readonly [number, number][];
   readonly lots: readonly { rect: Rect; floor: number; key: string }[];
@@ -73,19 +91,41 @@ export function createAuthoredGround(data: AuthoredGroundData) {
     );
   }
   const roadReach = topography.roadShoulderMetres + s;
-  for (const track of tracks) {
+  const trackBounds = (points: readonly LayoutPoint[]): Rect => {
     let x0 = Number.POSITIVE_INFINITY;
     let x1 = Number.NEGATIVE_INFINITY;
     let z0 = Number.POSITIVE_INFINITY;
     let z1 = Number.NEGATIVE_INFINITY;
-    for (const [x, z] of track.points) {
+    for (const [x, z] of points) {
       x0 = Math.min(x0, x);
       x1 = Math.max(x1, x);
       z0 = Math.min(z0, z);
       z1 = Math.max(z1, z);
     }
+    return { x0, z0, x1, z1 };
+  };
+  for (const track of tracks) {
     const reach = track.width / 2 + roadReach;
-    addNoiseInfluence({ x0: x0 - reach, x1: x1 + reach, z0: z0 - reach, z1: z1 + reach }, 'tracks', track);
+    const bounds = trackBounds(track.points);
+    addNoiseInfluence(
+      { x0: bounds.x0 - reach, x1: bounds.x1 + reach, z0: bounds.z0 - reach, z1: bounds.z1 + reach },
+      'tracks',
+      track,
+    );
+  }
+  // A steps way keeps even shoulders like a road, so its banks read as cut ground rather than noise.
+  for (const approach of data.approaches) {
+    const reach = approach.width / 2 + roadReach;
+    const bounds = trackBounds([approach.from, approach.to]);
+    addNoiseInfluence(
+      { x0: bounds.x0 - reach, x1: bounds.x1 + reach, z0: bounds.z0 - reach, z1: bounds.z1 + reach },
+      'tracks',
+      {
+        points: [approach.from, approach.to],
+        width: approach.width,
+        surface: undefined,
+      },
+    );
   }
   const spawnReach = topography.spawnMarginMetres + s;
   for (const [x, z] of spawnPoints) {
@@ -150,9 +190,60 @@ export function createAuthoredGround(data: AuthoredGroundData) {
       spawnWeight(column.spawns, xm, zm),
     );
   };
+  /** One steps way with its climb worked out: treads rise a block each from the connection's ground to the door. */
+  interface Flight {
+    readonly approach: GroundApproach;
+    /** The unnoised ground at the road connection, in metres on the half-metre grid. */
+    readonly connection: number;
+    readonly climb: number;
+  }
+  const projection = (
+    approach: GroundApproach,
+    xm: number,
+    zm: number,
+  ): { readonly flight: Flight; readonly fromDoor: number } | undefined => {
+    const [ax, az] = approach.from;
+    const [bx, bz] = approach.to;
+    const length2 = (bx - ax) ** 2 + (bz - az) ** 2;
+    const t = Math.max(0, Math.min(1, ((xm - ax) * (bx - ax) + (zm - az) * (bz - az)) / length2));
+    const distance = Math.hypot(xm - (ax + t * (bx - ax)), zm - (az + t * (bz - az)));
+    return distance <= approach.width / 2
+      ? { flight: flightOf(approach), fromDoor: (1 - t) * Math.sqrt(length2) }
+      : undefined;
+  };
+  const flights = new Map<GroundApproach, Flight>();
+  const flightOf = (approach: GroundApproach): Flight => {
+    let flight = flights.get(approach);
+    if (!flight) {
+      const connection =
+        Math.round(layoutHeight(layout, lots, [...approach.from] as [number, number], layout.ground) * 2) / 2;
+      flight = { approach, connection, climb: approach.floor - connection };
+      flights.set(approach, flight);
+    }
+    return flight;
+  };
+  const stepsAt = (xm: number, zm: number): { readonly flight: Flight; readonly fromDoor: number } | undefined => {
+    for (const approach of data.approaches) {
+      const stepped = projection(approach, xm, zm);
+      if (stepped && stepped.flight.climb >= s) {
+        return stepped;
+      }
+    }
+    return undefined;
+  };
   const height = (x: number, z: number, natural: number): number => {
     const xm = (x + 0.5) * s;
     const zm = (z + 0.5) * s;
+    const steps = stepsAt(xm, zm);
+    if (steps) {
+      // The doorstep is the door's own ground; each half-metre of run away from it drops one block, clamped at the
+      // connection, and no noise moves a tread.
+      const metres = Math.max(
+        steps.flight.connection,
+        steps.flight.approach.floor - s * Math.floor(steps.fromDoor / s),
+      );
+      return catalogue ? catalogueHeight(catalogue, x, z, Math.round(metres / s)) : Math.round(metres / s);
+    }
     const profile = layoutHeight(layout, lots, [xm, zm], natural * s);
     const noise = simplexNoise2(seed + 0x51_7e, xm / topography.wavelengthMetres, zm / topography.wavelengthMetres);
     const ground = Math.round((profile + noise * topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
@@ -160,12 +251,15 @@ export function createAuthoredGround(data: AuthoredGroundData) {
   };
   const trackAt = (x: number, z: number) =>
     tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
+  const stepTop = (x: number, z: number): number | undefined =>
+    stepsAt((x + 0.5) * s, (z + 0.5) * s)?.flight.approach.surface;
   const { water, sandy } = siteWater(layout, s, height);
   return {
     height,
     ...(water && { water }),
     sandy,
     trackAt,
+    stepTop,
   };
 }
 
@@ -189,6 +283,10 @@ export function createAuthoredTerrain(data: {
       }
       if (ground.sandy(x, z)) {
         return sand;
+      }
+      const step = ground.stepTop(x, z);
+      if (step !== undefined) {
+        return step;
       }
       const track = ground.trackAt(x, z);
       if (track) {

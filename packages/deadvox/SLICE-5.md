@@ -6,7 +6,7 @@ read_if:
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
   - you're relating the construction playtest to Holdout's world and power-plant design
-  - you're authoring the shelter's starting block condition or broken panes
+  - you're authoring the shelter plot, its starting block condition or broken panes
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing where Holdout players find building tools or fasteners
   - you're changing collapse displacement, burial, suffocation, continuous-damage audio or buried-player presentation
@@ -352,7 +352,12 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   the population boundary belongs to `docs/decisions/0010-composed-sites.md`, "Decision".
   See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`, for
   scenario authoring. The mansion stays deferred past this playtest under #1332.
-- **Shelter condition:** the shelter keeps damaged walls and window frames so the first session offers material to mend, not only gaps to fill. Condition never makes holes; the deliberate breach stays authored geometry. Its distribution and pane threshold belong to content, while cell repair and window state retain ownership of changes. Untouched cells are derived rather than saved, so exploration does not create permanent damage records. See `mods/skelly.deadvox.scenario.holdout/holdout-house.libsonnet`, `condition`; `docs/content.md`, "Template condition"; and `mods/skelly.deadvox.scenario.holdout.condition-look/README.md`, "Shelter condition look".
+- **Shelter condition:** useful remaining structure and deliberate gaps invite both repair
+  and rebuilding, rather than only filling holes. Shared architecture and owner-scoped
+  condition keep that invitation reusable; see `docs/holdout.md`, "Shelter plot".
+  Untouched damage stays derived so exploration does not create permanent damage records;
+  see `docs/content.md`, "Template condition". Visual review uses
+  `mods/skelly.deadvox.scenario.holdout.condition-look/README.md`, "Shelter condition look".
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes

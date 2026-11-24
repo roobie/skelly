@@ -14,6 +14,7 @@ local palette = {
   s: { role: 'shell', material: 'plinth' },
   i: { role: 'interior_wall', material: 'partition' },
   f: { role: 'trim', material: 'window_head' },
+  w: { role: 'support', material: 'bearing_lintel' },
   '=': { role: 'support', material: 'footing' },
   p: { role: 'interior_floor', material: 'floor' },
   t: { role: 'interior_floor', material: 'kitchen_floor' },
@@ -43,7 +44,7 @@ local base = piece('rural_flat_house_base', [18, 1, 14], [[
   '.================.',
   '.=pppppppppppppp=.',
   '.=pppppppppppppp=.',
-  '.=pppppppppppppp=.',
+  '.=======pppppp===.',
   '.=pppppppppppppp=.',
   '.=pppppppppppppp=.',
   '.================.',
@@ -111,13 +112,15 @@ local back(plan, wall, bay, inside) = [row(wall, inside)] + [row(bay, plan.rooms
   + [row(wall, plan.rooms)];
 local backClaim(plan, bay, inside) = [row('S', inside)] + [row(bay, plan.roomClaims[z - 8]) for z in std.range(8, 10)]
   + [row('S', plan.roomClaims[3])];
+// Bearing partitions flank the existing central walk; their timber lintel carries
+// the front-room slab without putting a support in that reserved circulation.
 local shell(id, plan) = piece(id, [18, 6, 14], [
   [
     '..................',
     '.sssssss..sssssss.',
     '.s..............s.',
     '.s..............s.',
-    '.s..............s.',
+    '.siiiiii......iis.',
     '.s..............s.',
     '.s..............s.',
   ] + back(plan, 's', 's', plan.partition) + [
@@ -129,7 +132,7 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
     '.######b..b######.',
     '.#..............#.',
     '.#..............#.',
-    '.#..............#.',
+    '.#iiiiii......ii#.',
     '.#..............#.',
     '.#..............#.',
   ] + back(plan, '#', '#', plan.partition) + [
@@ -142,7 +145,7 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
     '.##...#b..b#...##.',
     '.#..............#.',
     '..................',
-    '..................',
+    '..iiiiii......ii..',
     '..................',
     '.#..............#.',
   ] + back(plan, '#', '.', plan.partition) + [
@@ -156,7 +159,7 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
     '.##...#bbbb#...##.',
     '.#..............#.',
     '..................',
-    '..................',
+    '..iiiiii......ii..',
     '..................',
     '.#..............#.',
   ] + back(plan, '#', '.', head) + [
@@ -168,7 +171,7 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
     '.##fff#bbbb#fff##.',
     '.#..............#.',
     '.f..............f.',
-    '.f..............f.',
+    '.fiiiiiiwwwwwwiif.',
     '.f..............f.',
     '.#..............#.',
   ] + back(plan, '#', 'f', head) + [
@@ -176,17 +179,17 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
     '..................',
   ],
 ], [
-  [porch, '.SSSSSSS..SSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk]
+  [porch, '.SSSSSSS..SSSSSSS.', porchWalk, hallWalk, '.SSSSSSSRRRRRRSSS.', doorWalk, doorWalk]
   + backClaim(plan, 'S', plan.partitionClaim) + ['.SSSSSSSSSSSS..SS.', outside]
   for _ in [1, 2]
 ] + [
-  [porch, '.SS...SS..SS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk]
+  [porch, '.SS...SS..SS...SS.', porchWalk, hallWalkBay, '..SSSSSSRRRRRRSS..', doorWalkBay, doorWalk]
   + backClaim(plan, '.', plan.partitionClaim) + ['.SSS...SSSSSS..SS.', outside]
   for _ in [3, 4]
 ] + [
-  [porch, '.SS...SSSSSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk]
+  [porch, '.SS...SSSSSS...SS.', porchWalk, hallWalkBay, '..SSSSSSRRRRRRSS..', doorWalkBay, doorWalk]
   + backClaim(plan, '.', headClaim) + ['.SSS...SSSSSSSSSS.', outside],
-  [porch, closed, porchWalk, hallWalk, hallWalk, doorWalk, doorWalk]
+  [porch, closed, porchWalk, hallWalk, closed, doorWalk, doorWalk]
   + backClaim(plan, 'S', headClaim) + [closed, outside],
 ]);
 // The slab runs out to the assembly edge as the cornice; the parapet and its
@@ -221,6 +224,39 @@ local roof = piece('rural_flat_house_roof', [18, 4, 14], [
   withFlue(ringClaim('A'), 'S'),
   withFlue([outside for _ in std.range(0, 13)], 'S'),
 ]) + { palette+: chimney + rainwater };
+// A corner projects diagonally past both walls. A corbel tied to the wall top
+// gives its adjacent slab cell direct bearing instead of relying on diagonal span.
+local cornerCorbels = piece('rural_flat_house_corner_corbels', [18, 1, 14], [[
+  '.=..............=.',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '.=..............=.',
+]], [[
+  '.S..............S.',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '..................',
+  '.S..............S.',
+]]);
 // The downspout's run down the wall, to the ground beside the back corner.
 local downspout = piece('rural_flat_house_downspout', [1, 6, 1], [['P'] for _ in std.range(1, 6)],
   [['S'] for _ in std.range(1, 6)]) + { palette+: rainwater };
@@ -232,12 +268,12 @@ local downspout = piece('rural_flat_house_downspout', [1, 6, 1], [['P'] for _ in
 // back door, with the walk to the back door kept clear past them, since a cellar's
 // area stair is reached through it.
 local living = furnished('rural_flat_house_living', [14, 6, 5], [
-  ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
-  ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
-  ['......--ee....', '......------..', '......------..', '..------OO--..', '..------OO--..'],
-  ['......--ee....', '......------..', '......------..', '..------..--..', '..------H.--..'],
+  ['.aaaa.--ee....', '.aaaa.------..', '--------------', '..------OO--xx', '..------OO--xx'],
+  ['.aaaa.--ee....', '.aaaa.------..', '--------------', '..------OO--xx', '..------OO--xx'],
+  ['......--ee....', '......------..', '--------------', '..------OO--..', '..------OO--..'],
+  ['......--ee....', '......------..', '--------------', '..------..--..', '..------H.--..'],
 ] + [
-  ['......--......', '......------..', '......------..', '..------..--..', '..------H.--..']
+  ['......--......', '......------..', '--------------', '..------..--..', '..------H.--..']
   for _ in [5, 6]
 ], chimney + {
   a: { furniture: 'sofa', facing: 's' },
@@ -385,6 +421,7 @@ local rendered = {
   plinth: { role: 'shell', block: 'dressed_stone' },
   partition: { role: 'interior_wall', block: 'plaster' },
   window_head: { role: 'trim', block: 'window_frame' },
+  bearing_lintel: { role: 'support', block: 'planks' },
   footing: { role: 'support', block: 'concrete' },
   floor: { role: 'interior_floor', block: 'planks' },
   kitchen_floor: { role: 'interior_floor', block: 'tiles' },
@@ -423,6 +460,7 @@ local house(id, shellId, back, anchors) = {
     window('west_back', [1, 3, 8], 'w'),
     window('east_front', [16, 3, 3], 'e'),
     window('east_back', [16, 3, 8], 'e'),
+    slot('corner_corbels', [0, 6, 0], cornerCorbels.size, only(cornerCorbels.id)),
     slot('downspout', [17, 1, 12], [1, 6, 1], only('rural_flat_house_downspout')),
     slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
   ],
@@ -433,7 +471,14 @@ local house(id, shellId, back, anchors) = {
     kitchen: { kind: 'standing', at: [13, 1, 10] },
   } + anchors,
   ports: [],
-  access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+  access: {
+    ground: 'ground',
+    entrance: [9, 1, 3],
+    // The door's own way to the road: a trodden dirt trail, the surface the rural lots already walk.
+    approach: { kind: 'trail', surface: 'dirt' },
+    storeys: [{ id: 'ground', floor: 1 }],
+    stairs: [],
+  },
 };
 // The house over a cellar answers its twin's brief: the house rises a storey onto the
 // cellar, the area stair takes the strip behind it, and the cellar's door, room and
@@ -478,6 +523,7 @@ local houses = [
     shell('rural_flat_house_shell', plans.twoRooms),
     shell('rural_flat_house_wc_shell', plans.withWc),
     roof,
+    cornerCorbels,
     downspout,
     living,
     bedroom,
