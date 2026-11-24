@@ -143,9 +143,14 @@ const topsInsideWalls = (compiled: CompiledTemplate, wallCourse: number): Map<st
   return tops;
 };
 
-/** The blocks seen from above on a roof; a chimney rises through it, so its column shows no covering. */
-const roofCovering = (compiled: CompiledTemplate, wallCourse: number): Set<number> => {
+/** Roof covering excludes lower floors exposed by a breach, and columns a chimney rises through. */
+const roofCovering = (compiled: CompiledTemplate, wallCourse: number, roofBase: number): Set<number> => {
   const tops = topsInsideWalls(compiled, wallCourse);
+  for (const [column, cell] of tops) {
+    if (cell[1] < roofBase) {
+      tops.delete(column);
+    }
+  }
   for (const piece of compiled.pieces) {
     for (const [x, y, z] of cellsOf(piece.size)) {
       const key = `${x + piece.pos[0]},${z + piece.pos[2]}`;
@@ -187,7 +192,7 @@ it('covers every roof of a briefed building with one course of a roof-role mater
         slots: assembly.slots.map((slot) => (slot === roofSlot ? { ...slot, choices: [choice] } : slot)),
       };
       const compiled = compileAssembly(registry, only, { seed: 1, siteId: 'roof_witness' });
-      const covering = roofCovering(compiled, assembly.access!.entrance[1]);
+      const covering = roofCovering(compiled, assembly.access!.entrance[1], roofSlot!.at[1]);
       const label = `${assembly.id} with ${JSON.stringify(choice.ref)}`;
       expect.soft(covering.size, `${label}: one covering block`).toBe(1);
       expect

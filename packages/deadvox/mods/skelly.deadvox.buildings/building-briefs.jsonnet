@@ -125,6 +125,79 @@ local flatRoofHouse = {
         'water main or a septic tank reached the house, the old privy left in the yard or pulled down.',
       ],
     },
+    // A garage any country plot can set beside its house; its shelf and crate hold a household's odds and ends.
+    {
+      id: 'rural_garage',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'nordic', 'balkan'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 10, depth: 14 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        garage: {
+          purpose: 'One car\'s bay open to the road, with a shelf and a crate of tools, tins and spares at the back.',
+          serves: ['storage'],
+        },
+      },
+      references: [
+        'Finnish and Swedish country houses of the 1960s to 1980s: a separate single garage of blockwork beside the ' +
+        'house once the family had a car, under a shallow sheet roof.',
+        'Yugoslav village plots of the same decades: an owner-built blockwork garage at the road frontage, often ' +
+        'with no door hung, its back wall lined with a shelf of jars, tins and tools.',
+      ],
+      facade: 'A plain blockwork box end-on to the road: one open bay under a lintel and a thin sheet roof.',
+      cover: 'Blockwork stops shots, and the open bay shows the whole inside from the road; the crate at the back ' +
+             'is the only thing to crouch behind.',
+    },
+    // A woodshed any country yard can set across from its house's back door; its room asks for the firewood it keeps.
+    {
+      id: 'rural_woodshed',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'postwar', 'nordic', 'balkan', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 10, depth: 7 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        woodshed: {
+          purpose: 'The stove\'s firewood, split and stacked dry against the back wall under the roof.',
+          serves: ['firewood'],
+        },
+      },
+      references: [
+        'Finnish and Swedish country yards of the 1950s to 1980s: an open-fronted board lean-to across the yard ' +
+        'from the house, the winter\'s split logs stacked to the roof along its back.',
+        'Balkan and Austrian village yards of the same decades: a plank shed under a sheet roof beside the house, ' +
+        'open to the yard so the wood dries, with the chopping block in front.',
+      ],
+      facade: 'An open front of boards on two end walls under a sheet roof, the cut ends of the stacked logs showing.',
+      cover: 'The log stacks stop shots and hide a crouching body; the open front gives no way to shut anyone out.',
+    },
+    // A privy any country yard can set at its far end, for a house with no indoor WC.
+    {
+      id: 'rural_privy',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'postwar', 'nordic', 'balkan', 'mediterranean', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 6, depth: 8 },
+      styles: ['rural_outbuilding'],
+      storeys: [1, 1],
+      program: {
+        toilet: {
+          purpose: 'The household\'s toilet: a plank seat over the pit, reached from the trodden ground at its door.',
+          serves: ['toilet'],
+        },
+      },
+      references: [
+        'Balkan and Greek village yards of the 1950s to 1980s: a plank privy over a dug pit at the far end of the ' +
+        'yard, its door facing the house.',
+        'Finnish and Swedish country outhouses of the same decades: a narrow board hut under a sheet roof, one seat ' +
+        'and a hinged plank door, kept on after many houses had a WC.',
+      ],
+      facade: 'A narrow plank hut, a little taller than a man, with one plank door under a sheet roof.',
+      cover: 'Thin boards hide a body but stop little; the one door leaves whoever is inside nowhere else to go.',
+    },
     // A works stores holds whatever the works it stands beside keeps in stock; what that is belongs to the answer's
     // racking, not to the brief. See `packages/deadvox/docs/building-pathway.md`, "Worked example: works stores".
     {

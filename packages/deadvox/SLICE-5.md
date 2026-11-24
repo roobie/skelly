@@ -6,13 +6,13 @@ read_if:
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
   - you're relating the construction playtest to Holdout's world and power-plant design
-  - you're authoring the shelter's starting block condition or broken panes
+  - you're authoring the shelter plot, its starting block condition or broken panes
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing where Holdout players find building tools or fasteners
   - you're changing collapse displacement, burial, suffocation, continuous-damage audio or buried-player presentation
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
-  - you're changing structure support, cascade landing, buried contents or their clearing
+  - you're changing structure support, bent span reach, cascade landing, buried contents or their clearing
 ---
 
 # Slice 5 — Holding ground
@@ -135,57 +135,48 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** natural terrain anchors structure; material span limits sideways reach.
-  A held beam cannot anchor the next run, because chained beams would cantilever without
-  end and span would stop being a limit. Furniture never holds terrain. This avoids
-  floating walls without simulating physical stress; see
-  `packages/engine/src/core/structureSupport.ts`, `createSupport`.
+- **Support:** natural terrain anchors structure; a face-adjacent solid path may bend
+  on its own row, within the querying cell's material span, to a standing or natural
+  cell. Bending fixes corners without a corner-specific rule or another tunable.
+  Merely sideways-held cells cannot anchor another run: otherwise chained beams would
+  cantilever without end. Ending at a standing cell keeps dependencies on the same row
+  and rows below, preserving memo termination. The material span bounds both the search
+  and the cascade's same-row diamond, keeping invalidation local. This avoids floating
+  walls without simulating physical stress; see
+  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState.enqueueSideways`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
   or left floating both read wrong, and refusal keeps timber yield open. An exhausted
-  search has not cleared the trunk, so it refuses too; see
+  search has not cleared the trunk; see
   `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`.
   Authored support stays derived so saves grow with play, not exploration. Player-placed
   blocks need provenance even when they match natural ground; see
-  `packages/engine/src/core/structureSupport.ts`, `SupportState`. Placement refuses an
-  unheld block before spending inputs so the player learns why first; see
+  `packages/engine/src/core/structureSupport.ts`, `SupportState`. Placement checks support
+  before spending inputs so the player learns why first; see
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
-  Cascade-broken cells drop straight down instantly and land as rubble on the first
-  solid terrain below; occupied vehicle fittings also stop rubble above them because
-  vehicle impact damage has no owner. Rubble left where structure stood hides the
-  collapse from the player; falling rubble reads as a collapse. Landed rubble supports
-  later drops. Landing rubble buries pile items and ruins furniture through the shared
-  ruin path, rather than treating furniture as a floor. Buried contents stay with rubble
-  through later falls and save/load; take-apart recovers them. A collapse is danger,
-  not arbitrary deletion: conserve anything it did not break. Falling material hurts
-  victims and pushes them to the nearest reachable free floor spot. Walls stay walls:
-  no evacuation through solids, so a collapse cannot breach a sealed base by teleporting
-  its occupants. Without an exit, the material lands and the victim remains buried
-  until someone else clears its blocking cells. Burial persists through saves and
-  prevents movement. Living actors suffocate over simulation time through ordinary
-  damage and death; zombies do not breathe and stay trapped until cleared. Breathing
-  belongs to actor content, not an actor-kind exception. This makes collapse capable
-  of killing without inventing a breath meter; existing status feedback carries the harm.
-  Self-dig-out remains open and is not implemented. See
-  `packages/engine/src/core/collapse.ts`, `reachableCollapseExit` and `refreshBurial`,
+  Falling rubble makes collapse visible rather than leaving rubble suspended where
+  structure stood. Occupied vehicle fittings stop rubble because vehicle impact damage
+  has no owner. Collapse is danger, not arbitrary deletion: conserve anything it did not
+  break through the shared ruin and buried-content owners; see
+  `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
+  Walls stay walls: evacuation through solids would let collapse breach a sealed base
+  by teleporting its occupants. Burial and content-owned breathing let collapse kill
+  through ordinary damage without inventing a breath meter or an actor-kind exception.
+  See `packages/engine/src/core/collapse.ts`, `reachableCollapseExit` and `refreshBurial`,
   and `packages/engine/src/game/session.ts`, `crushBodies`.
-  Continuous damage has its own voice, with a simulation-time throttle so an ongoing
-  condition does not sound like repeated blows. Content selects the voice and interval;
-  one-off impacts keep the hurt sound and its ordinary timing. See `packages/engine/src/game/session.ts`, `playDamageSound`,
+  Continuous damage needs a distinct voice so an ongoing condition does not sound like
+  repeated blows; see `packages/engine/src/game/session.ts`, `playDamageSound`,
   `packages/engine/src/core/soundPicker.ts`, `SoundPicker.pick`, and
   `packages/engine/src/core/schema/body.ts`, `BodyTuningSchema`.
-  A buried player's murky, not black, view gains a strong pulsing vignette; muffled sound
-  and the enclosing visual pulse communicate confinement without taking away the view.
-  Content owns their strengths, pulse and colour. These presentation effects do not
-  change simulation hearing or visibility. See
+  Muffled sound and an enclosing visual pulse communicate confinement without taking
+  away the view or changing simulation senses; see
   `packages/presentation/src/presentation/play.ts`, `updateBuriedPresentation`,
   `packages/presentation/src/presentation/audio.ts`, `GameAudio.setBuriedCutoff`, and
   `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
-  See `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
-  Judgements use the blocks standing after earlier falls so peers and batch sizes agree.
-  A content-owned cell cap spreads work across ticks, rather than promising a time bound;
-  saving the frontier lets interrupted cascades finish after reload. See
+  Judgements must reflect earlier falls so peers and batch sizes agree. A content-owned
+  cell cap spreads work across ticks rather than promising a time bound, and a saved
+  frontier preserves interrupted work; see
   `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
-  `packages/engine/src/core/schema/blocks.ts`, `SupportTuningSchema`.
+  `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
@@ -361,7 +352,12 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   the population boundary belongs to `docs/decisions/0010-composed-sites.md`, "Decision".
   See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`, for
   scenario authoring. The mansion stays deferred past this playtest under #1332.
-- **Shelter condition:** the shelter keeps damaged walls and window frames so the first session offers material to mend, not only gaps to fill. Condition never makes holes; the deliberate breach stays authored geometry. Its distribution and pane threshold belong to content, while cell repair and window state retain ownership of changes. Untouched cells are derived rather than saved, so exploration does not create permanent damage records. See `mods/skelly.deadvox.scenario.holdout/holdout-house.libsonnet`, `condition`; `docs/content.md`, "Template condition"; and `mods/skelly.deadvox.scenario.holdout.condition-look/README.md`, "Shelter condition look".
+- **Shelter condition:** useful remaining structure and deliberate gaps invite both repair
+  and rebuilding, rather than only filling holes. Shared architecture and owner-scoped
+  condition keep that invitation reusable; see `docs/holdout.md`, "Shelter plot".
+  Untouched damage stays derived so exploration does not create permanent damage records;
+  see `docs/content.md`, "Template condition". Visual review uses
+  `mods/skelly.deadvox.scenario.holdout.condition-look/README.md`, "Shelter condition look".
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes

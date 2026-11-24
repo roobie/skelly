@@ -27,6 +27,7 @@ const { createServer } = createRequire(new URL('../packages/deadvox/package.json
 it('main startup keeps terrain construction on one revision while retaining unrelated branch core owners', () => {
   const terrainBoundary = new Set([
     'engine:core/authoredSite.ts',
+    'engine:core/authoredTerrainEvaluator.ts',
     'engine:core/citySite.ts',
     'engine:core/forest.ts',
     'engine:core/canonicalTerrain.ts',

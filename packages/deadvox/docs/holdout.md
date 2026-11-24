@@ -3,6 +3,7 @@ read_if:
   - you're designing or implementing Holdout's world, encounters or progression
   - you're changing Holdout's power plant, wave attention or high-ground threats
   - you're authoring Holdout PoIs or deciding what varies between runs
+  - you're changing the shelter plot, its breach or its condition-look fixture
   - you're selecting Holdout phase questions or designing modular plant repair
   - you're changing a P1 mechanism (housing slots, part-gated modules, ruin, part service) or its fixture start
   - you're authoring part condition gates, seeded failures or plant service jobs
@@ -48,6 +49,39 @@ a sheet centre. The start then sits mid-sheet on the one paper-map grid, and the
 The grid itself is unchanged; only the site's placement is content. See `packages/engine/src/core/composeLayout.ts`,
 `askCandidate`, for how a place ask takes its fixed position, and `packages/deadvox/test/holdoutStart.test.ts` for the
 property that the start lies on its kit sheet, clear of the edges.
+
+## Shelter plot
+
+The shelter is a whole damaged rural home plot, not an isolated house. Its yard and
+outbuildings make returning home and improving a defensible place part of the same
+experience. Preserving the old small shelter's architecture or starting affordances
+would constrain an unfinished scenario without protecting an established play contract.
+The shared rural house and plot briefs remain the requirements, rather than a special
+Holdout brief that excuses missing household services.
+
+Use a fixed breached answer that shares its unaffected slots with its intact twin.
+Literal missing geometry makes the repair invitation deliberate; condition describes
+what remains and must not secretly cut new holes. Condition belongs to its owning
+scope, so weathering the house does not silently weather its yard. Its values remain
+content tunables, not Holdout branches in the engine. See
+`mods/skelly.deadvox.buildings/rural-damaged.jsonnet`, `breachedHouse` and `condition`,
+and `packages/engine/src/core/templates.ts`, `compileAssembly`.
+
+The architecture belongs in the buildings pack because the same damaged rural home
+must be useful to other scenarios and products. Structural corrections belong in the
+common intact house before its breached twin, not in a private shelter fork. Bearing
+partitions and their lintel protect the existing central walk while supporting the
+front-room slab. Concrete corbels tied to the wall tops carry the projecting corners
+without requiring a special support rule for this building. See
+`mods/skelly.deadvox.buildings/rural-house.jsonnet`, `shell` and `cornerCorbels`.
+The buildings' fit proves room and fitting reach, not structural support or operational
+power. See `packages/engine/src/core/structureSupport.ts`, `createSupport`.
+
+Placement, supply guarantees and wave pacing remain scenario concerns in
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`. The spawn uses
+the plot's entrance rather than preserving the old house's entrance. Visual review
+uses `mods/skelly.deadvox.scenario.holdout.condition-look/README.md`, "Shelter condition look",
+so judging the breach and condition does not require a supply trip or surviving a wave.
 
 ## Supplies and progression
 

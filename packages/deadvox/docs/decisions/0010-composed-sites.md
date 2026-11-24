@@ -84,12 +84,11 @@ For population admission and scenario authoring, see
 `packages/engine/src/game/worldSetup.ts`, `SCENARIO_SITES`, and
 `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 
-Holdout's start should feel like a good place with potential, not a forced base. Reuse
-an ordinary house with authored damage so useful enclosed space and familiar furnishings
-invite repair, while breaches leave a reason to improve it or choose another location.
-Keep this treatment in content rather than adding a scenario-specific ruin mechanism.
-See `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-house.libsonnet`, `house`,
-and `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+Holdout's start should feel like a good place with potential, not a forced base. A
+shared damaged rural plot invites improvement without making the player keep it.
+The architecture and condition remain reusable content rather than a scenario-specific
+ruin mechanism; see `packages/deadvox/docs/holdout.md`, "Shelter plot". Placement belongs
+to `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 
 ## Growth constraints
 

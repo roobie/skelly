@@ -31,6 +31,7 @@ local piece(id, size, layers, things={}) = {
 // The footing runs under the apron in front of the door, so a body stands there; the walls rise through the roof
 // slab and one felt course covers it. The slab is wider than concrete spans, so two steel joists under it bear on
 // the front and back walls, either side of the aisle, and every slab cell is within its span of a joist or a wall.
+// A clear course under the joists keeps the room from feeling cramped: the wall runs over the door as its lintel.
 local apron = ',,,______,,,';
 local shellLayers = [
   [',,,======,,,'] + ['============' for _ in std.range(1, 10)],
@@ -38,11 +39,12 @@ local shellLayers = [
   [apron, '#####--#####'] + ['#----------#' for _ in std.range(2, 9)] + ['############']
   for _ in [1, 2, 3, 4]
 ] + [
+  [',,,,,,,,,,,,', '############'] + ['#..........#' for _ in std.range(2, 9)] + ['############'],
   [',,,,,,,,,,,,', '############'] + ['#...j..j...#' for _ in std.range(2, 9)] + ['############'],
   [',,,,,,,,,,,,', '############'] + ['#rrrrrrrrrr#' for _ in std.range(2, 9)] + ['############'],
   [',,,,,,,,,,,,'] + ['cccccccccccc' for _ in std.range(1, 10)],
 ];
-local shell = piece('works_stores_shell', [12, 8, 11], shellLayers);
+local shell = piece('works_stores_shell', [12, 9, 11], shellLayers);
 
 // The door: a solid wooden leaf opening onto the apron, or the leaf gone.
 local doors = [
@@ -69,8 +71,8 @@ local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choic
     },
   }],
   mapPieces: [shell] + doors,
-  // The racking fills the room inside the walls up to the joists, [10, 4, 8] from the west wall and the front wall,
-  // north at the door. It keeps the aisle from the door, columns 4 and 5, reserved its whole depth, and the anchors
+  // The racking fills the room inside the walls up to the clear course, [10, 4, 8] from the west wall and the front
+  // wall, north at the door. It keeps the aisle from the door, columns 4 and 5, reserved its whole depth, and the anchors
   // stand on it.
   racking(id, layers, things):: piece(id, [10, 4, 8], layers, things),
   answer(id, racking):: {
@@ -78,9 +80,9 @@ local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choic
     brief: 'works_stores',
     eligibility: { settlementKinds: ['rural'] },
     lootContext: context,
-    size: [12, 8, 11],
+    size: [12, 9, 11],
     slots: [
-      slot('shell', [0, 0, 0], [12, 8, 11], only(shell.id)),
+      slot('shell', [0, 0, 0], [12, 9, 11], only(shell.id)),
       slot('door', [5, 1, 1], [2, 4, 1], [
         { ref: { kind: 'piece', id: doors[0].id }, weight: 4 },
         { ref: { kind: 'piece', id: doors[1].id }, weight: 1 },

@@ -1,5 +1,5 @@
 // Static spatial acceptance, not recipe closure and not runtime navigation. Doors may be opened.
-import { BlockEntities, isBodyDoor } from './blockEntities.ts';
+import { BlockEntities, boardableDoor, isBodyDoor } from './blockEntities.ts';
 import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -9,6 +9,7 @@ import type { StairDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
+import { ownershipCell } from './templateOwnership.ts';
 import { type CompiledTemplate, cellsOf, type Facing, type Placement, placedPieces, placedPoint } from './templates.ts';
 
 const BODY_HEIGHT = STAIR_BODY_HEIGHT;
@@ -746,6 +747,72 @@ export const templateEntranceEdges = (
   template: CompiledTemplate,
   free?: (cell: Vec3) => boolean,
 ): Set<Facing> => groundEdges(template, reservedReach(registry, template, free));
+
+/** The cells a walk may cross through a door leaf that opens: the placed half of the doorway contract
+ * (`packages/engine/src/core/templates.ts`, `doorway`). A locked or boarded leaf passes, because a key or forcing
+ * opens the lock and breaking blows a boarded leaf open. */
+const doorwayFree = (registry: Registry, template: CompiledTemplate): ((cell: Vec3) => boolean) => {
+  const crossed = new Set<string>();
+  for (const piece of template.pieces) {
+    const def = registry.furniture.get(piece.furniture);
+    if (!(def && boardableDoor(def))) {
+      continue;
+    }
+    const [x0, y0, z0] = piece.pos;
+    const [w, h, d] = piece.size;
+    for (let y = y0; y < y0 + h; y++) {
+      for (let z = z0; z < z0 + d; z++) {
+        for (let x = x0; x < x0 + w; x++) {
+          crossed.add(`${x},${y},${z}`);
+        }
+      }
+    }
+  }
+  return (cell) => crossed.has(cell.join(',')) || template.doorway?.[ownershipCell(template.size, cell)] === 1;
+};
+
+/** Whether a cell lies on the footprint's declared front edge. */
+const onEdge = (front: Exclude<Facing, 'up' | 'down'>, [sx, , sz]: Vec3, [x, , z]: Vec3): boolean => {
+  if (front === 'n') {
+    return z <= 1;
+  }
+  if (front === 's') {
+    return z >= sz - 1;
+  }
+  return front === 'e' ? x >= sx - 1 : x <= 1;
+};
+
+/**
+ * The ground-storey cell on the declared front edge that the entrance walk reaches, nearest the entrance: the
+ * opening a local approach attaches to (`packages/engine/src/core/lotApproach.ts`, `approachCells`). Undefined
+ * when the walk reaches no opening on that edge; the walk crosses doorways as the doorway contract allows.
+ */
+export const templateFrontOpening = (registry: Registry, template: CompiledTemplate): Vec3 | undefined => {
+  const { access } = template;
+  if (!access) {
+    return undefined;
+  }
+  const ground = access.storeys.find((storey) => storey.id === access.ground)?.floor;
+  const front = access.front ?? 'n';
+  let best: Vec3 | undefined;
+  for (const point of reservedReach(registry, template, doorwayFree(registry, template))) {
+    const cell = point.split(',').map(Number) as Vec3;
+    if (cell[1] !== ground || !onEdge(front, template.size, cell)) {
+      continue;
+    }
+    const nearer = (candidate: Vec3): boolean =>
+      best === undefined ||
+      distance2(candidate, access.entrance) < distance2(best, access.entrance) ||
+      (distance2(candidate, access.entrance) === distance2(best, access.entrance) &&
+        (candidate[0] < best[0] || (candidate[0] === best[0] && candidate[2] < best[2])));
+    if (nearer(cell)) {
+      best = cell;
+    }
+  }
+  return best;
+};
+
+const distance2 = (a: Vec3, b: Vec3): number => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 
 const reservedReach = (registry: Registry, template: CompiledTemplate, free?: (cell: Vec3) => boolean): Set<string> =>
   template.access

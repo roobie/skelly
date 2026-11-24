@@ -1,8 +1,5 @@
-// What holds a structure cell up (`packages/deadvox/SLICE-5.md`, "Support"). Natural ground holds. A structure cell is
-// held when the solid cell under it holds, or when a straight sideways run of solid cells reaches, within the cell's
-// own material span, a cell that natural ground or a held cell stands under. Support is derived from the standing
-// blocks, so authored structure needs no saved state; the world saves only which cells a player placed, because a
-// placed block is structure even where it matches the natural ground.
+// Authored support stays derived so exploration does not grow saves. Placed blocks need provenance because even a
+// block matching natural ground is structure; see `packages/deadvox/SLICE-5.md`, "Support".
 
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
@@ -62,15 +59,30 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
   };
   const sidewaysAt = (x: number, y: number, z: number): boolean => {
     const reach = span[view.block(x, y, z)] ?? 0;
-    for (const [dx, dz] of SIDEWAYS) {
-      for (let step = 1; step <= reach; step++) {
-        const [nx, nz] = [x + dx * step, z + dz * step];
+    const seen = new Set<string>([`${x},${z}`]);
+    const open: [number, number, number][] = [[x, z, 0]];
+    for (const [cx, cz, distance] of open) {
+      if (distance >= reach) {
+        continue;
+      }
+      const anchored = SIDEWAYS.some(([dx, dz]) => {
+        const [nx, nz] = [cx + dx, cz + dz];
+        const key = `${nx},${nz}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
         if (!solidAt(nx, y, nz)) {
-          break;
+          return false;
         }
         if (view.natural(nx, y, nz) || standsAt(nx, y, nz)) {
           return true;
         }
+        open.push([nx, nz, distance + 1]);
+        return false;
+      });
+      if (anchored) {
+        return true;
       }
     }
     return false;
@@ -156,7 +168,7 @@ export class SupportState {
 
   /**
    * A cell stopped holding: it was broken, cleared or fell. Queues what may have depended on it: the cell above
-   * first, then each sideways line out to the widest span. A cell is followed once per cascade.
+   * first, then the same-row diamond out to the widest span. A cell is followed once per cascade.
    */
   lost(registry: Registry, cell: Readonly<Vec3>): void {
     const key = keyOf(cell);
@@ -171,9 +183,12 @@ export class SupportState {
   /** Queues the cells whose sideways run may pass through or end at `cell`. */
   enqueueSideways(registry: Registry, cell: Readonly<Vec3>): void {
     const reach = widestSpan(registry);
-    for (const [dx, dz] of SIDEWAYS) {
-      for (let step = 1; step <= reach; step++) {
-        this.enqueue([cell[0] + dx * step, cell[1], cell[2] + dz * step], false);
+    for (let dx = -reach; dx <= reach; dx++) {
+      const depth = reach - Math.abs(dx);
+      for (let dz = -depth; dz <= depth; dz++) {
+        if (dx !== 0 || dz !== 0) {
+          this.enqueue([cell[0] + dx, cell[1], cell[2] + dz], false);
+        }
       }
     }
   }

@@ -92,6 +92,7 @@ import { stowageSlot } from './stowage.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import {
   templateDoorIssues,
+  templateFrontOpening,
   templateGroundLootIssues,
   templateSpatialIssues,
   templateSpawnClearanceIssues,
@@ -1950,6 +1951,13 @@ const templateFitIssues = (registry: Registry): { section: 'templates'; id: stri
         ...templateSpawnClearanceIssues(registry, compiled),
         ...templateSpatialIssues(registry, compiled),
       );
+      // A declared way attaches at a front-edge opening, so one with none draws nothing and hides a mistake.
+      if (compiled.access?.approach && !templateFrontOpening(registry, compiled)) {
+        issues.push([
+          '.access.approach',
+          'declares a way but the entrance reaches no ground-storey opening on the front edge',
+        ]);
+      }
     }
     return issues.map(([path, message]) => ({ section: 'templates' as const, id: template.id, path, message }));
   });
@@ -1967,17 +1975,25 @@ const compiledIfSound = (registry: Registry, template: TemplateDef): ReturnType<
 
 const checkTemplates = (registry: Registry, report: Report) => {
   for (const template of registry.templates.values()) {
-    for (const [char, entry] of Object.entries(template.palette)) {
-      const at = `.palette["${char}"]`;
-      if (typeof entry !== 'string') {
-        for (const [path, message] of checkPaletteThing(registry, template, char, entry)) {
-          report('templates', template.id, `${at}${path}`, message);
-        }
-      } else if (!registry.blockIds.has(entry)) {
-        report('templates', template.id, at, `no block "${entry}"`);
-      }
+    checkTemplatePalette(registry, template, report);
+    const approach = template.access?.approach;
+    if (approach && !registry.blockIds.has(approach.surface)) {
+      report('templates', template.id, '.access.approach.surface', `no block "${approach.surface}"`);
     }
     checkTemplateSpace(registry, template, report);
+  }
+};
+
+const checkTemplatePalette = (registry: Registry, template: TemplateDef, report: Report): void => {
+  for (const [char, entry] of Object.entries(template.palette)) {
+    const at = `.palette["${char}"]`;
+    if (typeof entry !== 'string') {
+      for (const [path, message] of checkPaletteThing(registry, template, char, entry)) {
+        report('templates', template.id, `${at}${path}`, message);
+      }
+    } else if (!registry.blockIds.has(entry)) {
+      report('templates', template.id, at, `no block "${entry}"`);
+    }
   }
 };
 

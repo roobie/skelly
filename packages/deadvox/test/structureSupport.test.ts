@@ -43,6 +43,29 @@ describe('structure support', () => {
     expect(world([...column(0, 3), ...beams(1, POST)]).holds([1, 3, 0])).toBe(false);
   });
 
+  it('holds a corner through a two-step bend even when the intermediate cell has no span', () => {
+    const support = world([...column(0, 3), [[1, 3, 0], POST], [[1, 3, 1], BEAM]]);
+    expect(support.holds([1, 3, 1])).toBe(true);
+  });
+
+  it('rejects a bent path one step beyond the querying cell’s span', () => {
+    const support = world([...column(0, 3), [[1, 3, 0], BEAM], [[1, 3, 1], BEAM], [[2, 3, 1], BEAM]]);
+    expect(support.holds([1, 3, 1])).toBe(true);
+    expect(support.holds([2, 3, 1])).toBe(false);
+  });
+
+  it('does not end a bent run at a merely sideways-held cell', () => {
+    const support = world([
+      ...column(0, 3),
+      [[1, 3, 0], BEAM],
+      [[2, 3, 0], BEAM],
+      [[2, 3, 1], BEAM],
+      [[3, 3, 1], BEAM],
+    ]);
+    expect(support.holds([2, 3, 0])).toBe(true);
+    expect(support.holds([3, 3, 1])).toBe(false);
+  });
+
   it('lets natural ground beside a cell hold it sideways', () => {
     expect(world([...column(0, 3, GROUND), [[1, 3, 0], BEAM]]).holds([1, 3, 0])).toBe(true);
   });

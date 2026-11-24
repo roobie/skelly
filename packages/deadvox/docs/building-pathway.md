@@ -9,6 +9,7 @@ read_if:
   - you copy layers between pieces, or wonder what a layer mark claims
   - you place a briefed building in a look fixture's layout
   - you declare or turn a building's front edge, or wonder which edge its entrance must reach
+  - you give a building's door a local way from the road, or change how trails and steps are placed
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
@@ -202,9 +203,23 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   own frame, so it survives any turn a placement gives it. It is the footprint-edge test
   every template passes, narrowed to the front edge and to cells no variant can block
   (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). The walk
-  proves the entrance opens on the front edge, not that a road reaches it: a local
-  approach from the road connection to the front door, such as a trail or steps, is
-  separate content that would attach at that front-edge opening.
+  proves the entrance opens on the front edge, not that a road reaches it: the local way
+  below is what carries a body from the road.
+- **approach**: the building type declares, on its own `access.approach`, whether its door
+  gets a local way from the lot's road connection and of which kind, because what makes
+  sense differs per type: a country house trods a dirt trail, a door on a slope needs
+  steps, a door that meets the road needs nothing. `kind: 'trail'` rides the terrain's
+  tracks, `kind: 'steps'` shapes the ground into half-metre treads rising to the door's
+  own floor, and the `surface` and `widthMetres` are the type's content
+  (`packages/engine/src/core/schema/templates.ts`, `ApproachSchema`). The way attaches at
+  the front-edge opening the entrance walk reaches
+  (`packages/engine/src/core/templateSpatial.ts`, `templateFrontOpening`) and runs to the
+  first road along the front, placed by the lot and terrain path that already places the
+  building — no parallel mechanism (`packages/engine/src/core/lotApproach.ts`,
+  `layoutApproaches` and `cityLotWays`). No way is drawn where the door meets the road,
+  where the front reaches no road, or where another building stands between, and validate
+  rejects an approach whose surface no block provides or whose entrance reaches no
+  front-edge opening.
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
@@ -565,9 +580,15 @@ the fit check reads only the plot's anchors.
 entrance, so a dirt path claimed as support under reserved air joins the porch to every
 outbuilding; the yard around it stays the terrain's.
 
-**Outbuildings are shared.** The outbuildings are box-shape pieces in the buildings pack every
-house pack already depends on, so the next plot reuses them rather than drawing its own; the
-log pile is shared furniture beside the other fittings.
+**Outbuildings answer their own briefs.** The garage, the woodshed and the privy are assemblies
+in the buildings pack every house pack already depends on, each answering a brief of its own
+(`mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `rural_garage`, `rural_woodshed` and
+`rural_privy`), so any yard can set one and its fit is proven where it is defined, not only
+inside this plot, whose brief reads only the plot's own anchors. The woodshed's room asks for
+`firewood`, which the log pile serves, rather than `storage`: the pile is the fuel stock itself,
+not a place stock is kept on or in, and a later fuel or heat consumer can read the fuel by its own
+name ([Services](#services)). The well and the coop's site stay plain pieces, with no room a body
+uses.
 
 **Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,
 since nearly every yard had them; the outhouse, the garage and the cellar vary with the pool.
@@ -578,10 +599,11 @@ cellar room for the same reason the house's does.
 **The coop waits for its model.** The chicken coop will be an authored model that BR
 approves, so its slot claims nothing and the yard shows through until then.
 
-**The outhouse has a door.** The outhouse is a small assembly, so its doorway slot travels
-with it to any plot ([Doorways](#doorways)). Its seat fills the floor behind the door, which
-leaves no reserved cell inside to stand in, so the privy's anchor stands on the path at the
-door, and the services walk crosses the doorway to the seat.
+**The privy brings its stoop.** The privy's doorway slot travels with it to any yard
+([Doorways](#doorways)). Its seat fills the floor behind the door, which leaves no reserved
+cell inside to stand in, so the privy carries a trodden stoop before its door, where its
+entrance and its toilet room stand, and the services walk crosses the doorway to the seat. A
+yard that sets it ends its path at the stoop rather than under it.
 
 **Seen through its look fixture.** Every plot the pool can draw stands along two roads, each
 plot's cellar twin behind it, so one walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
@@ -616,7 +638,11 @@ because standards read the answer's.
 joists under the slab run from the front wall to the back wall, either side of the aisle, as in
 a works store of the period, and every slab cell is within its span of a joist or a wall
 ([Fit check](#fit-check), support). The joists span the shorter way, within what steel spans,
-and they keep to the course above the racking, so the aisle and the racks below stay as they were.
+and they keep above the racking, clear of the aisle and the racks.
+
+**Headroom above the racking.** A room racked up to its joists reads as cramped, so the shell
+keeps a clear course between the racks and the joists; see
+`mods/skelly.deadvox.buildings/works-stores.libsonnet`, `shellLayers`.
 
 **North front.** The door opens north, so the entrance rule holds as it does for a city
 building; Holdout turns the stores by its own placement, so which way the door faces there is

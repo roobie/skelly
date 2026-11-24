@@ -286,7 +286,7 @@ const fallCell = (
 
 /**
  * Judges up to `budget` cascade cells in frontier order, and returns what fell. A held cell ends its branch, though one
- * whose floor was lost queues its sideways lines, since it may no longer anchor them; an unheld cell falls and
+ * whose floor was lost queues its sideways dependants, since it may no longer anchor them; an unheld cell falls and
  * queues what depended on it. Cells past the budget wait for the next call.
  */
 export const cascadeSupport = (

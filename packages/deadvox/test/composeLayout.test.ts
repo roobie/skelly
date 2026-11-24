@@ -812,6 +812,7 @@ it('proves a continuous standing passage along the joined road across gates, tra
       width,
       surface: registry.blockIds.get(surface),
     })),
+    approaches: [],
     catalogue: undefined,
   });
   // The route fixtures walk at template height 1, half a metre above the ground storey.

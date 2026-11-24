@@ -2,6 +2,7 @@ import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
+import { cityLotWays } from './lotApproach.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import type { Scale } from './scale.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
@@ -54,6 +55,8 @@ export class CitySite implements Site {
         bounds: plan.bounds,
         core: plan.core,
         floor: plan.floor,
+        // The city's flat lots meet its streets on one floor, so only its trails draw; see `cityLotWays`.
+        ways: cityLotWays(registry, plan),
       },
       paving: this.paving,
       structures: plan.structures,
