@@ -6,7 +6,7 @@ import { cityRowStart } from './cityPlan.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { createForestTerrain } from './forestTerrainEvaluator.ts';
 import { cityRowDepth } from './settlementPools.ts';
-import { rectDistance } from './site.ts';
+import { type Rect, rectDistance } from './site.ts';
 import { type BlockBox, stampChunk } from './structure.ts';
 import { footprint, stampPlacement } from './templates.ts';
 import type { CitySurfaceData, TerrainPlacement, TerrainPlan } from './terrainPlan.ts';
@@ -26,12 +26,31 @@ export function stampCityTerrain(
     }
   }
 }
-export function createCitySurface(plan: CitySurfaceData, paving: number): Surface {
-  const { grid, bounds, core, floor } = plan;
+/** Whether a column lies on a street's paving: the authored rects, else the grid's own streets and alleys. Shared
+ * by the city surface's top and a lot way's road search (`packages/engine/src/core/lotApproach.ts`, `cityLotWays`). */
+export function cityPaving(grid: CitySurfaceData['grid'], core: Rect, bounds: Rect): (x: number, z: number) => boolean {
   const alleys = Array.from(
     { length: grid.rows / 2 - 1 },
     (_, pair) => cityRowStart(grid, pair * 2) + 2 * cityRowDepth(grid),
   );
+  return (x, z) => {
+    if (rectDistance(bounds, x, z) !== 0) {
+      return false;
+    }
+    if (grid.paving) {
+      return grid.paving.some((rect) => rect.x0 <= x && x < rect.x1 && rect.z0 <= z && z < rect.z1);
+    }
+    const central = (0 <= x && x < grid.street) || (0 <= z && z < grid.street);
+    const localZ = mod(z, grid.street + grid.blockZ);
+    const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
+    const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
+    return central || (rectDistance(core, x, z) === 0 && street);
+  };
+}
+
+export function createCitySurface(plan: CitySurfaceData, paving: number): Surface {
+  const { grid, bounds, core, floor } = plan;
+  const isPaved = cityPaving(grid, core, bounds);
   return {
     height: (x, z, natural) => {
       const distance = rectDistance(bounds, x, z);
@@ -47,19 +66,10 @@ export function createCitySurface(plan: CitySurfaceData, paving: number): Surfac
       return Math.round(natural + smoothstep(1 - distance / grid.blend) * (floor - natural));
     },
     top: (x, z) => {
-      if (rectDistance(bounds, x, z) !== 0) {
-        return;
+      if (isPaved(x, z)) {
+        return paving;
       }
-      if (grid.paving) {
-        return grid.paving.some((rect) => rect.x0 <= x && x < rect.x1 && rect.z0 <= z && z < rect.z1)
-          ? paving
-          : undefined;
-      }
-      const central = (0 <= x && x < grid.street) || (0 <= z && z < grid.street);
-      const localZ = mod(z, grid.street + grid.blockZ);
-      const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
-      const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
-      return central || (rectDistance(core, x, z) === 0 && street) ? paving : undefined;
+      return plan.ways?.find(({ rect }) => rect.x0 <= x && x < rect.x1 && rect.z0 <= z && z < rect.z1)?.block;
     },
   };
 }

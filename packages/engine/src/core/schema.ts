@@ -16,6 +16,7 @@ export { ARM_SEGMENTS, FIGURE_LIMB_JOINTS, FIGURE_LIMBS, LEG_SEGMENTS } from './
 export type {
   ActorDef,
   ActorFigureDef,
+  Approach,
   BlockDef,
   BlockMaterialDef,
   BoardingDef,

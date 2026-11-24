@@ -203,6 +203,8 @@ export interface CompiledTemplate {
   /** Zero is unclaimed, one owns occupancy, two owns air. */
   readonly ownership?: Uint8Array;
   readonly reserved?: Uint8Array;
+  /** One where the cell lies in a doorway slot whose every alternative stays passable, so walks may cross it. */
+  readonly doorway?: Uint8Array;
   readonly provenance?: readonly (VoxelProvenance | undefined)[];
   readonly anchors?: Readonly<Record<string, KitAnchor>>;
   readonly ports?: readonly KitPort[];
@@ -912,6 +914,7 @@ const emptyVoxels = (size: Vec3) => {
     blocks: new Uint16Array(volume),
     ownership: new Uint8Array(volume),
     reserved: new Uint8Array(volume),
+    doorway: new Uint8Array(volume),
     provenance: new Array<VoxelProvenance | undefined>(volume),
   };
 };
@@ -939,15 +942,39 @@ const composeAssemblyVoxels = (
       }
     }
   }
+  // A doorway slot stays passable in every draw, even one whose leaf is gone, so the walks that may cross it are
+  // recorded where the walk runs: on the compiled assembly itself.
+  for (const { slot } of resolved) {
+    if (!slot.doorway) {
+      continue;
+    }
+    markDoorway(voxels, slot);
+  }
   const { size: _size, ...composed } = voxels;
   return composed;
+};
+
+/** Marks one doorway slot's whole cell box as a walk may cross it. */
+const markDoorway = (
+  voxels: ReturnType<typeof emptyVoxels>,
+  slot: { readonly at: Vec3; readonly size: Vec3 },
+): void => {
+  const [x0, y0, z0] = slot.at;
+  const [w, h, d] = slot.size;
+  for (let y = y0; y < y0 + h; y++) {
+    for (let z = z0; z < z0 + d; z++) {
+      for (let x = x0; x < x0 + w; x++) {
+        voxels.doorway[ownershipCell(voxels.size, [x, y, z])] = 1;
+      }
+    }
+  }
 };
 
 // Hot at content build: plain index arithmetic, no per-cell tuples.
 const composePlacement = (
   slot: TemplateSlot,
   { template, origin, turn }: Placement,
-  { size, blocks, ownership, reserved, provenance }: ReturnType<typeof emptyVoxels>,
+  { size, blocks, ownership, reserved, doorway, provenance }: ReturnType<typeof emptyVoxels>,
   collide: (to: number, at: Vec3, inherited: VoxelProvenance) => never,
 ) => {
   const [sx, sy, sz] = template.size;
@@ -968,6 +995,7 @@ const composePlacement = (
         blocks[to] = template.blocks[from]!;
         ownership[to] = template.ownership![from]!;
         reserved[to] = template.reserved![from]!;
+        doorway[to] = Math.max(doorway[to]!, template.doorway?.[from] ?? 0);
         provenance[to] = { ...inherited, turn: ((inherited.turn + slot.turn) % 4) as Turn };
       }
     }

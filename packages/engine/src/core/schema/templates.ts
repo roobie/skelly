@@ -164,6 +164,28 @@ export const StairSchema = strictObject({
   block: Id,
 });
 
+/**
+ * The local way a building type declares from its lot's road connection to its door: a trodden trail riding the
+ * terrain, or steps climbing to a door above the road. The declaration sits on the building's own access, beside
+ * `front`, so the type decides whether it gets a way and of which kind; the lot and terrain path places it
+ * (`packages/engine/src/core/lotApproach.ts`, `layoutApproaches`). No way is drawn where the door meets the road.
+ */
+export const ApproachSchema = strictObject({
+  /** The way's kind: the terrain mechanisms that draw it, dispatched on this key. */
+  kind: picklist(['trail', 'steps']),
+  /** The block the way's surface is made of, resolved as a track's surface is. */
+  surface: Id,
+  /** The way's width in metres; unset is one metre, the width of a doorway. */
+  widthMetres: optional(
+    pipe(
+      Positive,
+      check((value) => Number.isInteger(value * 2), 'approach width must sit on the half-metre grid'),
+    ),
+  ),
+});
+
+export type ApproachDef = InferOutput<typeof ApproachSchema>;
+
 export const TemplateAccessSchema = strictObject({
   ground: Id,
   entrance: CellPosition,
@@ -173,6 +195,8 @@ export const TemplateAccessSchema = strictObject({
    * turns this edge where it turned north before (`packages/engine/src/core/cityPlan.ts`, `frontTurn`).
    */
   front: optional(picklist(['n', 'e', 's', 'w'])),
+  /** The local way from the lot's road connection to the door this front opens on; absent means none. */
+  approach: optional(ApproachSchema),
   storeys: pipe(array(strictObject({ id: Id, floor: Count })), nonEmpty()),
   stairs: array(StairSchema),
 });

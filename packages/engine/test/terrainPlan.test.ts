@@ -33,6 +33,7 @@ const fixture = (): TerrainPlan => ({
       lots: [],
       catalogue: undefined,
       tracks: [],
+      approaches: [],
     },
     data: {
       catalogue: undefined,

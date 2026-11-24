@@ -7,6 +7,7 @@ import { claimed, claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
+import { layoutApproaches } from './lotApproach.ts';
 import { placementKeyLoot } from './placementLoot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng } from './random.ts';
@@ -104,12 +105,11 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     const slots = slotPlacement(registry, layout);
-    this.placements = [
-      ...layout.buildings.map((building, i) =>
-        placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout, i)),
-      ),
-      ...(slots ? [slots] : []),
-    ];
+    const buildingPlacements = layout.buildings.map((building, i) =>
+      placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout, i)),
+    );
+    this.placements = [...buildingPlacements, ...(slots ? [slots] : [])];
+    const ways = layoutApproaches(registry, layout, buildingPlacements);
     this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
     this.lootColumns = lootPointsByColumn(
       this.placements.flatMap((placement, i) => {
@@ -160,10 +160,16 @@ export class AuthoredSite implements Site {
       spawnPoints,
       lots: lots.map(({ rect, floor, key }) => ({ rect, floor, key })),
       catalogue: catalogue?.terrain,
-      tracks: layout.tracks.map((track) => ({
+      // A declared trail is one more track, so the terrain path that draws roads draws it; a steps way shapes the
+      // ground beside the lots. Both come from the buildings' own access, placed with the buildings.
+      tracks: [...layout.tracks, ...ways.trails].map((track) => ({
         points: track.points,
         width: track.width,
         surface: registry.blockIds.get(track.surface),
+      })),
+      approaches: ways.steps.map(({ surface, ...step }) => ({
+        ...step,
+        surface: registry.blockIds.get(surface),
       })),
     };
     const ground = createAuthoredGround(groundData);
@@ -201,7 +207,8 @@ export class AuthoredSite implements Site {
       const centreX = ((tree.bounds.x0 + tree.bounds.x1) / 2) * s;
       const centreZ = ((tree.bounds.z0 + tree.bounds.z1) / 2) * s;
       const radius = (Math.hypot(tree.bounds.x1 - tree.bounds.x0, tree.bounds.z1 - tree.bounds.z0) * s) / 2;
-      return !layout.tracks.some(
+      // The trails a building declares keep the roads' tree clearance, so no tree stands on a way.
+      return ![...layout.tracks, ...ways.trails].some(
         (track) => polylineDistance([centreX, centreZ], track.points) <= track.width / 2 + radius,
       );
     });

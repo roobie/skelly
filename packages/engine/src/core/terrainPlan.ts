@@ -4,6 +4,7 @@ import type { CityPlan } from './cityPlan.ts';
 import type { Vec3 } from './coords.ts';
 import type { createForestTerrain } from './forestTerrainEvaluator.ts';
 import type { Scale } from './scale.ts';
+import type { Rect } from './site.ts';
 import type { BlockBox } from './structure.ts';
 import type { CompiledTemplate, Placement, Turn } from './templates.ts';
 import type { createWeatheringTerrain } from './weatheringTerrainEvaluator.ts';
@@ -29,6 +30,9 @@ export interface CitySurfaceData {
   readonly bounds: CityPlan['bounds'];
   readonly core: CityPlan['core'];
   readonly floor: number;
+  /** The local ways the city's lot buildings declare, drawn as surface rects after the streets; see
+   * `packages/engine/src/core/lotApproach.ts`, `cityLotWays`. */
+  readonly ways?: readonly { readonly rect: Rect; readonly block: number }[];
 }
 
 export type TerrainStamp =

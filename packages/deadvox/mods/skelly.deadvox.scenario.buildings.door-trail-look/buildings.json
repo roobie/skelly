@@ -1,0 +1,218 @@
+{
+  "buildingBriefs": [
+    {
+      "cover": "Brick walls and a felt roof enclose the room.",
+      "eligibility": {
+        "settlementKinds": ["door_trail_look"]
+      },
+      "facade": "A plain doorway in the front wall.",
+      "id": "door_trail_hall_brief",
+      "plot": {
+        "along": 6,
+        "depth": 6
+      },
+      "program": {
+        "hall": {
+          "purpose": "A single sheltered room entered through its front door."
+        }
+      },
+      "references": ["A small brick utility hall with one doorway in its front wall."],
+      "setting": "door_trail_look",
+      "storeys": [1, 1],
+      "styles": ["door_trail_hall_style"],
+      "tags": ["fixture"]
+    }
+  ],
+  "mapAssemblies": [
+    {
+      "access": {
+        "approach": {
+          "kind": "trail",
+          "surface": "dirt"
+        },
+        "entrance": [3, 1, 1],
+        "front": "n",
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "hall": {
+          "at": [3, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "door_trail_hall_brief",
+      "eligibility": {
+        "settlementKinds": ["door_trail_look"]
+      },
+      "id": "door_trail_hall",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "door_trail_hall_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "hall",
+          "size": [6, 6, 6],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "approach": {
+          "kind": "steps",
+          "surface": "dressed_stone"
+        },
+        "entrance": [3, 1, 1],
+        "front": "n",
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {
+        "hall": {
+          "at": [3, 1, 3],
+          "kind": "standing"
+        }
+      },
+      "brief": "door_trail_hall_brief",
+      "eligibility": {
+        "settlementKinds": ["door_trail_look"]
+      },
+      "id": "door_steps_hall",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "door_trail_hall_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "hall",
+          "size": [6, 6, 6],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "door_trail_hall_shell",
+      "layers": [
+        ["======", "======", "======", "======", "======", "======"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["==..==", "#....#", "#....#", "#....#", "#....#", "######"],
+        ["^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^", "^^^^^^"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSRRSS", "SRRRRS", "SRRRRS", "SRRRRS", "SRRRRS", "SSSSSS"],
+          ["SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS", "SSSSSS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "wall",
+          "role": "shell"
+        },
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "floor",
+          "role": "support"
+        },
+        "^": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [6, 6, 6],
+      "style": "door_trail_hall_style"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "air": {
+          "block": "air",
+          "role": "opening"
+        },
+        "floor": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "roofing": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "wall": {
+          "block": "brick",
+          "role": "shell"
+        }
+      },
+      "id": "door_trail_hall_style"
+    }
+  ],
+  "worldSettings": [
+    {
+      "buildingCulture": "Small single-storey halls, one doorway each, on a road and a hill.",
+      "era": "Unspecified.",
+      "id": "door_trail_look",
+      "region": "Fixture yard.",
+      "settlementKinds": ["door_trail_look"],
+      "tags": {
+        "fixture": "Door-trail and door-steps comparison."
+      }
+    }
+  ]
+}

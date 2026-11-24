@@ -10,6 +10,7 @@ import {
   templateBodySpace,
   templateClimbCertificate,
   templateDoorIssues,
+  templateFrontOpening,
   templateGroundLootIssues,
   templateRoutePassable,
   templateSpawnClearanceIssues,
@@ -188,6 +189,17 @@ const kitFitIssues = (registry: Registry, template: CompiledTemplate): [string, 
   ...templateStoreyIssues(template),
   ...(template.access && !reservedStanding(registry, template, template.access.entrance)
     ? [['.access.entrance', 'entrance needs reserved body clearance and known support'] as [string, string]]
+    : []),
+  ...(template.access?.approach && !templateFrontOpening(registry, template)
+    ? [
+        ['.access.approach', 'declares a way but the entrance reaches no ground-storey opening on the front edge'] as [
+          string,
+          string,
+        ],
+      ]
+    : []),
+  ...(template.access?.approach && !registry.blockIds.has(template.access.approach.surface)
+    ? [['.access.approach.surface', `no block "${template.access.approach.surface}"`] as [string, string]]
     : []),
   ...anchorIssues(registry, template),
   ...portIssues(registry, template),

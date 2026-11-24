@@ -9,6 +9,7 @@ read_if:
   - you copy layers between pieces, or wonder what a layer mark claims
   - you place a briefed building in a look fixture's layout
   - you declare or turn a building's front edge, or wonder which edge its entrance must reach
+  - you give a building's door a local way from the road, or change how trails and steps are placed
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
@@ -202,9 +203,23 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   own frame, so it survives any turn a placement gives it. It is the footprint-edge test
   every template passes, narrowed to the front edge and to cells no variant can block
   (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). The walk
-  proves the entrance opens on the front edge, not that a road reaches it: a local
-  approach from the road connection to the front door, such as a trail or steps, is
-  separate content that would attach at that front-edge opening.
+  proves the entrance opens on the front edge, not that a road reaches it: the local way
+  below is what carries a body from the road.
+- **approach**: the building type declares, on its own `access.approach`, whether its door
+  gets a local way from the lot's road connection and of which kind, because what makes
+  sense differs per type: a country house trods a dirt trail, a door on a slope needs
+  steps, a door that meets the road needs nothing. `kind: 'trail'` rides the terrain's
+  tracks, `kind: 'steps'` shapes the ground into half-metre treads rising to the door's
+  own floor, and the `surface` and `widthMetres` are the type's content
+  (`packages/engine/src/core/schema/templates.ts`, `ApproachSchema`). The way attaches at
+  the front-edge opening the entrance walk reaches
+  (`packages/engine/src/core/templateSpatial.ts`, `templateFrontOpening`) and runs to the
+  first road along the front, placed by the lot and terrain path that already places the
+  building — no parallel mechanism (`packages/engine/src/core/lotApproach.ts`,
+  `layoutApproaches` and `cityLotWays`). No way is drawn where the door meets the road,
+  where the front reaches no road, or where another building stands between, and validate
+  rejects an approach whose surface no block provides or whose entrance reaches no
+  front-edge opening.
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,

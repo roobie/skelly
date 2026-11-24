@@ -44,6 +44,21 @@ export const roadsLookSources = (): ContentSource[] => {
   return admitted.sources;
 };
 
+/** The base stack plus the door-trail look pack, as that start mod is admitted in the product. */
+export const doorTrailLookSources = (): ContentSource[] => {
+  const admitted = admitPacks(
+    selectFolderClosure(
+      [DEFAULT_STACK, 'skelly.deadvox.scenario.buildings.door-trail-look'],
+      readAvailablePacks(process.cwd()),
+      [],
+    ),
+  );
+  if (admitted.issues.length > 0) {
+    throw new Error(`Door-trail look pack admission failed: ${JSON.stringify(admitted.issues)}`);
+  }
+  return admitted.sources;
+};
+
 const loadedFigures = new Map<string, ActorFigureFiles>();
 
 /**
