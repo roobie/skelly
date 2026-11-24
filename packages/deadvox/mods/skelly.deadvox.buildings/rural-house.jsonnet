@@ -342,17 +342,43 @@ local wcKitchen = furnished('rural_flat_house_wc_kitchen', [4, 6, 4], [
 });
 // The cellar under a house: stone walls on the house's wall lines over a footing, and
 // one doorway in the back wall, since a house of the setting is entered from its
-// yard, not through its floor. The floor slab of the house above is its ceiling.
+// yard, not through its floor. Timber crossbeams on posts carry the ground floor;
+// they leave the cellar door, stores and plant accessible below them.
 local cellarDepth = 8;
-local cellarWall(doorway) = [outside, '.ssssssssssssssss.'] + ['.s..............s.' for _ in std.range(2, 11)]
-  + [if doorway then '.s..sssssssssssss.' else '.ssssssssssssssss.'];
-local cellarClaim(doorway) = [outside, closed] + ['.S..............S.' for _ in std.range(2, 11)]
-  + [if doorway then '.S..SSSSSSSSSSSSS.' else closed];
+local cellarWall(doorway, ceiling=false) = [
+  outside,
+  '.ssssssssssssssss.',
+  '.s..............s.',
+  '.s..............s.',
+  if ceiling then '.swwwwwwwwwwwwwws.' else '.s....w..w......s.',
+  '.s..............s.',
+  '.s..............s.',
+  '.s..............s.',
+  '.s..............s.',
+  if ceiling then '.swwwwwwwwwwwwwws.' else '.s....w..w......s.',
+  '.s..............s.',
+  '.s..............s.',
+  if doorway then '.s..sssssssssssss.' else '.ssssssssssssssss.',
+];
+local cellarClaim(doorway, ceiling=false) = [
+  outside, closed,
+  '.S..............S.',
+  '.S..............S.',
+  if ceiling then closed else '.S....S..S......S.',
+  '.S..............S.',
+  '.S..............S.',
+  '.S..............S.',
+  '.S..............S.',
+  if ceiling then closed else '.S....S..S......S.',
+  '.S..............S.',
+  '.S..............S.',
+  if doorway then '.S..SSSSSSSSSSSSS.' else closed,
+];
 local cellarWalls = piece('rural_flat_house_cellar_walls', [18, cellarDepth, 13],
   [[outside] + ['.================.' for _ in std.range(1, 12)]]
-  + [cellarWall(true) for _ in [1, 2, 3, 4]] + [cellarWall(false) for _ in [5, 6, 7]],
+  + [cellarWall(true) for _ in [1, 2, 3, 4]] + [cellarWall(false) for _ in [5, 6]] + [cellarWall(false, true)],
   [[outside] + [closed for _ in std.range(1, 12)]]
-  + [cellarClaim(true) for _ in [1, 2, 3, 4]] + [cellarClaim(false) for _ in [5, 6, 7]]);
+  + [cellarClaim(true) for _ in [1, 2, 3, 4]] + [cellarClaim(false) for _ in [5, 6]] + [cellarClaim(false, true)]);
 // The area stair: a sunken flight along the back wall from the back door's landing
 // down to the cellar door, between stone retaining walls whose tops are the yard's
 // ground. Each tread is a step of footing, and the stairwell's air is reserved up to
@@ -377,17 +403,21 @@ local areaStair = piece('rural_flat_house_area_stair', [18, cellarDepth + 5, 3],
 // front wall, the floor clear from the door to the corner, so a twist can restock it
 // without touching the plant.
 local cellarRoom = furnished('rural_flat_house_cellar_room', [14, 7, 10], [
-  ['xxyy,,,,,,,,,,', 'xxyy,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------']
-  + [',,,,,,,,------' for _ in std.range(5, 9)]
+  ['xxyy,,,,,,,,,,', 'xxyy,,,,,,,,,,', ',,,,-,,-,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------',
+   ',,,,,,,,------', ',,,,,,,,------', ',,,,-,,-------', ',,,,,,,,------', ',,,,,,,,------']
   for _ in [1, 2]
 ] + [
-  [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------']
-  + [',,,,,,,,------' for _ in std.range(5, 9)]
+  [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,-,,-,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------',
+   ',,,,,,,,------', ',,,,,,,,------', ',,,,-,,-------', ',,,,,,,,------', ',,,,,,,,------']
   for _ in [3, 4]
 ] + [
-  [',,,,,,,,,,,,,,' for _ in std.range(0, 3)] + [',,,,,,,,------' for _ in std.range(4, 9)]
-  for _ in [5, 6, 7]
-], {
+  [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,-,,-,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,------',
+   ',,,,,,,,------', ',,,,,,,,------', ',,,,-,,-------', ',,,,,,,,------', ',,,,,,,,------']
+  for _ in [5, 6]
+] + [[
+  ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', '--------------', ',,,,,,,,,,,,,,', ',,,,,,,,------',
+  ',,,,,,,,------', ',,,,,,,,------', '--------------', ',,,,,,,,------', ',,,,,,,,------',
+]], {
   x: { furniture: 'crate', loot: 'junk' },
   y: { furniture: 'crate', loot: 'junk' },
   e: { furniture: 'shelf', facing: 'e', loot: 'shelf' },
@@ -534,7 +564,10 @@ local houses = [
     cellarWalls,
     areaStair,
     cellarRoom,
-  ] + cellarPlant.mapPieces + doors + windows.mapPieces,
+  // The rear crossbeam passes above the plant's clear floor, not its bulb or boiler.
+  ] + [part + { ownership: { layers: std.slice(part.ownership.layers, 0, 6, 1) + [[
+    'RRRRRA', 'RRRRRA', 'RRSRRA', '......', 'AAAAAA', 'AAAAAA',
+  ]] } } for part in cellarPlant.mapPieces] + doors + windows.mapPieces,
   // The house, and the modernised house with its WC, each answering its own brief,
   // and each again over a cellar.
   mapAssemblies: houses + [withCellar(building) for building in houses],

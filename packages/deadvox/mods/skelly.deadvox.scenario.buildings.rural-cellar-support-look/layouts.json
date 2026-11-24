@@ -1,0 +1,34 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -6,
+        "x1": 15,
+        "z0": -6,
+        "z1": 15
+      },
+      "buildings": [
+        {
+          "position": [0, 21, 0],
+          "rotation": 0,
+          "template": "rural_flat_roof_house_wc_cellar"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "ruralCellarSupportLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 30,
+        "position": [1.75, 17.5, 5.75]
+      },
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
+    }
+  ]
+}

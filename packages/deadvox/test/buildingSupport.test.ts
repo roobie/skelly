@@ -40,12 +40,6 @@ const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
   'gauntlet_city_3',
   'gauntlet_city_3_cellar',
   'gauntlet_city_villa',
-  'rural_flat_roof_house_cellar',
-  'rural_flat_roof_house_wc_cellar',
-  'rural_plot_privy_cellar',
-  'rural_plot_privy_garage_cellar',
-  'rural_plot_wc_cellar',
-  'rural_plot_wc_garage_cellar',
   'village_shop',
 ]);
 
