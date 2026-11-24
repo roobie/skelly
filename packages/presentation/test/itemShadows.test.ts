@@ -9,6 +9,7 @@ import {
   PerspectiveCamera,
   PointLight,
   Scene,
+  SkinnedMesh,
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
@@ -97,6 +98,22 @@ describe('item shadow maps', () => {
     expect(f.frame()).toEqual([1]);
   });
 
+  it('reuses a stationary carried source but redraws its moving emitter and changing blockers', () => {
+    const f = fixture();
+    f.source.userData.carried = true;
+    const door = f.blocker();
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([0]);
+    f.source.position.x += 1;
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([0]);
+    door.rotation.y = Math.PI / 2;
+    expect(f.frame()).toEqual([1]);
+    door.customDistanceMaterial = new MeshBasicMaterial();
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([1]);
+  });
+
   it('refreshes on the same frame a door closes or a blocker is added or removed', () => {
     const f = fixture();
     const door = f.blocker();
@@ -124,6 +141,33 @@ describe('item shadow maps', () => {
     f.source.intensity = 1;
     expect(f.frame()).toEqual([1]);
     expect(f.frame()).toEqual([0]);
+  });
+
+  it('walks only in-range casters on cube faces while retaining unbounded shader casters', () => {
+    const f = fixture();
+    const local = f.blocker();
+    const remote = Array.from({ length: 12 }, () => f.blocker());
+    remote.forEach((mesh, index) => {
+      mesh.position.set(100 + index, 0, 0);
+    });
+    const unbounded = remote[0]!;
+    unbounded.frustumCulled = false;
+    const skinned = new SkinnedMesh(new BoxGeometry(), new MeshBasicMaterial());
+    skinned.castShadow = true;
+    skinned.position.x = 100;
+    f.scene.add(skinned);
+    const edge = remote[1]!;
+    edge.position.x = f.source.distance;
+    f.frame();
+    const { casters } = f.drawn.at(-1)!;
+    expect(casters).toContain(local);
+    expect(casters).toContain(unbounded);
+    expect(casters).toContain(skinned);
+    expect(casters).toContain(edge);
+    expect(remote.slice(2).filter((mesh) => casters.includes(mesh))).toHaveLength(0);
+    remote[2]!.position.x = 1;
+    expect(f.frame()).toEqual([1]);
+    expect(f.drawn.at(-1)!.casters).toContain(remote[2]);
   });
 
   it('flattens only visible casters and restores their original child ownership after drawing', () => {
