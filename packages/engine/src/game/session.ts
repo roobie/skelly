@@ -134,7 +134,7 @@ import {
   vehicleDistance,
 } from '../core/reach.ts';
 import type { ReadRequest } from '../core/readable.ts';
-import { worldRubbleClearing } from '../core/rubble.ts';
+import { standingRubble, worldRubbleClearing } from '../core/rubble.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
@@ -1773,6 +1773,27 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  /** The first solid, non-rubble terrain cell touching an actor's obstacle probe. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The body-volume scan must examine every cell on three axes.
+  const terrainCellTouching = (probe: Body): Vec3 | undefined => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return undefined;
+    }
+    const halfDepth = probe.halfDepth ?? probe.halfWidth;
+    for (let x = Math.floor(probe.pos[0] - probe.halfWidth); x <= Math.floor(probe.pos[0] + probe.halfWidth); x++) {
+      for (let y = Math.floor(probe.pos[1]); y <= Math.floor(probe.pos[1] + probe.height); y++) {
+        for (let z = Math.floor(probe.pos[2] - halfDepth); z <= Math.floor(probe.pos[2] + halfDepth); z++) {
+          const cell: Vec3 = [x, y, z];
+          const block = registry.blocks[context.terrain.getBlock(...cell)];
+          if (block?.solid && !standingRubble(world, registry, cell) && boxIntersectsBody(cell, [1, 1, 1], probe)) {
+            return cell;
+          }
+        }
+      }
+    }
+    return undefined;
+  };
   inventory.buried = () => body.buried !== undefined;
   const collapseSolid = (x: number, y: number, z: number): boolean =>
     (options.terrainDestruction
@@ -1927,8 +1948,19 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     }),
     meleeBlocker,
-    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
-    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashObstacle: (ahead, strength, kind) => {
+      const piece = entities.pieceTouching(ahead);
+      if (piece) {
+        return bashPiece(piece, strength);
+      }
+      const cell = terrainCellTouching(ahead);
+      if (!cell) {
+        return;
+      }
+      strikeTerrainCell(cell, { strength, kind });
+      return 'damaged';
+    },
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined || terrainCellTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),

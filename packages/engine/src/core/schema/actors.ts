@@ -327,6 +327,8 @@ export const ActorSchema = strictObject({
    * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
    */
   strength: NonNegative,
+  /** Damage kind of this actor's terrain blows; omitted content uses blunt. */
+  bashKind: optional(Id, 'blunt'),
   /**
    * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
    * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to

@@ -600,10 +600,14 @@ rounds are tracked under #1332.
   (`packages/engine/src/game/session.ts`, `bashObstacle`, through
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`); terrain takes
   blows only from the player, through `packages/engine/src/core/terrainStrike.ts`,
-  `strikeTerrain`. The lane's first round gives actors that terrain path by material
+  `strikeTerrain`. Actors use a content-authored terrain blow kind beside their strength,
+  defaulting to blunt, so a type can select a material response without coupling obstacle
+  bashing to attack moves. The lane's first round gives actors that terrain path by material
   strength and the brute a higher authored strength, so the brute wrecks walls through
   its strength rather than an identity flag and ordinary types break doors only because
-  door pieces sit below their strength. A blow that leaves cells unheld cascades them
+  door pieces sit below their strength. Timber's one material strength gate stays above a
+  shambler's effective blunt blow, so tools and actors share one wall-toughness tuning
+  authority rather than adding an actor-only scale. A blow that leaves cells unheld cascades them
   into rubble under "Support" rather than being refused. Terrain is generated wherever
   collapse reaches, so region departure-and-return is not a prerequisite. Collapse timing
   at the largest authored roof is reported rather than used as a gate. Burial and impact
