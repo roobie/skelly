@@ -4,7 +4,7 @@ manifest(
   id='skelly.deadvox.scenario.test-house.furniture-push-look',
   tier='scenario',
   optIn=true,
-  content=['layouts', 'starts'],
+  content=['furniture', 'layouts', 'starts'],
   dependencies=kit.dependencies([
     'skelly.deadvox.scenario.test-house', 'skelly.manufactured-blocks', 'skelly.natural-world',
   ]),

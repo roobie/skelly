@@ -14,6 +14,10 @@
   "files": [
     {
       "kind": "content",
+      "path": "furniture.json"
+    },
+    {
+      "kind": "content",
       "path": "layouts.json"
     },
     {
