@@ -1,4 +1,4 @@
-import { Box3, InstancedMesh, type Mesh, type PointLight, Sphere } from 'three';
+import { Box3, InstancedMesh, type Mesh, type PointLight, SkinnedMesh, Sphere } from 'three';
 
 interface Entry {
   mesh: Mesh;
@@ -20,8 +20,8 @@ export class ItemShadowCasters {
       if (mesh instanceof InstancedMesh && mesh.count === 0) {
         continue;
       }
-      // Shader-placed crowds opt out of ordinary bounds; their owner selects the instances per light.
-      if (!mesh.frustumCulled) {
+      // Geometry bounds cannot prove shader-placed or skeletal vertices stay outside a lamp's reach.
+      if (!mesh.frustumCulled || mesh instanceof SkinnedMesh) {
         this.unbounded.push(mesh);
         continue;
       }

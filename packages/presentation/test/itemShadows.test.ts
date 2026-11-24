@@ -9,6 +9,7 @@ import {
   PerspectiveCamera,
   PointLight,
   Scene,
+  SkinnedMesh,
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
@@ -151,12 +152,17 @@ describe('item shadow maps', () => {
     });
     const unbounded = remote[0]!;
     unbounded.frustumCulled = false;
+    const skinned = new SkinnedMesh(new BoxGeometry(), new MeshBasicMaterial());
+    skinned.castShadow = true;
+    skinned.position.x = 100;
+    f.scene.add(skinned);
     const edge = remote[1]!;
     edge.position.x = f.source.distance;
     f.frame();
     const { casters } = f.drawn.at(-1)!;
     expect(casters).toContain(local);
     expect(casters).toContain(unbounded);
+    expect(casters).toContain(skinned);
     expect(casters).toContain(edge);
     expect(remote.slice(2).filter((mesh) => casters.includes(mesh))).toHaveLength(0);
     remote[2]!.position.x = 1;
