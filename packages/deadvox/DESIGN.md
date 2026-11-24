@@ -2906,7 +2906,11 @@ A powered fixture uses the rules' reach grid, which keeps one truth instead of a
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
 blocker, including a door, a model or a crowd figure.
 A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
-no visible light. Glass must not hide an illuminated room from this rule.
+no visible light. A glow borrowing an item slot must not bypass the cost gate merely because it is not an item.
+Its whole influence sphere missing the view proves it needs no map, even while moving. A sphere meeting the
+view is only a candidate, not proof of visible illumination. Glows include brief shot flashes, so they stay visible
+without waiting for a receiver-grid rebuild that could outlast the flash. Glass must not hide an illuminated room
+from this rule.
 The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
 a little latency is acceptable so neither discovery nor a large exact-pose rebuild monopolizes a frame.
 Light is visible where it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway
@@ -2918,9 +2922,16 @@ so block-cell reuse is not a safe shortcut.
 Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
 spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
 Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
-Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
-a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+Every changed emitter or caster within a lamp's radius must reach its visible map: a stale shadow can show light
+through a shut door. Carrying alone does not change a shadow; unchanged drawn inputs can reuse it regardless of
+who holds the source. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
 leaves out its holder, and a dropped lamp's includes the player.
+A cube face must not rediscover distant models that cannot block its source. Conservative world-space bounds
+keep those models out without approximating walls or borrowing sight visibility for shadow occlusion.
+Skeletal vertices cannot be excluded by their undeformed geometry's bounds. Shader-placed casters without
+ordinary bounds remain under their render owner's per-light selection, so a spatial shortcut cannot erase
+crowd shadows. See `packages/presentation/src/render/itemShadowCasters.ts`,
+`ItemShadowCasters`.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:

@@ -7,7 +7,7 @@ import {
   placedLightEntries,
 } from '@skelly/engine/inventory';
 import type { PoweredLight } from '@skelly/engine/world';
-import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
+import { Frustum, Group, Matrix4, type PerspectiveCamera, PointLight, type Scene, Sphere, Vector3 } from 'three';
 import type { HeldItems } from './hands.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 import type { PileMeshes } from './piles.ts';
@@ -101,6 +101,9 @@ function sourcePosition(
 }
 
 export class LightPool {
+  private readonly glowFrustum = new Frustum();
+  private readonly glowViewMatrix = new Matrix4();
+  private readonly glowSphere = new Sphere();
   readonly group = new Group();
   readonly lights: readonly PointLight[];
   /** Per slot: the goggles' own lamp, which they see by rather than look into, so it never flares them. */
@@ -196,6 +199,9 @@ export class LightPool {
 
   update(inventory: Inventory, context: LightPoolContext): void {
     const { camera, blockSize } = context;
+    this.glowFrustum.setFromProjectionMatrix(
+      this.glowViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+    );
     const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
@@ -279,7 +285,10 @@ export class LightPool {
           light.position.set(...glow.position);
           light.color.set(glow.color);
           light.distance = glow.radiusMetres;
-          light.intensity = worldIntensity(glow.intensity, context);
+          this.glowSphere.center.copy(light.position);
+          this.glowSphere.radius = glow.radiusMetres;
+          this.itemVisible[index] = this.glowFrustum.intersectsSphere(this.glowSphere);
+          light.intensity = worldIntensity(glow.intensity, context, this.itemVisible[index]);
         } else {
           light.intensity = 0;
         }

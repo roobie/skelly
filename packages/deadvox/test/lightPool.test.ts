@@ -9,8 +9,17 @@ import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { makeScale, type SolidAt } from '@skelly/engine/world';
-import { HeldItems, LightPool } from '@skelly/presentation/render';
-import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
+import { HeldItems, LightPool, Shadows } from '@skelly/presentation/render';
+import {
+  DirectionalLight,
+  Group,
+  type Light,
+  PerspectiveCamera,
+  PointLight,
+  Scene,
+  Vector3,
+  type WebGLRenderer,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -144,6 +153,70 @@ describe('made-light point pool', () => {
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale, worldDaylightScale, glows: [glow] });
 
     expect(pool.lights[0]!.intensity).toBeCloseTo(glow.intensity * worldDaylightScale);
+  });
+
+  it('draws no item cube maps for glow occupants that cannot illuminate the view, then refreshes on return', () => {
+    const scene = new Scene();
+    const camera = new PerspectiveCamera();
+    const pool = new LightPool(scene, { heldLamps: 1, droppedLamps: 1, renderedFixtureLimit: 0 });
+    const inventory = new Inventory(registry);
+    let drawn = 0;
+    const renderer = {
+      shadowMap: {
+        render(lights: Light[]) {
+          drawn += lights.length;
+          for (const light of lights) {
+            (light as PointLight).shadow.needsUpdate = false;
+          }
+        },
+      },
+    } as unknown as WebGLRenderer;
+    const chunks = { selectShadowCasters: () => 0, shadowInputs: () => [] } as unknown as ConstructorParameters<
+      typeof Shadows
+    >[3];
+    const shadows = new Shadows(renderer, scene, { light: new DirectionalLight(), rig: new Group() }, chunks);
+    shadows.attachItems(
+      pool.lights,
+      () => pool.shadowBodies,
+      {
+        faceSize: 16,
+        bias: 0,
+        normalBiasMetres: 0,
+        radius: 1,
+        nearMetres: 0.1,
+      },
+      () => pool.itemVisible,
+    );
+    camera.fov = 75;
+    camera.updateProjectionMatrix();
+    const glows = [
+      { position: [1, 1, -5] as [number, number, number], color: '#7fff00', intensity: 2, radiusMetres: 1 },
+      { position: [2, 1, -5] as [number, number, number], color: '#7fff00', intensity: 2, radiusMetres: 1 },
+    ];
+    let visible = true;
+    const frame = () => {
+      camera.rotation.y = visible ? 0 : Math.PI;
+      camera.updateMatrixWorld();
+      for (const glow of glows) {
+        glow.position[0]! += 0.1;
+      }
+      pool.update(inventory, {
+        held: { lightPositionOf: () => false },
+        camera,
+        blockSize: 0.5,
+        daylightScale: 1,
+        glows,
+      });
+      scene.updateMatrixWorld(true);
+      const previous = drawn;
+      renderer.shadowMap.render([], scene, camera);
+      return drawn - previous;
+    };
+    expect(frame()).toBe(glows.length);
+    visible = false;
+    expect(frame()).toBe(0);
+    visible = true;
+    expect(frame()).toBe(glows.length);
   });
 
   it('shares the active point pool with hands without adding shadow casters', () => {
