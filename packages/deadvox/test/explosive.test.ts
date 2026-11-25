@@ -146,6 +146,43 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
   },
 });
 
+const PLANK_WALL = registry.blockIds.get('plank_wall')!;
+const FLOOR = registry.blockIds.get('concrete')!;
+type TerrainDestruction = NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>;
+
+/** A session whose blasts strike the blocks of `world`, which is its whole terrain: concrete at y 0, air elsewhere. */
+const destructible = (world: World): Runtime => {
+  const terrain = {
+    world,
+    terrain: { scale: { minCy: 0, maxCy: 0 } },
+    getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
+    naturalBlock: (_x: number, y: number, _z: number) => (y === 0 ? FLOOR : 0),
+    ensureColumn: () => undefined,
+    ensureCell: () => undefined,
+  } as unknown as TerrainDestruction['terrain'];
+  const source: TerrainDestruction['source'] = {
+    furnitureIn: () => [],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    actorsIn: () => [],
+  };
+  return runtime((x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid, undefined, registry, {
+    terrainDestruction: { terrain, source },
+    world,
+  });
+};
+
+/** Fills the block box from `min` to `max`, both inclusive. */
+const fill = (world: World, [x0, y0, z0]: Vec3, [x1, y1, z1]: Vec3, block: number): void => {
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
+      for (let z = z0; z <= z1; z++) {
+        world.setBlock(x, y, z, block);
+      }
+    }
+  }
+};
+
 describe('hand grenade', () => {
   it('detonates a lit grenade after release has committed it to the pile', () => {
     const detonations: Vec3[] = [];
@@ -406,40 +443,40 @@ describe('hand grenade', () => {
 
   it('keeps mirrored walls equally shielded while terrain strikes resolve', () => {
     const world = new World();
-    const wall = registry.blockIds.get('plank_wall')!;
-    const floor = registry.blockIds.get('concrete')!;
     for (const x of [-4, -2, 2, 4]) {
-      world.setBlock(x, 0, 0, floor);
-      world.setBlock(x, 1, 0, wall);
+      world.setBlock(x, 0, 0, FLOOR);
+      world.setBlock(x, 1, 0, PLANK_WALL);
     }
-    world.setBlock(0, 0, 0, floor);
-    const terrain = {
-      world,
-      terrain: { scale: { minCy: 0, maxCy: 0 } },
-      getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
-      naturalBlock: (_x: number, y: number, _z: number) => (y === 0 ? floor : 0),
-      ensureColumn: () => undefined,
-      ensureCell: () => undefined,
-    } as unknown as NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>['terrain'];
-    const source = {
-      furnitureIn: () => [],
-      lootPointsIn: () => [],
-      supplySourcesIn: () => [],
-      actorsIn: () => [],
-    } as NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>['source'];
-    const session = runtime((x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid, undefined, registry, {
-      terrainDestruction: { terrain, source },
-      world,
-    });
-    const grenade = session.inventory.create(GRENADE);
-    expect(session.inventory.add(grenade, { kind: 'pile', pos: [0, 1, 0] })).toBe(true);
-    session.fuses.togglePin(grenade);
+    world.setBlock(0, 0, 0, FLOOR);
+    const session = destructible(world);
+    landedGrenade(session, [0, 1, 0]);
     session.sim.scheduler.advance(FUSE + 0.5);
     const damage = (x: number) => world.blockDamage.get([x, 1, 0])?.damage ?? 0;
     expect(damage(-4)).toBe(damage(4));
     expect(damage(-2)).toBe(damage(2));
     expect(world.getBlock(-4, 1, 0)).toBe(world.getBlock(4, 1, 0));
     expect(world.getBlock(-2, 1, 0)).toBe(world.getBlock(2, 1, 0));
+  });
+
+  it('spares the player and a shambler behind mirrored walls that its blast breaks', () => {
+    const world = new World();
+    fill(world, [-8, 0, -8], [8, 0, 8], FLOOR);
+    for (const x of [-2, 2]) {
+      fill(world, [x, 1, -8], [x, 10, 8], PLANK_WALL);
+    }
+    const session = destructible(world);
+    session.body.pos = [4, 1, 0.5];
+    landedGrenade(session, [0, 1, 0]);
+    session.sim.scheduler.advance(FUSE - 0.5);
+    const shambler = session.actorStore.get(session.actors.add(SHAMBLER, [-3, 1, 0.5]))!;
+    const before = { ...shambler.regions };
+    const { health } = session.sim.body;
+    session.sim.scheduler.advance(1);
+    const broken = (x: number) =>
+      Array.from({ length: 10 }, (_, y) => world.getBlock(x, y + 1, 0)).some((block) => block === 0);
+    expect([broken(-2), broken(2)]).toEqual([true, true]);
+    expect(session.sim.body.health).toBe(health);
+    expect(healthLost(before, shambler.regions)).toBe(0);
   });
 
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
