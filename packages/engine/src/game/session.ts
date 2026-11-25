@@ -2186,6 +2186,9 @@ export const createSession = (options: SessionOptions) => {
       }
     }
     for (const { piece, strength } of targets.pieces) {
+      if (entities.byUid(piece.uid) !== piece) {
+        continue;
+      }
       if (bashPiece(piece, strength, undefined, sound()) && sound()) {
         sounds += 1;
       }

@@ -155,7 +155,12 @@ export const inSight = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   const distance = Math.hypot(...delta);
   return (
     distance === 0 ||
-    raycast(from, [delta[0] / distance, delta[1] / distance, delta[2] / distance], distance, isSolid) === undefined
+    raycast(
+      from,
+      [delta[0] / distance, delta[1] / distance, delta[2] / distance],
+      Math.max(0, distance - 1e-6),
+      isSolid,
+    ) === undefined
   );
 };
 
