@@ -161,7 +161,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { cascadeSupport, type TerrainStrikeResult, strikeTerrain } from '../core/terrainStrike.ts';
+import { cascadeSupport, strikeTerrain, type TerrainStrikeResult } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -1739,11 +1739,7 @@ export const createSession = (options: SessionOptions) => {
   const tearPiece = (piece: BlockEntity): void => {
     bashPiece(piece, entities.defOf(piece).breach.durability);
   };
-  const applyTerrainStrike = (
-    cell: Vec3,
-    blow: BlockBlow,
-    noticeCanopy: boolean,
-  ): TerrainStrikeResult | undefined => {
+  const applyTerrainStrike = (cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
       return undefined;
@@ -1763,9 +1759,6 @@ export const createSession = (options: SessionOptions) => {
       return undefined;
     }
     if (result.cause === 'canopy') {
-      if (noticeCanopy) {
-        (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
-      }
       return result;
     }
     if (result.outcome === 'broken') {
@@ -1779,7 +1772,14 @@ export const createSession = (options: SessionOptions) => {
     }
     return result;
   };
-  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => applyTerrainStrike(cell, blow, true) !== undefined;
+  /** The player's terrain blow; only the player hears why a trunk holding canopy refuses it. */
+  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
+    const result = applyTerrainStrike(cell, blow);
+    if (result?.cause === 'canopy') {
+      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
+    }
+    return result !== undefined;
+  };
   /** The first solid, non-rubble terrain cell touching an actor's obstacle sweep. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The body-volume scan must examine every cell on three axes.
   const terrainCellTouching = (contact: Body, probe = contact): Vec3 | undefined => {
@@ -1973,7 +1973,7 @@ export const createSession = (options: SessionOptions) => {
       if (!cell) {
         return;
       }
-      const outcome = applyTerrainStrike(cell, { strength, kind }, false)?.outcome;
+      const outcome = applyTerrainStrike(cell, { strength, kind })?.outcome;
       // A refused terrain break leaves the obstacle intact without a landed blow, so the actor keeps looking for a way.
       return outcome === 'refused' ? undefined : outcome;
     },
