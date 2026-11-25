@@ -438,6 +438,8 @@ describe('hand grenade', () => {
     const damage = (x: number) => world.blockDamage.get([x, 1, 0])?.damage ?? 0;
     expect(damage(-4)).toBe(damage(4));
     expect(damage(-2)).toBe(damage(2));
+    expect(world.getBlock(-4, 1, 0)).toBe(world.getBlock(4, 1, 0));
+    expect(world.getBlock(-2, 1, 0)).toBe(world.getBlock(2, 1, 0));
   });
 
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
