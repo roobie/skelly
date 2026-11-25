@@ -8,10 +8,9 @@ read_if:
 
 Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.actor-breach-look#{debug:true}).
 
-At noon, a shambler stands behind a timber wall span and a brute shambler behind a masonry wall span, with the player in sight. The timber wall carries a timber overhang. Every skill is at its top level from the fixture start kit.
+At noon you face a brute shambler shut in a brick pocket, with a shambler shut in a timber pocket to your right. Neither pocket has a way around. Each actor sees you through a low slot in its front wall that neither can climb through. The brick wall facing you starts nearly broken, so the brute's breach takes seconds instead of minutes; the strength gate still decides whether a blow lands. A timber beam juts towards you from the top of the timber pocket's front wall, held only by that top cell. Every skill is at its top level from the fixture start kit.
 
 ## Check
 
-1. Watch the shambler remain behind the timber wall while the brute breaks through masonry.
-2. After a wall falls, leave the rubble in place. Ordinary actor blows do not clear it.
-3. Use the debug build tool to remove a timber wall cell under the overhang and confirm unsupported cells fall as rubble.
+1. Without moving, watch the shambler stay behind its timber wall, its blows leaving no mark, while the brute breaks through the brick and comes for you.
+2. Use the debug build tool to remove the top wall cell the beam juts from. The beam falls to the floor as rubble, and the rubble stays there.

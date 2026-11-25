@@ -2,6 +2,56 @@
   "starts": [
     {
       "allSkills": 10,
+      "blockDamage": [
+        {
+          "cell": [-18, 42, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-18, 43, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-18, 44, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-18, 45, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-17, 42, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-17, 45, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-16, 42, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-16, 45, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-15, 42, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-15, 43, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-15, 44, 34],
+          "damage": 299
+        },
+        {
+          "cell": [-15, 45, 34],
+          "damage": 299
+        }
+      ],
       "debugOnly": true,
       "defaultForSite": true,
       "density": null,
