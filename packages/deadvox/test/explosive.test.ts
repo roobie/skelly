@@ -458,6 +458,26 @@ describe('hand grenade', () => {
     expect(world.getBlock(-2, 1, 0)).toBe(world.getBlock(2, 1, 0));
   });
 
+  it('marks most of the open floor within its radius when it goes off lying on it', () => {
+    const { radiusMetres } = registry.items.get(GRENADE)!.explosive!.blast;
+    const reach = Math.ceil(radiusMetres / BLOCK) + 1;
+    const world = new World();
+    fill(world, [-reach, 0, -reach], [reach, 0, reach], FLOOR);
+    const session = destructible(world);
+    session.body.pos = [0.5, 1, reach + 4];
+    landedGrenade(session, [0, 1, 0]);
+    session.sim.scheduler.advance(FUSE + 0.5);
+    const side = 2 * reach + 1;
+    const inRadius = Array.from(
+      { length: side ** 2 },
+      (_, i): Vec3 => [(i % side) - reach, 0, Math.floor(i / side) - reach],
+    ).filter(([x, , z]) => Math.hypot(x, 0.75, z) * BLOCK < radiusMetres);
+    const marked = inRadius.filter(
+      ([x, y, z]) => world.getBlock(x, y, z) !== FLOOR || world.blockDamage.get([x, y, z]) !== undefined,
+    );
+    expect(marked.length).toBeGreaterThan(inRadius.length / 2);
+  });
+
   it('spares the player and a shambler behind mirrored walls that its blast breaks', () => {
     const world = new World();
     fill(world, [-8, 0, -8], [8, 0, 8], FLOOR);
