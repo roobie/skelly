@@ -12,7 +12,7 @@ read_if:
   - you give a building's door a local way from the road, or change how trails and steps are placed
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
-  - you review the pavilion, village shop or boarded-house support fixtures
+  - you review the pavilion or village shop support fixtures
   - you choose a floor's material, or a block's look against its material
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -708,12 +708,10 @@ with the hand-drawn baseline; see
 
 ## Support comparison fixtures
 
-Condition and boarding checks must not depend on an unsupported shell: a later collapse would
-hide the condition or the door and window response the fixture exists to show. The pavilion's
-condition variants therefore share one bearing frame, while the boarded-door and boarded-window
-houses share a calm room's frame without changing their selected leaves or panes; see
-`mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.jsonnet`, `shell`, and
-`tools/jsonnet/lib/boarded-look-support.libsonnet`.
+A condition check must not depend on an unsupported shell: a later collapse would hide the
+condition the fixture exists to show. The pavilion's condition variants therefore share one
+bearing frame; see `mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.jsonnet`,
+`shell`.
 
 The combined support look puts the pavilion beside the shop so bearing can be judged without
 setting up another world; see `mods/skelly.deadvox.scenario.buildings.misc-support-look/layouts.jsonnet`.

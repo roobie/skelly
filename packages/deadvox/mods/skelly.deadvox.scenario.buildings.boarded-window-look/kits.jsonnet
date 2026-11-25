@@ -3,7 +3,7 @@
 // worn most of the way to breaking, so a few blows beat it in, while the first shows the boards
 // untouched. Both doors are held intact and both rooms calm, so nothing but the windows draws the eye.
 local city = import 'tools/jsonnet/lib/gauntlet-city-kits.libsonnet';
-local support = (import 'tools/jsonnet/lib/boarded-look-support.libsonnet')('boarded_window_look');
+local assembly(id) = std.filter(function(assembly) assembly.id == id, city.mapAssemblies)[0];
 local piece(id) = std.filter(function(piece) piece.id == id, city.mapPieces)[0];
 local boarded = piece('gauntlet_city_window_n_boarded');
 local worn = boarded + {
@@ -11,7 +11,7 @@ local worn = boarded + {
   palette: { W: boarded.palette.W + { wear: 0.8 } },
 };
 local only(id, kind='piece') = [{ ref: { kind: kind, id: id }, weight: 1 }];
-local shell(id, west, east) = support.shell + {
+local shell(id, west, east) = assembly('gauntlet_city_shell') + {
   id: id,
   slots: [
     if slot.id == 'front_west' then slot + { choices: only(west) }
@@ -20,17 +20,20 @@ local shell(id, west, east) = support.shell + {
     for slot in super.slots
   ],
 };
-local house(id, shellId) = support.house + {
+local house(id, shellId) = assembly('gauntlet_city_1') + {
   id: id,
   slots: [
     if slot.id == 'shell' then slot + { choices: only(shellId, 'assembly') }
     else if slot.id == 'door' then slot + { choices: only('gauntlet_city_door_intact') }
+    else if slot.id == 'room' then slot + {
+      choices: [choice + { weight: 1 } for choice in slot.choices if std.endsWith(choice.ref.id, '_calm')],
+    }
     else slot
     for slot in super.slots
   ],
 };
 {
-  mapPieces: [worn] + support.mapPieces,
+  mapPieces: [worn],
   mapAssemblies: [
     shell('boarded_window_look_glass_shell', 'gauntlet_city_window_n_clear', 'gauntlet_city_window_n_broken'),
     shell('boarded_window_look_boards_shell', boarded.id, worn.id),

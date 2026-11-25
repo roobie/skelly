@@ -4,7 +4,6 @@
       id: 'concrete_townhouse',
       bindings: {
         facade: { role: 'shell', block: 'concrete' },
-        bearing_lintel: { role: 'support', block: 'planks' },
         joists: { role: 'support', block: 'steel_joist' },
         floor: { role: 'interior_floor', block: 'slab_floor' },
         partition: { role: 'interior_wall', block: 'plaster' },
@@ -21,7 +20,6 @@
       id: 'brick_townhouse',
       bindings: {
         facade: { role: 'shell', block: 'brick' },
-        bearing_lintel: { role: 'support', block: 'planks' },
         joists: { role: 'support', block: 'steel_joist' },
         floor: { role: 'interior_floor', block: 'slab_floor' },
         partition: { role: 'interior_wall', block: 'plaster' },

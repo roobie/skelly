@@ -2,10 +2,6 @@
   "mapStyles": [
     {
       "bindings": {
-        "bearing_lintel": {
-          "block": "planks",
-          "role": "support"
-        },
         "cap": {
           "block": "concrete",
           "role": "trim"
@@ -55,10 +51,6 @@
     },
     {
       "bindings": {
-        "bearing_lintel": {
-          "block": "planks",
-          "role": "support"
-        },
         "cap": {
           "block": "brick",
           "role": "trim"
