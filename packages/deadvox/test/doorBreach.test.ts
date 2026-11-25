@@ -98,11 +98,11 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: (_contact, ahead, bash) => {
+    bashObstacle: (ahead, bash) => {
       const leaf = entities.pieceTouching(ahead);
       return leaf && entities.bash(leaf, bash);
     },
-    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
   const id = system.add({ ...SHAMBLER, strength }, [5, 1, 6], [0, 0, -1]);
   let reachedBehind = false;

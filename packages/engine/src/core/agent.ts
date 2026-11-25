@@ -823,7 +823,7 @@ export class AgentController {
       return;
     }
     const ahead = bodyAhead(aimDirection);
-    if (!bashableAhead(actor.body, ahead)) {
+    if (!bashableAhead(ahead)) {
       return;
     }
     const around = {
@@ -844,7 +844,7 @@ export class AgentController {
       // into a target. A committed actor (slide and wander cleared by the blow that landed) is not held here.
       return;
     }
-    const outcome = bashObstacle(actor.body, ahead, type.strength, type.bashKind);
+    const outcome = bashObstacle(ahead, type.strength, type.bashKind);
     if (!outcome) {
       return;
     }

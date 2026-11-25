@@ -389,12 +389,12 @@ export interface ActorSystemOptions {
    * A bash at a pursuing actor's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
    * The terrain or piece owner resolves it and makes its noise; the outcome when the obstacle took the blow.
    */
-  bashObstacle?: (contact: Body, ahead: Body, strength: number, kind: string) => BashOutcome | undefined;
+  bashObstacle?: (ahead: Body, strength: number, kind: string) => BashOutcome | undefined;
   /**
    * Whether a bashable terrain cell or piece stands in the box moved the obstacle lookahead along an aim. A held-up
    * actor asks this before probing for a way past (#1957), so open air never starts a probe.
    */
-  bashableAhead?: (contact: Body, ahead: Body) => boolean;
+  bashableAhead?: (ahead: Body) => boolean;
   /**
    * The standing-piece journal the lamp view cache also reads (`src/core/lampReach.ts`): `mark` gives its current
    * step, `changesSince` the pieces whose cells, pose or blocking changed since a mark — placed, opened, closed,

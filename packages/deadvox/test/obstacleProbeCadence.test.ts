@@ -78,11 +78,11 @@ const chaseHeldUp = (
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: (_contact, ahead, strength, kind) => {
+    bashObstacle: (ahead, strength, kind) => {
       blows.push(ahead);
       return overrides.bashObstacle?.(strength, kind);
     },
-    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
   const id = system.add(overrides.type ?? { ...SHAMBLER, strength: 5 }, [5, 1, 6], [0, 0, -1]);
   for (let frame = 0; frame < seconds * 60; frame++) {
@@ -255,7 +255,7 @@ const closingRoute = (interval: number, owner: ClosureOwner) => {
       blowTicks.push(now.frame);
       return 'damaged';
     },
-    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
@@ -343,7 +343,7 @@ it('keeps a chaser brushing a passable piece on one probe per interval through c
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: () => undefined,
-    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
@@ -413,7 +413,7 @@ it('coalesces chunk changes per chunk while actors are frozen and ends a nearby 
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: () => undefined,
-    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
