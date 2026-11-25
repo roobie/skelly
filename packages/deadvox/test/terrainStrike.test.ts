@@ -969,13 +969,16 @@ const pocket = (actorType: string, wallType: string) => {
 };
 
 describe('actor blows on terrain', () => {
-  it('leaves a wall a shambler cannot break whole and unmarked, and tells the shambler its blow was resisted', () => {
-    const f = pocket('shambler', 'plank_wall');
-    expect(f.run(60, () => f.actor().agent!.bashResisted)).toBe(true);
-    expect(f.broken()).toEqual([]);
-    expect(f.damaged()).toEqual([]);
-    expect(f.outside()).toBe(false);
-  });
+  it.each(['plank_wall', 'brick'])(
+    'leaves a %s wall a shambler cannot break whole and unmarked, and tells the shambler its blow was resisted',
+    (wallType) => {
+      const f = pocket('shambler', wallType);
+      expect(f.run(60, () => f.actor().agent!.bashResisted)).toBe(true);
+      expect(f.broken()).toEqual([]);
+      expect(f.damaged()).toEqual([]);
+      expect(f.outside()).toBe(false);
+    },
+  );
 
   it.each(['plank_wall', 'brick'])('lets a brute break a %s cell and walk out through the gap', (wallType) => {
     const f = pocket('brute_shambler', wallType);
