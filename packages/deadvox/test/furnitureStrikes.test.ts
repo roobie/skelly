@@ -113,7 +113,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: (ahead, bash) => {
+    bashObstacle: (_contact, ahead, bash) => {
       const piece = entities.pieceTouching(ahead);
       const outcome = piece && entities.bash(piece, bash);
       if (piece && outcome === 'ruined') {
@@ -121,7 +121,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
       }
       return outcome;
     },
-    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashableAhead: (_contact, ahead) => entities.pieceTouching(ahead) !== undefined,
   });
   const id = system.add({ ...SHAMBLER, strength }, [5, 1, 6], [0, 0, -1]);
   let reachedBehind = false;

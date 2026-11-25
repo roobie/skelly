@@ -1780,20 +1780,29 @@ export const createSession = (options: SessionOptions) => {
     return result;
   };
   const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => applyTerrainStrike(cell, blow, true) !== undefined;
-  /** The first solid, non-rubble terrain cell touching an actor's obstacle probe. */
+  /** The first solid, non-rubble terrain cell touching an actor's obstacle sweep. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The body-volume scan must examine every cell on three axes.
-  const terrainCellTouching = (probe: Body): Vec3 | undefined => {
+  const terrainCellTouching = (contact: Body, probe = contact): Vec3 | undefined => {
+    const halfDepth = contact.halfDepth ?? contact.halfWidth;
+    const probeHalfDepth = probe.halfDepth ?? probe.halfWidth;
+    const swept: Body = {
+      ...contact,
+      pos: [(contact.pos[0] + probe.pos[0]) / 2, contact.pos[1], (contact.pos[2] + probe.pos[2]) / 2],
+      halfWidth: Math.max(contact.halfWidth, probe.halfWidth) + Math.abs(probe.pos[0] - contact.pos[0]) / 2,
+      halfDepth: Math.max(halfDepth, probeHalfDepth) + Math.abs(probe.pos[2] - contact.pos[2]) / 2,
+      height: Math.max(contact.height, probe.height),
+    };
     const context = options.terrainDestruction;
     if (!context) {
       return undefined;
     }
-    const halfDepth = probe.halfDepth ?? probe.halfWidth;
-    for (let x = Math.floor(probe.pos[0] - probe.halfWidth); x <= Math.floor(probe.pos[0] + probe.halfWidth); x++) {
-      for (let y = Math.floor(probe.pos[1]); y <= Math.floor(probe.pos[1] + probe.height); y++) {
-        for (let z = Math.floor(probe.pos[2] - halfDepth); z <= Math.floor(probe.pos[2] + halfDepth); z++) {
+    const sweptHalfDepth = swept.halfDepth ?? swept.halfWidth;
+    for (let x = Math.floor(swept.pos[0] - swept.halfWidth); x <= Math.floor(swept.pos[0] + swept.halfWidth); x++) {
+      for (let y = Math.floor(swept.pos[1]); y <= Math.floor(swept.pos[1] + swept.height); y++) {
+        for (let z = Math.floor(swept.pos[2] - sweptHalfDepth); z <= Math.floor(swept.pos[2] + sweptHalfDepth); z++) {
           const cell: Vec3 = [x, y, z];
           const block = registry.blocks[context.terrain.getBlock(...cell)];
-          if (block?.solid && !standingRubble(world, registry, cell) && boxIntersectsBody(cell, [1, 1, 1], probe)) {
+          if (block?.solid && !standingRubble(world, registry, cell) && boxIntersectsBody(cell, [1, 1, 1], swept)) {
             return cell;
           }
         }
@@ -1955,12 +1964,12 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     }),
     meleeBlocker,
-    bashObstacle: (ahead, strength, kind) => {
+    bashObstacle: (contact, ahead, strength, kind) => {
       const piece = entities.pieceTouching(ahead);
       if (piece) {
         return bashPiece(piece, strength);
       }
-      const cell = terrainCellTouching(ahead);
+      const cell = terrainCellTouching(contact, ahead);
       if (!cell) {
         return;
       }
@@ -1968,7 +1977,8 @@ export const createSession = (options: SessionOptions) => {
       // A refused terrain break leaves the obstacle intact without a landed blow, so the actor keeps looking for a way.
       return outcome === 'refused' ? undefined : outcome;
     },
-    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined || terrainCellTouching(ahead) !== undefined,
+    bashableAhead: (contact, ahead) =>
+      entities.pieceTouching(ahead) !== undefined || terrainCellTouching(contact, ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
