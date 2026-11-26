@@ -3,6 +3,7 @@ import type { MeshData } from '../core/mesher.ts';
 import type { Neighbourhood } from '../core/meshInput.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
+import type { StrutShape } from '../core/strutShape.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 
 /** The block tables a mesher keeps for every chunk it meshes. */
@@ -12,6 +13,7 @@ export interface MesherInit {
   patterns: Uint8Array;
   weatherable: Uint8Array;
   wireMeshes: WireMeshes;
+  struts?: readonly (StrutShape | undefined)[];
   liquids: Uint8Array;
   fencePosts: FencePostDefs;
   /** 1 per block id that darkens wide occlusion. */

@@ -136,7 +136,7 @@ const chunkMaterial = ({
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute float weatherable;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\nattribute vec2 weather;\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}`,
+        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute vec3 cellOffset;\nattribute float weatherable;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\nattribute vec2 weather;\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}`,
       )
       .replace(
         '#include <begin_vertex>',
@@ -149,7 +149,7 @@ chunkToWorld = modelMatrix * batchingMatrix;
 vOcclusion = occlusion;
 vWeather = weather;
 vWeatherable = weatherable;
-vCell = (chunkToWorld * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
+vCell = (chunkToWorld * vec4(position - cellOffset, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
 vWorld = (chunkToWorld * vec4(position, 1.0)).xyz;
 vFaceN = normalize(normal);`,
@@ -550,6 +550,7 @@ const chunkGeometry = (data: MeshData): BufferGeometry => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
+  geometry.setAttribute('cellOffset', new BufferAttribute(data.cellOffsets, 3));
   geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
   geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
   geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1));

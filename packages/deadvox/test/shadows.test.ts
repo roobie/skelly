@@ -169,6 +169,7 @@ describe('redrawing the sun map', () => {
 const floor: MeshData = {
   positions: new Float32Array([0, 1, 0, 0, 1, CHUNK, CHUNK, 1, CHUNK, CHUNK, 1, 0]),
   normals: new Int8Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
+  cellOffsets: new Float32Array([0, 0.5, 0, 0, 0.5, 0, 0, 0.5, 0, 0, 0.5, 0]),
   colors: new Uint8Array(12),
   patterns: new Uint8Array(4),
   weatherable: new Uint8Array(4),

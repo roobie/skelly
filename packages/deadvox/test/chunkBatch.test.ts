@@ -34,6 +34,7 @@ const floorAt = (height: number, padding = 0): MeshData => {
   return {
     positions,
     normals: new Int8Array(quads * 12),
+    cellOffsets: new Float32Array(quads * 12),
     colors: new Uint8Array(quads * 12),
     patterns: new Uint8Array(quads * 4),
     weatherable: new Uint8Array(quads * 4),

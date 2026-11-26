@@ -263,6 +263,78 @@
       "family": "shambler",
       "id": "8_shambler_tree_branch",
       "sound": "shambler_step_wood"
+    },
+    {
+      "block": "steel_strut_px",
+      "family": "shambler",
+      "id": "8_shambler_steel_strut_px",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "steel_strut_nx",
+      "family": "shambler",
+      "id": "8_shambler_steel_strut_nx",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "steel_strut_pz",
+      "family": "shambler",
+      "id": "8_shambler_steel_strut_pz",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "steel_strut_nz",
+      "family": "shambler",
+      "id": "8_shambler_steel_strut_nz",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "timber_strut_px",
+      "family": "shambler",
+      "id": "8_shambler_timber_strut_px",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "timber_strut_nx",
+      "family": "shambler",
+      "id": "8_shambler_timber_strut_nx",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "timber_strut_pz",
+      "family": "shambler",
+      "id": "8_shambler_timber_strut_pz",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "timber_strut_nz",
+      "family": "shambler",
+      "id": "8_shambler_timber_strut_nz",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "charred_strut_px",
+      "family": "shambler",
+      "id": "8_shambler_charred_strut_px",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "charred_strut_nx",
+      "family": "shambler",
+      "id": "8_shambler_charred_strut_nx",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "charred_strut_pz",
+      "family": "shambler",
+      "id": "8_shambler_charred_strut_pz",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "charred_strut_nz",
+      "family": "shambler",
+      "id": "8_shambler_charred_strut_nz",
+      "sound": "shambler_step_wood"
     }
   ]
 }

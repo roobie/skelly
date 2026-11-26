@@ -71,6 +71,7 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 // Unlike an exclusion, a rule here only records the file: a later runtime import brings it back
 // into identity, so a simulation use added later cannot hide behind it.
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
+  'engine/core/strutShape.ts': 'Terrain mesh geometry; no simulation consumer imports it.',
   'engine/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'engine/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
   'engine/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',

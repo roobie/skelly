@@ -1,4 +1,5 @@
 // Product footsteps live here so shared blocks need no dependency on the actors that walk them.
+local struts = [b for b in (import 'packages/mods/skelly.natural-world/block-materials.jsonnet').blocks if std.objectHas(b, 'strut')];
 local rows(family, blocksBySound) = [
   { id: std.length(family) + '_' + family + '_' + block, family: family, block: block, sound: sound }
   for sound in std.objectFields(blocksBySound)
@@ -19,5 +20,8 @@ local rows(family, blocksBySound) = [
       'reinforced_concrete_rubble', 'slab_deck',
     ],
     shambler_step_wood: ['charred_remains', 'timber_rubble', 'planks', 'plank_wall', 'plank_floor', 'slab_floor', 'tree_trunk', 'tree_branch'],
+  }) + rows('shambler', {
+    shambler_step_stone: [b.id for b in struts if b.footsteps.player == 'footstep_stone'],
+    shambler_step_wood: [b.id for b in struts if b.footsteps.player == 'footstep_wood'],
   }),
 }

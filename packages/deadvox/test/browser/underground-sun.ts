@@ -26,6 +26,7 @@ function slab(thickness: number): MeshData {
   return {
     positions,
     normals,
+    cellOffsets: Float32Array.from(normals, (value) => value / 254),
     indices,
     colors: new Uint8Array(count * 3).fill(255),
     patterns: new Uint8Array(count),

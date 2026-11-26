@@ -14,6 +14,7 @@ read_if:
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
   - you're changing structure support, bent span reach, cascade landing, buried contents or their clearing
+  - you're changing strut geometry, material admission or ray passage
 ---
 
 # Slice 5 — Holding ground
@@ -178,6 +179,13 @@ unbuilt. Unanswered gates block only their dependent work.
   frontier preserves interrupted work; see
   `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
   `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`.
+- **Strut geometry:** shape belongs to a construction block, not to a material whitelist,
+  so another structural material can reuse the same mechanism. Content derives oriented
+  burn replacements to avoid turning an open member into a cube. The bounded prism keeps
+  mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
+  a sloping face normal. See `packages/engine/src/core/strutShape.ts`, `strutFaces`;
+  `packages/engine/src/core/mesher.ts`, `emitStruts`; and
+  `packages/mods/skelly.natural-world/struts.libsonnet`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";

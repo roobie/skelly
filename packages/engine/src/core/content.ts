@@ -3076,9 +3076,44 @@ const checkBurnResults = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): void => {
+  if (block.strut) {
+    const opposite = { '+x': '-x', '-x': '+x', '+z': '-z', '-z': '+z' } as const;
+    if (!registry.blockMaterials.get(block.material)?.structural) {
+      report('blocks', block.id, '.strut', 'struts require a structural material');
+    }
+    if (
+      block.bearing !== opposite[block.strut.rise] ||
+      !block.solid ||
+      block.opaque !== false ||
+      block.wireMesh ||
+      block.fencePosts ||
+      block.liquid
+    ) {
+      report(
+        'blocks',
+        block.id,
+        '.strut',
+        'struts need their diagonal bearing, solid bodies, open sight and no other shape',
+      );
+    }
+  }
+  if (block.burnsTo) {
+    const result = registry.blocks[registry.blockIds.get(block.burnsTo) ?? -1];
+    if (
+      !result?.solid ||
+      registry.blockMaterials.get(result.material)?.span !== 0 ||
+      result.strut?.rise !== block.strut?.rise
+    ) {
+      report('blocks', block.id, '.burnsTo', 'burn-out must preserve orientation and use a solid zero-span material');
+    }
+  }
+};
+
 const checkBlockMaterials = (registry: Registry, report: Report): void => {
   checkBurnResults(registry, report);
   for (const block of registry.blocks.slice(1)) {
+    checkBlockShape(registry, block, report);
     if (!registry.blockMaterials.has(block.material)) {
       report('blocks', block.id, '.material', `no block material "${block.material}"`);
     }

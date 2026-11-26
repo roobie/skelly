@@ -99,6 +99,7 @@ export const BlockMaterialSchema = strictObject({
   resistance: record(Id, Fraction),
   massKg: Positive,
   span: Count,
+  structural: vBoolean(),
   fallsTo: Id,
   flammability: optional(
     strictObject({
@@ -150,6 +151,16 @@ export const SupportTuningSchema = strictObject({
 export const BlockSchema = strictObject({
   id: Id,
   material: Id,
+  /** The cell carrying this block is always one row down; the selector offsets its horizontal position. */
+  bearing: optional(picklist(['below', '-x', '+x', '-z', '+z'])),
+  strut: optional(
+    strictObject({
+      rise: picklist(['+x', '-x', '+z', '-z']),
+      widthBlocks: pipe(Positive, maxValue(0.5)),
+    }),
+  ),
+  /** Content derives an oriented burnt variant rather than changing shape in the fire mechanism. */
+  burnsTo: optional(Id),
   name: Name,
   color: Color,
   /** Blocks movement independently of sight and render geometry. */
