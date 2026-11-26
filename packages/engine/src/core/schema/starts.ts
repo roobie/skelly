@@ -118,6 +118,8 @@ export const StartSchema = strictObject({
       }),
     ),
   ),
+  /** Terrain cells the start ignites through the world's fire owner. */
+  fires: optional(array(strictObject({ cell: CellPosition, strength: Positive }))),
   /** Every content skill's starting level, under the start's own `skills`; null marks a debug start that tests
    * skills and so keeps the ordinary levels (`docs/PROCESS.md`, "Reviews by eye and by play"). */
   allSkills: optional(nullable(pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_MAX)))),

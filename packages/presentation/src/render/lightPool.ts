@@ -45,6 +45,8 @@ interface LightPoolContext {
   fixtures?: readonly PoweredLight[];
   /** Body glows (the acid sac): presentation lights that take the item slots no item uses, nearest first. */
   glows?: readonly BodyGlow[];
+  /** Burning terrain cells share the fixture partition, nearest sources first. */
+  fires?: readonly BodyGlow[];
   meetsView?: (light: PoweredLight) => boolean;
 }
 
@@ -55,6 +57,14 @@ export interface BodyGlow {
   readonly intensity: number;
   readonly radiusMetres: number;
 }
+
+const fireFixtures = (fires: readonly BodyGlow[] | undefined, blockSize: number): PoweredLight[] =>
+  (fires ?? []).map(({ position, color, intensity, radiusMetres }) => ({
+    pos: [position[0] / blockSize, position[1] / blockSize, position[2] / blockSize],
+    color,
+    intensity,
+    radius: radiusMetres,
+  }));
 
 /** What a light in the world shines with: it follows the world's daylight scale, not the camera's adaptation. */
 function worldIntensity(base: number, { worldDaylightScale, daylightScale }: LightPoolContext, visible = true): number {
@@ -255,7 +265,7 @@ export class LightPool {
       })
       .slice(0, this.itemSlots - this.heldSlots);
 
-    const fixtures = [...(context.fixtures ?? [])]
+    const fixtures = [...fireFixtures(context.fires, blockSize), ...(context.fixtures ?? [])]
       .sort((a, b) => {
         const distance = ({ pos }: PoweredLight) =>
           (pos[0] * blockSize - camera.position.x) ** 2 +

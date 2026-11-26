@@ -29,6 +29,7 @@ const senseTuning = {
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
     renderedFixtureLimit: 4,
+    terrainFire: BASE_SENSE_TUNING.light.terrainFire,
     heldLamps: 2,
     droppedLamps: 2,
     itemShadow: { faceSize: 256, bias: 0, normalBiasMetres: 0, radius: 1, nearMetres: 0.02 },
