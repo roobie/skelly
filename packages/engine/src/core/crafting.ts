@@ -526,8 +526,9 @@ export const admissionRefusal = (
   refusalReason(snapshot.player.inventory.registry, recipe, {}, equipmentStatus(recipe, snapshot, character));
 
 /**
- * The fuel a craft burns over `durationGameSeconds`, from the fuelled tool each required quality comes from, or why
- * no such tool holds enough. A quality a workstation or a fuel-free tool meets burns nothing.
+ * The fuel a craft burns over `durationGameSeconds`, one burn per fuelled tool it uses, or why no such tool holds
+ * enough. A quality a workstation or a fuel-free tool meets burns nothing, and a tool already burning for one quality
+ * serves any other it provides without burning again, since it burns for the craft's time, not per quality.
  */
 export const craftFuel = (
   recipe: RecipeDef,
@@ -546,6 +547,9 @@ export const craftFuel = (
       .filter((provider) => provider.level >= level)
       .map(({ entry }) => entry.item);
     if (providers.length === 0 || providers.some((provider) => !registry.items.get(provider.type)?.tool?.fuel)) {
+      continue;
+    }
+    if (spends.some((spend) => providers.includes(spend.tool))) {
       continue;
     }
     const tool = providers.find((candidate) =>

@@ -1,3 +1,4 @@
+import type { Registry } from '@skelly/engine/content';
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
@@ -517,10 +518,10 @@ describe('torch cutting a steel cell', () => {
 });
 
 /** A crafter with the recipe known and its first component of each group in a pile at their feet. */
-const craftFixture = (recipeId: string) => {
-  const character = new Character(registry);
+const craftFixture = (recipeId: string, content: Registry = registry) => {
+  const character = new Character(content);
   character.initializeProgression({}, [recipeId]);
-  const inventory = new Inventory(registry, undefined, undefined, character);
+  const inventory = new Inventory(content, undefined, undefined, character);
   const sim = new Simulation({ seed: 1 });
   const position: Vec3 = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
@@ -529,7 +530,7 @@ const craftFixture = (recipeId: string) => {
     calendar: () => sim.calendar,
   });
   const commands = new CraftCommands({ inventory, character, sim, queue: new HandlingQueue(inventory), reach });
-  const recipe = registry.recipes.get(recipeId)!;
+  const recipe = content.recipes.get(recipeId)!;
   const stock = (item: ReturnType<Inventory['create']>) => {
     if (!inventory.add(item, { kind: 'pile', pos: position })) {
       throw new Error('fixture stock did not fit');
@@ -579,5 +580,32 @@ describe('crafting with a fuelled tool', () => {
 
     expect(r.recipe.result).toMatchObject({ item: r.inventory.hands.right!.type });
     expect(chargeOf(registry, torch)).toBe(canisterCapacity);
+  });
+
+  it('charges a torch that serves two of the craft qualities one burn', () => {
+    const torchCraft = registry.recipes.get('cut_sheet_metal_torch')!;
+    const twin = { ...registry, items: new Map(registry.items), recipes: new Map(registry.recipes) };
+    twin.items.set('blowtorch', {
+      ...registry.items.get('blowtorch')!,
+      tool: { ...torchTool, qualities: { ...torchTool.qualities, cutting: 1 } },
+    });
+    twin.recipes.set('twin_cut', { ...torchCraft, id: 'twin_cut', qualities: { ...torchCraft.qualities, cutting: 1 } });
+    // A full cartridge's start reads the craft's duration, so the real fill can be sized to one burn and a half.
+    const probe = craftFixture('twin_cut', twin);
+    probe.stock(fuelledTorch(probe.inventory, canisterCapacity));
+    expect(probe.commands.start(probe.recipe.id)).toBeUndefined();
+    const burn = torchTool.fuel!.fillPerSimSecond * (probe.inventory.hands.right!.work!.duration / BASE_CLOCK.ratio);
+
+    const r = craftFixture('twin_cut', twin);
+    const torch = fuelledTorch(r.inventory, burn * 1.5);
+    r.stock(torch);
+    expect(r.commands.start(r.recipe.id)).toBeUndefined();
+    const work = r.inventory.hands.right!.work!;
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    // A refused finish keeps the job, so an ended job shows the finish settled whole.
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.recipe.result).toMatchObject({ item: r.inventory.hands.right!.type });
+    expect(chargeOf(twin, torch)).toBeCloseTo(burn * 0.5, 9);
   });
 });
