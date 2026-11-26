@@ -2677,9 +2677,9 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   shambler, while a breaching charge (directional, at contact) destroys a steel
   door and little around it. Blast and fragment damage apply to bodies
   (`packages/engine/src/core/explosive.ts`, `blastShare` and `fragmentHitsOnBody`);
-  blocks and pieces take damage only from blows through their material gate,
-  blasts and fragments included (`packages/engine/src/game/session.ts`,
-  `strikeExplosiveTerrain`). Both reduce a blow by their material's resistance to
+  blocks and pieces take damage only from blows through their material gate. An
+  explosion's blast strikes both, while its fragments strike only the cells their rays
+  meet (`packages/engine/src/game/session.ts`, `explosiveTerrainTargets`). Both reduce a blow by their material's resistance to
   its kind in one shared step, so a kind such as heat means the same against a wall
   and a door (`packages/engine/src/core/blow.ts`, `strengthPast`). Breach charges
   are owed under #1332.
