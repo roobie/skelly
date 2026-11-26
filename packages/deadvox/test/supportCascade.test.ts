@@ -315,8 +315,7 @@ describe('support cascade', () => {
     cover.position.set(...(covered.map((value) => value * scale.blockSize) as Vec3));
     cover.updateMatrixWorld(true);
     const bodyObjects = new Set(actors.group.children);
-    const visibleBodyRays = (cell: Vec3, withCover = true) => {
-      const objects = withCover ? [...actors.group.children, cover] : actors.group.children;
+    const visibleBodyRays = (cell: Vec3, objects = [...actors.group.children, cover]) => {
       let visible = 0;
       for (const x of [0.2, 0.4, 0.6, 0.8]) {
         for (const y of [0.2, 0.4, 0.6, 0.8]) {
@@ -337,7 +336,7 @@ describe('support cascade', () => {
       return visible;
     };
     expect(visibleBodyRays(cleared)).toBeGreaterThan(0);
-    expect(visibleBodyRays(covered, false)).toBeGreaterThan(0);
+    expect(visibleBodyRays(covered, actors.group.children)).toBeGreaterThan(0);
     expect(visibleBodyRays(covered)).toBe(0);
     terrain.dispose();
   });
