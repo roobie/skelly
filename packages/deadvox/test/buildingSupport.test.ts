@@ -28,12 +28,6 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
  * Every entry is declared by a covered proof and still fails it, so the list cannot go stale.
  */
 const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
-  'rural_flat_roof_house_cellar',
-  'rural_flat_roof_house_wc_cellar',
-  'rural_plot_privy_cellar',
-  'rural_plot_privy_garage_cellar',
-  'rural_plot_wc_cellar',
-  'rural_plot_wc_garage_cellar',
   'bungalow',
   'corner_store',
   'garage',
