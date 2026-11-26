@@ -537,6 +537,7 @@ export const createPlayView = (
           bloodiness: (actor) => gore.severity(actor),
         })
       : new ActorMeshes(s, undefined, meshes);
+  actorMeshes.hiddenByFall = (actor) => fallDrops.hidesBuriedCells(actor.body.buried);
   actorMeshes.setWorld?.(physicalSolid, s);
   scene.add(actorMeshes.group);
   // The shadow passes pick the renderer's figures per light (a no-op for the box fallback).

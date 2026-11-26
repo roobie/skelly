@@ -1,7 +1,13 @@
 {
   "layouts": [
     {
-      "actors": [],
+      "actors": [
+        {
+          "chance": 1,
+          "position": [-3.75, 21, 15.25],
+          "type": "shambler"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -98,6 +104,11 @@
           "position": [-12, 20.5, 14],
           "rotation": 0,
           "template": "test_house_fall_drop"
+        },
+        {
+          "position": [-5, 20.5, 14],
+          "rotation": 0,
+          "template": "test_house_fall_drop_burial"
         }
       ],
       "demo": true,
@@ -225,6 +236,31 @@
         "p": "plank_floor"
       },
       "size": [12, 8, 4]
+    },
+    {
+      "id": "test_house_fall_drop_burial",
+      "layers": [
+        ["kkkkk", "kkkkk", "kkkkk", "kkkkk", "kkkkk"],
+        ["kkkkk", "k...k", "k...k", "k...k", "kkkkk"],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", ".....", ".....", "....."],
+        [".....", ".....", "..p..", ".....", "....."],
+        [".....", ".....", "..p..", ".....", "....."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "k": "concrete",
+        "p": "plank_floor"
+      },
+      "size": [5, 10, 5]
     }
   ]
 }

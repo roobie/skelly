@@ -4,5 +4,6 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
     id: 'falldroplook',
     site: 'testHouseFallDropLook',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
+    supportLoss: [[-8, 48, 30]],
   }],
 }

@@ -31,6 +31,7 @@ const REGION_FOR_PART: Readonly<Record<Part, HumanoidHitRegion>> = {
 /** Six instanced boxes, never one draw object per actor. */
 export class ActorMeshes {
   readonly group = new Group();
+  hiddenByFall: ((actor: Actor) => boolean) | undefined;
   private readonly meshes = new Map<Part, InstancedMesh>();
   private readonly dummy = new Object3D();
   private readonly stepOffsets = new Map<EntityId, StepOffset>();
@@ -156,7 +157,7 @@ export class ActorMeshes {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     const actors = [...store.entries()]
-      .filter(([, actor]) => !actor.body.buried)
+      .filter(([, actor]) => !this.hiddenByFall?.(actor))
       .map(([id, actor]) => {
         const previousTime = actor.renderPrevious.time;
         const actorBackgroundBlend =

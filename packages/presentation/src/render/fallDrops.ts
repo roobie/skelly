@@ -79,6 +79,16 @@ export class FallDrops {
     }
   }
 
+  hidesBuriedCells(cells: readonly FallRecord['to'][] | undefined): boolean {
+    return (
+      cells?.some((cell) =>
+        this.active.some(
+          ({ record }) => record.kind === 'terrain' && record.to.every((value, axis) => value === cell[axis]),
+        ),
+      ) ?? false
+    );
+  }
+
   update(dt: number): void {
     const landed: FallRecord['to'][] = [];
     for (let index = this.active.length - 1; index >= 0; index -= 1) {

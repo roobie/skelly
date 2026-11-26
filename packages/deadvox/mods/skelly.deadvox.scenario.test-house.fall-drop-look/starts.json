@@ -103,6 +103,7 @@
       "skills": {},
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,
+      "supportLoss": [[-8, 48, 30]],
       "wounds": []
     }
   ]

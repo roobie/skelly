@@ -7,11 +7,15 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { createTerrainEvaluator, type TerrainPlan, type Vec3, World } from '@skelly/engine/world';
+import { ActorMeshes } from '@skelly/presentation/internal/render/actors.ts';
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { contentLookup } from '@skelly/presentation/ui';
+import { Raycaster, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
+import { MobActorMeshes } from './mobActorsFixture.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const scale = { blockSize: 0.5, minCy: 0, maxCy: 0 };
@@ -272,6 +276,69 @@ describe('support cascade', () => {
     const damage = reader.read().filter((event) => event.kind === 'damage');
     expect(damage.length).toBeGreaterThan(0);
     expect(damage.every((event) => event.continuous)).toBe(true);
+  });
+
+  it('reveals the exposed part after digging one of two body-covering cells, not the still-covered part', () => {
+    const layout: typeof structures = (registry, neighbour) => [
+      ...chamber(registry, neighbour),
+      row(4, 4, 9, registry.blockIds.get(BEAM)!),
+    ];
+    const f = fixture(undefined, undefined, false, { layout, spawn: [7.65, 1, Z + 0.5] });
+    const id = f.session.actors.add(f.registry.actors.get('shambler')!, [4.5, 1, Z + 0.5]);
+    expect(f.strike([2, 6, Z])).toBe(true);
+    settle(f);
+    const actor = f.session.actors.store.get(id)!;
+    const cells = [...actor.body.buried!].sort((a, b) => b[1] - a[1]);
+    expect(cells).toHaveLength(2);
+    const [cleared, covered] = cells as [Vec3, Vec3];
+    const preview = f.session.crafting.previewTakeApartCell(cleared);
+    expect(preview.identity).toBeDefined();
+    expect(f.session.crafting.takeApartCell(cleared, preview.identity!)).toBeUndefined();
+    const work = f.session.inventory.hands.right?.work;
+    expect(work?.kind).toBe('cellDisassembly');
+    f.session.sim.scheduler.advance(work!.duration / f.session.sim.clock.ratio + 1);
+    expect(f.canonical.getBlock(...cleared)).toBe(0);
+    expect(actor.body.buried).toEqual([covered]);
+    const figures = new MobActorMeshes(scale.blockSize, 1, {
+      actors: new Map([[actor.type.id, actor.type]]),
+      actorFigureFiles: stackActorFigureFiles(f.registry),
+      poolSize: 1,
+    });
+    figures.sync(f.session.actors.store);
+    expect(figures.isTracked(id)).toBe(true);
+    figures.dispose();
+    const actors = new ActorMeshes(scale.blockSize);
+    actors.sync(f.session.actors.store);
+    actors.group.updateMatrixWorld(true);
+    const terrain = new ChunkMeshes(scale.blockSize, f.registry);
+    const cover = terrain.blockModel(f.canonical.getBlock(...covered), f.registry);
+    cover.position.set(...(covered.map((value) => value * scale.blockSize) as Vec3));
+    cover.updateMatrixWorld(true);
+    const bodyObjects = new Set(actors.group.children);
+    const visibleBodyRays = (cell: Vec3, withCover = true) => {
+      let visible = 0;
+      for (const x of [0.2, 0.4, 0.6, 0.8]) {
+        for (const y of [0.2, 0.4, 0.6, 0.8]) {
+          const ray = new Raycaster(
+            new Vector3(
+              (cell[0] + x) * scale.blockSize,
+              (cell[1] + y) * scale.blockSize,
+              (cell[2] - 2) * scale.blockSize,
+            ),
+            new Vector3(0, 0, 1),
+          );
+          const [first] = ray.intersectObjects([...actors.group.children, ...(withCover ? [cover] : [])]);
+          if (first && bodyObjects.has(first.object)) {
+            visible += 1;
+          }
+        }
+      }
+      return visible;
+    };
+    expect(visibleBodyRays(cleared)).toBeGreaterThan(0);
+    expect(visibleBodyRays(covered, false)).toBeGreaterThan(0);
+    expect(visibleBodyRays(covered)).toBe(0);
+    terrain.dispose();
   });
 
   it('frees an unbreathing victim when another actor takes its rubble apart', async () => {

@@ -20,6 +20,8 @@ it('hides landed pieces and piles until their moving copies arrive', () => {
   expect(pile).toHaveBeenCalledWith(2);
   expect(terrain).toHaveBeenCalledWith(1);
   expect(mask).toHaveBeenCalledWith([[2, 0, 0]]);
+  expect(drops.hidesBuriedCells([[2, 0, 0]])).toBe(true);
+  expect(drops.hidesBuriedCells([[3, 0, 0]])).toBe(false);
   expect(drops.hiddenPieceUids.has(1)).toBe(true);
   expect(drops.hiddenItemUids.has(2)).toBe(true);
   const heights = drops.group.children.map((model) => model.position.y);
@@ -31,6 +33,7 @@ it('hides landed pieces and piles until their moving copies arrive', () => {
   expect(drops.hiddenPieceUids.size).toBe(0);
   expect(drops.hiddenItemUids.size).toBe(0);
   expect(drops.group.children).toHaveLength(0);
+  expect(drops.hidesBuriedCells([[2, 0, 0]])).toBe(false);
   drops.dispose();
 });
 

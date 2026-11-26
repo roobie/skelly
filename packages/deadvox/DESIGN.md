@@ -40,6 +40,7 @@ read_if:
   - you change standing water, basins, the flooded-lot check, water evaluation ownership or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you change furniture lifting, carrying, placement, floor movement or stack support
+  - you change body visibility beneath rubble or during a gravity drop
   - you change furniture repair admission or the boundary between repair and replacement
   - you change world-target repair selection or target identity ownership
   - 'you change the shared crafting and world-work review or its target identity'
@@ -733,6 +734,9 @@ because rearranging a room should not require destroying its contents. See `pack
   copy waiting underneath a drop. Terrain masking belongs at the mesh-input
   boundary: restoring remembered block values would overwrite later simulation
   edits, and a later column publication must not reveal an unfinished landing.
+  Digging reveals a body bit by bit: a body popping into view only when its last
+  covering cell is cleared reads wrong. Burial alone must not hide the body;
+  only its unfinished landing needs that temporary protection.
   See `packages/engine/src/core/furnitureMove.ts`, `settle`,
   `packages/engine/src/game/renderWorld.ts`, `RenderWorld.meshChunk`, and
   `packages/presentation/src/render/fallDrops.ts`, `FallDrops`.
