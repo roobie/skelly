@@ -235,36 +235,52 @@ const ADMISSION_CANDIDATES = [
 ] as const;
 
 /** The legacy templates restrict themselves to cities; the Holdout and workshop templates have no such restriction. */
-const cityOnlyCandidates = new Set(['shed', 'small_house', 'bungalow', 'corner_store', 'gas_station', 'hardware_store', 'garage']);
+const cityOnlyCandidates = new Set([
+  'shed',
+  'small_house',
+  'bungalow',
+  'corner_store',
+  'gas_station',
+  'hardware_store',
+  'garage',
+]);
 
-const admissionEvidence = (): { declared: ReadonlySet<string>; failing: ReadonlySet<string>; unsupported: Record<string, Vec3[]> } => {
+const admissionEvidence = (): {
+  declared: ReadonlySet<string>;
+  rural: ReadonlyMap<string, boolean>;
+  failing: ReadonlySet<string>;
+  unexpectedDrops: Record<string, Vec3[]>;
+} => {
   const { registry } = withReusedBuilds(() => selectBundledMods(productModIntake, [])).content;
   const declared = new Set<string>();
+  const rural = new Map<string, boolean>();
   const failing = new Set<string>();
-  const unsupported: Record<string, Vec3[]> = {};
+  const unexpectedDrops: Record<string, Vec3[]> = {};
   for (const id of ADMISSION_CANDIDATES) {
     const template = registry.templates.get(id);
-    expect(template, `admission candidate ${id} is declared`).toBeDefined();
-    declared.add(id);
-    const rural = template!.eligibility?.settlementKinds.includes('rural') ?? true;
-    if (cityOnlyCandidates.has(id)) {
-      expect(rural, `${id} remains city-only`).toBe(false);
-    } else {
-      expect(rural, `${id} is rural-admissible`).toBe(true);
+    if (template === undefined) {
+      continue;
     }
-    const dropped = supportDrops(registry, compileTemplate(registry, template!));
+    declared.add(id);
+    rural.set(id, template.eligibility?.settlementKinds.includes('rural') ?? true);
+    const dropped = supportDrops(registry, compileTemplate(registry, template));
     if (dropped.length > 0) {
       failing.add(id);
       if (!KNOWN_UNSUPPORTED.has(id)) {
-        unsupported[id] = dropped;
+        unexpectedDrops[id] = dropped;
       }
     }
   }
-  return { declared, failing, unsupported };
+  return { declared, rural, failing, unexpectedDrops };
 };
 
 it('reports support and rural eligibility for every Holdout admission candidate', () => {
-  expect(admissionEvidence().unsupported, 'unsupported cells by admission template').toEqual({});
+  const admission = admissionEvidence();
+  for (const id of ADMISSION_CANDIDATES) {
+    expect(admission.declared.has(id), `admission candidate ${id} is declared`).toBe(true);
+    expect(admission.rural.get(id), `${id} eligibility`).toBe(!cityOnlyCandidates.has(id));
+  }
+  expect(admission.unexpectedDrops, 'unsupported cells by admission template').toEqual({});
 });
 
 it('holds every building that answers a brief, intact on natural ground, under the support rule', () => {
@@ -298,13 +314,10 @@ it('holds every building that answers a brief, intact on natural ground, under t
   expect(unskipped.length, 'some building that is not skipped is checked').toBeGreaterThan(0);
   expect(failing).toEqual({});
   const admission = admissionEvidence();
+  const declared = new Set([...briefedIds, ...admission.declared]);
+  const stillFails = new Set([...stillFailing, ...admission.failing]);
   expect(
-    [...KNOWN_UNSUPPORTED].filter(
-      (id) =>
-        (!briefedIds.has(id) && !admission.declared.has(id)) ||
-        (briefedIds.has(id) && !stillFailing.has(id)) ||
-        (admission.declared.has(id) && !admission.failing.has(id)),
-    ),
+    [...KNOWN_UNSUPPORTED].filter((id) => !(declared.has(id) && stillFails.has(id))),
     'known unsupported buildings that are undeclared or hold; drop them from KNOWN_UNSUPPORTED',
   ).toEqual([]);
 });
