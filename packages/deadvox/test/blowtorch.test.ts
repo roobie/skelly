@@ -235,6 +235,16 @@ it('a heat blow on a wood piece is resisted while the same strength blunt lands'
   expect(entities.bash(door, lands)).not.toBe('resisted');
 });
 
+it('a blunt blow on a steel piece is resisted while the same strength heat lands', () => {
+  const steel = registry.furnitureMaterials.get(doorDef.material)!;
+  const { lands, resisted } = blowsAtGate(doorDef.breach.minimumStrength, steel.resistance, 'heat', 'blunt');
+  const entities = new BlockEntities(registry);
+  const door = entities.add({ type: doorDef.id, pos: [0, 0, 0], size: [...doorDef.size] as Vec3, facing: 'n' })!;
+
+  expect(entities.bash(door, resisted)).toBe('resisted');
+  expect(entities.bash(door, lands)).not.toBe('resisted');
+});
+
 const torchTool = registry.items.get('blowtorch')!.tool!;
 const torchCut = torchTool.cut!;
 const strikeFuel = torchTool.fuel!.fillPerSimSecond * torchCut.strikeIntervalSimSeconds;
