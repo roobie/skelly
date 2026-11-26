@@ -59,7 +59,7 @@ local plant = hall(
     'J..........J',
     'JJJJJJJJJJJJ',
     'J..........J',
-    'JJJJJ..JJJJJ',
+    'JJJJJJJJJJJJ',
   ],
 );
 // One of each failure's spare, what makes another and the tools that fit them, so a stores reached is a plant restored.
