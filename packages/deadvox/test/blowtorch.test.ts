@@ -431,7 +431,7 @@ describe('torch cutting a steel cell', () => {
     expect(f.blockAt(joist)).toBe('steel_joist');
     expect(f.damageAt(joist)).toBeGreaterThan(0);
     expect(f.sim.actions.job?.stopped).toBe(true);
-    expect(f.sim.compression.interruption).toBe(coreMessage(registry, 'noRoom'));
+    expect(f.notices).toContain(coreMessage(registry, 'noRoom'));
   });
 
   it('offers Cut on steel but not on masonry or timber', () => {
@@ -471,15 +471,18 @@ describe('torch cutting a steel cell', () => {
     expect(chargeOf(registry, torch)).toBe(strikeFuel / 2);
   });
 
-  it('stops with a message when the gas runs out', () => {
+  it('ends the cut by itself when the gas runs out, saying why, and leaves the player free to move', () => {
     const f = cutFixture('open');
     f.holdFuelled(strikeFuel * 2.5);
 
     expect(f.session.cutCell(joist)).toBeUndefined();
+    expect(f.sim.compression.locksInput).toBe(true);
     f.cutOut();
 
     expect(f.sim.actions.job?.stopped).toBe(true);
-    expect(f.sim.compression.interruption).toBe(coreMessage(registry, 'outOfFuel'));
+    expect(f.sim.compression.interruption).toBeUndefined();
+    expect(f.sim.compression.locksInput).toBe(false);
+    expect(f.notices).toContain(coreMessage(registry, 'outOfFuel'));
     expect(f.blockAt(joist)).toBe('steel_joist');
     expect(f.damageAt(joist)).toBeGreaterThan(0);
   });

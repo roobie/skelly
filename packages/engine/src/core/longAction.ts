@@ -929,7 +929,7 @@ export class LongActions {
     }
     this.advance(this.sim.time);
     if (this.current === job && !job.stopped) {
-      this.stopUncompressed(job, reason);
+      this.stopWithNotice(job, reason);
     }
   }
   cancel(): void {
@@ -965,8 +965,11 @@ export class LongActions {
     const reason = error instanceof Error ? error.message : 'Action effect refused';
     this.stopOrInterrupt(job, reason);
   }
-  /** An uncompressed job has no prompt to wait on, so its stop reason is a notice. */
-  private stopUncompressed(job: LongJob, reason: string): void {
+  /**
+   * Stops with a notice and no prompt, leaving the player free to move: an uncompressed job has no prompt to wait on,
+   * and a job its own owner refuses, such as a cut whose torch ran dry, cannot go on by Continue alone.
+   */
+  private stopWithNotice(job: LongJob, reason: string): void {
     job.stopped = true;
     this.sim.compression.stop();
     this.sim.compression.snap();
@@ -974,7 +977,7 @@ export class LongActions {
   }
   private stopOrInterrupt(job: LongJob, reason: string): void {
     if (this.runsUncompressed(job.jobType)) {
-      this.stopUncompressed(job, reason);
+      this.stopWithNotice(job, reason);
     } else {
       job.stopped = true;
       this.sim.compression.interrupt(reason);
@@ -988,7 +991,7 @@ export class LongActions {
     const reason = this.sim.compression.interruption;
     if (alwaysRunsAt1x(job.jobType) || this.runsUncompressed(job.jobType)) {
       if (reason !== undefined) {
-        this.stopUncompressed(job, reason);
+        this.stopWithNotice(job, reason);
       }
       return;
     }
@@ -1093,7 +1096,7 @@ export class LongActions {
       }
       if (result !== 'going') {
         job.sinceStrike = 0;
-        this.stopOrInterrupt(job, result.stop);
+        this.stopWithNotice(job, result.stop);
         return false;
       }
     }
@@ -1161,7 +1164,7 @@ export class LongActions {
     }
     const reason = this.validateOwner(job);
     if (reason) {
-      this.stopOrInterrupt(job, reason);
+      this.stopWithNotice(job, reason);
       return;
     }
     const fromTime = job.last;

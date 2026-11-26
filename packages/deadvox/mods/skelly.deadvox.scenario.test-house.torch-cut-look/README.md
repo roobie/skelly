@@ -28,4 +28,9 @@ galvanized wall and a plank post stand clear of the fall zone. The rules the loo
    straight down onto the pad as rubble with no warning beforehand. The player, outside the fall zone, is unharmed.
 5. The chain-link run and the galvanized wall both offer Cut. The concrete wall and the plank post offer none: heat
    leaves masonry alone, and timber too until the torch chars it (#2046).
-6. Cut until the cartridge runs dry: the cut stops and Cut says why. Swap in the spare cartridge and the cut carries on.
+6. Cut the metal runs until the cartridge runs dry. The cut stops by itself, time drops back to normal, a notice says
+   the torch is out of fuel, and no Continue or Stop prompt waits. Walk away at once without pressing Stop.
+7. Refuel: open the inventory (`packages/mods/skelly.controls/controls.jsonnet`, "ui.inventory-toggle"), select the
+   spare cartridge in the jeans and activate it ("inventory.activate"), which offers putting it in the blowtorch in
+   hand. The empty cartridge drops at your feet. Choose Cut again on the cell that ran dry and it carries on from its
+   damage.
