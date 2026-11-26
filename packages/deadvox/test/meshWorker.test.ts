@@ -1,6 +1,7 @@
 import { BEDROCK, type Neighbourhood, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { RenderWorld } from '@skelly/engine/internal/game/renderWorld.ts';
 import { SentChunks } from '@skelly/engine/internal/game/sentChunks.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { hash3 } from '@skelly/engine/math';
@@ -160,6 +161,22 @@ it.each([
   const mesh = buildRequestedMesh(init, request);
   expect(mesh.indices.length).toBeGreaterThan(0);
   expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, [0, 0, 0], bottomCy, init)));
+});
+
+it('excludes a masked landed cell from the render mesh and restores it when unmasked', () => {
+  const world = new RenderWorld();
+  const cell: Vec3 = [0, 0, 0];
+  world.setBlock(...cell, 1);
+  const init = waterInit();
+  const mesh = () => {
+    const [request] = sendRequest(chunkLink(), world, [0, 0, 0], 0);
+    return buildRequestedMesh(init, request);
+  };
+  expect(mesh().indices.length).toBeGreaterThan(0);
+  world.mask(cell);
+  expect(mesh().indices.length).toBe(0);
+  world.unmask(cell);
+  expect(mesh().indices.length).toBeGreaterThan(0);
 });
 
 it('hands the mesher the blocks the world holds when requests rely on kept blocks', () => {
