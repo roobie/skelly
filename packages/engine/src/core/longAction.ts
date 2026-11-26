@@ -8,6 +8,7 @@ import { coreMessage } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import type { WorkTarget } from './items.ts';
 import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
+import type { CompressionCaps } from './schema.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import {
@@ -19,8 +20,11 @@ import {
 } from './vehicleInstances.ts';
 
 export type RestKind = 'rest' | 'sleep';
-/** Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. */
-const RUN_AT_1X_WHILE_COMPRESSION_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading']);
+/**
+ * Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. A cut takes
+ * the rules of taking a piece apart, a craft.
+ */
+const RUN_AT_1X_WHILE_COMPRESSION_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading', 'cutCell']);
 export interface RestAction {
   kind: RestKind;
   furnitureUid: number;
@@ -93,10 +97,20 @@ export interface RestStartOptions {
   sleepOnsetGameSeconds?: number;
 }
 const RESTING_JOBS: ReadonlySet<LongJob['jobType']> = new Set(['rest', 'sleep']);
-/** Strike jobs run at 1×, so each blow lands, sounds and draws attention in real time. */
+/** Strike jobs land blow by blow with a held tool, which they own and which keeps the body from other work. */
 type StrikeJobType = 'forceDoor' | 'cutCell';
 const STRIKE_JOBS: ReadonlySet<LongJob['jobType']> = new Set<StrikeJobType>(['forceDoor', 'cutCell']);
 export const isStrikeJob = (jobType: LongJob['jobType']): jobType is StrikeJobType => STRIKE_JOBS.has(jobType);
+/**
+ * Forcing always runs at 1×: it trades time against noise, so each blow must sound and draw attention as it
+ * lands. A cut compresses like taking furniture apart.
+ */
+type OneXJobType = 'forceDoor';
+const ONE_X_JOBS: ReadonlySet<LongJob['jobType']> = new Set<OneXJobType>(['forceDoor']);
+export const alwaysRunsAt1x = (jobType: LongJob['jobType']): jobType is OneXJobType => ONE_X_JOBS.has(jobType);
+/** Jobs without a cap of their own share crafting's, as they are hands-on work of the same pace. */
+const compressionCapOf = (jobType: Exclude<LongJob['jobType'], OneXJobType>): keyof CompressionCaps =>
+  jobType === 'vehicleWork' || jobType === 'cutCell' ? 'craft' : jobType;
 /** Why a running strike job keeps the body from other work. */
 export const strikeJobRefusal = (registry: Pick<Registry, 'ui'>, job: LongJob | undefined): string | undefined => {
   if (!job || job.stopped) {
@@ -400,23 +414,23 @@ export class LongActions {
     return this.sim.actionRefusal;
   }
   /**
-   * Strike jobs run at 1×, and so do treatment, crafting and reading while the body refuses compression: a
+   * Forcing runs at 1×, and so do treatment, crafting, reading and cutting while the body refuses compression: a
    * bleeding player must still be able to treat the wound or make something to treat it (`packages/deadvox/DESIGN.md`, "Bleeding").
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
     return (
-      isStrikeJob(jobType) ||
+      alwaysRunsAt1x(jobType) ||
       (RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined)
     );
   }
   /** Drops to 1× for an uncompressed job, or asks for compression; returns why compression was refused. */
   private startTiming(jobType: LongJob['jobType']): string | undefined {
-    if (isStrikeJob(jobType) || this.runsUncompressed(jobType)) {
+    if (alwaysRunsAt1x(jobType) || this.runsUncompressed(jobType)) {
       this.sim.compression.stop();
       this.sim.compression.snap();
       return undefined;
     }
-    const result = this.sim.compressLongAction(jobType === 'vehicleWork' ? 'craft' : jobType);
+    const result = this.sim.compressLongAction(compressionCapOf(jobType));
     return result.ok ? undefined : result.reason;
   }
   get job(): Readonly<LongJob> | undefined {
@@ -476,8 +490,8 @@ export class LongActions {
   /** A restored running action compresses up to its own cap, not the default. */
   private restoreCompressionCap(): void {
     const job = this.current;
-    if (job && !job.stopped && !isStrikeJob(job.jobType) && this.sim.compression.active) {
-      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType);
+    if (job && !job.stopped && !alwaysRunsAt1x(job.jobType) && this.sim.compression.active) {
+      this.sim.compressLongAction(compressionCapOf(job.jobType));
     }
   }
   startWait(): string | undefined {
@@ -679,8 +693,10 @@ export class LongActions {
       previous.cell.every((value, axis) => value === cell[axis])
         ? previous.sinceStrike
         : 0;
-    this.sim.compression.stop();
-    this.sim.compression.snap();
+    const refusal = this.startTiming('cutCell');
+    if (refusal) {
+      return refusal;
+    }
     this.current = {
       jobType: 'cutCell',
       stopped: false,
@@ -970,7 +986,7 @@ export class LongActions {
       return;
     }
     const reason = this.sim.compression.interruption;
-    if (isStrikeJob(job.jobType) || this.runsUncompressed(job.jobType)) {
+    if (alwaysRunsAt1x(job.jobType) || this.runsUncompressed(job.jobType)) {
       if (reason !== undefined) {
         this.stopUncompressed(job, reason);
       }
@@ -988,7 +1004,7 @@ export class LongActions {
       reason === undefined &&
       !job.stopped &&
       RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(job.jobType) &&
-      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType).ok
+      this.sim.compressLongAction(compressionCapOf(job.jobType)).ok
     ) {
       return;
     }
@@ -1077,7 +1093,7 @@ export class LongActions {
       }
       if (result !== 'going') {
         job.sinceStrike = 0;
-        this.stopUncompressed(job, result.stop);
+        this.stopOrInterrupt(job, result.stop);
         return false;
       }
     }

@@ -20,8 +20,8 @@ galvanized wall and a plank post stand clear of the fall zone. The rules the loo
 
 1. At the start the joist run and the slab stand out from the wall, held by it, and nothing has fallen.
 2. Without moving, interact with the aimed joist end (`packages/mods/skelly.controls/controls.jsonnet`,
-   "world.interact") and choose Cut. The torch strikes at a steady beat with its own sound, the cell cracks as it
-   takes damage, and the cartridge fill drops strike by strike.
+   "world.interact") and choose Cut. Time speeds up as it does while taking a piece apart; the torch strikes at a
+   steady beat with its own sound, the cell cracks as it takes damage, and the cartridge fill drops strike by strike.
 3. Stop the cut part way, save and reload: the cracks are as they were. Choose Cut again and it carries on from that
    damage rather than starting over.
 4. Let the cut finish. The cut cell breaks and drops its yield as items, and the rest of the run and the slab drop

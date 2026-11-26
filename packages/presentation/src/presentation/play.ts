@@ -2131,11 +2131,7 @@ const startPlayWith = (
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
-    if (
-      sim.actions.job?.jobType === 'forceDoor' ||
-      sim.actions.job?.jobType === 'cutCell' ||
-      sim.actions.job?.jobType === 'wait'
-    ) {
+    if (sim.actions.job?.jobType === 'forceDoor' || sim.actions.job?.jobType === 'wait') {
       sim.actions.stop();
     } else {
       rest.stop();

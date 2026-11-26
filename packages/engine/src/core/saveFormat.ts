@@ -19,7 +19,7 @@ import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
-import { isStrikeJob, validateLongJob } from './longAction.ts';
+import { alwaysRunsAt1x, isStrikeJob, validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MELEE_PROFILES } from './meleePose.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
@@ -1854,11 +1854,11 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   validateLongJob(job, snapshot.character.simulation.time);
   if (
     job &&
-    isStrikeJob(job.jobType) &&
+    alwaysRunsAt1x(job.jobType) &&
     !job.stopped &&
     (snapshot.character.simulation.compression.active || snapshot.character.simulation.compression.c !== 1)
   ) {
-    throw new Error('Running strike action cannot use compression');
+    throw new Error('Running forcing action cannot use compression');
   }
   const tree = [
     ...savedItemTree(

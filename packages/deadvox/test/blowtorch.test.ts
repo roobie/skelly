@@ -16,7 +16,7 @@ import { BlockEntities, createTerrainEvaluator, type TerrainPlan, type Vec3, Wor
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { Simulation } from './simulationFixture.ts';
+import { fixtureTier, Simulation } from './simulationFixture.ts';
 import {
   blockId,
   contentLookup,
@@ -431,7 +431,7 @@ describe('torch cutting a steel cell', () => {
     expect(f.blockAt(joist)).toBe('steel_joist');
     expect(f.damageAt(joist)).toBeGreaterThan(0);
     expect(f.sim.actions.job?.stopped).toBe(true);
-    expect(f.notices).toContain(coreMessage(registry, 'noRoom'));
+    expect(f.sim.compression.interruption).toBe(coreMessage(registry, 'noRoom'));
   });
 
   it('offers Cut on steel but not on masonry or timber', () => {
@@ -479,7 +479,7 @@ describe('torch cutting a steel cell', () => {
     f.cutOut();
 
     expect(f.sim.actions.job?.stopped).toBe(true);
-    expect(f.notices).toContain(coreMessage(registry, 'outOfFuel'));
+    expect(f.sim.compression.interruption).toBe(coreMessage(registry, 'outOfFuel'));
     expect(f.blockAt(joist)).toBe('steel_joist');
     expect(f.damageAt(joist)).toBeGreaterThan(0);
   });
@@ -523,13 +523,35 @@ describe('torch cutting a steel cell', () => {
     expect(restored.damageAt(joist)).toBe(f.damageAt(joist));
   });
 
-  it('refuses time compression while a cut runs', () => {
+  it('cuts under the long-action time compression a take-apart runs at', () => {
     const f = cutFixture('open');
     f.holdFuelled(canisterCapacity);
     expect(f.session.cutCell(joist)).toBeUndefined();
 
-    expect(f.sim.compress().ok).toBe(false);
-    expect(f.sim.actions.job?.stopped).toBe(false);
+    expect(f.sim.compression.active).toBe(true);
+    expect(f.sim.compression.owner).toBe('long-action');
+    const cutLimits = structuredClone(f.sim.compression.limits);
+    f.cutOut();
+
+    expect(f.sim.actions.job).toBeUndefined();
+    expect(f.blockAt(joist)).not.toBe('steel_joist');
+    expect(f.sim.compressLongAction('craft').ok).toBe(true);
+    expect(f.sim.compression.limits).toEqual(cutLimits);
+  });
+
+  it('cuts at 1× while bleeding refuses compression, as a take-apart does', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+    f.sim.body.impact(0, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(f.sim.body.compressionRefusal).toBeDefined();
+
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    const before = f.damageAt(joist);
+    f.strike();
+
+    expect(f.sim.actions.job).toMatchObject({ jobType: 'cutCell', stopped: false });
+    expect(f.sim.compression.active).toBe(false);
+    expect(f.damageAt(joist)).toBeGreaterThan(before);
   });
 });
 
