@@ -187,6 +187,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'boardings[].curtain.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'partBlueprints[].slots[].service.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'blockMaterials.rubbleClearTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  {
+    path: 'blockMaterials.flammability.burnDurationGameMinutes',
+    clock: 'Game',
+    unit: 'Minutes',
+    dimension: 'duration',
+  },
   { path: 'furniture.door.methods.*.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.methods.*.strikeIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.climbable.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },

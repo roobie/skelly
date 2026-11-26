@@ -412,6 +412,7 @@ const debugBuild = (f: Fixture) => {
     },
     repairCell: () => undefined,
     takeApartCell: () => undefined,
+    igniteTerrainCell: (target, strength) => f.session.igniteTerrainCell(target, strength),
     bindings: new BindingRegistry(INPUT_BINDINGS),
   });
   const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
