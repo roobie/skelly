@@ -14,7 +14,7 @@ import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { FIXTURE_WAND, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
-import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
+import { COMPRESSION_CAPS_FIXTURE, Simulation as SimulationFixture } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 
@@ -119,6 +119,45 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     cancelHeld: unused,
   },
   ...ports,
+});
+
+describe('command router at an interruption prompt', () => {
+  it('opens and closes the inventory over the prompt, which waits on until Stop ends the action', () => {
+    const sim = new SimulationFixture({ seed: 1 });
+    expect(sim.actions.startWait()).toBeUndefined();
+    sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    sim.frame(1);
+    expect(sim.compression.interruption).toBe('test interruption');
+    const session = { sim, rest: { action: undefined } } as unknown as Session;
+    let inventoryOpen = false;
+    const ports = routerPorts({ session: () => session });
+    const router = createCommandRouter({
+      ...ports,
+      presentation: {
+        ...ports.presentation,
+        modal: {
+          ...ports.presentation.modal,
+          readingOpen: () => false,
+          mainMenuOpen: () => false,
+          screenOpen: () => inventoryOpen,
+          toggleInventory: () => {
+            inventoryOpen = !inventoryOpen;
+          },
+        },
+      },
+    });
+
+    router.modalCommand('ui.inventory-toggle');
+    expect(inventoryOpen).toBe(true);
+    expect(sim.compression.refusesKeys).toBe(true);
+    router.modalCommand('ui.inventory-toggle');
+    expect(inventoryOpen).toBe(false);
+    expect(sim.compression.interruption).toBe('test interruption');
+
+    expect(router.modalCommand('handling.stop')).toBe(true);
+    expect(sim.actions.job).toBeUndefined();
+    expect(sim.compression.interruption).toBeUndefined();
+  });
 });
 
 describe('command router furniture choices', () => {

@@ -867,6 +867,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     return compression.admitKey();
   };
+  /** The inventory key is admitted over a waiting prompt too; see `Compression.waitsOnPrompt`. */
+  const inventoryKeyAdmitted = (): boolean => ports.session().sim.compression.waitsOnPrompt || keyAdmitted();
 
   // ---- reload and press check ----
 
@@ -1148,7 +1150,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       readingAction: (command) => modal.readingAction(command),
       readingMovementAction: () => modal.readingMovementAction(),
       toggleInventory: () => {
-        if (keyAdmitted()) {
+        if (inventoryKeyAdmitted()) {
           modal.toggleInventory();
         }
       },

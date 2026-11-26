@@ -100,6 +100,14 @@ export class Compression {
     return true;
   }
 
+  /**
+   * A prompt waits on Continue or Stop with no action running. What stopped the action is often answered from the
+   * inventory, so the inventory key is admitted over a waiting prompt, which keeps waiting.
+   */
+  get waitsOnPrompt(): boolean {
+    return !this.active && this.interruption !== undefined;
+  }
+
   /** A running action or a waiting prompt refuses keys; a ramp-down alone does not. */
   get refusesKeys(): boolean {
     return this.active || this.interruption !== undefined;
