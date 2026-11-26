@@ -161,7 +161,7 @@
           "kind": "standing"
         },
         "cellar": {
-          "at": [8, 1, 10],
+          "at": [9, 1, 10],
           "kind": "standing"
         },
         "kitchen": {
@@ -477,7 +477,7 @@
           "kind": "standing"
         },
         "cellar": {
-          "at": [8, 1, 10],
+          "at": [9, 1, 10],
           "kind": "standing"
         },
         "kitchen": {
@@ -778,7 +778,7 @@
           "kind": "standing"
         },
         "cellar": {
-          "at": [8, 1, 10],
+          "at": [9, 1, 10],
           "kind": "standing"
         },
         "kitchen": {
@@ -1064,7 +1064,7 @@
           "kind": "standing"
         },
         "cellar": {
-          "at": [8, 1, 10],
+          "at": [9, 1, 10],
           "kind": "standing"
         },
         "kitchen": {

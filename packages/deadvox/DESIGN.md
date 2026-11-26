@@ -668,7 +668,10 @@ because rearranging a room should not require destroying its contents. See `pack
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
-  holding it. A drag holds its last valid floor position while a target is
+  holding it. A push over a wholly unsupported edge falls through the shared settling
+  path, so its landing and crush use the same admission as other falling furniture rather
+  than a second fall path. A partial floor still refuses, so a piece cannot become
+  stranded over its edge. A drag holds its last valid floor position while a target is
   blocked, then ends once that piece leaves interaction reach, so it cannot
   teleport through an obstacle. See `packages/engine/src/core/furnitureMove.ts`,
   `liftFurniture`, `liftsWhole`, `placement` and `slideFurniture`, and
@@ -723,8 +726,8 @@ because rearranging a room should not require destroying its contents. See `pack
   so a stack pays no ongoing simulation cost. Floor steps use the same support
   rule as lifting: what remains supported stays, and what loses support settles
   instead of riding the piece. Unpublished terrain blocks placement, and settling
-  without a floor is refused rather than letting a piece fall out of the known
-  world. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
+  without a reachable landing is refused rather than letting a piece fall out of
+  the known world. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See

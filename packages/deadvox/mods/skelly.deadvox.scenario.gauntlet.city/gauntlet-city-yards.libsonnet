@@ -13,12 +13,63 @@ local grownLowClaims = ['SSSSSRRRRRRSSSSSSS', 'SSSSSRRRRRRSSSSSSS'];
 local grownTall = ['...SS........SS...', '...SS........SS...'];
 local grownTallClaims = ['AAASSRRRRRRAASSAAA', 'AAASSRRRRRRAASSAAA'];
 local upperClaims = ['AAAAARRRRRRASSSSAA', 'AAAAARRRRRRAAAAAAA'];
+// A yard turned east to west, so its path leads to a street door east of the middle.
+local mirror(rows) = [std.join('', std.reverse(std.stringChars(row))) for row in rows];
+local mirrored(piece) = piece + {
+  id: piece.id + '_mirrored',
+  layers: std.map(mirror, piece.layers),
+  ownership: { layers: std.map(mirror, piece.ownership.layers) },
+};
 local yard = {
   id: 'gauntlet_yard_open', size: [18, 4, 2], style: 'brick_townhouse', lootContext: context,
   palette: { '.': { role: 'opening', material: 'opening' } },
   layers: [air, air, air, air], ownership: { layers: [circulation, circulation, circulation, circulation] },
   anchors: {}, ports: [],
 };
+local yards = [
+  { weight: 1, piece: yard },
+  {
+    weight: 3,
+    piece: yard + {
+      id: 'gauntlet_yard_shrubs', palette: yard.palette + { B: { furniture: 'gauntlet_yard_shrub' } },
+      layers: [shrubs, shrubs, air, air],
+      ownership: { layers: [shrubClaims, shrubClaims, circulation, circulation] },
+    },
+  },
+  {
+    weight: 1,
+    piece: yard + {
+      id: 'gauntlet_yard_tarp', palette: yard.palette + { t: { furniture: 'tarp' } },
+      layers: [tarped, air, air, air],
+      ownership: { layers: [tarpClaims, circulation, circulation, circulation] },
+    },
+  },
+  {
+    weight: 2,
+    piece: yard + {
+      id: 'gauntlet_yard_fenced', palette: yard.palette + {
+        B: { furniture: 'gauntlet_yard_shrub' }, F: { furniture: 'gauntlet_yard_fence' }, i: { furniture: 'creeper_strip' },
+      },
+      layers: [fenced, fenced, fencedUpper, air],
+      ownership: { layers: [fenceClaims, fenceClaims, upperClaims, circulation] },
+    },
+  },
+  {
+    weight: 2,
+    piece: yard + {
+      id: 'gauntlet_yard_overgrown', aftermath: ['dilapidated'], palette: yard.palette + {
+        G: { role: 'trim', material: 'tall_grass' }, S: { furniture: 'shrub_tall' }, w: { furniture: 'weed_tuft' },
+      },
+      layers: [grownLow, grownTall, grownTall, air],
+      ownership: { layers: [grownLowClaims, grownTallClaims, grownTallClaims, circulation] },
+    },
+  },
+];
+local slot(pieces) = {
+  id: 'yard', at: [0, 1, 0], size: [18, 4, 2], turn: 0,
+  choices: [{ ref: { kind: 'piece', id: entry.piece.id }, weight: entry.weight } for entry in pieces],
+};
+local turned = [entry + { piece: mirrored(entry.piece) } for entry in yards];
 {
   furniture: [
     {
@@ -40,41 +91,7 @@ local yard = {
       ],
     },
   ],
-  mapPieces: [
-    yard,
-    yard + {
-      id: 'gauntlet_yard_shrubs', palette: yard.palette + { B: { furniture: 'gauntlet_yard_shrub' } },
-      layers: [shrubs, shrubs, air, air],
-      ownership: { layers: [shrubClaims, shrubClaims, circulation, circulation] },
-    },
-    yard + {
-      id: 'gauntlet_yard_tarp', palette: yard.palette + { t: { furniture: 'tarp' } },
-      layers: [tarped, air, air, air],
-      ownership: { layers: [tarpClaims, circulation, circulation, circulation] },
-    },
-    yard + {
-      id: 'gauntlet_yard_fenced', palette: yard.palette + {
-        B: { furniture: 'gauntlet_yard_shrub' }, F: { furniture: 'gauntlet_yard_fence' }, i: { furniture: 'creeper_strip' },
-      },
-      layers: [fenced, fenced, fencedUpper, air],
-      ownership: { layers: [fenceClaims, fenceClaims, upperClaims, circulation] },
-    },
-    yard + {
-      id: 'gauntlet_yard_overgrown', aftermath: ['dilapidated'], palette: yard.palette + {
-        G: { role: 'trim', material: 'tall_grass' }, S: { furniture: 'shrub_tall' }, w: { furniture: 'weed_tuft' },
-      },
-      layers: [grownLow, grownTall, grownTall, air],
-      ownership: { layers: [grownLowClaims, grownTallClaims, grownTallClaims, circulation] },
-    },
-  ],
-  slot: {
-    id: 'yard', at: [0, 1, 0], size: [18, 4, 2], turn: 0,
-    choices: [
-      { ref: { kind: 'piece', id: 'gauntlet_yard_open' }, weight: 1 },
-      { ref: { kind: 'piece', id: 'gauntlet_yard_shrubs' }, weight: 3 },
-      { ref: { kind: 'piece', id: 'gauntlet_yard_tarp' }, weight: 1 },
-      { ref: { kind: 'piece', id: 'gauntlet_yard_fenced' }, weight: 2 },
-      { ref: { kind: 'piece', id: 'gauntlet_yard_overgrown' }, weight: 2 },
-    ],
-  },
+  mapPieces: [entry.piece for entry in yards + turned],
+  slot: slot(yards),
+  mirroredSlot: slot(turned),
 }
