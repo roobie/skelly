@@ -316,6 +316,7 @@
         ".": "air",
         "=": "concrete",
         "#": "brick",
+        "J": "steel_joist",
         "^": "roof",
         "D": { "furniture": "wood_door", "facing": "w" },
         "T": { "furniture": "desk", "loot": "workshop_filler" },
@@ -366,10 +367,10 @@
         [
           "##########",
           "#.....M..#",
-          "#........#",
+          "#JJJJJJJJ#",
           "D........#",
           "D........#",
-          "#........#",
+          "#JJJJJJJJ#",
           "#........#",
           "##########"
         ],
@@ -389,6 +390,7 @@
         ".": "air",
         "=": "concrete",
         "#": "brick",
+        "J": "steel_joist",
         "^": "roof",
         "D": { "furniture": "wood_door", "facing": "w" },
         "S": { "furniture": "shelf", "loot": "workshop_filler" },
@@ -461,11 +463,11 @@
         [
           "##########",
           "#........#",
+          "#JJJJJJJJ#",
           "#........#",
           "#........#",
           "#........#",
-          "#........#",
-          "#........#",
+          "#JJJJJJJJ#",
           "#........#",
           "#........#",
           "##########"
