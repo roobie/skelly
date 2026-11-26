@@ -18,6 +18,6 @@ local rows(family, blocksBySound) = [
       'dressed_stone', 'hazard_yellow', 'chain_link', 'sandbag', 'camo_woodland', 'steel_joist',
       'reinforced_concrete_rubble', 'slab_deck',
     ],
-    shambler_step_wood: ['timber_rubble', 'planks', 'plank_wall', 'plank_floor', 'slab_floor', 'tree_trunk', 'tree_branch'],
+    shambler_step_wood: ['charred_remains', 'timber_rubble', 'planks', 'plank_wall', 'plank_floor', 'slab_floor', 'tree_trunk', 'tree_branch'],
   }),
 }
