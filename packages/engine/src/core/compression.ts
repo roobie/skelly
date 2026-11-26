@@ -100,10 +100,7 @@ export class Compression {
     return true;
   }
 
-  /**
-   * A prompt waits on Continue or Stop with no action running. What stopped the action is often answered from the
-   * inventory, so the inventory key is admitted over a waiting prompt, which keeps waiting.
-   */
+  /** A prompt waits on Continue or Stop with no action running. */
   get waitsOnPrompt(): boolean {
     return !this.active && this.interruption !== undefined;
   }

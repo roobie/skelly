@@ -13,7 +13,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { throwStanceWorldOffset } from '../core/heldPose.ts';
-import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
+import { type InputContext, inventoryTabForAction, PROMPT_ADMITTED_COMMANDS } from '../core/inputActions.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
@@ -859,16 +859,20 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- key admission ----
 
-  /** A key press ends a ramp-down; replay never snaps, the recorded sample decides. */
-  const keyAdmitted = (): boolean => {
+  /**
+   * A key press ends a ramp-down; replay never snaps, the recorded sample decides. A waiting prompt admits only
+   * `PROMPT_ADMITTED_COMMANDS`, and leaves the prompt waiting.
+   */
+  const keyAdmitted = (action?: string): boolean => {
     const { compression } = ports.session().sim;
+    if (action !== undefined && compression.waitsOnPrompt && PROMPT_ADMITTED_COMMANDS.has(action)) {
+      return true;
+    }
     if (ports.replaying()) {
       return !(ports.replaySample()?.inputLocked ?? compression.locksInput);
     }
     return compression.admitKey();
   };
-  /** The inventory key is admitted over a waiting prompt too; see `Compression.waitsOnPrompt`. */
-  const inventoryKeyAdmitted = (): boolean => ports.session().sim.compression.waitsOnPrompt || keyAdmitted();
 
   // ---- reload and press check ----
 
@@ -1137,7 +1141,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (!tab) {
       return false;
     }
-    if (keyAdmitted()) {
+    if (keyAdmitted(action)) {
       presentation.openInventory(tab);
     }
     return true;
@@ -1150,7 +1154,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       readingAction: (command) => modal.readingAction(command),
       readingMovementAction: () => modal.readingMovementAction(),
       toggleInventory: () => {
-        if (inventoryKeyAdmitted()) {
+        if (keyAdmitted('ui.inventory-toggle')) {
           modal.toggleInventory();
         }
       },
