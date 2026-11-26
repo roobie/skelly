@@ -1,0 +1,62 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -19,
+        "x1": 32,
+        "z0": -12,
+        "z1": 14
+      },
+      "buildings": [
+        {
+          "position": [-14, 21, 0],
+          "rotation": 0,
+          "style": "village_shop_render",
+          "template": "village_shop"
+        },
+        {
+          "position": [0, 21, 0],
+          "rotation": 0,
+          "style": "village_shop_brick",
+          "template": "village_shop"
+        },
+        {
+          "position": [12, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_intact"
+        },
+        {
+          "position": [18, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_worn"
+        },
+        {
+          "position": [24, 21, 0],
+          "rotation": 0,
+          "template": "condition_pavilion_nested"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "miscBuildingSupportLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [10, 21.5, -2]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-16, -5], [29, -5]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}
