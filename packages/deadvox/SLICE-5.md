@@ -596,14 +596,16 @@ rounds are tracked under #1332.
   an enemy approaches the plant. Base-building usability remains the playtest's
   prerequisite, while target and unattended-defence work must preserve that contract.
 - **Destruction.** The first session does not need the lane, so it runs beside
-  construction without joining it. Actors bash pieces only
-  (`packages/engine/src/game/session.ts`, `bashObstacle`, through
-  `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`); terrain takes
-  blows only from the player, through `packages/engine/src/core/terrainStrike.ts`,
-  `strikeTerrain`. The lane's first round gives actors that terrain path by material
-  strength and the brute a higher authored strength, so the brute wrecks walls through
-  its strength rather than an identity flag and ordinary types break doors only because
-  door pieces sit below their strength. A blow that leaves cells unheld cascades them
+  construction without joining it. Actors strike terrain through
+  `packages/engine/src/game/session.ts`, `bashObstacle` and
+  `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; pieces remain on
+  `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`. An actor's
+  content-authored terrain blow kind sits beside strength and defaults to blunt, so a type
+  selects a material response without coupling obstacle bashing to attack moves. The brute
+  wrecks walls through its higher authored strength rather than an identity flag; timber's
+  shared material gate stays above a shambler's effective blunt blow, so tools and actors
+  share one wall-toughness tuning authority rather than an actor-only scale. A blow that
+  leaves cells unheld cascades them
   into rubble under "Support" rather than being refused. Terrain is generated wherever
   collapse reaches, so region departure-and-return is not a prerequisite. Collapse timing
   at the largest authored roof is reported rather than used as a gate. Burial and impact
