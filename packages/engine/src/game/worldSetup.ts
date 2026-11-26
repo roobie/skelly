@@ -11,6 +11,7 @@ import {
 } from '../core/collision.ts';
 import { composeLayout } from '../core/composeLayout.ts';
 import { blockColors, type Registry } from '../core/content.ts';
+import { Chunk } from '../core/chunk.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
@@ -180,7 +181,8 @@ export function createWorldSetup(
       return;
     }
     for (const chunk of chunks) {
-      world.addChunk(chunk!);
+      const source = chunk!;
+      world.addChunk(Chunk.fromArray(source.cx, source.cy, source.cz, source.toArray()));
     }
     world.touchColumn(cx, cz);
   });

@@ -63,6 +63,7 @@ import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
 import { installFixtureReach } from './fixtureReach.ts';
+import { FallDrops } from './fallDrops.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -228,6 +229,7 @@ type PlayViewEngine = Readonly<
   Pick<
     Engine,
     | 'config'
+    | 'streamer'
     | 'registry'
     | 'renderer'
     | 'meshes'
@@ -400,6 +402,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    fallDrops.dispose();
     placementGhost.dispose();
     instruments.dispose();
     corpses.dispose();
@@ -426,6 +429,18 @@ export const createPlayView = (
     sectorChunks: graphics.furnitureSectorChunks,
     content: { registry, models },
   });
+  const fallDrops = new FallDrops(
+    s,
+    gravityMetresPerSimSecondSquared,
+    (uid) => {
+      const entity = engine.entities.byUid(uid);
+      return entity ? furniture.pieceMesh(entity, engine.entities.defOf(entity)) : undefined;
+    },
+    (cells) => engine.streamer.maskLanded(cells),
+    (cells) => engine.streamer.unmaskLanded(cells),
+  );
+  const pieceFalls = engine.entities.falls.reader();
+  const terrainFalls = engine.simulationWorld.falls.reader();
   const instruments = new PlantInstruments(s, claimed(registry.inventory, 'player')!.conditionBands, meshes);
   const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
@@ -475,6 +490,7 @@ export const createPlayView = (
     piles.group,
     vehicles.group,
     furniture.group,
+    fallDrops.group,
     instruments.group,
     corpses.group,
     playerMeshes.group,
@@ -699,6 +715,8 @@ export const createPlayView = (
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles, time);
       furniture.sync(entities, poweredLights());
+      fallDrops.read([...pieceFalls.read(), ...terrainFalls.read()], entities);
+      fallDrops.update(dt);
       instruments.sync(entities, instrumentRead, time);
       corpses.sync(entities);
       decals?.sync(entities);

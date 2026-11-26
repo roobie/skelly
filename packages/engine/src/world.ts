@@ -46,6 +46,7 @@ export {
   tipCarried,
   turnCarried,
 } from './core/furnitureMove.ts';
+export type { FallRecord } from './core/fall.ts';
 export { GENERATED_SITES } from './core/generatedSites.ts';
 export { climb, LadderHold } from './core/ladders.ts';
 export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';

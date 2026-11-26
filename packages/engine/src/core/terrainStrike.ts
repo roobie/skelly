@@ -274,6 +274,7 @@ const fallCell = (
         edited = terrain.world.setBlock(...cell, 0);
         edited.push(...terrain.world.setBlock(...landing, rubble));
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
+        terrain.world.falls.emit({ kind: 'terrain', from: [...cell], to: [...landing] });
       });
       return { destroyed, edited };
     } catch (error) {

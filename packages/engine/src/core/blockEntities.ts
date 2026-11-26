@@ -7,6 +7,8 @@
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { EventQueue } from './events.ts';
+import type { FallRecord } from './fall.ts';
 import { coreMessage } from './coreText.ts';
 import { type DestructibleHit, resolveDestructibleHit } from './destructibleHit.ts';
 import {
@@ -437,6 +439,8 @@ export class BlockEntities {
    */
   private readonly journal: BlockEntity[] = [];
   private journalFrom = 0;
+  /** Gravity moves the view has not consumed; derived and deliberately absent from saves. */
+  readonly falls = new EventQueue<FallRecord>();
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /**
@@ -1155,6 +1159,7 @@ export class BlockEntities {
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
   drop(entity: BlockEntity, y: number): void {
+    const from = [...entity.pos] as Vec3;
     this.changeParts(entity, () => {
       this.occupy(entity, false);
       entity.pos = [entity.pos[0], y, entity.pos[2]];
@@ -1162,6 +1167,7 @@ export class BlockEntities {
     });
     this.version += 1;
     this.standingChanged(entity);
+    this.falls.emit({ kind: 'piece', uid: entity.uid, from, to: [...entity.pos] });
   }
 
   /**

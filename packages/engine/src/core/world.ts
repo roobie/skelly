@@ -1,6 +1,8 @@
 import { BlockDamage } from './blockDamage.ts';
 import { Chunk } from './chunk.ts';
 import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { EventQueue } from './events.ts';
+import type { FallRecord } from './fall.ts';
 import { Rubble } from './rubble.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { SupportState } from './structureSupport.ts';
@@ -79,6 +81,8 @@ export class World {
   readonly blockDamage = new BlockDamage(this);
   readonly rubble = new Rubble(this);
   readonly support = new SupportState(this);
+  /** Gravity moves the view has not consumed; derived and deliberately absent from saves. */
+  readonly falls = new EventQueue<FallRecord>();
   private readonly columnChunks = new Map<string, number>();
   /** Changes whenever blocks visible to simulation queries change. */
   version = 0;
