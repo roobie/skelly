@@ -145,6 +145,22 @@ const startFailure = (inventory: Inventory, start: StartDef, path: string, reaso
   throw new Error(`Start "${start.id}" (${origin?.source ?? 'unattributed start'}) ${path}: ${String(reason)}`);
 };
 
+const applyStartFires = (
+  inventory: Inventory,
+  start: StartDef,
+  igniteCell: ((cell: Vec3, strength: number) => boolean) | undefined,
+): void => {
+  for (const [index, entry] of (start.fires ?? []).entries()) {
+    try {
+      if (!igniteCell?.(entry.cell, entry.strength)) {
+        throw new Error('ignition refused');
+      }
+    } catch (error) {
+      startFailure(inventory, start, `fires[${index}]`, error);
+    }
+  }
+};
+
 export const applyStartKit = (inventory: Inventory, start: StartDef, calendar = 0): void => {
   const fail = (entry: StartKitEntry, reason: unknown): never =>
     startFailure(inventory, start, `kit entry "${entry.id}"`, reason);
@@ -190,6 +206,8 @@ export const applyStartState = (
     body: Body;
     /** Records authored damage on a terrain cell, through the session's own damage owner. */
     damageCell: (cell: Vec3, damage: number) => void;
+    /** Ignites an authored cell through the session's fire owner. */
+    igniteCell?: (cell: Vec3, strength: number) => boolean;
     loseSupport?: (cell: Vec3) => void;
   },
 ): void => {
@@ -226,4 +244,5 @@ export const applyStartState = (
       startFailure(inventory, start, `blockDamage[${index}]`, error);
     }
   }
+  applyStartFires(inventory, start, context.igniteCell);
 };

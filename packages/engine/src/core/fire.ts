@@ -42,6 +42,13 @@ export class Fire {
     return this.entries.has(keyOf(cell));
   }
 
+  /** Burning cells in ignition order; rendering may observe but never owns this state. */
+  *cells(): IterableIterator<Readonly<Vec3>> {
+    for (const { cell } of this.entries.values()) {
+      yield cell;
+    }
+  }
+
   ignite(terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>, strength: number): boolean {
     if (terrain.world !== this.world || !validCell(cell) || !Number.isFinite(strength) || strength < 0) {
       throw new Error('Invalid fire ignition');

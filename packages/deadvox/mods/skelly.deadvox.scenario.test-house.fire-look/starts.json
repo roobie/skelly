@@ -5,6 +5,20 @@
       "debugOnly": true,
       "defaultForSite": true,
       "density": null,
+      "fires": [
+        {
+          "cell": [-24, 43, 33],
+          "strength": 11
+        },
+        {
+          "cell": [-24, 44, 33],
+          "strength": 11
+        },
+        {
+          "cell": [-24, 45, 33],
+          "strength": 11
+        }
+      ],
       "id": "firelook",
       "kit": [
         {
