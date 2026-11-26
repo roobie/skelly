@@ -618,8 +618,13 @@ rounds are tracked under #1332.
   repair ceiling (`packages/deadvox/DESIGN.md`, "Repair ceiling"), so a repaired cell keeps
   its residual share. No partial residue of a refused or fallen cell is kept, because a
   standing wall that cannot fall should read as at its breaking point and rubble should
-  never read as cracked. Blast by share and breach charges follow, then furniture
-  knock-out and push-off.
+  never read as cracked. Blasts strike every solid cell they can see in their radius,
+  sharing material strength by distance, while body damage remains separate. Sight
+  already limits a blast to the faces it reaches, so a second flood path would repeat
+  that boundary; separate strengths let wall-cracking and body harm tune apart as melee
+  terrain impulse and body damage do. Fragments strike the first solid cell on each
+  existing ray by fragment resistance. Breach charges follow, then furniture knock-out
+  and push-off.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and
