@@ -316,6 +316,7 @@ describe('support cascade', () => {
     cover.updateMatrixWorld(true);
     const bodyObjects = new Set(actors.group.children);
     const visibleBodyRays = (cell: Vec3, withCover = true) => {
+      const objects = withCover ? [...actors.group.children, cover] : actors.group.children;
       let visible = 0;
       for (const x of [0.2, 0.4, 0.6, 0.8]) {
         for (const y of [0.2, 0.4, 0.6, 0.8]) {
@@ -327,7 +328,7 @@ describe('support cascade', () => {
             ),
             new Vector3(0, 0, 1),
           );
-          const [first] = ray.intersectObjects([...actors.group.children, ...(withCover ? [cover] : [])]);
+          const [first] = ray.intersectObjects(objects);
           if (first && bodyObjects.has(first.object)) {
             visible += 1;
           }
