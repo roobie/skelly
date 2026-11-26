@@ -68,6 +68,7 @@
         "D": {
           "furniture": "wood_door"
         },
+        "J": "steel_joist",
         "S": {
           "facing": "s",
           "furniture": "shelf",

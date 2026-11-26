@@ -33,12 +33,8 @@ const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
   'garage',
   'gas_station',
   'hardware_store',
-  'holdout_power_plant',
   'shed',
   'small_house',
-  'workshop_hall',
-  'workshop_office',
-  'workshop_parts_store',
 ]);
 
 const declaresBriefed = ({ files }: PackInput): boolean =>

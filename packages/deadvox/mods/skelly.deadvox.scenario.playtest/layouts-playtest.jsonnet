@@ -786,7 +786,7 @@
           "storeys": 1,
           "fixedLoot": [
             {
-              "at": [17, 1, 9],
+              "at": [13, 1, 3],
               "items": [
                 {
                   "item": "shotshell_box",
@@ -825,7 +825,7 @@
               ]
             },
             {
-              "at": [17, 1, 15],
+              "at": [13, 1, 8],
               "items": [
                 {
                   "item": "portable_radio",
