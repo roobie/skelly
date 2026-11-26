@@ -548,6 +548,33 @@ const leadRect = (outward: KitPort, profile: { widthMetres: number }, apron: num
 const insideBounds = (rect: Rect, bounds: Rect): boolean =>
   rect.x0 >= bounds.x0 && rect.z0 >= bounds.z0 && rect.x1 <= bounds.x1 && rect.z1 <= bounds.z1;
 
+/** Why part of an ask's envelope leaves the rectangle the ask owns, naming the ask, the rectangle and the overhang
+ * on each side; none when the ask owns no rectangle or the part lies inside it. */
+const containmentFailure = (ask: Ask, part: string, rect: Rect): string | undefined => {
+  const { within } = ask;
+  if (!within) {
+    return undefined;
+  }
+  const sides = (
+    [
+      ['west', within.x0 - rect.x0],
+      ['north', within.z0 - rect.z0],
+      ['east', rect.x1 - within.x1],
+      ['south', rect.z1 - within.z1],
+    ] as const
+  ).filter(([, by]) => by > 0);
+  if (sides.length === 0) {
+    return undefined;
+  }
+  const overhang = sides.map(([side, by]) => `${side} ${Number(by.toFixed(3))} m`).join(', ');
+  return (
+    `ask "${ask.id}" ${part} overhangs its rectangle x ${within.x0}..${within.x1}, z ${within.z0}..${within.z1} ` +
+    `by ${overhang}`
+  );
+};
+
+const askById = (scenario: ComposedSiteDef, id: string): Ask => scenario.asks.find((ask) => ask.id === id)!;
+
 /**
  * Whether a link's source gate can host its road at all: the transition that docks there must stand inside the
  * bounds beside the placing compound, clear of the buildings and reservations already placed, with a lead past its
@@ -589,6 +616,14 @@ const fromExitFits = (
     rotation: (dock.placement.turn * 90) as 0 | 90 | 180 | 270,
   };
   const rect = buildingFootprint(registry, transitionBuilding);
+  const uncontained = containmentFailure(
+    askById(scenario, link.from.ask),
+    `transition "${link.transition.assembly}" of link "${link.id}"`,
+    rect,
+  );
+  if (uncontained) {
+    return uncontained;
+  }
   const withShoulder = expandRect(rect, profile.widthMetres / 2);
   const outward = placedPort(dock.placement, outwardPort);
   // The road must also have somewhere to go: a lead past the outward mouth, one shoulder wide, inside the bounds.
@@ -605,7 +640,8 @@ const fromExitFits = (
   return blocked ? describe(gate.type, `no room beside ask "${link.from.ask}" for the road to leave`) : undefined;
 };
 
-/** One try at where an ask's building stands: its fixed spot, else around the ask it keeps its distance from, else anywhere in bounds. */
+/** One try at where an ask's building stands: its fixed spot, else around the ask it keeps its distance from, else
+ * anywhere in the rectangle it owns or the bounds. */
 const askCandidate = (
   rng: Rng,
   ask: Ask,
@@ -623,8 +659,9 @@ const askCandidate = (
     x = from.position[0] + Math.cos(angle) * radius;
     z = from.position[2] + Math.sin(angle) * radius;
   } else {
-    x = rng.range(scenario.bounds.x0, scenario.bounds.x1);
-    z = rng.range(scenario.bounds.z0, scenario.bounds.z1);
+    const area = ask.within ?? scenario.bounds;
+    x = rng.range(area.x0, area.x1);
+    z = rng.range(area.z0, area.z1);
   }
   return {
     position: [snapToPlacementGrid(x), scenario.ground, snapToPlacementGrid(z)],
@@ -894,6 +931,15 @@ const planLink = (
     }
     transitions.push(docked.plan);
   }
+  // The transition docked at the arriving ask's gate belongs to that ask's envelope, before any road is fitted.
+  const uncontained = containmentFailure(
+    askById(scenario, link.to.ask),
+    `transition "${link.transition.assembly}" of link "${link.id}"`,
+    transitions[1]!.rect,
+  );
+  if (uncontained) {
+    return { failure: uncontained };
+  }
   const space: LinkSpace = {
     scenario,
     footprints: [
@@ -1013,7 +1059,8 @@ const askReservation = (scenario: ComposedSiteDef, ask: Ask, rect: Rect, apron: 
   z1: rect.z1 + apron,
 });
 
-/** One try at placing an ask's chosen building: in bounds, clear of other reservations, hosting every road that
+/** One try at placing an ask's chosen building: inside its owned rectangle and the bounds, clear of other
+ * reservations, hosting every road that
  * leaves it, and joining every road that arrives at it. */
 const tryAttempt = (
   state: PlacementState,
@@ -1023,6 +1070,10 @@ const tryAttempt = (
   const { registry, scenario, buildings, indices, reservations, pieceCache, seed } = state;
   const rect = buildingFootprint(registry, building);
   const reserved = askReservation(scenario, ask, rect, scenario.placement.apronMetres);
+  const uncontained = containmentFailure(ask, 'footprint with its apron', reserved);
+  if (uncontained) {
+    return { failure: uncontained };
+  }
   if (!insideBounds(reserved, scenario.bounds) || reservations.some((other) => overlaps(reserved, other))) {
     return { failure: undefined };
   }
@@ -1058,18 +1109,19 @@ const tryAttempt = (
   return { reserved, roads };
 };
 
-/** Place one ask, refusing with the last link's own reason when no attempt could stand. */
+/** Place one ask, refusing with the last attributable reason, a link's or the ask's rectangle's, when no attempt
+ * could stand. */
 const placeAsk = (state: PlacementState, ask: Ask): void => {
   const { seed, registry, scenario, buildings, reservations, placements, indices, tracks } = state;
   const rng = Rng.stream(seed, `site:${scenario.id}:ask:${ask.id}`);
   const chosen = askBuilding(seed, registry, scenario, ask);
   const { attempts } = scenario.placement;
-  let linkFailure: string | undefined;
+  let lastFailure: string | undefined;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const building = { ...chosen, ...askCandidate(rng, ask, scenario, placements) };
     const accepted = tryAttempt(state, ask, building);
     if ('failure' in accepted) {
-      linkFailure = accepted.failure ?? linkFailure;
+      lastFailure = accepted.failure ?? lastFailure;
       continue;
     }
     buildings.push(building);
@@ -1088,7 +1140,7 @@ const placeAsk = (state: PlacementState, ask: Ask): void => {
   }
   throw new Error(
     `Composed site "${scenario.id}": ask "${ask.id}" did not fit after ${attempts} attempts` +
-      (linkFailure ? `: ${linkFailure}` : ''),
+      (lastFailure ? `: ${lastFailure}` : ''),
   );
 };
 
