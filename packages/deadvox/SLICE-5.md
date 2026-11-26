@@ -20,8 +20,8 @@ read_if:
 **Status. Built: the power network core, the placed-entity store, battery charging,
 world repair and take-apart with their review, world-destination crafting and placement
 picking with the timber kit and window covers, support and collapse with burial
-(see "Support"), and the first wave rule. Open: retained crack fraction, fire and
-exposure, and the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+(see "Support"), and the first wave rule. Open: fire and exposure, and the integration
+proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
@@ -611,8 +611,19 @@ rounds are tracked under #1332.
   fall before damage, so a refused plan cannot hurt or move a victim. See
   `packages/engine/src/core/furnitureMove.ts`, `commitRuin` and `crushFall`.
   Ordinary strikes never clear rubble: take-apart is the one clearing verb and recovers
-  what the heap holds. Retained crack fraction remains under #1332. Blast by share and
-  breach charges follow, then furniture knock-out.
+  what the heap holds. Retained damage is settled: a blow that does not break keeps its
+  new total; a break refused for want of room keeps full durability, so the cell stands
+  at condition 0 and shows full-reach cracks; an admitted break ends the damage identity
+  and the fallen cell is fresh rubble with nothing carried over; repair stops at the
+  repair ceiling (`packages/deadvox/DESIGN.md`, "Repair ceiling"), so a repaired cell keeps
+  its residual share. No partial residue of a refused or fallen cell is kept, because a
+  standing wall that cannot fall should read as at its breaking point and rubble should
+  never read as cracked. Blasts strike every solid cell they can see in their radius,
+  sharing material strength by distance, while body damage remains separate. Sight
+  already limits a blast to the faces it reaches, so a second flood path would repeat
+  that boundary; separate strengths let wall-cracking and body harm tune apart as melee
+  terrain impulse and body damage do. Fragments strike the first solid cell on each
+  existing ray by fragment resistance. Breach charges follow, then furniture knock-out.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and

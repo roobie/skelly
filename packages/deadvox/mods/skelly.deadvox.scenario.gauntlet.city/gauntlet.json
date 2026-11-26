@@ -11682,7 +11682,7 @@
             }
           ],
           "id": "front_bedroom",
-          "size": [7, 7, 5],
+          "size": [7, 6, 5],
           "turn": 0
         },
         {
@@ -12290,6 +12290,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -12552,6 +12556,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -12816,6 +12824,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -13089,6 +13101,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -13361,6 +13377,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -13620,6 +13640,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -13884,6 +13908,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -14147,6 +14175,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -14419,6 +14451,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -14684,6 +14720,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -14957,6 +14997,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -15216,6 +15260,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -15480,6 +15528,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -15743,6 +15795,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -16016,6 +16072,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -16288,6 +16348,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -16547,6 +16611,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -16811,6 +16879,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -17084,6 +17156,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -17356,6 +17432,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -17615,6 +17695,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -17879,6 +17963,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -18142,6 +18230,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -18414,6 +18506,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -18679,6 +18775,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -18951,6 +19051,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -19515,6 +19619,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -19643,7 +19751,7 @@
           "#..............#..",
           "#..............#..",
           "#..............#..",
-          "################P."
+          "#####LLLLLL#####P."
         ],
         [
           "..................",
@@ -19817,6 +19925,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -19946,7 +20058,7 @@
           "#..............#..",
           "#..............#..",
           "#..............#..",
-          "################P."
+          "#####LLLLLL#####P."
         ],
         [
           "..................",
@@ -20121,6 +20233,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20208,6 +20324,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20286,6 +20406,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -20366,6 +20490,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20433,6 +20561,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -20499,6 +20631,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -20627,6 +20763,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "O": {
           "facing": "e",
@@ -20769,6 +20909,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "O": {
           "facing": "e",
           "fixed": true,
@@ -20909,6 +21053,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "O": {
           "facing": "e",
@@ -21051,6 +21199,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "O": {
           "facing": "e",
           "fixed": true,
@@ -21131,6 +21283,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -21198,6 +21354,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -21262,6 +21422,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -22215,6 +22379,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -22484,6 +22652,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -22763,6 +22935,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -23028,6 +23204,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -23295,6 +23475,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -23571,6 +23755,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -23846,6 +24034,10 @@
           "facing": "e",
           "furniture": "ladder"
         },
+        "L": {
+          "material": "joists",
+          "role": "support"
+        },
         "P": {
           "facing": "e",
           "fixed": true,
@@ -24109,6 +24301,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -24381,6 +24577,10 @@
         "H": {
           "facing": "e",
           "furniture": "ladder"
+        },
+        "L": {
+          "material": "joists",
+          "role": "support"
         },
         "P": {
           "facing": "e",
@@ -44423,6 +44623,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -44449,7 +44653,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,-,,---#.",
           ".#--,,,,,,-,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
@@ -44463,7 +44667,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,-,,---#.",
           ".#--,,,,,,-,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
@@ -44477,7 +44681,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,-,,---#.",
           ".#--,,,,,,-,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,----.",
           ".#------,,i,,----.",
@@ -44491,7 +44695,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,-,,---#.",
           ".#--,,,,,,-,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,----.",
           ".#------,,i,,----.",
@@ -44505,7 +44709,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,i,,---#.",
           ".#--,,,,,,i,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,----.",
           ".#------,,i,,----.",
@@ -44519,7 +44723,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,i,,---#.",
           ".#--,,,,,,i,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--j,,,,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
@@ -44533,7 +44737,7 @@
           ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,i,,---#.",
           ".#--,,,,,,i,,---#.",
-          ".#--,,,,,,i,,---#.",
+          ".#--jjjjjji,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
           ".#------,,i,,---#.",
@@ -44554,7 +44758,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRR.RR...SA",
             "AS..RRRRRR.RR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
@@ -44568,7 +44772,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRR.RR...SA",
             "AS..RRRRRR.RR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
@@ -44582,7 +44786,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRR.RR...SA",
             "AS..RRRRRR.RR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
@@ -44596,7 +44800,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRR.RR...SA",
             "AS..RRRRRR.RR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
@@ -44610,7 +44814,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
@@ -44624,7 +44828,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SRRRRRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
@@ -44638,7 +44842,7 @@
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS..RRRRRRSRR...SA",
+            "AS..SSSSSSSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
@@ -44682,6 +44886,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -44755,6 +44963,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -44851,6 +45063,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -44959,11 +45175,11 @@
         ],
         [
           ".################.",
-          ".#------i-------#.",
-          ".#--,,--i-------#.",
-          ".#--,,iii-------#.",
-          ".#iiiii,,-------#.",
-          ".#,,,,i,,-------#.",
+          ".#------i.......#.",
+          ".#--,,--i.......#.",
+          ".#--,,iiijjjjjjj#.",
+          ".#iiiii,,.......#.",
+          ".#,,,,i,,.......#.",
           ".#,,,,iiiiiiiiii#.",
           ".#,,,,i,,-------#.",
           ".#,,,,i,,-------#.",
@@ -45064,11 +45280,11 @@
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
-            "AS......S.......SA",
-            "AS..RR..S.......SA",
-            "AS..RRSSS.......SA",
-            "ASSSSSSRR.......SA",
-            "ASRRRRSRR.......SA",
+            "AS......SAAAAAAASA",
+            "AS..RR..SAAAAAAASA",
+            "AS..RRSSSSSSSSSSSA",
+            "ASSSSSSRRAAAAAAASA",
+            "ASRRRRSRRAAAAAAASA",
             "ASRRRRSSSSSSSSSSSA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
@@ -45111,6 +45327,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -45184,6 +45404,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -45270,6 +45494,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -45349,6 +45577,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -45550,6 +45782,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -45755,6 +45991,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46037,6 +46277,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46097,6 +46341,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46159,6 +46407,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46217,6 +46469,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46274,6 +46530,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46357,6 +46617,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46446,6 +46710,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46542,6 +46810,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -46651,6 +46923,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46758,6 +47034,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46855,6 +47135,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46881,7 +47165,6 @@
         ["ww.....", ".......", ".......", ".......", "......."],
         ["ww.....", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."]
       ],
       "lootContext": {
@@ -46894,7 +47177,6 @@
           ["SSASSAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
         ]
@@ -46936,6 +47218,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -46959,7 +47245,7 @@
         }
       },
       "ports": [],
-      "size": [7, 7, 5],
+      "size": [7, 6, 5],
       "style": "villa_brick"
     },
     {
@@ -46970,7 +47256,6 @@
         ["ww.RR..", ".......", "..xx...", "..xx...", "......."],
         ["ww.....", ".......", ".......", ".......", "......."],
         ["ww.....", ".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."]
       ],
@@ -46985,7 +47270,6 @@
           ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
         ]
       },
@@ -47026,6 +47310,10 @@
           "material": "partition",
           "role": "interior_wall"
         },
+        "j": {
+          "material": "beam",
+          "role": "support"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -47049,7 +47337,7 @@
         }
       },
       "ports": [],
-      "size": [7, 7, 5],
+      "size": [7, 6, 5],
       "style": "villa_brick"
     },
     {
@@ -47127,6 +47415,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -47226,6 +47518,10 @@
         "i": {
           "material": "partition",
           "role": "interior_wall"
+        },
+        "j": {
+          "material": "beam",
+          "role": "support"
         },
         "k": {
           "material": "paving",
@@ -47770,6 +48066,10 @@
     },
     {
       "bindings": {
+        "beam": {
+          "block": "steel_joist",
+          "role": "support"
+        },
         "facade": {
           "block": "brick",
           "role": "shell"
@@ -47819,6 +48119,10 @@
     },
     {
       "bindings": {
+        "beam": {
+          "block": "steel_joist",
+          "role": "support"
+        },
         "facade": {
           "block": "plaster",
           "role": "shell"

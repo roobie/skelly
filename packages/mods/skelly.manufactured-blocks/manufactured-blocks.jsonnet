@@ -12,6 +12,7 @@ local materials = {
   galvanized: 'metal', bitumen_felt: 'masonry',
   hazard_yellow: 'metal', chain_link: 'metal', camo_woodland: 'timber',
   steel_joist: 'metal',
+  slab_floor: 'reinforced_concrete', slab_deck: 'reinforced_concrete',
 };
 local block(id, name, color, surface, extra={}) =
   { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' } + landings.forBlock(materials[id]), footsteps: footstepEvents[surface] } + extra;
@@ -32,6 +33,10 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
     // A rolled steel section in red-oxide primer: a beam that carries a slab across a room wider than masonry spans.
     block('steel_joist', 'Steel joist', '#6e4436', 'stone', { weatherable: false }),
+    // A modern storey floor is a reinforced-concrete slab spanning wall to wall; the boarded one wears
+    // floorboards over it, so it looks and sounds like planks underfoot but holds as the slab.
+    block('slab_floor', 'Boarded slab floor', '#a0763f', 'wood', { pattern: 'planks', weatherable: true }),
+    block('slab_deck', 'Concrete slab', '#b5b3ad', 'stone', { pattern: 'noise', weatherable: true }),
     block('chain_link', 'Chain-link fence', '#89979a', 'stone', {
       weatherable: false,
       opaque: false,
