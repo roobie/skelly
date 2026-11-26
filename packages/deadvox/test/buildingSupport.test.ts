@@ -10,6 +10,7 @@ import {
   cellsOf,
   compileAssembly,
   compileMapPiece,
+  compileTemplate,
   kitSlotChoices,
   placedBlockAt,
   placedCell,
@@ -23,10 +24,22 @@ import { baseRegistry, overlayContent } from './baseRegistry.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 
 /**
- * Briefed buildings known not to hold, skipped by name until they do: issue #2031, briefed buildings that do not hold.
- * A skipped building that holds, or that no pack declares, fails the test, so the list cannot go stale.
+ * Buildings known not to hold, skipped by name until they do: issue #2031, buildings that do not hold.
+ * Every entry is declared by a covered proof and still fails it, so the list cannot go stale.
  */
-const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([]);
+const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
+  'bungalow',
+  'corner_store',
+  'garage',
+  'gas_station',
+  'hardware_store',
+  'holdout_power_plant',
+  'shed',
+  'small_house',
+  'workshop_hall',
+  'workshop_office',
+  'workshop_parts_store',
+]);
 
 const declaresBriefed = ({ files }: PackInput): boolean =>
   files.some(({ data }) => (data as ContentFile).mapAssemblies?.some(({ brief }) => brief !== undefined) === true);
@@ -112,17 +125,10 @@ const built = (registry: Registry, id: string, style: string | undefined): Compi
  * gives it. A shorter span never lets more cells hold, so when that holds every variant does; it may fail cells no one
  * draw weakens together, never pass one a draw drops. A style changes the blocks, so each style is built.
  */
-const unsupported = (
-  registry: Registry,
-  id: string,
-  style: string | undefined,
-  template = built(registry, id, style),
-): Vec3[] => {
-  const assembly = registry.mapAssemblies.get(id)!;
+const supportDrops = (registry: Registry, template: CompiledTemplate, weakest = new Map<string, number>()): Vec3[] => {
   const placement = { template, origin: [0, 0, 0] as Vec3, turn: 0 as const };
   const surface = template.groundLayer ?? 0;
   const ground = registry.blocks.findIndex(({ solid }) => solid);
-  const weakest = weakestBlocks(registry, assembly, style);
   const stamped = (x: number, y: number, z: number) => placedBlockAt(placement, [x, y, z]);
   const natural = (x: number, y: number, z: number) => stamped(x, y, z) === undefined && y <= surface;
   const support = createSupport(registry, {
@@ -151,6 +157,13 @@ const unsupported = (
   }
   return dropped;
 };
+
+const unsupported = (
+  registry: Registry,
+  id: string,
+  style: string | undefined,
+  template = built(registry, id, style),
+): Vec3[] => supportDrops(registry, template, weakestBlocks(registry, registry.mapAssemblies.get(id)!, style));
 
 it('drops a building whose undrawn slot alternative has the same solid cells but spans too short to hold', () => {
   const fixture = JSON.parse(
@@ -203,12 +216,81 @@ const droppedCells = (registry: Registry, id: string, style: string | undefined)
   return unsupported(registry, id, style, template).length;
 };
 
+const ADMISSION_CANDIDATES = [
+  'holdout_power_plant',
+  'holdout_starter_stockpile',
+  'holdout_board_stockpile',
+  'holdout_sheet_stockpile',
+  'shed',
+  'small_house',
+  'bungalow',
+  'corner_store',
+  'gas_station',
+  'hardware_store',
+  'garage',
+  'workshop_hall',
+  'workshop_office',
+  'workshop_parts_store',
+  'workshop_yard',
+] as const;
+
+/** The legacy templates restrict themselves to cities; the Holdout and workshop templates have no such restriction. */
+const cityOnlyCandidates = new Set([
+  'shed',
+  'small_house',
+  'bungalow',
+  'corner_store',
+  'gas_station',
+  'hardware_store',
+  'garage',
+]);
+
+const admissionEvidence = (): {
+  declared: ReadonlySet<string>;
+  rural: ReadonlyMap<string, boolean>;
+  failing: ReadonlySet<string>;
+  unexpectedDrops: Record<string, Vec3[]>;
+} => {
+  const { registry } = withReusedBuilds(() => selectBundledMods(productModIntake, [])).content;
+  const declared = new Set<string>();
+  const rural = new Map<string, boolean>();
+  const failing = new Set<string>();
+  const unexpectedDrops: Record<string, Vec3[]> = {};
+  for (const id of ADMISSION_CANDIDATES) {
+    const template = registry.templates.get(id);
+    if (template === undefined) {
+      continue;
+    }
+    declared.add(id);
+    rural.set(id, template.eligibility?.settlementKinds.includes('rural') ?? true);
+    const dropped = supportDrops(registry, compileTemplate(registry, template));
+    if (dropped.length > 0) {
+      failing.add(id);
+      if (!KNOWN_UNSUPPORTED.has(id)) {
+        unexpectedDrops[id] = dropped;
+      }
+    }
+  }
+  return { declared, rural, failing, unexpectedDrops };
+};
+
+it('reports support and rural eligibility for every Holdout admission candidate', () => {
+  const admission = admissionEvidence();
+  for (const id of ADMISSION_CANDIDATES) {
+    expect(admission.declared.has(id), `admission candidate ${id} is declared`).toBe(true);
+    expect(admission.rural.get(id), `${id} eligibility`).toBe(!cityOnlyCandidates.has(id));
+  }
+  expect(admission.unexpectedDrops, 'unsupported cells by admission template').toEqual({});
+});
+
 it('holds every building that answers a brief, intact on natural ground, under the support rule', () => {
+  const builds = briefedBuilds();
+  const briefedIds = new Set([...builds.values()].map(({ id }) => id));
   const unskipped: string[] = [];
   const failing: Record<string, number> = {};
   const stillFailing = new Set<string>();
   const errors: Record<string, string> = {};
-  for (const [key, { registry, id, style }] of briefedBuilds()) {
+  for (const [key, { registry, id, style }] of builds) {
     let dropped: number | undefined;
     try {
       dropped = droppedCells(registry, id, style);
@@ -231,8 +313,11 @@ it('holds every building that answers a brief, intact on natural ground, under t
   expect(errors, 'support proofs that threw, by building and style').toEqual({});
   expect(unskipped.length, 'some building that is not skipped is checked').toBeGreaterThan(0);
   expect(failing).toEqual({});
+  const admission = admissionEvidence();
+  const declared = new Set([...briefedIds, ...admission.declared]);
+  const stillFails = new Set([...stillFailing, ...admission.failing]);
   expect(
-    [...KNOWN_UNSUPPORTED].filter((id) => !stillFailing.has(id)),
-    'skipped buildings that hold or that no pack declares; drop them from KNOWN_UNSUPPORTED',
+    [...KNOWN_UNSUPPORTED].filter((id) => !(declared.has(id) && stillFails.has(id))),
+    'known unsupported buildings that are undeclared or hold; drop them from KNOWN_UNSUPPORTED',
   ).toEqual([]);
 });
