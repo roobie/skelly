@@ -349,7 +349,9 @@ and `mods/skelly.deadvox.buildings/rural-house.jsonnet`, `withCellar`. A twin mu
 - **Have a cellar room in its brief** before the twin is built, or the fit check never walks
   the cellar ([Brief](#brief)).
 - **Raise every part above the footing by the cellar's depth**, so each storey keeps its
-  layout, door, windows and services, and every slot keeps its place against the others. The
+  layout, door, windows and services, and every slot keeps its place against the others. A part
+  moves only where the cellar's stair needs its room, as the townhouse street door does
+  ([Worked example: city townhouse](#worked-example-city-townhouse)). The
   depth is the fitted corner's height and the ceiling over it, so every briefed cellar takes
   the shared corner whole; see `tools/jsonnet/lib/cellar-plant.libsonnet`.
 - **Stand the cellar on a footing and keep a floor over it.** Anchors need solid support, so
@@ -465,6 +467,11 @@ city pool's commonest building meets the same rules as the villa. See
   no house flight rises, the stairwell stays reserved air. Each height draws its twin as a
   share of its own rows; see `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`,
   `mapPools`.
+- **Open treads stand on a spandrel, and the street door clears it.** A tread needs support
+  in its own row, and the space under the flight is the cellar flight's headroom, so each tread
+  rests on a spandrel along the flight's front. The spandrel leaves one row of the front band
+  beside it and a body needs two, so a twin under a house flight opens its street door, and the
+  yard path before it, east of the spandrel, where the band stays two rows deep.
 - **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
   the back east corner of that storey, so the walk from the street door reaches them in every
   kind; over a cellar they rise with the street storey. The room scenes keep out of

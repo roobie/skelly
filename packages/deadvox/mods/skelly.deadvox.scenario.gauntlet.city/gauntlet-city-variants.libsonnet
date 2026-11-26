@@ -14,13 +14,32 @@ local cellarFlight = flight + {
   layers: flight.layers[0:7] + [landing],
   ownership: { layers: flight.ownership.layers[0:7] + [['SSRRRRRRRSS', 'SSRRRRRRRSS']] },
 };
-local tread(layer, x) = x == layer + 2 || (layer == 7 && x > 8);
-local treads(mark, air) = [
-  [std.join('', [if tread(layer, x) then mark else air for x in std.range(0, 10)]) for _ in [0, 1]]
-  for layer in std.range(0, 7)
+// Each open tread rests on a plaster spandrel along its front, standing on the street storey's floor
+// beside the cellar flight's headroom; the flight's rows run front (spandrel) to back. '-' leaves its
+// cell to the floor over the flight.
+local openLayers = [
+  ['..iiiiiii..', '..p........', '..p........'],
+  ['...iiiiii..', '...p.......', '...p.......'],
+  ['....iiiii..', '....p......', '....p......'],
+  ['.....iiii..', '.....p.....', '.....p.....'],
+  ['......iii..', '......p....', '......p....'],
+  ['.......ii..', '.......p...', '.......p...'],
+  ['........i..', '........p..', '........p..'],
+  ['-----------', '.........pp', '.........pp'],
+];
+local claims(layers) = [
+  [std.join('', [std.get({ '.': 'R', '-': '.' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
+  for layer in layers
 ];
 local openFlight = flight + {
-  id: 'gauntlet_city_stairs_open', layers: treads('p', '.'), ownership: { layers: treads('S', 'R') },
+  id: 'gauntlet_city_stairs_open',
+  size: [flight.size[0], flight.size[1], flight.size[2] + 1],
+  palette: flight.palette + {
+    '-': { role: 'opening', material: 'opening' },
+    i: { role: 'interior_wall', material: 'partition' },
+  },
+  layers: openLayers,
+  ownership: { layers: claims(openLayers) },
 };
 // Where no house flight rises, the stairwell over the cellar flight is kept air a body climbs through,
 // as high as the storey under the roof.
@@ -38,17 +57,28 @@ local storey = 8;
 local up = function(at, by) [at[0], at[1] + by, at[2]];
 // A house whose own rooms already hold the building beat cap gets a quiet cellar, so the cellar adds no beat.
 local quietCellar = kit.scenes.quiet('cellar', '_quiet');
-local withCellar = function(building, quiet=false) building + {
+local hasFlight = function(building) std.member([part.id for part in building.slots], 'stairs');
+local withCellar = function(building, quiet=false)
+local flown = hasFlight(building);
+building + {
   id: building.id + '_cellar',
   size: up(building.size, storey),
+  // The yard's path leads to the street door.
+  yard:: if flown then yards.mirroredSlot else yards.slot,
   slots: [
     if part.id == 'ground' then part
-    else if part.id == 'stairs' then part + { at: up(part.at, storey), choices: only(openFlight.id) }
-    else if part.id == 'room' then kit.scenes.slot(part.id, up(part.at, storey), 'lower')
+    else if part.id == 'stairs' then part + {
+      at: [part.at[0], part.at[1] + storey, part.at[2] - 1], size: openFlight.size, choices: only(openFlight.id),
+    }
+    else if part.id == 'shell' && flown then part + {
+      at: up(part.at, storey), choices: [{ ref: { kind: 'assembly', id: kit.twin.shell }, weight: 1 }],
+    }
+    else if part.id == 'door' && flown then part + { at: up(kit.twin.door, storey) }
+    else if part.id == 'room' then kit.scenes.slot(part.id, up(part.at, storey), if flown then 'spandrel' else 'lower')
     else part + { at: up(part.at, storey) }
     for part in building.slots
   ] + (
-    if std.member([part.id for part in building.slots], 'stairs') then []
+    if flown then []
     else [{ id: 'stairs', at: [1, storey + 1, 5], size: stairwell.size, turn: 0, choices: only(stairwell.id) }]
   ) + [
     { id: 'cellar_shell', at: [0, 1, 0], size: [18, 7, 16], turn: 0, choices: only('gauntlet_city_cellar_shell') },
@@ -106,8 +136,9 @@ local dressed = function(building) building + {
       choices: [{ ref: { kind: 'assembly', id: entry.assembly.id }, weight: entry.weight } for entry in decor.roofs],
     } else part
     for part in building.slots
-  ] + [yards.slot + { at: [0, ground(building), 0] }],
-  anchors: building.anchors + { street: { kind: 'standing', at: [8, ground(building), 1] } },
+  ] + [std.get(building, 'yard', yards.slot) + { at: [0, ground(building), 0] }],
+  // The front step before the street door's eastern leaf.
+  anchors: building.anchors + { street: { kind: 'standing', at: [find('door', building.slots).at[0] + 1, ground(building), 1] } },
 };
 {
   loot: kit.loot,
