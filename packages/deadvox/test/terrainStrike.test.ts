@@ -49,6 +49,7 @@ const leafType = 'terrain_fixture_leaf';
 const floorType = 'terrain_fixture_floor';
 const rubbleType = 'terrain_fixture_rubble';
 const lampType = 'terrain_fixture_lamp';
+const grenadeType = 'frag_grenade';
 /** Hung under the struck block, which is its ceiling. */
 const lampPos: Vec3 = [cell[0], cell[1] - 1, cell[2]];
 const stockRoll = (condition: number) => ({ type: stock, count: 1, condition });
@@ -793,6 +794,18 @@ describe('supply-aware terrain destruction', () => {
     const result = f.strike();
     expect(result?.outcome).toBe('broken');
     expect(result?.destroyed.map(({ type }) => type)).toContain(lampType);
+    expect(f.inventory.entities.at(...lampPos)).toBeUndefined();
+  });
+
+  it('passes over a ceiling mount that its blast ruined with the block it hangs from', () => {
+    const f = fixture({ lamp: true, resident: true, arrived: true });
+    const grenade = f.inventory.create(grenadeType);
+    f.session.fuses.togglePin(grenade);
+    expect(f.inventory.add(grenade, { kind: 'pile', pos: [lampPos[0], lampPos[1] - 1, lampPos[2]] })).toBe(true);
+    const fuse = f.registry.items.get(grenadeType)!.explosive!.fuseSimSeconds;
+    expect(() => f.session.sim.scheduler.advance(fuse + 0.5)).not.toThrow();
+    expect(f.inventory.itemByUid(grenade.uid)).toBeUndefined();
+    expect(f.world.getBlock(...cell)).not.toBe(f.floor);
     expect(f.inventory.entities.at(...lampPos)).toBeUndefined();
   });
 

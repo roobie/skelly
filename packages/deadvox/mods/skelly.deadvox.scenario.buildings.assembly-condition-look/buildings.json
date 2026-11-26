@@ -272,7 +272,7 @@
         ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
         ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
         ["#...#..#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
-        ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["########", "#......#", "#......#", "#bbbbbb#", "#......#", "#......#", "########"],
         ["########", "########", "########", "########", "########", "########", "########"]
       ],
       "lootContext": {
@@ -286,7 +286,7 @@
           ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
           ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
           ["S...SRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SRRRRRRS", "SSSSSSSS"],
-          ["SSSSSSSS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SAAAAAAS", "SSSSSSSS"],
+          ["SSSSSSSS", "SAAAAAAS", "SAAAAAAS", "SSSSSSSS", "SAAAAAAS", "SAAAAAAS", "SSSSSSSS"],
           ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"]
         ]
       },
@@ -298,6 +298,10 @@
         ".": {
           "material": "air",
           "role": "opening"
+        },
+        "b": {
+          "material": "beam",
+          "role": "support"
         }
       },
       "ports": [],
@@ -332,6 +336,10 @@
         "air": {
           "block": "air",
           "role": "opening"
+        },
+        "beam": {
+          "block": "planks",
+          "role": "support"
         },
         "wall": {
           "block": "brick",

@@ -26,14 +26,7 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
  * Briefed buildings known not to hold, skipped by name until they do: issue #2031, briefed buildings that do not hold.
  * A skipped building that holds, or that no pack declares, fails the test, so the list cannot go stale.
  */
-const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
-  'condition_pavilion_intact',
-  'condition_pavilion_nested',
-  'condition_pavilion_worn',
-  'gauntlet_city_2_cellar',
-  'gauntlet_city_3_cellar',
-  'village_shop',
-]);
+const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set(['gauntlet_city_2_cellar', 'gauntlet_city_3_cellar']);
 
 const declaresBriefed = ({ files }: PackInput): boolean =>
   files.some(({ data }) => (data as ContentFile).mapAssemblies?.some(({ brief }) => brief !== undefined) === true);
