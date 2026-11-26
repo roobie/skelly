@@ -2674,15 +2674,19 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   shambler, while a breaching charge (directional, at contact) destroys a steel
   door and little around it. Blast and fragment damage apply to bodies
   (`packages/engine/src/core/explosive.ts`, `blastShare` and `fragmentHitsOnBody`);
-  blocks and pieces take damage only from blows through their material gate
-  (`packages/engine/src/core/blockDamage.ts`, `bashBlock`). Breach charges and
+  blocks and pieces take damage only from blows through their material gate.
+  Both reduce a blow by their material's resistance to its kind in one shared
+  step, so a kind such as heat means the same against a wall and a door
+  (`packages/engine/src/core/blow.ts`, `strengthPast`). Breach charges and
   blast damage to materials are owed under #1332.
-- **Material admission.** Explicit block resistances let fragments and pressure
+- **Material admission.** Explicit block and furniture resistances let fragments and pressure
   differ without weapon-name exceptions or a later schema replacement. Missing
   metadata must fail admission rather than hide incomplete content behind a default.
   Resistance precedes the strength gate so an ineffective blow does not accumulate
-  damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`; `packages/engine/src/core/content.ts`,
-  `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
+  damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`;
+  `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`;
+  `packages/engine/src/core/damageContent.ts`, `checkDamageKinds`; and
+  `packages/engine/src/core/blow.ts`, `strengthPast`.
 - **Rubble preserves wreckage.** A material's fallen form is solid rubble until
   cleared, because wreckage should still provide cover; falling alone is not loose
   salvage. Clearing is the take-apart command applied to rubble, so it adds no

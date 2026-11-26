@@ -56,7 +56,7 @@ const make = (saved?: Saved) => {
 const prepare = (damage = DURABILITY / 2) => {
   const r = make();
   const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' })!;
-  if (r.inventory.entities.bash(target, damage) !== 'damaged') {
+  if (r.inventory.entities.bash(target, { strength: damage, kind: 'blunt' }) !== 'damaged') {
     throw new Error('Fixture piece was not damaged');
   }
   const inputs = [r.inventory.create(STOCK, 1, 0.7), r.inventory.create(STOCK, 1, 0.4)];
@@ -191,7 +191,7 @@ it.each(['out of reach', 'ruined'] as const)(
       r.position[0] += 100;
     }
     if (change === 'ruined') {
-      r.inventory.entities.bash(r.target, DURABILITY);
+      r.inventory.entities.bash(r.target, { strength: DURABILITY, kind: 'blunt' });
     }
     const before = piecesApartFromJobs(r);
     const reason = r.hooks.validate(r.work.uid);
@@ -243,7 +243,7 @@ it('live reach refusal keeps escrow and both item-work Continue routes resume th
   const r = start();
   r.sim.actions.stop();
   const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
-  expect(r.inventory.entities.bash(target, DURABILITY / 2)).toBe('damaged');
+  expect(r.inventory.entities.bash(target, { strength: DURABILITY / 2, kind: 'blunt' })).toBe('damaged');
   expect(r.inventory.add(r.inventory.create(STOCK, 2), { kind: 'pile', pos: [...ORIGIN] })).toBe(true);
   expect(r.commands.repairEntity(RECIPE, target.uid)).toBeUndefined();
   const held = target.work!;
@@ -435,7 +435,7 @@ it.each(['gone', 'reserved', 'out of reach'] as const)(
       size: [1, 1, 1],
       facing: 'n',
     })!;
-    r.inventory.entities.bash(other, DURABILITY / 2);
+    r.inventory.entities.bash(other, { strength: DURABILITY / 2, kind: 'blunt' });
     const before = r.inventory.snapshotState();
     const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid);
     expect(projection.refusal).toBeDefined();
@@ -447,7 +447,7 @@ it.each(['gone', 'reserved', 'out of reach'] as const)(
 it('recorded repair intent keeps its selected UID and exact escrow instead of the first matching piece', async () => {
   const r = prepare();
   const selected = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
-  r.inventory.entities.bash(selected, DURABILITY / 2);
+  r.inventory.entities.bash(selected, { strength: DURABILITY / 2, kind: 'blunt' });
   const template = capture(createRuntime());
   const snapshot = { ...template, character: { ...template.character, inventory: r.inventory.snapshotState() } };
   const recorder = new InputReplayRecorder(snapshot);

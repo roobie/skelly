@@ -15,7 +15,7 @@ import {
 import { expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import { startupContent } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry, issues } = startupContent();
@@ -131,8 +131,7 @@ const checkWreck = (
   sources = vehicleFixtureSources,
 ) => {
   const data: ContentFile = {
-    furnitureMaterials: fixtureMaterials(),
-    sounds: fixtureSounds(),
+    ...fixtureMaterialContent(),
     furniture: [
       {
         id: 'fixture_wreck',
@@ -257,8 +256,7 @@ it('blocks exactly the cells kept collision fills in every vehicle look', async 
 const checkShaped = (solidFill: number, height = 0.5) => {
   const shape = [{ position: [0, 0, 0] as [number, number, number], size: [1, height, 1] as [number, number, number] }];
   const data: ContentFile = {
-    furnitureMaterials: fixtureMaterials(),
-    sounds: fixtureSounds(),
+    ...fixtureMaterialContent(),
     furniture: [
       {
         id: 'fixture_bench',

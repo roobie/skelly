@@ -20,7 +20,7 @@ import { createStageServer, listeningPort } from '../test/browser/stageServer.mj
  * The mod content sections this probe reads; the registry it builds validates them.
  * @typedef {{ furniture?: FurnitureDef[] } & Partial<Record<PassedSection, unknown[]>>} ProbeContent
  */
-/** @typedef {'sounds' | 'furnitureMaterials' | 'powerDevices'} PassedSection */
+/** @typedef {'sounds' | 'damageKinds' | 'furnitureMaterials' | 'powerDevices'} PassedSection */
 
 const [out, ...rest] = process.argv.slice(2);
 const compare = rest[0] === '--compare';
@@ -135,6 +135,8 @@ try {
           source: 'look.json',
           data: {
             sounds: gather('sounds'),
+            // Materials name a resistance for every damage kind, so they need the kinds.
+            damageKinds: gather('damageKinds'),
             furnitureMaterials: gather('furnitureMaterials'),
             powerDevices: gather('powerDevices'),
             furniture: [...plain, ...definitions],

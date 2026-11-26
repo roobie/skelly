@@ -23,7 +23,7 @@ import { placementOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 
 const context: LootContext = { usage: ['Medical'], tier: 'Tier2' };
 const TIERS = LOOT_TIERS;
@@ -168,8 +168,7 @@ describe('loot economy descriptions', () => {
       {
         source: 'economy-fixture',
         data: {
-          furnitureMaterials: fixtureMaterials(),
-          sounds: fixtureSounds(),
+          ...fixtureMaterialContent(),
           items: [
             {
               id: 'fixture_stock',

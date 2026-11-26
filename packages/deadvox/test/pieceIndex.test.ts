@@ -102,7 +102,7 @@ it('lists the pieces of each column as a full scan does through adds, moves, rem
   expect(entities.byUid(far.uid)).toBeUndefined();
   expect(indexMismatches(entities)).toEqual([]);
 
-  expect(entities.bash(seamDoor, doorDef.breach.durability)).toBe('broken');
+  expect(entities.bash(seamDoor, { strength: doorDef.breach.durability, kind: 'blunt' })).toBe('broken');
   expect(indexMismatches(entities)).toEqual([]);
 
   entities.lift(raised);

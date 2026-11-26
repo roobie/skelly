@@ -50,6 +50,8 @@ export const FurnitureMaterialSchema = pipe(
     id: Id,
     /** What a blow on a piece of this material sounds like; it must alert hearing, since every blow is heard. */
     blowSound: Id,
+    /** Per damage kind, the share of a blow's strength a piece of this material shrugs off, read as a block material's. */
+    resistance: record(Id, Fraction),
     drops: optional(record(Id, Id)),
     /** Forcing methods a door of this material admits; a door's material must list them. */
     methods: optional(array(Id)),

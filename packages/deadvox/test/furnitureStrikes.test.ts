@@ -115,7 +115,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const piece = entities.pieceTouching(ahead);
-      const outcome = piece && entities.bash(piece, bash);
+      const outcome = piece && entities.bash(piece, { strength: bash, kind: 'blunt' });
       if (piece && outcome === 'ruined') {
         entities.destroy(piece);
       }

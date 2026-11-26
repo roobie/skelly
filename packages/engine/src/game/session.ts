@@ -30,7 +30,7 @@ import {
 } from '../core/aim.ts';
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
-import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
+import { worldCellRepair } from '../core/blockDamage.ts';
 import {
   type BashOutcome,
   BlockEntities,
@@ -38,6 +38,7 @@ import {
   boxIntersectsBody,
   searchTime,
 } from '../core/blockEntities.ts';
+import type { Blow } from '../core/blow.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -1695,11 +1696,7 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (
-    target: BlockEntity | undefined,
-    strength: number,
-    part?: FurniturePart,
-  ): BashOutcome | undefined => {
+  const bashPiece = (target: BlockEntity | undefined, blow: Blow, part?: FurniturePart): BashOutcome | undefined => {
     if (target && blowLandsOnPane(entities, target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
@@ -1716,11 +1713,11 @@ export const createSession = (options: SessionOptions) => {
           },
         },
         target,
-        { force: strength, continuation: 0 },
+        { force: blow.strength, continuation: 0 },
         position,
       );
     }
-    const outcome = target && entities.bash(target, strength);
+    const outcome = target && entities.bash(target, blow);
     if (!(target && outcome)) {
       return undefined;
     }
@@ -1735,11 +1732,14 @@ export const createSession = (options: SessionOptions) => {
     }
     return outcome;
   };
-  /** A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. */
+  /**
+   * A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. The
+   * blow is a crush, the kind a climber's weight deals.
+   */
   const tearPiece = (piece: BlockEntity): void => {
-    bashPiece(piece, entities.defOf(piece).breach.durability);
+    bashPiece(piece, { strength: entities.defOf(piece).breach.durability, kind: 'crush' });
   };
-  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
+  const strikeTerrainCell = (cell: Vec3, blow: Blow): boolean => {
     const context = options.terrainDestruction;
     if (!context) {
       return false;
@@ -1858,15 +1858,16 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       isSolid: physicalSolid,
     });
+    const blow: Blow = { strength: weapon.impulse, kind: weapon.type };
     if (picked?.entity.window) {
-      return bashPiece(picked.entity, weapon.impulse, picked.part) !== undefined;
+      return bashPiece(picked.entity, blow, picked.part) !== undefined;
     }
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
-      return bashPiece(piece, weapon.impulse) !== undefined;
+      return bashPiece(piece, blow) !== undefined;
     }
-    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
+    return hit ? strikeTerrainCell(hit.block, blow) : false;
   };
   /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
    * read and published before the damage lands, so the damaged world survives streaming and saves. */
@@ -1927,7 +1928,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     }),
     meleeBlocker,
-    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
+    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), { strength, kind: 'blunt' }),
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,

@@ -1,7 +1,9 @@
+import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
 import { swapCanister } from '@skelly/engine/internal/core/torch.ts';
 import { freshDropTarget, Inventory, type Target } from '@skelly/engine/inventory';
+import { BlockEntities, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { createRuntime, registry } from './snapshotTestSupport.ts';
 
@@ -181,4 +183,35 @@ it('a cartridge swap into full piles refuses rather than losing the old one', ()
   expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
   expect(torch.slots!.canister).toBe(old);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
+});
+
+/**
+ * A blow of `kind` whose strength past `resistance` is exactly `minimum`, and a blow of another kind at the same
+ * strength. The other kind must resist more, or the pair proves nothing.
+ */
+const blowsAtGate = (minimum: number, resistance: Readonly<Record<string, number>>, lands: string, other: string) => {
+  if (!(resistance[other]! > resistance[lands]!)) {
+    throw new Error(`the fixture needs ${other} resisted more than ${lands}`);
+  }
+  const strength = minimum / (1 - resistance[lands]!);
+  return { lands: { strength, kind: lands }, resisted: { strength, kind: other } };
+};
+
+it('a blunt blow on steel is reduced by its resistance', () => {
+  const metal = registry.blockMaterials.get('metal')!;
+  const { lands, resisted } = blowsAtGate(metal.minimumStrength, metal.resistance, 'heat', 'blunt');
+
+  expect(bashBlock({ material: metal, damage: 0 }, resisted).outcome).toBe('resisted');
+  expect(bashBlock({ material: metal, damage: 0 }, lands).outcome).not.toBe('resisted');
+});
+
+it('a heat blow on a wood piece is resisted while the same strength blunt lands', () => {
+  const woodDoor = registry.furniture.get('wood_door')!;
+  const wood = registry.furnitureMaterials.get(woodDoor.material)!;
+  const { lands, resisted } = blowsAtGate(woodDoor.breach.minimumStrength, wood.resistance, 'blunt', 'heat');
+  const entities = new BlockEntities(registry);
+  const door = entities.add({ type: woodDoor.id, pos: [0, 0, 0], size: [...woodDoor.size] as Vec3, facing: 'n' })!;
+
+  expect(entities.bash(door, resisted)).toBe('resisted');
+  expect(entities.bash(door, lands)).not.toBe('resisted');
 });

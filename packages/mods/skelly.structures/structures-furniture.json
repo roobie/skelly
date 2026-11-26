@@ -4735,7 +4735,18 @@
       "drops": {
         "default": "item_drop_wood"
       },
-      "id": "plastic"
+      "id": "plastic",
+      "resistance": {
+        "acid": 0,
+        "blast": 0,
+        "blunt": 0,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0,
+        "fragment": 0,
+        "heat": 0,
+        "pierce": 0
+      }
     }
   ]
 }

@@ -120,7 +120,8 @@ const content = [
         inventory: { visibility: 'occupied', order },
         selfView: 'frame',
       })),
-      furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
+      // The registry admits no damage kinds, so the material resists none.
+      furnitureMaterials: [{ id: 'scroll_material', blowSound, resistance: {}, drops: { default: blowSound } }],
       furniture: [
         {
           id: 'scroll_rack',

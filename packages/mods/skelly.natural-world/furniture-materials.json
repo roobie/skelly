@@ -28,7 +28,18 @@
         "default": "item_drop_wood"
       },
       "id": "wood",
-      "methods": ["pry", "hammer"]
+      "methods": ["pry", "hammer"],
+      "resistance": {
+        "acid": 0,
+        "blast": 0,
+        "blunt": 0,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0,
+        "fragment": 0,
+        "heat": 1,
+        "pierce": 0
+      }
     },
     {
       "blowSound": "door_bash",
@@ -58,7 +69,18 @@
         "default": "item_drop_wood"
       },
       "id": "steel",
-      "methods": ["pry", "cut", "hammer"]
+      "methods": ["pry", "cut", "hammer"],
+      "resistance": {
+        "acid": 0,
+        "blast": 0,
+        "blunt": 0,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0,
+        "fragment": 0,
+        "heat": 0.10000000000000001,
+        "pierce": 0
+      }
     }
   ]
 }

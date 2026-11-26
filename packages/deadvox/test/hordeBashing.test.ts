@@ -3,7 +3,7 @@ import { type Actor, dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
 import { type BashOutcome, BlockEntities, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
-import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
+import { fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
@@ -14,9 +14,7 @@ const { registry, issues } = buildRegistry([
   {
     source: 'horde-bash-fixture',
     data: {
-      furnitureMaterials: [
-        { id: 'bash_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
-      ],
+      furnitureMaterials: [{ ...fixtureMaterials()[0], id: 'bash_fixture' }],
       sounds: fixtureSounds(),
       furniture: [
         {

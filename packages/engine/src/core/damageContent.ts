@@ -94,6 +94,9 @@ export const checkDamageKinds = (registry: Registry, report: Report): void => {
   for (const material of registry.blockMaterials.values()) {
     checkerFor(registry, report, 'blockMaterials', material.id).complete('.resistance', material.resistance);
   }
+  for (const material of registry.furnitureMaterials.values()) {
+    checkerFor(registry, report, 'furnitureMaterials', material.id).complete('.resistance', material.resistance);
+  }
   for (const meleeClass of registry.meleeClasses.values()) {
     const checker = checkerFor(registry, report, 'meleeClasses', meleeClass.id);
     if (meleeClass.capability !== 'unarmed') {

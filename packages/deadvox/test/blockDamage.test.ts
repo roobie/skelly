@@ -310,9 +310,12 @@ describe('block material admission', () => {
       buildRegistry([
         {
           source: 'fixture.json',
-          data: { ...unknown, blockMaterials: [{ ...material, resistance: { ...material.resistance, heat: 0 } }] },
+          data: {
+            ...unknown,
+            blockMaterials: [{ ...material, resistance: { ...material.resistance, fixtureUnknown: 0 } }],
+          },
         },
-      ]).issues.some(({ path }) => path.endsWith('.resistance.heat')),
+      ]).issues.some(({ path }) => path.endsWith('.resistance.fixtureUnknown')),
     ).toBe(true);
   });
 });

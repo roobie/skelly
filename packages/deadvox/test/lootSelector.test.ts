@@ -6,7 +6,7 @@ import { chargeShare, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
@@ -26,8 +26,7 @@ const fixture = () => {
     {
       source: 'selector-fixture',
       data: {
-        furnitureMaterials: fixtureMaterials(),
-        sounds: fixtureSounds(),
+        ...fixtureMaterialContent(),
         items: [itemDefinition('stock'), itemDefinition('wrong_usage'), itemDefinition('wrong_tier')],
         itemEconomy: [
           scarcity('stock', ['Medical'], ['Tier2']),

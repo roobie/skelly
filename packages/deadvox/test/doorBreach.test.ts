@@ -5,13 +5,14 @@ import { coreMessage } from '@skelly/engine/text';
 import { BlockEntities, type BlockEntity, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
-import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
+import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
+const BLOW = { strength: MINIMUM, kind: 'blunt' } as const;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
 const DURABILITY = 4 * MINIMUM;
 const BOARDING = { type: 'breach_boards', side: 'front' } as const;
@@ -30,9 +31,7 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'breach-fixture',
     data: {
-      furnitureMaterials: [
-        { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
-      ],
+      furnitureMaterials: [{ ...fixtureMaterials()[0], id: 'breach_fixture' }],
       furniture: [fixtureDoor('breach_door')],
       boardings: [
         {
@@ -68,7 +67,7 @@ const doorway = (boarding?: typeof BOARDING) => {
 };
 const blowsToBreak = (entities: BlockEntities, door: BlockEntity, strength: number): number => {
   for (let blows = 1; blows <= 1000; blows++) {
-    if (entities.bash(door, strength) === 'broken') {
+    if (entities.bash(door, { strength, kind: 'blunt' }) === 'broken') {
       return blows;
     }
   }
@@ -100,7 +99,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const leaf = entities.pieceTouching(ahead);
-      return leaf && entities.bash(leaf, bash);
+      return leaf && entities.bash(leaf, { strength: bash, kind: 'blunt' });
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
@@ -127,6 +126,8 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
             {
               id: 'breach_fixture',
               blowSound: FIXTURE_BLOW_SOUND,
+              // This registry admits no damage kinds, so the material answers none.
+              resistance: {},
               drops: { default: FIXTURE_BLOW_SOUND },
               methods: [],
             },
@@ -147,7 +148,7 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
 it('never damages a leaf with blows below its minimum strength, however many land', () => {
   const { entities, door, solid } = doorway();
   for (let blow = 0; blow < 1000; blow++) {
-    expect(entities.bash(door, MINIMUM * 0.99)).toBe('resisted');
+    expect(entities.bash(door, { strength: MINIMUM * 0.99, kind: 'blunt' })).toBe('resisted');
   }
   expect(door.damage).toBeUndefined();
   expect(door.open).toBe(false);
@@ -157,15 +158,15 @@ it('never damages a leaf with blows below its minimum strength, however many lan
 it('breaks the leaf open with its lock gone on the blow that brings its damage to the durability, not one before', () => {
   const { entities, door } = doorway();
   for (let blow = 1; blow < DURABILITY / MINIMUM; blow++) {
-    expect(entities.bash(door, MINIMUM)).toBe('damaged');
+    expect(entities.bash(door, BLOW)).toBe('damaged');
   }
   expect(door.damage).toBe(DURABILITY - MINIMUM);
   expect(entities.conditionOf(door)).toBeGreaterThan(0);
-  expect(entities.bash(door, MINIMUM)).toBe('broken');
+  expect(entities.bash(door, BLOW)).toBe('broken');
   expect(door).toMatchObject({ broken: true, open: true, damage: undefined, lock: undefined });
   expect(entities.conditionOf(door)).toBe(0);
   expect(entities.doorRefusal(door, 'close', [])).toBe("It's broken");
-  expect(entities.bash(door, MINIMUM)).toBeUndefined();
+  expect(entities.bash(door, BLOW)).toBeUndefined();
 });
 
 const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> => {
@@ -186,7 +187,7 @@ const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> 
 
 it('keeps repaired partial and broken damage through a save file and load of the block entities', async () => {
   const { entities, door } = doorway();
-  entities.bash(door, MINIMUM);
+  entities.bash(door, BLOW);
   expect(entities.repair(door, MINIMUM / 2, 1)).toBe(true);
   const repairedCondition = entities.conditionOf(door);
   const restored = await throughSaveFile(entities);
@@ -212,7 +213,7 @@ it('holds a bashing shambler below the minimum behind the intact leaf and lets a
 it('keeps a damaged boarded leaf shut from both faces through a save file until blows break it open', async () => {
   const boarded = doorway(BOARDING);
   boarded.entities.breakLock(boarded.door);
-  boarded.entities.bash(boarded.door, MINIMUM);
+  boarded.entities.bash(boarded.door, BLOW);
   const entities = await throughSaveFile(boarded.entities);
   const door = entities.byUid(boarded.door.uid)!;
   expect(door).toMatchObject({ boarding: BOARDING, damage: MINIMUM, open: false });

@@ -197,9 +197,8 @@ describe('house supply and player controls', () => {
     f.loadCharger();
     const generator = f.control('generator');
     expect(f.powered().every(Boolean)).toBe(true);
-    expect(f.session.bashFurniture(generator, registry.furniture.get(generator.type)!.breach.durability)).toBe(
-      'ruined',
-    );
+    const { durability } = registry.furniture.get(generator.type)!.breach;
+    expect(f.session.bashFurniture(generator, { strength: durability, kind: 'blunt' })).toBe('ruined');
     expect(f.session.entities.byUid(generator.uid)).toBeUndefined();
     expect(f.powered().every((powered) => !powered)).toBe(true);
   });

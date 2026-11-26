@@ -18,6 +18,7 @@
               "crush": 0.012,
               "cut": 0.050000000000000003,
               "fragment": 0.040000000000000001,
+              "heat": 0.0060000000000000001,
               "pierce": 0.040000000000000001
             },
             "closeSimSeconds": 180,
@@ -42,6 +43,7 @@
               "crush": 0.0040000000000000001,
               "cut": 0.040000000000000001,
               "fragment": 0.050000000000000003,
+              "heat": 0.0025000000000000001,
               "pierce": 0.050000000000000003
             },
             "closeSimSeconds": 7200,
@@ -67,6 +69,7 @@
               "crush": 0.0011999999999999999,
               "cut": 0.02,
               "fragment": 0.02,
+              "heat": 0,
               "pierce": 0.02
             },
             "closeSimSeconds": 21600,
@@ -92,6 +95,7 @@
               "crush": 0.00025000000000000001,
               "cut": 0.0060000000000000001,
               "fragment": 0.0040000000000000001,
+              "heat": 0,
               "pierce": 0.0040000000000000001
             },
             "closeSimSeconds": 86400,
@@ -234,6 +238,7 @@
         "crush": 1,
         "cut": 1,
         "fragment": 1,
+        "heat": 4,
         "pierce": 1
       },
       "pain": {
@@ -267,6 +272,7 @@
           "crush": 1.6000000000000001,
           "cut": 2,
           "fragment": 2,
+          "heat": 3,
           "pierce": 2
         },
         "perRegionDamage": 0.5,
@@ -319,6 +325,7 @@
         "crush": 2,
         "cut": 0,
         "fragment": 0,
+        "heat": 1,
         "pierce": 0
       },
       "shockRecoveryPerSimSecond": 0.10000000000000001,

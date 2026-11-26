@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
 
 import { buildFixtureRegistry } from './economyFixtures.ts';
+import { fixtureResistance } from './fixtures/damageKinds.ts';
 
 const ids = { item: 'fixture_drop', part: 'fixture_part', family: 'fixture_character', material: 'fixture_surface' };
 const fixture = () => {
@@ -47,7 +48,9 @@ const fixture = () => {
             vehicle: { ...part.vehicle, drops: { default: events[2]! } },
           },
         ],
-        furnitureMaterials: [{ id: ids.material, blowSound: sound.id, drops: { default: events[2]! } }],
+        furnitureMaterials: [
+          { id: ids.material, blowSound: sound.id, resistance: fixtureResistance(), drops: { default: events[2]! } },
+        ],
         furniture: [
           {
             id: 'fixture_crate',

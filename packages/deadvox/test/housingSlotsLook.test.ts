@@ -168,7 +168,8 @@ it('stages worn modules one blow from ruin: the open one falls to piles with its
   const outcomes = ruinable.map((piece) => {
     const parts = inventory.entities.housingView(piece).filter(({ part }) => part);
     clock.now += 1;
-    expect(inventory.entities.bash(piece, inventory.entities.defOf(piece).breach.minimumStrength)).toBe('ruined');
+    const { minimumStrength } = inventory.entities.defOf(piece).breach;
+    expect(inventory.entities.bash(piece, { strength: minimumStrength, kind: 'blunt' })).toBe('ruined');
     return { piece, parts, destroyed: ruinFurniture(mover, piece) };
   });
   const open = outcomes.find(({ destroyed }) => destroyed)!;

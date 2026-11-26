@@ -1,5 +1,6 @@
-import { type BlockBlow, bashBlock } from './blockDamage.ts';
+import { bashBlock } from './blockDamage.ts';
 import type { BlockEntity } from './blockEntities.ts';
+import type { Blow } from './blow.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import { claimed } from './capabilities.ts';
 import type { createColumnSupply } from './columnSupply.ts';
@@ -151,7 +152,7 @@ const preStrikeRefusal = (
   return undefined;
 };
 
-export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
+export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: Blow): TerrainStrikeResult | undefined => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
   const { registry } = mover.inventory;
