@@ -18,6 +18,7 @@
       },
       "debugBlockTool": {
         "damageKind": "blunt",
+        "ignitionStrength": 100,
         "reachMetres": 8,
         "stepDurabilityFraction": 0.25
       },
