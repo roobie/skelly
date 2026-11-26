@@ -387,12 +387,12 @@ export interface ActorSystemOptions {
   onMeleeContact?: (impulse: number) => void;
   /**
    * A bash at a pursuing actor's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
-   * The owner of doors resolves it against the leaf there and makes its noise; the outcome when a leaf took the blow.
+   * The terrain or piece owner resolves it and makes its noise; the outcome when the obstacle took the blow.
    */
-  bashObstacle?: (ahead: Body, strength: number) => BashOutcome | undefined;
+  bashObstacle?: (ahead: Body, strength: number, kind: string) => BashOutcome | undefined;
   /**
-   * Whether a bashable piece stands in the box moved the obstacle lookahead along an aim. A held-up actor asks this
-   * before probing for a way past (#1957): bare terrain hides nothing to bash, so the probe never runs there.
+   * Whether a bashable terrain cell or piece stands in the box moved the obstacle lookahead along an aim. A held-up
+   * actor asks this before probing for a way past (#1957), so open air never starts a probe.
    */
   bashableAhead?: (ahead: Body) => boolean;
   /**
