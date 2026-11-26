@@ -29,7 +29,11 @@ give every part of the map a distinct destination without letting a large compou
 neighbouring destinations.
 A PoI can be a lone shack in the woods with a rusty knife or a large construction
 site with abundant materials and enemies. Small discoveries matter alongside ambitious
-raids; not every destination needs to be a building complex.
+raids; not every destination needs to be a building complex. Holdout's literal plant and
+stockpile templates and the workshop templates are rural-admissible; legacy literal
+buildings remain city-only. `test/buildingSupport.test.ts`,
+`reports support and rural eligibility for every Holdout admission candidate`, keeps that
+admission evidence current.
 
 Use a broadly even mix of quiet, moderate and intense sites. Contrast gives exploration
 both relief and danger rather than making every supply run the same encounter.
