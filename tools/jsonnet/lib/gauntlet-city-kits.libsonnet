@@ -84,6 +84,17 @@ local closed = [
 // Brick cannot reach across the back window bay from its piers, so a steel lintel spans the course
 // over it.
 local lintelled = closed[0:15] + ['#####LLLLLL#####..'];
+// Over a cellar, a spandrel under the house flight's treads leaves one row of the front band beside it,
+// and a body needs two, so a twin under a house flight opens its street door east of the spandrel, onto
+// the band it leaves clear, and shifts the east front window west of the door.
+local fronted(rows, front) = rows[0:2] + [front] + rows[3:16];
+local twinDoor = [11, 1, 2];
+local twinDoorWall = fronted(closed, '###########..###..');
+local twinDoorMask = fronted(doorMask, 'SSSSSSSSSSS..SSSAA');
+local twinDoorWindows = fronted(windows, '###...#...#..###..');
+local twinDoorWindowMask = fronted(windowClaims, 'SSS...S...S..SSSAA');
+local twinWindows = fronted(windows, '###...#...######..');
+local twinWindowClaims = fronted(windowClaims, 'SSS...S...SSSSSSAA');
 local lowerFloor = [
   'pppppppppppppp', 'pppppppppppppp', '...........ppp', '...........ppp',
   'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp', 'pppppppppppppp',
@@ -112,12 +123,12 @@ local casements = (import 'tools/jsonnet/lib/window-slots.libsonnet')(
   'gauntlet_city_window', { style: 'brick_townhouse', lootContext: context }, ['n', 's']);
 // A storey's walls with a casement in each bay, so a house that swaps a storey's walls swaps its
 // windows with them.
-local shell = function(id, walls) {
+local shell = function(id, walls, frontEast=10) {
   id: id, size: [18, 7, 16], lootContext: context,
   slots: [
     slot('walls', walls, [0, 0, 0], [18, 7, 16]),
     casements.slot('front_west', [3, 2, 2], 'n'),
-    casements.slot('front_east', [10, 2, 2], 'n'),
+    casements.slot('front_east', [frontEast, 2, 2], 'n'),
     casements.slot('back_west', [5, 2, 15], 's'),
     casements.slot('back_east', [8, 2, 15], 's'),
   ],
@@ -176,7 +187,10 @@ local kit = {
   shells: [
     shell('gauntlet_city_shell', 'gauntlet_city_shell_walls'),
     shell('gauntlet_city_upper_shell', 'gauntlet_city_upper_shell_walls'),
+    shell('gauntlet_city_twin_shell', 'gauntlet_city_twin_shell_walls', frontEast=7),
   ],
+  // The street storey's walls and door of a twin under a house flight.
+  twin: { shell: 'gauntlet_city_twin_shell', door: twinDoor },
   mapPieces: doors.mapPieces + scenes.mapPieces + services.mapPieces + casements.mapPieces + [
     {
       id: 'gauntlet_city_ground', size: [18, 1, 16], style: 'brick_townhouse',
@@ -188,6 +202,13 @@ local kit = {
       lootContext: context, palette: palette,
       layers: std.map(piped('P'), [doorWall, doorWall, doorWindows, doorWindows, windows, lintelled, closed]),
       ownership: { layers: std.map(piped('S'), [doorWallMask, doorWallMask, doorWindowMask, doorWindowMask, windowClaims, doorMask, doorMask]) },
+      anchors: {}, ports: [],
+    },
+    {
+      id: 'gauntlet_city_twin_shell_walls', size: [18, 7, 16], style: 'brick_townhouse',
+      lootContext: context, palette: palette,
+      layers: std.map(piped('P'), [twinDoorWall, twinDoorWall, twinDoorWindows, twinDoorWindows, twinWindows, lintelled, closed]),
+      ownership: { layers: std.map(piped('S'), [twinDoorMask, twinDoorMask, twinDoorWindowMask, twinDoorWindowMask, twinWindowClaims, doorMask, doorMask]) },
       anchors: {}, ports: [],
     },
     {
