@@ -727,11 +727,15 @@ because rearranging a room should not require destroying its contents. See `pack
   rule as lifting: what remains supported stays, and what loses support settles
   instead of riding the piece. Unpublished terrain blocks placement, and settling
   without a reachable landing is refused rather than letting a piece fall out of
-  the known world. A derived fall record preserves that discrete rule while the
-  view draws gravity; a pile that loses its floor has its own record because the
-  model has no riding relation. The landed terrain state remains hidden until its
-  recorded source arrives, so a cascade never shows rubble floating below a later
-  drop. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
+  the known world. Piles fall independently because the model has no riding
+  relation. Landed state must wait for its source to arrive, whether terrain,
+  furniture or loose items, so a cascade cannot show floating rubble or a second
+  copy waiting underneath a drop. Terrain masking belongs at the mesh-input
+  boundary: restoring remembered block values would overwrite later simulation
+  edits, and a later column publication must not reveal an unfinished landing.
+  See `packages/engine/src/core/furnitureMove.ts`, `settle`,
+  `packages/engine/src/game/renderWorld.ts`, `RenderWorld.meshChunk`, and
+  `packages/presentation/src/render/fallDrops.ts`, `FallDrops`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See

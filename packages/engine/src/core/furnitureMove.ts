@@ -789,7 +789,10 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
     crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
-  shiftSettledPiles(inventory, moves.filter(({ loose }) => !loose));
+  shiftSettledPiles(
+    inventory,
+    moves.filter(({ loose }) => !loose),
+  );
   inventory.landLoose(moves.filter(({ loose }) => loose));
   return destroyed;
 };

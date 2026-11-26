@@ -155,19 +155,21 @@ export class ActorMeshes {
   ): void {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
-    const actors = [...store.entries()].filter(([, actor]) => !actor.body.buried).map(([id, actor]) => {
-      const previousTime = actor.renderPrevious.time;
-      const actorBackgroundBlend =
-        simulationTime !== undefined && previousTime !== undefined
-          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
-          : backgroundBlend;
-      return this.renderPose(
-        id,
-        actor,
-        actor.tier === 'background' ? actorBackgroundBlend : blend,
-        freezeLiving ? 0 : realDt,
-      );
-    });
+    const actors = [...store.entries()]
+      .filter(([, actor]) => !actor.body.buried)
+      .map(([id, actor]) => {
+        const previousTime = actor.renderPrevious.time;
+        const actorBackgroundBlend =
+          simulationTime !== undefined && previousTime !== undefined
+            ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
+            : backgroundBlend;
+        return this.renderPose(
+          id,
+          actor,
+          actor.tier === 'background' ? actorBackgroundBlend : blend,
+          freezeLiving ? 0 : realDt,
+        );
+      });
     this.discardMissingOffsets(new Set(actors.map(({ id }) => id)));
     const revealed = actors.filter(({ position }) => this.reveal?.isRevealed(position[0], position[2]) ?? true);
     for (const part of PARTS) {

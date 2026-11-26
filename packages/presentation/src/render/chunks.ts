@@ -1,6 +1,13 @@
-import type { Registry, WeatheringDef } from '@skelly/engine/content';
-import type { ColumnReveal, MeshData } from '@skelly/engine/mesh';
-import { toChunk, type Vec3 } from '@skelly/engine/world';
+import { blockColors, type Registry, type WeatheringDef } from '@skelly/engine/content';
+import {
+  blockPatterns,
+  blockWeatherability,
+  buildMesh,
+  type ColumnReveal,
+  extractPadded,
+  type MeshData,
+} from '@skelly/engine/mesh';
+import { toChunk, type Vec3, World } from '@skelly/engine/world';
 import {
   type Box3,
   BufferAttribute,
@@ -10,6 +17,7 @@ import {
   type DataTexture,
   Frustum,
   Matrix4,
+  Mesh,
   MeshLambertMaterial,
   type Side,
   Sphere,
@@ -315,6 +323,29 @@ export class ChunkMeshes implements ColumnReveal {
   /** Mesh replacement/removal notification, including meshes with zero triangles. Data arrivals belong to Streamer. */
   onChange?: (origin: Vec3) => void;
 
+  private readonly fallGeometry = new Map<number, BufferGeometry>();
+
+  blockModel(block: number, registry: Registry): Mesh {
+    let geometry = this.fallGeometry.get(block);
+    if (!geometry) {
+      const source = new World();
+      source.setBlock(0, 0, 0, block);
+      const padded = extractPadded(source, [0, 0, 0]);
+      geometry = chunkGeometry(
+        buildMesh(padded, blockColors(registry), {
+          patterns: blockPatterns(registry),
+          weatherable: blockWeatherability(registry),
+          wireMeshes: registry.blocks.map((row) => row.wireMesh),
+          fencePosts: registry.blocks.map((row) => row.fencePosts),
+        }),
+      );
+      this.fallGeometry.set(block, geometry);
+    }
+    const model = new Mesh(geometry, this.material);
+    model.scale.setScalar(this.blockSize);
+    return model;
+  }
+
   constructor(blockSize: number, registry: Registry) {
     this.material = chunkMaterial({
       blockSize,
@@ -539,6 +570,10 @@ export class ChunkMeshes implements ColumnReveal {
     this.batch.removeFromParent();
     this.batch.dispose();
     this.chunks.clear();
+    for (const geometry of this.fallGeometry.values()) {
+      geometry.dispose();
+    }
+    this.fallGeometry.clear();
     this.material.dispose();
     this.surfaceNoise.value?.dispose();
     this.surfaceNoise.value = null;

@@ -197,6 +197,10 @@ export class World {
     return chunk ? chunk.get(toLocal(x), toLocal(y), toLocal(z)) : 0;
   }
 
+  meshChunk(cx: number, cy: number, cz: number): Chunk | undefined {
+    return this.getChunk(cx, cy, cz);
+  }
+
   /** Sets a block during play, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
   setBlock(x: number, y: number, z: number, id: number): Vec3[] {
     const cx = toChunk(x);

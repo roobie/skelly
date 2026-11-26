@@ -223,7 +223,9 @@ const fixture = ({
 it("settles a removed part's load on canonical floor deeper than the live furniture fall limit", () => {
   const f = fixture({ height: 130 });
   expect(f.world.getChunk(0, 0, 0)).toBeUndefined();
+  const falls = f.inventory.entities.falls.reader();
   expect(f.remove()).toBeUndefined();
+  expect(falls.read()).toEqual([]);
   const landed = f.posOf(f.load);
   expect(landed[1]).toBeLessThan(f.top[1]);
   expect(f.canonical.getBlock(landed[0], landed[1] - 1, landed[2])).not.toBe(0);

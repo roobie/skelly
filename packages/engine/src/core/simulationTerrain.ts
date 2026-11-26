@@ -7,7 +7,10 @@ import { type SavedColumn, World } from './world.ts';
 
 export interface SimulationWorld
   extends TerrainRead,
-    Pick<World, 'blockDamage' | 'fire' | 'rubble' | 'support' | 'falls' | 'setBlock' | 'snapshotColumns' | 'restoreColumns'> {}
+    Pick<
+      World,
+      'blockDamage' | 'fire' | 'rubble' | 'support' | 'falls' | 'setBlock' | 'snapshotColumns' | 'restoreColumns'
+    > {}
 
 /** Owns terrain facts and publication; neither reads nor waits for render residency. */
 export class SimulationTerrain implements SimulationWorld {

@@ -1,22 +1,22 @@
-import type { BlockEntities, FallRecord } from '@skelly/engine/world';
-import { BoxGeometry, Group, Mesh, MeshLambertMaterial, Object3D } from 'three';
+import type { FallRecord } from '@skelly/engine/world';
+import { Group, type Object3D } from 'three';
 
 interface ActiveDrop {
   readonly model: Object3D;
   readonly distance: number;
-  readonly duration: number;
   readonly landingY: number;
-  elapsed: number;
-  readonly landing?: FallRecord['to'];
+  elapsedRealSeconds: number;
+  readonly record: FallRecord;
 }
 
 /** Draws every reported gravity move through one real-time path. */
 export class FallDrops {
   readonly group = new Group();
-  private readonly box = new BoxGeometry(1, 1, 1);
-  private readonly terrain = new MeshLambertMaterial({ color: '#777777' });
+  readonly hiddenPieceUids = new Set<number>();
+  readonly hiddenItemUids = new Set<number>();
   private readonly active: ActiveDrop[] = [];
 
+  private readonly terrain: (block: number) => Object3D;
   private readonly blockSize: number;
   private readonly gravity: number;
   private readonly piece: (uid: number) => Object3D | undefined;
@@ -27,11 +27,24 @@ export class FallDrops {
   constructor(
     blockSize: number,
     gravity: number,
-    piece: (uid: number) => Object3D | undefined,
-    pile: (uid: number) => Object3D | undefined,
-    mask: (cells: readonly FallRecord['to'][]) => void,
-    unmask: (cells: readonly FallRecord['to'][]) => void,
+    {
+      piece,
+      pile,
+      terrain,
+    }: {
+      piece: (uid: number) => Object3D | undefined;
+      pile: (uid: number) => Object3D | undefined;
+      terrain: (block: number) => Object3D;
+    },
+    {
+      mask,
+      unmask,
+    }: {
+      mask: (cells: readonly FallRecord['to'][]) => void;
+      unmask: (cells: readonly FallRecord['to'][]) => void;
+    },
   ) {
+    this.terrain = terrain;
     this.blockSize = blockSize;
     this.gravity = gravity;
     this.piece = piece;
@@ -40,7 +53,7 @@ export class FallDrops {
     this.unmask = unmask;
   }
 
-  read(records: readonly FallRecord[], _entities: BlockEntities): void {
+  read(records: readonly FallRecord[]): void {
     for (const record of records) {
       const distance = (record.from[1] - record.to[1]) * this.blockSize;
       if (distance <= 0) {
@@ -50,18 +63,18 @@ export class FallDrops {
       if (!model) {
         continue;
       }
-      const duration = Math.sqrt((2 * distance) / this.gravity);
       this.active.push({
         model,
         distance,
-        duration,
         landingY: model.position.y - distance,
-        elapsed: 0,
-        ...(record.kind === 'terrain' ? { landing: record.to } : {}),
+        elapsedRealSeconds: 0,
+        record,
       });
       this.group.add(model);
       if (record.kind === 'terrain') {
         this.mask([record.to]);
+      } else {
+        (record.kind === 'piece' ? this.hiddenPieceUids : this.hiddenItemUids).add(record.uid);
       }
     }
   }
@@ -70,16 +83,23 @@ export class FallDrops {
     const landed: FallRecord['to'][] = [];
     for (let index = this.active.length - 1; index >= 0; index -= 1) {
       const drop = this.active[index]!;
-      drop.elapsed += dt;
-      const travelled = Math.min(drop.distance, (this.gravity * drop.elapsed ** 2) / 2);
+      drop.elapsedRealSeconds += dt;
+      const travelled = Math.min(drop.distance, (this.gravity * drop.elapsedRealSeconds ** 2) / 2);
       drop.model.position.y = drop.landingY + drop.distance - travelled;
       if (travelled < drop.distance) {
         continue;
       }
       this.group.remove(drop.model);
       this.active.splice(index, 1);
-      if (drop.landing) {
-        landed.push(drop.landing);
+      if (drop.record.kind === 'terrain') {
+        landed.push(drop.record.to);
+      }
+    }
+    this.hiddenPieceUids.clear();
+    this.hiddenItemUids.clear();
+    for (const { record } of this.active) {
+      if (record.kind !== 'terrain') {
+        (record.kind === 'piece' ? this.hiddenPieceUids : this.hiddenItemUids).add(record.uid);
       }
     }
     if (landed.length > 0) {
@@ -90,31 +110,31 @@ export class FallDrops {
   dispose(): void {
     this.group.clear();
     this.active.length = 0;
-    this.box.dispose();
-    this.terrain.dispose();
+    this.hiddenPieceUids.clear();
+    this.hiddenItemUids.clear();
   }
 
   private model(record: FallRecord): Object3D | undefined {
     if (record.kind === 'piece') {
-      const model = record.uid === undefined ? undefined : this.piece(record.uid);
+      const model = this.piece(record.uid);
       if (model) {
         model.position.y += (record.from[1] - record.to[1]) * this.blockSize;
       }
       return model;
     }
     if (record.kind === 'pile') {
-      const model = record.uid === undefined ? undefined : this.pile(record.uid);
+      const model = this.pile(record.uid);
       if (model) {
         model.position.y += (record.from[1] - record.to[1]) * this.blockSize;
       }
       return model;
     }
     if (record.kind === 'terrain') {
-      const model = new Mesh(this.box, this.terrain);
+      const model = this.terrain(record.block);
       model.position.set(
-        (record.from[0] + 0.5) * this.blockSize,
-        (record.from[1] + 0.5) * this.blockSize,
-        (record.from[2] + 0.5) * this.blockSize,
+        record.from[0] * this.blockSize,
+        record.from[1] * this.blockSize,
+        record.from[2] * this.blockSize,
       );
       return model;
     }

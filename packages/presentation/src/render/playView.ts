@@ -62,8 +62,8 @@ import { CastShots } from './castShots.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
-import { installFixtureReach } from './fixtureReach.ts';
 import { FallDrops } from './fallDrops.ts';
+import { installFixtureReach } from './fixtureReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -432,13 +432,18 @@ export const createPlayView = (
   const fallDrops = new FallDrops(
     s,
     gravityMetresPerSimSecondSquared,
-    (uid) => {
-      const entity = engine.entities.byUid(uid);
-      return entity ? furniture.pieceMesh(entity, engine.entities.defOf(entity)) : undefined;
+    {
+      piece: (uid) => {
+        const entity = engine.entities.byUid(uid);
+        return entity ? furniture.pieceMesh(entity, engine.entities.defOf(entity)) : undefined;
+      },
+      pile: (uid) => piles.fallModel(uid),
+      terrain: (block) => meshes.blockModel(block, registry),
     },
-    (uid) => piles.fallModel(uid),
-    (cells) => engine.streamer.maskLanded(cells),
-    (cells) => engine.streamer.unmaskLanded(cells),
+    {
+      mask: (cells) => engine.streamer.maskLanded(cells),
+      unmask: (cells) => engine.streamer.unmaskLanded(cells),
+    },
   );
   const pieceFalls = engine.entities.falls.reader();
   const terrainFalls = engine.simulationWorld.falls.reader();
@@ -712,12 +717,13 @@ export const createPlayView = (
       castShots.sync(castProjectiles, frozen ? 0 : Math.min(time - lastActorStep, 1 / ACTIVE_ACTOR_RATE), dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
-      piles.sync(inventory, itemThrows.hiddenItemUids);
+      piles.sync(inventory, new Set([...itemThrows.hiddenItemUids, ...fallDrops.hiddenItemUids]));
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles, time);
-      furniture.sync(entities, poweredLights());
-      fallDrops.read([...pieceFalls.read(), ...terrainFalls.read()], entities);
+      fallDrops.read([...pieceFalls.read(), ...terrainFalls.read()]);
       fallDrops.update(dt);
+      piles.sync(inventory, new Set([...itemThrows.hiddenItemUids, ...fallDrops.hiddenItemUids]));
+      furniture.sync(entities, poweredLights(), fallDrops.hiddenPieceUids);
       instruments.sync(entities, instrumentRead, time);
       corpses.sync(entities);
       decals?.sync(entities);

@@ -318,10 +318,22 @@ describe('support cascade', () => {
     );
     expect(f.session.actors.store.get(id)).toBeUndefined();
   });
-  it('drops broken dependants onto the first solid below instead of leaving rubble suspended', () => {
+  it('reports source blocks for falling dependants and lands their rubble on solid ground', () => {
     const f = fixture();
+    const falls = f.world.falls.reader();
     expect(f.strike([2, 1, Z])).toBe(true);
     settle(f);
+    const records = falls.read();
+    expect(records).toEqual(
+      expect.arrayContaining([
+        { kind: 'terrain', block: f.registry.blockIds.get(BEAM), from: [3, 3, Z], to: [3, 1, Z] },
+      ]),
+    );
+    for (const record of records) {
+      expect(record.kind).toBe('terrain');
+      expect(record.from[1]).toBeGreaterThan(record.to[1]);
+      expect(f.block(record.to)).toBe(RUBBLE);
+    }
     for (const cell of [
       [2, 1, Z],
       [2, 2, Z],

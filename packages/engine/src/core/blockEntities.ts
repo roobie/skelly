@@ -7,10 +7,10 @@
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { EventQueue } from './events.ts';
-import type { FallRecord } from './fall.ts';
 import { coreMessage } from './coreText.ts';
 import { type DestructibleHit, resolveDestructibleHit } from './destructibleHit.ts';
+import { EventQueue } from './events.ts';
+import type { FallRecord } from './fall.ts';
 import {
   baselinePart,
   type HousingOverride,

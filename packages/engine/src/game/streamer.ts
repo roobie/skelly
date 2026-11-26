@@ -11,8 +11,8 @@ import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
 import type { TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
-import { isEnclosed } from '../core/world.ts';
 import type { World } from '../core/world.ts';
+import { isEnclosed } from '../core/world.ts';
 import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 import { SentChunks } from './sentChunks.ts';
@@ -426,8 +426,14 @@ export class Streamer {
     this.markEdited(cells.flatMap((cell) => world.unmask(cell)));
   }
 
-  private maskableWorld(): World & { mask: (cell: Readonly<Vec3>) => Vec3[]; unmask: (cell: Readonly<Vec3>) => Vec3[] } {
-    const world = this.opts.world as World & { mask?: (cell: Readonly<Vec3>) => Vec3[]; unmask?: (cell: Readonly<Vec3>) => Vec3[] };
+  private maskableWorld(): World & {
+    mask: (cell: Readonly<Vec3>) => Vec3[];
+    unmask: (cell: Readonly<Vec3>) => Vec3[];
+  } {
+    const world = this.opts.world as World & {
+      mask?: (cell: Readonly<Vec3>) => Vec3[];
+      unmask?: (cell: Readonly<Vec3>) => Vec3[];
+    };
     if (!(world.mask && world.unmask)) {
       throw new Error('View-only masking needs a render world');
     }
