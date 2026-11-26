@@ -29,11 +29,7 @@ give every part of the map a distinct destination without letting a large compou
 neighbouring destinations.
 A PoI can be a lone shack in the woods with a rusty knife or a large construction
 site with abundant materials and enemies. Small discoveries matter alongside ambitious
-raids; not every destination needs to be a building complex. Holdout's literal plant and
-stockpile templates and the workshop templates are rural-admissible; legacy literal
-buildings remain city-only. `test/buildingSupport.test.ts`,
-`reports support and rural eligibility for every Holdout admission candidate`, keeps that
-admission evidence current.
+raids; not every destination needs to be a building complex.
 
 Use a broadly even mix of quiet, moderate and intense sites. Contrast gives exploration
 both relief and danger rather than making every supply run the same encounter.
@@ -53,6 +49,10 @@ a sheet centre. The start then sits mid-sheet on the one paper-map grid, and the
 The grid itself is unchanged; only the site's placement is content. See `packages/engine/src/core/composeLayout.ts`,
 `askCandidate`, for how a place ask takes its fixed position, and `packages/deadvox/test/holdoutStart.test.ts` for the
 property that the start lies on its kit sheet, clear of the edges.
+
+A literal joins the destination catalogue only once the support proof holds it, because
+an unheld cell falls in a later cascade. Rural eligibility is a second gate, not permission
+to bypass that proof. `test/buildingSupport.test.ts`, "reports support and rural eligibility for every Holdout admission candidate", keeps the evidence current.
 
 ## Shelter plot
 

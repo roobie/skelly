@@ -25,7 +25,7 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
 
 /**
  * Buildings known not to hold, skipped by name until they do: issue #2031, buildings that do not hold.
- * A skipped building that holds, or that no covered test declares, fails the test, so the list cannot go stale.
+ * Every entry is declared by a covered proof and still fails it, so the list cannot go stale.
  */
 const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
   'rural_flat_roof_house_cellar',
@@ -243,13 +243,15 @@ const ADMISSION_CANDIDATES = [
 /** The legacy templates restrict themselves to cities; the Holdout and workshop templates have no such restriction. */
 const cityOnlyCandidates = new Set(['shed', 'small_house', 'bungalow', 'corner_store', 'gas_station', 'hardware_store', 'garage']);
 
-it('reports support and rural eligibility for every Holdout admission candidate', () => {
+const admissionEvidence = (): { declared: ReadonlySet<string>; failing: ReadonlySet<string>; unsupported: Record<string, Vec3[]> } => {
   const { registry } = withReusedBuilds(() => selectBundledMods(productModIntake, [])).content;
-  const unsupportedCells: Record<string, Vec3[]> = {};
-  const stillFailing = new Set<string>();
+  const declared = new Set<string>();
+  const failing = new Set<string>();
+  const unsupported: Record<string, Vec3[]> = {};
   for (const id of ADMISSION_CANDIDATES) {
     const template = registry.templates.get(id);
     expect(template, `admission candidate ${id} is declared`).toBeDefined();
+    declared.add(id);
     const rural = template!.eligibility?.settlementKinds.includes('rural') ?? true;
     if (cityOnlyCandidates.has(id)) {
       expect(rural, `${id} remains city-only`).toBe(false);
@@ -258,27 +260,27 @@ it('reports support and rural eligibility for every Holdout admission candidate'
     }
     const dropped = supportDrops(registry, compileTemplate(registry, template!));
     if (dropped.length > 0) {
-      if (KNOWN_UNSUPPORTED.has(id)) {
-        stillFailing.add(id);
-      } else {
-        unsupportedCells[id] = dropped;
+      failing.add(id);
+      if (!KNOWN_UNSUPPORTED.has(id)) {
+        unsupported[id] = dropped;
       }
     }
   }
-  expect(ADMISSION_CANDIDATES.length, 'some admission candidate is checked').toBeGreaterThan(0);
-  expect(unsupportedCells, 'unsupported cells by admission template').toEqual({});
-  expect(
-    ADMISSION_CANDIDATES.filter((id) => KNOWN_UNSUPPORTED.has(id) && !stillFailing.has(id)),
-    'admission templates recorded as unsupported but no longer dropping',
-  ).toEqual([]);
+  return { declared, failing, unsupported };
+};
+
+it('reports support and rural eligibility for every Holdout admission candidate', () => {
+  expect(admissionEvidence().unsupported, 'unsupported cells by admission template').toEqual({});
 });
 
 it('holds every building that answers a brief, intact on natural ground, under the support rule', () => {
+  const builds = briefedBuilds();
+  const briefedIds = new Set([...builds.values()].map(({ id }) => id));
   const unskipped: string[] = [];
   const failing: Record<string, number> = {};
   const stillFailing = new Set<string>();
   const errors: Record<string, string> = {};
-  for (const [key, { registry, id, style }] of briefedBuilds()) {
+  for (const [key, { registry, id, style }] of builds) {
     let dropped: number | undefined;
     try {
       dropped = droppedCells(registry, id, style);
@@ -301,10 +303,14 @@ it('holds every building that answers a brief, intact on natural ground, under t
   expect(errors, 'support proofs that threw, by building and style').toEqual({});
   expect(unskipped.length, 'some building that is not skipped is checked').toBeGreaterThan(0);
   expect(failing).toEqual({});
+  const admission = admissionEvidence();
   expect(
     [...KNOWN_UNSUPPORTED].filter(
-      (id) => [...briefedBuilds().values()].some((build) => build.id === id) && !stillFailing.has(id),
+      (id) =>
+        (!briefedIds.has(id) && !admission.declared.has(id)) ||
+        (briefedIds.has(id) && !stillFailing.has(id)) ||
+        (admission.declared.has(id) && !admission.failing.has(id)),
     ),
-    'skipped briefed buildings that hold; drop them from KNOWN_UNSUPPORTED',
+    'known unsupported buildings that are undeclared or hold; drop them from KNOWN_UNSUPPORTED',
   ).toEqual([]);
 });
