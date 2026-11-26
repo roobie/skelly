@@ -54,4 +54,30 @@ describe('terrain fire light pool', () => {
     pool.dispose();
     fire.dispose();
   });
+
+  it('keeps non-adjacent burning cells in separate light clusters', () => {
+    const fire = new TerrainFire();
+    fire.sync(
+      [
+        [0, 0, 0],
+        [2, 0, 0],
+      ],
+      () => false,
+      1,
+      { color: '#ffffff', intensity: 1, radiusMetres: 1, flame: { heightMetres: 1, radiusMetres: 1 } },
+    );
+    const pool = new LightPool(new Scene(), tuning);
+    pool.update(new Inventory(baseRegistry()), {
+      camera: new PerspectiveCamera(),
+      held: { lightPositionOf: () => false },
+      blockSize: 1,
+      daylightScale: 1,
+      fires: fire.lights(),
+    });
+    const active = pool.lights.slice(pool.itemSlots).filter(({ intensity }) => intensity > 0);
+    expect(active).toHaveLength(2);
+    expect(active.map(({ position }) => position.x)).toEqual([0.5, 2.5]);
+    pool.dispose();
+    fire.dispose();
+  });
 });
