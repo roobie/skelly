@@ -931,6 +931,14 @@ export class Inventory {
     return walkItemTree(roots());
   }
 
+  /** Items in hand or worn, with what they carry: the ones a tool job can use, in definition-id order so the pick is stable. */
+  carriedTools(): Item[] {
+    return [...this.items()]
+      .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
+      .map(({ item }) => item)
+      .sort((a, b) => compareCodeUnits(a.type, b.type));
+  }
+
   itemByUid(uid: number): Item | undefined {
     for (const { item } of this.items()) {
       if (item.uid === uid) {

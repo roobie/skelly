@@ -44,6 +44,7 @@ import {
   Id,
   Name,
   NonNegative,
+  NonNegativeSimRate,
   Positive,
   PositiveGameHours,
   PositiveGameMinutes,
@@ -213,16 +214,31 @@ const FoodSchema = pipe(
   ),
 );
 
+/** The blow a tool lands on a terrain cell each strike of a cut; the cell's resistance decides whether it cuts. */
+const ToolCutSchema = strictObject({
+  strength: Positive,
+  damageKind: Id,
+  strikeIntervalSimSeconds: PositiveSimSeconds,
+  /** Plays on each strike; it must alert hearing. */
+  strikeSound: Id,
+});
+
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
   qualities: record(Id, QualityLevel),
-  /** It runs on a swappable canister: the item type that fits it, and Sim seconds to swap one in. */
-  fuel: optional(strictObject({ canister: Id, swapSimSeconds: PositiveSimSeconds })),
+  cut: optional(ToolCutSchema),
+  /**
+   * It runs on a swappable canister: the item type that fits it, Sim seconds to swap one in, and the fill it burns
+   * per Sim second of work.
+   */
+  fuel: optional(
+    strictObject({ canister: Id, swapSimSeconds: PositiveSimSeconds, fillPerSimSecond: NonNegativeSimRate }),
+  ),
 });
 
 /** The fill shape of a battery, for a canister a fuelled tool draws on. */
 const CanisterSchema = strictObject({
-  /** Fill when full, in the units a forcing method's `fuel` spends. */
+  /** Fill when full, in the units a fuelled tool's `fillPerSimSecond` and a forcing method's `fuel` spend. */
   capacity: Positive,
 });
 

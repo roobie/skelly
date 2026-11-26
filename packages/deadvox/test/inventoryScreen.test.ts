@@ -248,6 +248,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     vehicleWork: () => undefined,
     operateVehiclePart: () => undefined,
     craftTakeApartCell: () => undefined,
+    cutCell: () => undefined,
     search: (uid) => {
       if (uid !== entity.uid || entity.searched || searching.has(entity)) {
         return;
@@ -1509,6 +1510,7 @@ describe('inventory screen Lit rendering', () => {
         search: () => undefined,
         work: () => undefined,
         craftTakeApartCell: () => undefined,
+        cutCell: () => undefined,
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
         vehicleWork: () => undefined,

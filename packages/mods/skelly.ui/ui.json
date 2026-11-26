@@ -10,6 +10,7 @@
           "furniture": {
             "board_up": 315,
             "continue": 135,
+            "cut": 45,
             "drag": 180,
             "lift": 225,
             "push": 0,
@@ -168,6 +169,7 @@
           "wrongRounds": "These rounds don't fit"
         },
         "longActions": {
+          "cutting": "Cutting",
           "forcingPadlock": "Forcing padlock",
           "reading": "Reading {item}",
           "readingUnnamed": "Reading",
@@ -366,6 +368,7 @@
         "burnedOut": "It has burned out",
         "busy": "I'm busy",
         "busyCrafting": "I'm crafting",
+        "busyCutting": "I'm cutting",
         "busyForcing": "I'm forcing the door",
         "busyReading": "I'm reading",
         "busyTreating": "I'm tending a wound",
@@ -443,6 +446,7 @@
         "notSearched": "I haven't searched it",
         "notTired": "I'm not tired",
         "notWindow": "It isn't a window",
+        "nothingToCut": "I have nothing that will cut it",
         "nothingToForce": "I have nothing that will force it",
         "otherCraft": "I'm working on something else",
         "otherNeedsBothHands": "The {item} needs both hands",
@@ -1034,6 +1038,7 @@
         },
         "worldService": {
           "boardUp": "Board up",
+          "cut": "Cut",
           "drag": "Drag",
           "lift": "Lift",
           "push": "Push",

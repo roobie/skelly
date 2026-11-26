@@ -21,5 +21,12 @@
       pitchJitter: [0.55, 0.65], gainJitter: [0.9, 1.1], minIntervalSimSeconds: 0,
       category: 'world', noise: { enabled: true, radiusMetres: 40 },
     },
+    {
+      id: 'torch_cut',
+      description: 'Cut into steel with a gas torch, once each strike.',
+      variants: ['assets/audio/door_blocked_close-01.ogg'], gain: 0.6,
+      pitchJitter: [1.3, 1.45], gainJitter: [0.9, 1.1], minIntervalSimSeconds: 0,
+      category: 'world', noise: { enabled: true, radiusMetres: 30 },
+    },
   ],
 }

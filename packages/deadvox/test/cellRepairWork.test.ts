@@ -277,6 +277,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     craftRepairEntity: unused,
     craftRepairCell: (recipe, cell, expected, options) => r.commands.repairCell(recipe, cell, expected, options),
     craftTakeApartCell: unused,
+    cutCell: unused,
     craftTakeApartEntity: unused,
     craftServicePart: unused,
     search: unused,

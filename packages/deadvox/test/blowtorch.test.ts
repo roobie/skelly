@@ -1,11 +1,25 @@
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
+import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
 import { swapCanister } from '@skelly/engine/internal/core/torch.ts';
+import { cellActionsFor } from '@skelly/engine/internal/game/cellActions.ts';
 import { freshDropTarget, Inventory, type Target } from '@skelly/engine/inventory';
-import { BlockEntities, type Vec3 } from '@skelly/engine/world';
-import { expect, it } from 'vitest';
-import { createRuntime, registry } from './snapshotTestSupport.ts';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { BlockEntities, createTerrainEvaluator, type TerrainPlan, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
+import {
+  blockId,
+  contentLookup,
+  createRuntime,
+  encodeFixture,
+  formatVersion,
+  registry,
+} from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('steel_armoury_door')!;
 const cut = doorDef.door!.methods.cut!;
@@ -214,4 +228,286 @@ it('a heat blow on a wood piece is resisted while the same strength blunt lands'
 
   expect(entities.bash(door, resisted)).toBe('resisted');
   expect(entities.bash(door, lands)).not.toBe('resisted');
+});
+
+const torchTool = registry.items.get('blowtorch')!.tool!;
+const torchCut = torchTool.cut!;
+const strikeFuel = torchTool.fuel!.fillPerSimSecond * torchCut.strikeIntervalSimSeconds;
+
+/** A blowtorch fitted with a cartridge holding `fill`. */
+const fuelledTorch = (inventory: Inventory, fill: number) => {
+  const torch = inventory.create('blowtorch');
+  const canister = inventory.create('gas_canister');
+  canister.charges = fill;
+  inventory.fitSlot(torch, 'canister', canister);
+  return torch;
+};
+
+const CUT_Z = 3;
+const joist: Vec3 = [4, 1, CUT_Z];
+const slab: Vec3 = [4, 2, CUT_Z];
+const masonry: Vec3 = [7, 1, CUT_Z];
+const timber: Vec3 = [5, 1, CUT_Z + 2];
+const shaftFloor = (y: number): Vec3[] =>
+  [3, 4, 5].flatMap((x) => [CUT_Z - 1, CUT_Z, CUT_Z + 1].map((z): Vec3 => [x, y, z]));
+
+const box = (min: Vec3, max: Vec3, block: string): BlockBox => ({
+  min,
+  max: [max[0] + 1, max[1] + 1, max[2] + 1],
+  block: blockId(block),
+});
+const single = (cell: Vec3, block: string) => box(cell, cell, block);
+
+/**
+ * `open`: a steel joist on the ground carries a slab, with a masonry and a timber cell in reach. `shaft`: the joist
+ * floors a sealed room the player stands in, so its rubble can land only on that floor.
+ */
+const cutLayouts = {
+  open: () => [
+    single(joist, 'steel_joist'),
+    single(slab, 'slab_deck'),
+    single(masonry, 'concrete'),
+    single(timber, 'siding_red'),
+  ],
+  shaft: () => [
+    ...shaftFloor(1).map((cell) =>
+      single(cell, cell[0] === joist[0] && cell[2] === joist[2] ? 'steel_joist' : 'concrete'),
+    ),
+    box([2, 1, CUT_Z - 2], [2, 8, CUT_Z + 2], 'concrete'),
+    box([6, 1, CUT_Z - 2], [6, 8, CUT_Z + 2], 'concrete'),
+    box([3, 1, CUT_Z - 2], [5, 8, CUT_Z - 2], 'concrete'),
+    box([3, 1, CUT_Z + 2], [5, 8, CUT_Z + 2], 'concrete'),
+    box([2, 9, CUT_Z - 2], [6, 9, CUT_Z + 2], 'concrete'),
+  ],
+};
+type CutLayout = keyof typeof cutLayouts;
+
+const cutFixture = (layout: CutLayout, restored?: Readonly<SaveSnapshot>) => {
+  const scale = { blockSize: 0.5, minCy: 0, maxCy: 0 };
+  const world = new World();
+  const ground = blockId('concrete');
+  const terrain: TerrainPlan = {
+    seed: 7,
+    scale,
+    blocks: { grass: ground, dirt: ground, rock: ground, sand: ground, water: ground },
+    shape: {
+      minHeightMetres: 0,
+      maxHeightMetres: 0,
+      beachBelowMetres: 0,
+      dirtDepthMetres: 1,
+      featureSizeMetres: 1,
+      octaves: 1,
+    },
+    site: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: 0,
+        heightPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        materialPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        concrete: ground,
+        structures: [],
+      },
+    },
+    structures: cutLayouts[layout](),
+  };
+  const canonical = new CanonicalTerrain(world, createTerrainEvaluator(terrain));
+  const source: ColumnSource = {
+    furnitureIn: () => [],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    actorsIn: () => [],
+  };
+  const notices: string[] = [];
+  const session = createSession({
+    registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
+    world,
+    scale,
+    seed: 7,
+    start: 43_200,
+    spawn: layout === 'open' ? [5.5, 1, CUT_Z + 0.5] : [joist[0] + 0.5, 2, CUT_Z + 0.5],
+    terrainDestruction: { terrain: canonical, source },
+    isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    ready: () => false,
+    actorReady: () => true,
+    controls: {
+      active: () => true,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: (text) => notices.push(text),
+    onRead: () => undefined,
+    ...(restored ? { restore: restored } : {}),
+  });
+  canonical.ensureColumn(0, 0);
+  const { inventory, sim } = session;
+  const blockAt = (cell: Vec3) => registry.blocks[world.getBlock(...cell)]!.id;
+  const damageAt = (cell: Vec3) => world.blockDamage.get(cell)?.damage ?? 0;
+  /** Holds a fresh torch with `fill` in the left hand, in place of whatever was there. */
+  const holdFuelled = (fill: number) => {
+    const held = inventory.hands.left;
+    if (held && !inventory.consume(held)) {
+      throw new Error('Could not free a hand for the fixture torch');
+    }
+    const torch = fuelledTorch(inventory, fill);
+    if (!inventory.add(torch, { kind: 'hand', side: 'left' })) {
+      throw new Error('Could not hold the fixture torch');
+    }
+    return torch;
+  };
+  const strike = () => sim.scheduler.advance(torchCut.strikeIntervalSimSeconds);
+  /** Strikes until the job ends or stops; the bound only stops a cut that never would. */
+  const cutOut = () => {
+    for (let strikes = 0; strikes < 4096 && sim.actions.job && !sim.actions.job.stopped; strikes++) {
+      strike();
+    }
+    if (sim.actions.job && !sim.actions.job.stopped) {
+      throw new Error('The cut did not end');
+    }
+  };
+  /** Ticks until the cascade ends; the bound only stops a cascade that never would. */
+  const settle = () => {
+    for (let ticks = 0; ticks < 4096 && world.support.cascading; ticks++) {
+      sim.scheduler.advance(sim.scheduler.stepOf('support', 1));
+    }
+  };
+  const snapshot = () => session.snapshot({ worldId: 'cut-fixture', characterId: 'cut-character' });
+  return { world, session, inventory, sim, notices, blockAt, damageAt, holdFuelled, strike, cutOut, settle, snapshot };
+};
+type CutFixture = ReturnType<typeof cutFixture>;
+
+const reloadCut = async (f: CutFixture, layout: CutLayout) => {
+  const decoded = await decodeSave(await encodeFixture(f.snapshot()), { version: formatVersion, contentLookup });
+  return cutFixture(layout, decoded.snapshot);
+};
+
+describe('torch cutting a steel cell', () => {
+  it('cuts a joist out from under a slab, and the slab comes down', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.cutOut();
+    f.settle();
+
+    expect(f.sim.actions.job).toBeUndefined();
+    expect(f.blockAt(joist)).not.toBe('steel_joist');
+    expect(f.blockAt(slab)).not.toBe('slab_deck');
+  });
+
+  it('leaves the joist standing with its damage and stops when its rubble has no room', () => {
+    const f = cutFixture('shaft');
+    for (const pos of shaftFloor(2)) {
+      while (f.inventory.add(f.inventory.create('blowtorch'), { kind: 'pile', pos })) {
+        // Fill the floor pile until it refuses.
+      }
+    }
+    f.holdFuelled(canisterCapacity);
+
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.cutOut();
+
+    expect(f.blockAt(joist)).toBe('steel_joist');
+    expect(f.damageAt(joist)).toBeGreaterThan(0);
+    expect(f.sim.actions.job?.stopped).toBe(true);
+    expect(f.notices).toContain(coreMessage(registry, 'noRoom'));
+  });
+
+  it('offers Cut on steel but not on masonry or timber', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+    const actions = (cell: Vec3) => cellActionsFor(f.inventory, f.world, cell, new Set()).map(({ id }) => id);
+
+    expect(actions(joist)).toContain('cut');
+    expect(actions(masonry)).not.toContain('cut');
+    expect(actions(timber)).not.toContain('cut');
+  });
+
+  it('spends one strike of gas on each strike that lands', () => {
+    const f = cutFixture('open');
+    const torch = f.holdFuelled(canisterCapacity);
+    expect(f.session.cutCell(joist)).toBeUndefined();
+
+    let strikes = 0;
+    for (let step = 0; step < 8; step++) {
+      const before = f.damageAt(joist);
+      // Half an interval at a time, so no step holds two strikes.
+      f.sim.scheduler.advance(torchCut.strikeIntervalSimSeconds / 2);
+      strikes += f.damageAt(joist) > before ? 1 : 0;
+    }
+
+    expect(strikes).toBeGreaterThan(0);
+    expect(chargeOf(registry, torch)).toBeCloseTo(canisterCapacity - strikes * strikeFuel, 9);
+  });
+
+  it('refuses to start below one strike of gas, though the menu still offers the cut', () => {
+    const f = cutFixture('open');
+    const torch = f.holdFuelled(strikeFuel / 2);
+
+    expect(cellActionsFor(f.inventory, f.world, joist, new Set()).map(({ id }) => id)).toContain('cut');
+    expect(f.session.cutCell(joist)).toBeTypeOf('string');
+    expect(f.sim.actions.job).toBeUndefined();
+    expect(chargeOf(registry, torch)).toBe(strikeFuel / 2);
+  });
+
+  it('stops with a message when the gas runs out', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(strikeFuel * 2.5);
+
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.cutOut();
+
+    expect(f.sim.actions.job?.stopped).toBe(true);
+    expect(f.notices).toContain(coreMessage(registry, 'outOfFuel'));
+    expect(f.blockAt(joist)).toBe('steel_joist');
+    expect(f.damageAt(joist)).toBeGreaterThan(0);
+  });
+
+  it('keeps a stopped cut as damage, which another torch carries on', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.strike();
+    f.strike();
+    f.sim.actions.stop();
+    f.strike();
+    const kept = f.damageAt(joist);
+    expect(kept).toBeGreaterThan(0);
+
+    f.holdFuelled(canisterCapacity);
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.strike();
+
+    expect(f.damageAt(joist)).toBeGreaterThan(kept);
+  });
+
+  it('carries a cut through a save and goes on cutting', async () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+    expect(f.session.cutCell(joist)).toBeUndefined();
+    f.strike();
+    f.strike();
+
+    const restored = await reloadCut(f, 'open');
+
+    expect(restored.damageAt(joist)).toBe(f.damageAt(joist));
+    expect(restored.sim.actions.job).toMatchObject({ jobType: 'cutCell', cell: joist, stopped: false });
+    restored.strike();
+    expect(restored.damageAt(joist)).toBeGreaterThan(f.damageAt(joist));
+  });
+
+  it('refuses time compression while a cut runs', () => {
+    const f = cutFixture('open');
+    f.holdFuelled(canisterCapacity);
+    expect(f.session.cutCell(joist)).toBeUndefined();
+
+    expect(f.sim.compress().ok).toBe(false);
+    expect(f.sim.actions.job?.stopped).toBe(false);
+  });
 });

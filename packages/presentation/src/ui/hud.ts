@@ -157,6 +157,11 @@ export type TimedActionPresentation = {
       readonly elapsedSimSeconds: number;
       readonly durationSimSeconds: number;
     }
+  | {
+      /** A cut has no duration of its own: its progress is the damage share the cell has taken. */
+      readonly kind: 'cutCell';
+      readonly share: number;
+    }
 );
 
 export const timedActionHandlingPresentation = (
@@ -176,6 +181,30 @@ const progressLabel = (text: HandlingText, elapsed: number, total: number): stri
 /** Zero-time work (an authored instant part service) is whole the moment it exists. */
 const progressPercent = (elapsed: number, total: number): number =>
   total > 0 ? Math.round((Math.max(0, Math.min(total, elapsed)) / total) * 100) : 100;
+
+const longActionViewModel = (
+  action: TimedActionPresentation,
+  queue: HandlingPresentationSource,
+  text: HandlingText,
+): HandlingViewModel => {
+  const shown = {
+    visible: true,
+    label: action.label,
+    next: '',
+    cancelLabel: queue.cancelLabel ?? '',
+    movementLabel: queue.movementLabel ?? '',
+  };
+  if ('share' in action) {
+    return { ...shown, simSecondsLabel: '', percent: progressPercent(action.share, 1) };
+  }
+  const elapsed = 'elapsedGameSeconds' in action ? action.elapsedGameSeconds : action.elapsedSimSeconds;
+  const duration = 'durationGameSeconds' in action ? action.durationGameSeconds : action.durationSimSeconds;
+  return {
+    ...shown,
+    simSecondsLabel: progressLabel(text, elapsed, duration),
+    percent: progressPercent(elapsed, duration),
+  };
+};
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource, text: HandlingText): HandlingViewModel => {
@@ -212,24 +241,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource, text: Handl
     };
   }
   if (queue.longAction) {
-    const { label } = queue.longAction;
-    const elapsed =
-      'elapsedGameSeconds' in queue.longAction
-        ? queue.longAction.elapsedGameSeconds
-        : queue.longAction.elapsedSimSeconds;
-    const duration =
-      'durationGameSeconds' in queue.longAction
-        ? queue.longAction.durationGameSeconds
-        : queue.longAction.durationSimSeconds;
-    return {
-      visible: true,
-      label,
-      simSecondsLabel: progressLabel(text, elapsed, duration),
-      percent: progressPercent(elapsed, duration),
-      next: '',
-      cancelLabel: queue.cancelLabel ?? '',
-      movementLabel: queue.movementLabel ?? '',
-    };
+    return longActionViewModel(queue.longAction, queue, text);
   }
   if (!job) {
     return { visible: false, label: '', simSecondsLabel: '', percent: 0, next: '', cancelLabel: '', movementLabel: '' };

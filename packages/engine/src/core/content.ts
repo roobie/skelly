@@ -1573,9 +1573,20 @@ const checkForcingFuel = (
 };
 
 const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
-  const canister = item.tool?.fuel?.canister;
-  if (canister !== undefined && registry.items.get(canister)?.canister === undefined) {
-    report('items', item.id, '.tool.fuel.canister', `"${canister}" is not an item with a canister component`);
+  const fuel = item.tool?.fuel;
+  const capacity = fuel && registry.items.get(fuel.canister)?.canister?.capacity;
+  if (fuel && capacity === undefined) {
+    report('items', item.id, '.tool.fuel.canister', `"${fuel.canister}" is not an item with a canister component`);
+  }
+  const cut = item.tool?.cut;
+  if (!cut) {
+    return;
+  }
+  if (!registry.sounds.get(cut.strikeSound)?.noise.enabled) {
+    report('items', item.id, '.tool.cut.strikeSound', 'cutting strikes need a sound that alerts hearing');
+  }
+  if (fuel && capacity !== undefined && capacity < fuel.fillPerSimSecond * cut.strikeIntervalSimSeconds) {
+    report('items', item.id, '.tool.fuel.fillPerSimSecond', 'a full canister cannot cover one cutting strike');
   }
 };
 

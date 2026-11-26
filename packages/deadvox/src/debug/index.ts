@@ -1220,7 +1220,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let shellKey = '';
   let noclip = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
-    strikeTerrainCell: hooks.strikeTerrainCell,
+    strikeTerrainCell: (cell, blow) => hooks.strikeTerrainCell(cell, blow) !== undefined,
     repairCell: hooks.repairCell,
     takeApartCell: hooks.takeApartCell,
     bindings: inputBindings,

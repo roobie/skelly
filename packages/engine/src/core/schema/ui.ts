@@ -169,6 +169,7 @@ const UiScreenTextSchema = strictObject({
     repair: [],
     takeApart: [],
     boardUp: [],
+    cut: [],
   }),
   /** The radial menu entry that gathers a held item's treatments, and the centre label of its child ring, which returns to the parent ring. */
   actionMenu: slottedTable({ treat: [], back: [] }),

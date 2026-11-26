@@ -66,6 +66,9 @@ const checkItem = (item: ItemDef, checker: Checker, registry: Registry): void =>
     checker.selected('.explosive.blast.damageKind', item.explosive.blast.damageKind);
     checker.selected('.explosive.fragments.damageKind', item.explosive.fragments.damageKind);
   }
+  if (item.tool?.cut) {
+    checker.selected('.tool.cut.damageKind', item.tool.cut.damageKind);
+  }
   if (item.trap) {
     checker.selected('.trap.playerInjury.kind', item.trap.playerInjury.kind);
   }

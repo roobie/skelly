@@ -407,7 +407,7 @@ const debugBuild = (f: Fixture) => {
   const build = new BuildMode(engine, f.session.body, 1, {
     strikeTerrainCell: (target, blow) => {
       blows.push(blow);
-      return f.session.strikeTerrainCell(target, blow);
+      return f.session.strikeTerrainCell(target, blow) !== undefined;
     },
     repairCell: () => undefined,
     takeApartCell: () => undefined,

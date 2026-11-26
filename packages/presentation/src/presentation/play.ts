@@ -662,6 +662,16 @@ const handlingPresentationFor = ({
   if (craft) {
     return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling, keys);
   }
+  if (job?.jobType === 'cutCell' && !job.stopped) {
+    const cell = inventory.cellRepair?.state(job.cell);
+    const action: TimedActionPresentation = {
+      kind: 'cutCell',
+      share: cell ? cell.damage / cell.durability : 0,
+      label: actionText(inventory.registry).longActions.cutting,
+      stopped: false,
+    };
+    return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling, keys);
+  }
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -1932,7 +1942,7 @@ const startPlayWith = (
     },
     feet,
     showNotice,
-    strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
+    strikeTerrainCell: (cell, blow) => (replayPlayer ? undefined : session.strikeTerrainCell(cell, blow)),
     repairCell: (cell) => {
       if (replayPlayer) {
         return 'Input replay owns this run';
@@ -2121,7 +2131,11 @@ const startPlayWith = (
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
-    if (sim.actions.job?.jobType === 'forceDoor' || sim.actions.job?.jobType === 'wait') {
+    if (
+      sim.actions.job?.jobType === 'forceDoor' ||
+      sim.actions.job?.jobType === 'cutCell' ||
+      sim.actions.job?.jobType === 'wait'
+    ) {
       sim.actions.stop();
     } else {
       rest.stop();
@@ -2615,12 +2629,15 @@ const startPlayWith = (
         if (mode !== 'wield') {
           return undefined;
         }
-        const actions = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        const actions = cellActionsFor(inventory, engine.simulationWorld, target.cell, session.character.knownRecipes);
         const selected = actionMenu.open(
           'furniture',
           undefined,
           radialEntries(actions, actionMenuTuning.directions.furniture),
         );
+        if (selected?.id === 'cut') {
+          return { kind: 'cell.cut', cell: [...target.cell] };
+        }
         if (selected?.id === 'repair' || selected?.id === 'take_apart') {
           quickbarInput.cancel();
           screen.openCellWork(target.cell, selected.id);
@@ -3139,7 +3156,7 @@ const startPlayWith = (
       case 'vehicle':
         return vehiclePartHint(key, target);
       case 'cell': {
-        const [action] = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        const [action] = cellActionsFor(inventory, engine.simulationWorld, target.cell, session.character.knownRecipes);
         return action
           ? html`${blockHint()} · ${fillHint(screenText.interaction.hold, { key, action: action.label })}`
           : blockHint();

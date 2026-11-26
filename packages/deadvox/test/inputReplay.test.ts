@@ -150,6 +150,7 @@ const applyCommand = (
     vehicleWork: runtime.session.beginVehicleWork,
     operateVehiclePart: runtime.session.operateVehiclePart,
     craftTakeApartCell: () => undefined,
+    cutCell: (cell) => runtime.session.cutCell(cell),
     search: (uid) => {
       const entity = runtime.entities.byUid(uid);
       return entity ? runtime.session.search(entity) : 'The container is no longer available';
@@ -758,6 +759,7 @@ describe('input replay', () => {
       'furniture.use': { kind: 'furniture.use', entityUid: 1 },
       'furniture.slide': { kind: 'furniture.slide', entityUid: 1, way: 'push' },
       'furniture.place': { kind: 'furniture.place', pos: [0, 0, 0] },
+      'cell.cut': { kind: 'cell.cut', cell: [0, 0, 0] },
       'power.set': { kind: 'power.set', entityUid: 1, enabled: true },
       'charger.start': { kind: 'charger.start', entityUid: 1 },
       'charger.stop': { kind: 'charger.stop', entityUid: 1 },

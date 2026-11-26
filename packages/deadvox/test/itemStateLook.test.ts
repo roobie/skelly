@@ -81,7 +81,7 @@ const fixture = () => {
             ...base,
             id: 'tool',
             model: 'plain',
-            tool: { qualities: {}, fuel: { canister: 'canister', swapSimSeconds: 1 } },
+            tool: { qualities: {}, fuel: { canister: 'canister', swapSimSeconds: 1, fillPerSimSecond: 0 } },
           },
           {
             ...base,

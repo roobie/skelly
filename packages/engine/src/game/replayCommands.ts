@@ -30,6 +30,7 @@ export type ReplayActionPayload =
   | { kind: 'furniture.use'; entityUid: number }
   | { kind: 'furniture.slide'; entityUid: number; way: 'push' }
   | { kind: 'furniture.place'; pos: [number, number, number] }
+  | { kind: 'cell.cut'; cell: [number, number, number] }
   | { kind: 'power.set'; entityUid: number; enabled: boolean }
   | { kind: 'charger.start'; entityUid: number }
   | { kind: 'charger.stop'; entityUid: number }
@@ -116,6 +117,7 @@ const PAYLOAD_KINDS = [
   'furniture.use',
   'furniture.slide',
   'furniture.place',
+  'cell.cut',
   'power.set',
   'charger.start',
   'charger.stop',
@@ -479,6 +481,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isSlidePayload(payload);
     case 'furniture.place':
       return isTriple(payload.pos, Number.isSafeInteger);
+    case 'cell.cut':
+      return isTriple(payload.cell, Number.isSafeInteger);
     case 'actor.downed':
       return isUid(payload.actorId) && isDownedBodyWay(payload.way);
     case 'item.pickup':
@@ -584,6 +588,8 @@ export interface ReplayCommandOwners {
   turn: () => string | undefined;
   /** Tips the carried piece onto its next face. */
   tip: () => string | undefined;
+  /** Starts cutting the terrain cell with whichever carried tool cuts it. */
+  cutCell: (cell: [number, number, number]) => string | undefined;
   clearDownedBody: (actorId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
   craftPlace?: (
@@ -696,6 +702,8 @@ export const applyReplayActionPayload = (
       return owners.turn();
     case 'furniture.tip':
       return owners.tip();
+    case 'cell.cut':
+      return owners.cutCell(payload.cell);
     case 'actor.downed':
       return owners.clearDownedBody(payload.actorId, payload.way);
     case 'power.set':

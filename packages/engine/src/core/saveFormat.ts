@@ -19,7 +19,7 @@ import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
-import { validateLongJob } from './longAction.ts';
+import { isStrikeJob, validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MELEE_PROFILES } from './meleePose.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
@@ -720,6 +720,7 @@ const longAction = obj({
     union(
       longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait', 'vehicleWork'])),
       longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
+      longJob(enumeration(['cutCell']), { cell: tuple(safeInt, safeInt, safeInt), sinceStrike: nonNegative }),
     ),
   ),
   wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),
@@ -1811,7 +1812,7 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.work === undefined);
   }
-  if (job?.jobType === 'forceDoor') {
+  if (job?.jobType === 'forceDoor' || job?.jobType === 'cutCell') {
     return tree.some(({ item }) => item.uid === job.toolUid && item.work === undefined);
   }
   if (job?.jobType === 'treatment') {
@@ -1848,11 +1849,12 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
   if (
-    job?.jobType === 'forceDoor' &&
+    job &&
+    isStrikeJob(job.jobType) &&
     !job.stopped &&
     (snapshot.character.simulation.compression.active || snapshot.character.simulation.compression.c !== 1)
   ) {
-    throw new Error('Running forcing action cannot use compression');
+    throw new Error('Running strike action cannot use compression');
   }
   const tree = [
     ...savedItemTree(
@@ -1869,8 +1871,8 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
       reason = 'Missing reading book';
-    } else if (job?.jobType === 'forceDoor') {
-      reason = 'Missing forcing tool';
+    } else if (job && isStrikeJob(job.jobType)) {
+      reason = 'Missing striking tool';
     } else if (job?.jobType === 'treatment') {
       reason = 'Missing treatment item';
     }

@@ -4,5 +4,6 @@ export const continueActionResumesJob = (jobType: LongJob['jobType'] | undefined
   jobType === 'wait' ||
   jobType === 'reading' ||
   jobType === 'forceDoor' ||
+  jobType === 'cutCell' ||
   jobType === 'treatment' ||
   jobType === 'vehicleWork';

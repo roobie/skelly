@@ -157,6 +157,8 @@ export const TEMPORAL_FIELDS = [
     dimension: 'duration',
   },
   { path: 'items.tool.fuel.swapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'items.tool.fuel.fillPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'items.tool.cut.strikeIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.unpack.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.loadSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.ammo.stripSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

@@ -69,6 +69,7 @@ const command = (runtime: Runtime, payload: ReplayActionPayload) => {
     craftServicePart: (entityUid, request) => runtime.session.crafting.servicePart(entityUid, request),
     vehicleWork: unexpected,
     craftTakeApartCell: unexpected,
+    cutCell: unexpected,
     search: unexpected,
     loadBattery: unexpected,
     unloadBattery: unexpected,

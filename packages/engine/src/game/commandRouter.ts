@@ -845,6 +845,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       sim.actions.job?.jobType === 'wait' ||
       sim.actions.job?.jobType === 'reading' ||
       sim.actions.job?.jobType === 'forceDoor' ||
+      sim.actions.job?.jobType === 'cutCell' ||
       sim.actions.job?.jobType === 'treatment' ||
       sim.actions.job?.jobType === 'vehicleWork'
     ) {
@@ -1432,6 +1433,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       place: (pos) => session.placeFurniture(pos),
       turn: () => session.turnFurniture(),
       tip: () => session.tipFurniture(),
+      cutCell: (cell) => session.cutCell(cell),
       clearDownedBody: (id, way) => session.clearDownedBody(id, way),
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
       craftPlace: (recipeId, destination, preference, sources) =>

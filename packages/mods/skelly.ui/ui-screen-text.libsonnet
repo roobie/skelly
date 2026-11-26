@@ -125,6 +125,7 @@
     repair: 'Repair',
     takeApart: 'Work on',
     boardUp: 'Board up',
+    cut: 'Cut',
   },
   actionMenu: { treat: 'Treat', back: 'Back' },
   emote: { gun: 'Gun', 'press-check': 'Press-check' },

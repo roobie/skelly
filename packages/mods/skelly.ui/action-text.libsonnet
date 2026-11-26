@@ -204,6 +204,7 @@
     reading: 'Reading {item}',
     readingUnnamed: 'Reading',
     forcingPadlock: 'Forcing padlock',
+    cutting: 'Cutting',
     treating: 'Treating {item}',
     treatingUnnamed: 'Treating wound',
   },

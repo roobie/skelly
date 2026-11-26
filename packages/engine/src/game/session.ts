@@ -45,6 +45,7 @@ import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
 import type { CastShotEnd } from '../core/castVolleys.ts';
+import { cellCutPlan } from '../core/cellCutting.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { collapseBlockingCells, reachableCollapseExit, refreshBurial } from '../core/collapse.ts';
@@ -162,9 +163,9 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { cascadeSupport, strikeTerrain } from '../core/terrainStrike.ts';
+import { cascadeSupport, strikeTerrain, type TerrainStrikeResult } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
-import { spendFuel } from '../core/torch.ts';
+import { fuelCovers, spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { vehicleOpeningPlan } from '../core/vehicleOpening.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
@@ -1739,10 +1740,14 @@ export const createSession = (options: SessionOptions) => {
   const tearPiece = (piece: BlockEntity): void => {
     bashPiece(piece, { strength: entities.defOf(piece).breach.durability, kind: 'crush' });
   };
-  const strikeTerrainCell = (cell: Vec3, blow: Blow): boolean => {
+  /**
+   * Lands one blow on a terrain cell; undefined when nothing there takes it. It sounds as `sound`, by default the
+   * struck material's blow.
+   */
+  const strikeTerrainCell = (cell: Vec3, blow: Blow, sound?: SoundId): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
-      return false;
+      return undefined;
     }
     const block = registry.blocks[context.terrain.getBlock(...cell)];
     const result = strikeTerrain(
@@ -1756,11 +1761,11 @@ export const createSession = (options: SessionOptions) => {
       blow,
     );
     if (!result) {
-      return false;
+      return undefined;
     }
     if (result.cause === 'canopy') {
       (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
-      return true;
+      return result;
     }
     if (result.outcome === 'broken') {
       options.onTerrainEdited?.(result.edited);
@@ -1769,9 +1774,9 @@ export const createSession = (options: SessionOptions) => {
       forgetPiece(destroyed);
     }
     if (block?.solid) {
-      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+      playNoisyWorldSound(sound ?? registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
     }
-    return true;
+    return result;
   };
   inventory.buried = () => body.buried !== undefined;
   const collapseSolid = (x: number, y: number, z: number): boolean =>
@@ -1867,7 +1872,7 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, blow) !== undefined;
     }
-    return hit ? strikeTerrainCell(hit.block, blow) : false;
+    return hit ? strikeTerrainCell(hit.block, blow) !== undefined : false;
   };
   /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
    * read and published before the damage lands, so the damaged world survives streaming and saves. */
@@ -2978,6 +2983,30 @@ export const createSession = (options: SessionOptions) => {
       return broken;
     },
   };
+  sim.actions.cutting = {
+    validate: (cell, toolUid) => {
+      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      return plan.ok ? undefined : plan.reason;
+    },
+    strike: (cell, toolUid) => {
+      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      if (!plan.ok) {
+        return { stop: plan.reason };
+      }
+      spendFuel(inventory, plan.tool, plan.strikeFuel);
+      const result = strikeTerrainCell([...cell], plan.blow, plan.strikeSound);
+      if (!result) {
+        return { stop: coreMessage(registry, 'gone') };
+      }
+      if (result.outcome === 'refused') {
+        return { stop: coreMessage(registry, result.cause === 'canopy' ? 'trunkHoldsCanopy' : 'noRoom') };
+      }
+      if (result.outcome === 'broken') {
+        return 'cut';
+      }
+      return fuelCovers(registry, plan.tool, plan.strikeFuel) ? 'going' : { stop: coreMessage(registry, 'outOfFuel') };
+    },
+  };
 
   const power = createSessionPower(options, sim, inventory, columnSupply.arrived);
   const lampReach = new LampReachCache(
@@ -3203,6 +3232,11 @@ export const createSession = (options: SessionOptions) => {
             strikeIntervalSimSeconds: plan.strikeInterval,
           })
         : plan.reason;
+    },
+    /** Starts cutting a terrain cell with a carried tool, or says why not. */
+    cutCell: (cell: Vec3, toolUid?: number) => {
+      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      return plan.ok ? sim.actions.beginCutting(cell, plan.tool.uid, plan.strikeInterval) : plan.reason;
     },
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */

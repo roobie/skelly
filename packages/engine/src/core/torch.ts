@@ -1,3 +1,4 @@
+import type { Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
@@ -63,8 +64,23 @@ export const swapCanister = (
   return undefined;
 };
 
+/** The canister fill a fuelled tool burns over `simSeconds` of work; 0 for a tool that burns nothing. */
+export const workFuel = (registry: Registry, tool: Item, simSeconds: number): number =>
+  (defOf(registry, tool.type).tool?.fuel?.fillPerSimSecond ?? 0) * simSeconds;
+
+/** Whether the tool's fill covers `amount`; a tool that burns nothing always does. */
+export const fuelCovers = (registry: Registry, tool: Item, amount: number): boolean =>
+  amount <= 0 || (chargeOf(registry, tool) ?? 0) >= amount;
+
+/** Why tools that could do the work can't start it: they hold too little gas. */
+export const fuelRefusal = (registry: Registry, tools: readonly Item[]): string =>
+  coreMessage(registry, tools.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
+
 /** Takes `amount` of fill from the tool's canister; the caller has already checked the fill covers it. */
 export const spendFuel = (inventory: Inventory, tool: Item, amount: number): void => {
+  if (amount <= 0) {
+    return;
+  }
   const canister = tool.slots?.canister;
   const fill = chargeOf(inventory.registry, tool) ?? 0;
   if (!canister || fill < amount) {

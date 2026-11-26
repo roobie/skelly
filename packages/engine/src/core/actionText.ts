@@ -234,6 +234,7 @@ export const ActionTextSchema = strictObject({
     reading: Template('item'),
     readingUnnamed: Line,
     forcingPadlock: Line,
+    cutting: Line,
     treating: Template('item'),
     treatingUnnamed: Line,
   }),
