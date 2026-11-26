@@ -145,6 +145,10 @@ unbuilt. Unanswered gates block only their dependent work.
   and the cascade's same-row diamond, keeping invalidation local. This avoids floating
   walls without simulating physical stress; see
   `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState.enqueueSideways`.
+  A roof deck bears on a separate beam layer, and beams bear on columns or wall tops.
+  A sideways-held beam can carry the cell above it, so separating those layers gives
+  a clear working bay without raising material span. Joists in the deck's own layer
+  cannot extend its reach; see `packages/deadvox/mods/skelly.deadvox.buildings/templates-workshop.libsonnet`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
   or left floating both read wrong, and refusal keeps timber yield open. An exhausted
   search has not cleared the trunk; see

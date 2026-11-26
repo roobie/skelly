@@ -108,6 +108,11 @@
           "position": [36, 20.5, 14],
           "rotation": 0,
           "template": "workshop_parts_store"
+        },
+        {
+          "position": [20, 20.5, 28],
+          "rotation": 0,
+          "template": "workshop_hall"
         }
       ],
       "demo": true,
