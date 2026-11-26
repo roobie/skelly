@@ -113,6 +113,11 @@ export class PileMeshes {
     return this.itemModels.get(uid);
   }
 
+  /** A transient copy of a piled item's final look for a gravity-drop presentation. */
+  fallModel(uid: number): Object3D | undefined {
+    return this.itemModels.get(uid)?.clone();
+  }
+
   private readonly beamLenses = new Map<number, Object3D>();
 
   beamPoseOf(item: Item, position: Vector3, direction: Vector3): boolean {

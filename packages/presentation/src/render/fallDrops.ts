@@ -5,6 +5,7 @@ interface ActiveDrop {
   readonly model: Object3D;
   readonly distance: number;
   readonly duration: number;
+  readonly landingY: number;
   elapsed: number;
   readonly landing?: FallRecord['to'];
 }
@@ -19,6 +20,7 @@ export class FallDrops {
   private readonly blockSize: number;
   private readonly gravity: number;
   private readonly piece: (uid: number) => Object3D | undefined;
+  private readonly pile: (uid: number) => Object3D | undefined;
   private readonly mask: (cells: readonly FallRecord['to'][]) => void;
   private readonly unmask: (cells: readonly FallRecord['to'][]) => void;
 
@@ -26,12 +28,14 @@ export class FallDrops {
     blockSize: number,
     gravity: number,
     piece: (uid: number) => Object3D | undefined,
+    pile: (uid: number) => Object3D | undefined,
     mask: (cells: readonly FallRecord['to'][]) => void,
     unmask: (cells: readonly FallRecord['to'][]) => void,
   ) {
     this.blockSize = blockSize;
     this.gravity = gravity;
     this.piece = piece;
+    this.pile = pile;
     this.mask = mask;
     this.unmask = unmask;
   }
@@ -47,7 +51,14 @@ export class FallDrops {
         continue;
       }
       const duration = Math.sqrt((2 * distance) / this.gravity);
-      this.active.push({ model, distance, duration, elapsed: 0, ...(record.kind === 'terrain' ? { landing: record.to } : {}) });
+      this.active.push({
+        model,
+        distance,
+        duration,
+        landingY: model.position.y - distance,
+        elapsed: 0,
+        ...(record.kind === 'terrain' ? { landing: record.to } : {}),
+      });
       this.group.add(model);
       if (record.kind === 'terrain') {
         this.mask([record.to]);
@@ -61,7 +72,7 @@ export class FallDrops {
       const drop = this.active[index]!;
       drop.elapsed += dt;
       const travelled = Math.min(drop.distance, (this.gravity * drop.elapsed ** 2) / 2);
-      drop.model.position.y = drop.distance - travelled;
+      drop.model.position.y = drop.landingY + drop.distance - travelled;
       if (travelled < drop.distance) {
         continue;
       }
@@ -86,6 +97,13 @@ export class FallDrops {
   private model(record: FallRecord): Object3D | undefined {
     if (record.kind === 'piece') {
       const model = record.uid === undefined ? undefined : this.piece(record.uid);
+      if (model) {
+        model.position.y += (record.from[1] - record.to[1]) * this.blockSize;
+      }
+      return model;
+    }
+    if (record.kind === 'pile') {
+      const model = record.uid === undefined ? undefined : this.pile(record.uid);
       if (model) {
         model.position.y += (record.from[1] - record.to[1]) * this.blockSize;
       }

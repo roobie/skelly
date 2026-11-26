@@ -436,6 +436,7 @@ export const createPlayView = (
       const entity = engine.entities.byUid(uid);
       return entity ? furniture.pieceMesh(entity, engine.entities.defOf(entity)) : undefined;
     },
+    (uid) => piles.fallModel(uid),
     (cells) => engine.streamer.maskLanded(cells),
     (cells) => engine.streamer.unmaskLanded(cells),
   );
