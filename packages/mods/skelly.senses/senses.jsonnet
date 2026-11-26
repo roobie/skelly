@@ -49,6 +49,12 @@ local crouch = {
         // Lights a room the size of the test-house garage, with its strip lights and lamp, all at once, so walking
         // around never swaps which fixture is dark. Each slot adds light work to every lit pixel.
         renderedFixtureLimit: 8,
+        terrainFire: {
+          color: '#ff6a00',
+          intensity: 2,
+          radiusMetres: 6,
+          flame: { heightMetres: 0.6, radiusMetres: 0.2 },
+        },
         // Each item lamp slot casts a cube shadow and costs every frame whether lit or dark, so these are a budget.
         heldLamps: 2,
         droppedLamps: 2,
