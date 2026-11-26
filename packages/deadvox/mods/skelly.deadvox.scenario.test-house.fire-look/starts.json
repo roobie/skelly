@@ -7,6 +7,14 @@
       "density": null,
       "fires": [
         {
+          "cell": [-8, 43, 28],
+          "strength": 11
+        },
+        {
+          "cell": [-10, 42, 31],
+          "strength": 11
+        },
+        {
           "cell": [-24, 43, 33],
           "strength": 11
         },

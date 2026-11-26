@@ -176,6 +176,16 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     });
     return { outcome: 'damaged', destroyed: [], edited: [] };
   }
+  return breakCell(context, cell, bash.damage);
+};
+
+const breakCell = (context: TerrainStrike, cell: Vec3, damage?: number): TerrainStrikeResult => {
+  const { terrain, supply, mover } = context;
+  const { world } = terrain;
+  const { registry } = mover.inventory;
+  const material = registry.blockMaterials.get(registry.blocks[terrain.getBlock(...cell)]!.material)!;
+  const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
+  supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
     const { revision } = supply;
     try {
@@ -185,7 +195,9 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
       const pile = projected.inventory.pileAt(above);
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
       if (!plan) {
-        world.blockDamage.record(terrain, registry, cell, bash.damage);
+        if (damage !== undefined) {
+          world.blockDamage.record(terrain, registry, cell, damage);
+        }
         return { outcome: 'refused', destroyed: [], edited: [] };
       }
       let destroyed: BlockEntity[] = [];
@@ -301,6 +313,24 @@ export const cascadeSupport = (
   let support = createSupport(registry, view);
   const destroyed: BlockEntity[] = [];
   const edited: Vec3[] = [];
+  const crumblesAt = (cell: Vec3): boolean => {
+    const block = registry.blocks[view.block(...cell)]!;
+    const material = registry.blockMaterials.get(block.material)!;
+    return (
+      material.crumblesUnderLoad &&
+      cell[1] + 1 < view.maxY &&
+      registry.blocks[view.block(cell[0], cell[1] + 1, cell[2])]?.solid === true
+    );
+  };
+  const collapse = (cell: Vec3, crumbles: boolean, rubble: number) => {
+    // A projection publishes once, so each break or fall reads the supply afresh.
+    const strike = { ...context, supply: context.project() };
+    if (!crumbles) {
+      return fallCell(strike, cell, rubble);
+    }
+    const result = breakCell(strike, cell);
+    return result.outcome === 'broken' ? result : undefined;
+  };
   /** Whether the cell stopped holding. */
   const judge = (cell: Vec3, lostFloor: boolean): boolean => {
     const inside = cell[1] >= view.minY && cell[1] < view.maxY;
@@ -308,15 +338,15 @@ export const cascadeSupport = (
     if (!block?.solid || view.natural(...cell)) {
       return false;
     }
-    if (support.holds(cell)) {
+    const crumbles = crumblesAt(cell);
+    if (!crumbles && support.holds(cell)) {
       if (lostFloor) {
         state.enqueueSideways(registry, cell);
       }
       return false;
     }
     const material = registry.blockMaterials.get(block.material)!;
-    // A projection publishes once, so each fall reads the supply afresh.
-    const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
+    const fell = collapse(cell, crumbles, registry.blockIds.get(material.fallsTo)!);
     if (!fell) {
       return false;
     }

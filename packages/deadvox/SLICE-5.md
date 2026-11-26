@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
-  - you're changing cell-fire ownership, burn-out support, charred clearing or its fire-look fixture
+  - you're changing cell-fire ownership, material load crumbling, burn-out support, charred clearing or its fire-look fixture
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
@@ -257,15 +257,18 @@ implementation selects; this plan retains only the cross-system obligations.
   rubble and support, because leaving the view must not pause a burning site or
   erase its remaining burn. See `packages/engine/src/core/world.ts`, `World`, and
   `packages/engine/src/core/fire.ts`, `Fire`.
-- **Burnt material:** exhaustion leaves authored charred terrain, clearable through
-  take-apart, because a burnt structure should leave a consequential remnant.
-  Binary span support already distinguishes a grounded burnt post from a burnt
-  beam or cantilever; burning must not introduce a second support rule. Falling
-  and burning need separate authored results because gravity and exhaustion are
-  different events. A shared char material suffices without restricting which
-  materials may burn. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`;
-  `packages/engine/src/core/structureSupport.ts`, `SupportState.replaced`; and
+- **Burnt material:** char leaves consequential remains, not a load-bearing post.
+  Never holding a load is a material fact, not a burn event: the support owner
+  re-judges a replacement and breaks loaded remains through ordinary ruin, letting
+  the existing cascade bring down what they held. Unloaded, supported char stays
+  for take-apart. The rule belongs to materials so other remains can select it
+  without a new mechanism. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`;
+  `packages/engine/src/core/structureSupport.ts`, `SupportState.replaced`;
+  `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`; and
   `packages/engine/src/core/rubble.ts`, `rubbleClearWork`.
+  Falling and burning retain separate authored results because gravity and
+  exhaustion are different events. Placement-triggered crumbling remains open
+  under #2063 pending its publication-order ruling.
 - **Smoke effects:** smoke is a visual, sight-blocking field, so visible smoke has
   a sensory consequence rather than being decoration. Smoke inhalation levels are
   deferred to #1074; reconsider them when a shared body-effect model exists for

@@ -15,6 +15,7 @@ const scale = { blockSize: 0.5, minCy: 0, maxCy: 0 };
 const WOOD = 'fire_fixture_wood';
 const FIBRE = 'fire_fixture_fibre';
 const CHAR = 'fire_fixture_char';
+const RUBBLE = 'fire_fixture_rubble';
 const METAL = 'fire_fixture_metal';
 const LIQUID = 'fire_fixture_liquid';
 const POST: Vec3 = [2, 1, 3];
@@ -34,6 +35,7 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
     [WOOD, 2, burn],
     [FIBRE, 1, burn],
     [CHAR, 0, undefined],
+    [RUBBLE, 0, undefined],
     [METAL, 2, undefined],
     [LIQUID, 0, undefined],
   ] as const) {
@@ -41,8 +43,9 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
       ...fixtureBlockMaterial(CHAR),
       id,
       span,
+      crumblesUnderLoad: id === CHAR,
       breakable: true,
-      fallsTo: CHAR,
+      fallsTo: id === CHAR ? CHAR : RUBBLE,
       flammability,
     });
     registry.blockIds.set(id, registry.blocks.length);
@@ -170,24 +173,39 @@ describe('cell fire owner', () => {
 
   it('burns for the material duration on the game clock and invalidates meshes on exhaustion', () => {
     const f = fixture();
-    expect(f.ignite(POST)).toBe(true);
+    expect(f.ignite(OTHER)).toBe(true);
     f.tick(f.duration / 2);
-    expect(f.world.fire.has(POST)).toBe(true);
-    expect(f.block(POST)).toBe(WOOD);
+    expect(f.world.fire.has(OTHER)).toBe(true);
+    expect(f.block(OTHER)).toBe(FIBRE);
     expect(f.edited).toEqual([]);
     f.tick(f.duration / 2 + f.step);
-    expect(f.block(POST)).toBe(CHAR);
-    expect(f.world.fire.has(POST)).toBe(false);
+    expect(f.block(OTHER)).toBe(CHAR);
+    expect(f.world.fire.has(OTHER)).toBe(false);
     expect(f.edited.length).toBeGreaterThan(0);
   });
 
-  it('keeps a grounded burnt post but drops a burnt beam through ordinary support and clears char through take-apart', () => {
+  it('breaks a loaded burnt post through ordinary ruin and drops what it held', () => {
     const f = fixture();
+    const top: Vec3 = [POST[0], BEAM[1], POST[2]];
+    expect(f.block(top)).toBe(WOOD);
+    expect(f.block(BEAM)).toBe(WOOD);
     expect(f.ignite(POST)).toBe(true);
+    f.tick(f.duration + f.step);
+    settle(f);
+    expect(f.block(POST)).toBe(RUBBLE);
+    expect(f.terrain.getBlock(...top)).toBe(0);
+    expect(f.terrain.getBlock(...BEAM)).toBe(0);
+    expect(f.block([POST[0], POST[1] + 1, POST[2]])).toBe(RUBBLE);
+    expect(f.block([BEAM[0], 1, BEAM[2]])).toBe(RUBBLE);
+  });
+
+  it('keeps unloaded grounded char but drops an unsupported burnt beam and clears it through take-apart', () => {
+    const f = fixture();
+    expect(f.ignite(OTHER)).toBe(true);
     expect(f.ignite(BEAM)).toBe(true);
     f.tick(f.duration + f.step);
     settle(f);
-    expect(f.block(POST)).toBe(CHAR);
+    expect(f.block(OTHER)).toBe(CHAR);
     expect(f.terrain.getBlock(...BEAM)).toBe(0);
     const fallen: Vec3 = [BEAM[0], 1, BEAM[2]];
     expect(f.block(fallen)).toBe(CHAR);
