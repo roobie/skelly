@@ -26,7 +26,8 @@ The map is a 1 × 1 km square. Destinations are asks placed by distance preferen
 the shelter; see `packages/engine/src/core/composeLayout.ts`, `askCandidate`. One self-contained point of
 interest wholly inside each 100 m × 100 m cell is a later ambition: cell containment would
 give every part of the map a distinct destination without letting a large compound consume
-neighbouring destinations. "Site placement and the start" owns what containment means.
+neighbouring destinations. [Site placement and the start](#site-placement-and-the-start) owns what containment
+means.
 A PoI can be a lone shack in the woods with a rusty knife or a large construction
 site with abundant materials and enemies. Small discoveries matter alongside ambitious
 raids; not every destination needs to be a building complex.
@@ -43,24 +44,17 @@ landmark rather than a random substitute for another kind of home resource.
 
 ## Site placement and the start
 
-The shelter is the hub of the site: every other ask is placed from it, so its spot decides whether the rest fits.
-It is therefore a fixed position, not a random one, at the centre of the site bounds, and the bounds are centred on
-a sheet centre. The start then sits mid-sheet on the one paper-map grid, and the start's kit map covers that sheet.
-The grid itself is unchanged; only the site's placement is content. See `packages/engine/src/core/composeLayout.ts`,
-`askCandidate`, for how a place ask takes its fixed position, and `packages/deadvox/test/holdoutStart.test.ts` for the
-property that the start lies on its kit sheet, clear of the edges.
+The shelter is the hub of the site and takes a fixed spot in the middle of the map, for two reasons: every other ask
+is placed by distance from it, so its spot decides whether the rest fits, and the start must sit mid-sheet so its kit
+map covers the land around it. The shelter's spot is the centre of one of the four middle cells, not the centre of
+the bounds: a cell grid aligned to the bounds puts that centre on four cell corners, so no cell could hold the
+shelter whole. Both reasons hold half a cell's diagonal from the centre, a player cannot see the offset, and the
+map's size is a rough size rather than a hard number. Map size and cell size are content. See
+`packages/engine/src/core/schema/scenarios.ts`, `PlaceAskSchema`, for a fixed spot, and
+`packages/deadvox/test/holdoutStart.test.ts` for the property that the start lies on its kit sheet.
 
-When content divides the site into cells, the shelter stands at the centre of one of the four middle cells rather
-than at the bounds centre, because a cell grid aligned to the bounds puts the bounds centre on four cell corners, so
-no cell could hold the shelter whole. Both reasons for the centre still hold that close to it: every ask is still
-placed by distance from the shelter, and the start stays mid-sheet. A player cannot see the shelter sitting half a
-cell's diagonal off centre, and the map's size is a rough size, not a hard number. Map size and cell size are content.
-
-An ask may own a placement rectangle; see `packages/engine/src/core/schema/scenarios.ts`, `within`. Its envelope is
-its footprint with the placement apron and the road transitions docked at its gates, after the turn it takes, and the
-whole envelope must lie inside the rectangle; an attempt that overhangs fails, and once the attempts are spent the ask
-is refused, naming the rectangle and the overhang. The envelope has one owner: a docked transition belongs to the
-gate it docks with, so it belongs to that gate's destination and not to the road between destinations. See
+A destination's envelope has one owner. A road transition docked at a gate belongs to that gate's destination, so it
+lies inside the destination's envelope and not in the road between destinations. See
 `packages/engine/src/core/composeLayout.ts`, `containmentFailure`.
 
 ## Shelter plot
