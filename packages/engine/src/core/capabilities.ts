@@ -35,6 +35,7 @@ export const CONTENT_CAPABILITIES = {
   look: { defaultLook: 'required' },
   powerTuning: { power: 'optional' },
   supportTuning: { support: 'optional' },
+  fireTuning: { fire: 'optional' },
   weathering: { defaultWeathering: 'required' },
 } as const;
 
@@ -68,6 +69,8 @@ const requiredForStack = (registry: Registry, section: string, requirement: stri
   requirement === 'required' ||
   (section === 'skillProgression' && registry.skills.size > 0) ||
   (section === 'powerTuning' && registry.powerDevices.size > 0) ||
+  (section === 'fireTuning' &&
+    [...registry.blockMaterials.values()].some(({ flammability }) => flammability !== undefined)) ||
   (section === 'supportTuning' && [...registry.blockMaterials.values()].some(({ breakable }) => breakable)) ||
   (section === 'siteGeneration' && registry.starts.size + registry.layouts.size + registry.scenarios.size > 0);
 

@@ -84,7 +84,8 @@
           "tooFar": "Too far away"
         },
         "debugBuild": {
-          "target": "{block} · Damage {damage}/{durability} · {stepKey} step · {destroyKey} destroy"
+          "burning": "Burning",
+          "target": "{block} · Damage {damage}/{durability} · {stepKey} step · {destroyKey} destroy · {igniteKey} ignite · {fire}"
         },
         "doors": {
           "anyTool": "a suitable tool",

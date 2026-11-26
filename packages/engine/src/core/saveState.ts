@@ -7,6 +7,7 @@ import type { ActorSystem, ActorSystemState } from './actorSystem.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { SavedBlockDamage } from './blockDamage.ts';
 import type { Character, CharacterState } from './character.ts';
+import type { SavedFire } from './fire.ts';
 import type { RustleClock } from './foliageRustle.ts';
 import { assertFoodExposure, foodMillisecondsAt } from './food.ts';
 import type { FootstepClock } from './footsteps.ts';
@@ -31,6 +32,7 @@ export interface SaveSnapshot {
     id: string;
     columns: SavedColumn[];
     blockDamage: SavedBlockDamage;
+    fire: SavedFire;
     rubble: SavedRubble;
     support: SavedSupport;
     vehicles: VehicleInstancesState;
@@ -140,6 +142,7 @@ export const snapshotSession = ({
       ...(power ? { power: power.snapshot() } : {}),
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
+      fire: world.fire.snapshotState() as SavedFire,
       rubble: world.rubble.snapshotState() as SavedRubble,
       support: world.support.snapshotState() as SavedSupport,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,

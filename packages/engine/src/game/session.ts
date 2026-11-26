@@ -1876,6 +1876,44 @@ export const createSession = (options: SessionOptions) => {
       victim.vel = [0, 0, 0];
     }
   };
+  const igniteTerrainCell = (cell: Vec3, strength: number): boolean => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return false;
+    }
+    const supply = columnSupply.project(context.source);
+    supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
+    let ignited = false;
+    supply.publish(
+      supply.revision,
+      (cx, cz) => context.terrain.ensureColumn(cx, cz),
+      () => {
+        ignited = world.fire.ignite(context.terrain, registry, cell, strength);
+      },
+    );
+    return ignited;
+  };
+  sim.scheduler.register({
+    id: 'fire',
+    rate: PHYSICS_RATE,
+    enabled: () => world.fire.burning,
+    tick: (dt) => {
+      const context = options.terrainDestruction;
+      const tuning = claimed(registry.fireTuning, 'fire');
+      if (!(context && tuning)) {
+        throw new Error('A fire needs terrain destruction and fire tuning');
+      }
+      const result = world.fire.tick(
+        context.terrain,
+        registry,
+        simToGameSeconds(sim.clock, simSeconds(dt)),
+        tuning.cellsPerTick,
+      );
+      if (result.edited.length > 0) {
+        options.onTerrainEdited?.(result.edited);
+      }
+    },
+  });
   /** Runs the saved support cascade up to its per-tick cap; the rest continues next tick. */
   const cascadeTick = (): void => {
     const context = options.terrainDestruction;
@@ -3143,6 +3181,7 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
+    world.fire.restoreState(restored.world.fire, registry, options.onRestoreIssue);
     world.rubble.restoreState(restored.world.rubble, registry, options.onRestoreIssue);
     world.support.restoreState(restored.world.support, registry, options.onRestoreIssue);
     actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
@@ -3506,6 +3545,7 @@ export const createSession = (options: SessionOptions) => {
       return figureFeet();
     },
     strikeTerrainCell,
+    igniteTerrainCell,
     damageTerrainCell,
     projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */

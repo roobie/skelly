@@ -35,6 +35,7 @@ export class BuildMode {
   private readonly strikeTerrainCell: (cell: Vec3, blow: Blow) => boolean;
   private readonly repairCell: (cell: Vec3) => string | undefined;
   private readonly takeApartCell: (cell: Vec3) => string | undefined;
+  private readonly igniteTerrainCell: (cell: Vec3, strength: number) => boolean;
   private readonly bindings: BindingRegistry;
 
   constructor(
@@ -45,11 +46,13 @@ export class BuildMode {
       strikeTerrainCell,
       repairCell,
       takeApartCell,
+      igniteTerrainCell,
       bindings,
     }: {
       readonly strikeTerrainCell: (cell: Vec3, blow: Blow) => boolean;
       readonly repairCell: (cell: Vec3) => string | undefined;
       readonly takeApartCell: (cell: Vec3) => string | undefined;
+      readonly igniteTerrainCell: (cell: Vec3, strength: number) => boolean;
       readonly bindings: BindingRegistry;
     },
   ) {
@@ -57,6 +60,7 @@ export class BuildMode {
     this.strikeTerrainCell = strikeTerrainCell;
     this.repairCell = repairCell;
     this.takeApartCell = takeApartCell;
+    this.igniteTerrainCell = igniteTerrainCell;
     this.bindings = bindings;
     bindings.subscribe(() => this.draw());
     this.body = body;
@@ -143,6 +147,16 @@ export class BuildMode {
     return hit ? this.takeApartCell(hit.block) : undefined;
   }
 
+  ignite(eye: Vec3, dir: Vec3): boolean {
+    const { config, registry, isOpaque } = this.engine;
+    if (!(config.debug && this.on)) {
+      return false;
+    }
+    const tuning = playerTuning(registry).debugBlockTool;
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, isOpaque);
+    return hit ? this.igniteTerrainCell(hit.block, tuning.ignitionStrength) : false;
+  }
+
   strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {
     const { config, registry, simulationWorld: world, isOpaque } = this.engine;
     if (!(config.debug && this.on)) {
@@ -190,6 +204,8 @@ export class BuildMode {
           durability: decimalText(material.durability),
           stepKey: this.bindings.label('debug.build-damage'),
           destroyKey: this.bindings.label('debug.build-destroy'),
+          igniteKey: this.bindings.label('debug.build-ignite'),
+          fire: world.fire.has(hit.block) ? actionText(registry).debugBuild.burning : '',
         })
       : (block?.name ?? '');
   }

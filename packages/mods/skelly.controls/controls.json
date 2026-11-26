@@ -655,6 +655,15 @@
       ]
     },
     {
+      "id": "debug.build-ignite",
+      "keys": [
+        {
+          "code": "KeyX",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "debug.build-destroy",
       "keys": [
         {

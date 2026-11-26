@@ -1221,6 +1221,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let noclip = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
     strikeTerrainCell: (cell, blow) => hooks.strikeTerrainCell(cell, blow) !== undefined,
+    igniteTerrainCell: hooks.igniteTerrainCell,
     repairCell: hooks.repairCell,
     takeApartCell: hooks.takeApartCell,
     bindings: inputBindings,
@@ -1907,11 +1908,18 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       noticeTakeApartRefusal();
       return true;
     }
-    if (action !== 'debug.build-damage' && action !== 'debug.build-destroy') {
+    return handleBuildTerrainAction(action);
+  }
+  function handleBuildTerrainAction(action: string): boolean | undefined {
+    if (!['debug.build-damage', 'debug.build-destroy', 'debug.build-ignite'].includes(action)) {
       return undefined;
     }
     if (crosshairRay?.active) {
-      build.strike(action === 'debug.build-damage' ? 'step' : 'destroy', crosshairRay.eye, crosshairRay.dir);
+      if (action === 'debug.build-ignite') {
+        build.ignite(crosshairRay.eye, crosshairRay.dir);
+      } else {
+        build.strike(action === 'debug.build-damage' ? 'step' : 'destroy', crosshairRay.eye, crosshairRay.dir);
+      }
     }
     return true;
   }

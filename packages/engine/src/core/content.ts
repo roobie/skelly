@@ -3069,7 +3069,26 @@ const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void
   }
 };
 
+const checkBurnResults = (registry: Registry, report: Report): void => {
+  for (const material of registry.blockMaterials.values()) {
+    if (!material.flammability) {
+      continue;
+    }
+    const result = registry.blocks[registry.blockIds.get(material.flammability.burnsTo) ?? -1];
+    const char = result && registry.blockMaterials.get(result.material);
+    if (!result?.solid || char?.span !== 0) {
+      report(
+        'blockMaterials',
+        material.id,
+        '.flammability.burnsTo',
+        'burn-out needs a solid block with zero material span',
+      );
+    }
+  }
+};
+
 const checkBlockMaterials = (registry: Registry, report: Report): void => {
+  checkBurnResults(registry, report);
   for (const block of registry.blocks.slice(1)) {
     if (!registry.blockMaterials.has(block.material)) {
       report('blocks', block.id, '.material', `no block material "${block.material}"`);
