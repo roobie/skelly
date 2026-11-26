@@ -1,17 +1,17 @@
 // The plant the holdout restores and the stores that keep its spares (`packages/deadvox/docs/holdout.md`, "Supplies
 // and progression"). The lamp is fixed beside the module, so whether the module produces shows from the door.
 local context = { usage: ['Industrial'], tier: 'Tier1' };
-local hall(id, size, palette, floor, rooms, top, entrance) = {
+local hall(id, size, palette, floor, rooms, top, entrance, joists=null) = {
   id: id,
   lootContext: context,
   size: size,
   palette: { '.': 'air', '#': 'brick', J: 'steel_joist', k: 'concrete', D: { furniture: 'wood_door' } } + palette,
-  layers: [floor] + rooms + [top, floor],
+  layers: [floor] + rooms + [top] + (if joists == null then [] else [joists]) + [floor],
   access: { ground: 'ground', entrance: entrance, storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
 };
 local plant = hall(
   'holdout_power_plant',
-  [12, 6, 9],
+  [12, 7, 9],
   {
     T: { furniture: 'turbo_generator', facing: 's', fixed: true },
     E: { furniture: 'electric_lamp', fixed: true },
@@ -34,22 +34,33 @@ local plant = hall(
     '#.TTTT.....#',
     '#..........#',
     '#..........#',
-    '#.....#....#',
+    '#..#.......#',
     '#..........#',
     '#####DD#####',
   ] for _ in std.range(1, 3)],
   [
     '############',
     '#..........#',
-    '#JJJJJJJJJJ#',
+    '#.....#....#',
     '#..........#',
     '#..........#',
     '#..........#',
-    '#JJJJJJJJJJ#',
+    '#..#.......#',
     '#..........#',
     '#####DD#####',
   ],
-  [5, 1, 7],
+  [6, 1, 7],
+  joists=[
+    'JJJJJJJJJJJJ',
+    'J..........J',
+    'JJJJJJJJJJJJ',
+    'J..........J',
+    'J..........J',
+    'J..........J',
+    'JJJJJJJJJJJJ',
+    'J..........J',
+    'JJJJJ..JJJJJ',
+  ],
 );
 // One of each failure's spare, what makes another and the tools that fit them, so a stores reached is a plant restored.
 local spares = [

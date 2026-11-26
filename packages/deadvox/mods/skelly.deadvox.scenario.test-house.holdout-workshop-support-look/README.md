@@ -12,8 +12,9 @@ The fixture starts at noon beside the Holdout power plant, workshop office and w
 
 ## Check by eye and by play
 
-- Look up inside each building: steel joists sit directly below the roof and run between its bearing walls.
-- Walk through each doorway and around the furnishings: the joists are above the usable room and the entrance remains clear.
+- Look up inside each building: steel joists sit above standing height, directly below the roof, and run between its bearing walls.
+- In the plant hall, find the two brick piers that bear the joists; walk from the double door around them to the generator and lamp.
+- Walk through each doorway and around the furnishings: the joists leave standing headroom and the entrance remains clear.
 - Check that all three roofs remain intact while the building is loaded.
 
 `packages/deadvox/test/buildingSupport.test.ts`, "reports support and rural eligibility for every Holdout admission candidate", proves that the templates hold on natural ground.
