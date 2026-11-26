@@ -160,6 +160,28 @@ describe('keyboard registry', () => {
       }
     },
   );
+  it('toggles the inventory from an interruption prompt instead of leaving the key to the browser', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'interrupted', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    const remove = keyboard.install();
+    try {
+      const press = new KeyboardEvent('keydown', {
+        ...keyInit(bindings.chords('ui.inventory-toggle')[0]!),
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(press);
+      expect(press.defaultPrevented).toBe(true);
+      expect(commands.filter(({ phase }) => phase === 'down').map(({ action }) => action)).toEqual([
+        'ui.inventory-toggle',
+      ]);
+    } finally {
+      remove();
+    }
+  });
   it('leaves to a focused control the Enter or Space it activates on, and binds the rest', () => {
     const activation: readonly Binding[] = ['Enter', 'Space'].map((code) => ({
       id: `fixture.${code}`,

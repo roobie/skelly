@@ -54,7 +54,7 @@ Craft completion awards practice; take-apart work does not. Recipe knowledge is 
 
 ## Long actions and interruptions
 
-Movement and gameplay action input are ignored while resting, sleeping or crafting. Reading is the exception described above: movement closes the page and passes through. Each action keeps its own stop, cancel and wake behavior; an emitted interruption, such as a hit or critical need, drops compression and is handled by the action owner. A nearby or aware hostile alone neither refuses nor interrupts a long action. The player judges whether the area is safe.
+Movement and gameplay action input are ignored while resting, sleeping or crafting. Reading is the exception described above: movement closes the page and passes through. Each action keeps its own stop, cancel and wake behavior; an emitted interruption, such as a hit or critical need, drops compression and is handled by the action owner. A nearby or aware hostile alone neither refuses nor interrupts a long action. The player judges whether the area is safe. The inventory opens from an interruption prompt, because what stopped the action, such as a torch cartridge run dry, is often answered from the inventory, and a key the prompt left unbound would fall to the browser and take focus from the game.
 
 Wait stops on movement. Rest can be cancelled through its anchor or its cancel action; movement does not stop it. Sleep starts at sleepable furniture; movement and its cancel action do not stop it, but an emitted interruption wakes the player. Craft uses its cancel action and resumes after interruption. See `packages/engine/src/core/longAction.ts`, `LongActions.syncInterruption`, and `packages/engine/src/core/sim.ts`, `Simulation.checkInterruptions`.
 

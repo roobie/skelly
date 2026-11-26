@@ -153,7 +153,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
       ],
     },
   ),
-  row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory']),
+  row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory', 'interrupted']),
   ...INVENTORY_TAB_BINDINGS.map(({ action, description }) => row(action, description, [...moving, 'inventory'])),
   row('ui.main-menu-toggle', 'Main menu', entered, 'press', { text: true }),
   row('hud.toggle', 'Hold to hide or show the HUD', entered, 'hold', { holdMs: HUD_TOGGLE_HOLD_MS }),
