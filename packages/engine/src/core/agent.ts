@@ -800,8 +800,8 @@ export class AgentController {
    * electricity"); a type of strength 0 never bashes. An actor whose blow lands stays at the piece instead of sliding
    * or wandering off along the wall.
    *
-   * The way-past probe walks a body ahead per heading, so it asks first whether a bashable piece is ahead at all
-   * (#1957): bare terrain never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
+   * The way-past probe walks a body ahead per heading, so it asks first whether a bashable obstacle is ahead at all
+   * (#1957): open air never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
    * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
    * frame probing. That wait gates only the probe, never the blow: a bashable piece ahead still takes its blows on
    * the attack cooldown alone, whatever the interval. A change to the obstruction near the actor — a piece placed,
@@ -844,7 +844,7 @@ export class AgentController {
       // into a target. A committed actor (slide and wander cleared by the blow that landed) is not held here.
       return;
     }
-    const outcome = bashObstacle(ahead, type.strength);
+    const outcome = bashObstacle(ahead, type.strength, type.bashKind);
     if (!outcome) {
       return;
     }

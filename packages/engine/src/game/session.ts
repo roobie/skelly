@@ -143,7 +143,7 @@ import {
   vehicleDistance,
 } from '../core/reach.ts';
 import type { ReadRequest } from '../core/readable.ts';
-import { worldRubbleClearing } from '../core/rubble.ts';
+import { standingRubble, worldRubbleClearing } from '../core/rubble.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
@@ -170,7 +170,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
-import { cascadeSupport, strikeTerrain } from '../core/terrainStrike.ts';
+import { cascadeSupport, strikeTerrain, type TerrainStrikeResult } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -1756,19 +1756,10 @@ export const createSession = (options: SessionOptions) => {
   const tearPiece = (piece: BlockEntity): void => {
     bashPiece(piece, entities.defOf(piece).breach.durability);
   };
-  const canopyRefusal = (refusal: boolean): void => {
-    if (refusal) {
-      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
-    }
-  };
-  const strikeTerrainCell = (
-    cell: Vec3,
-    blow: BlockBlow,
-    { sound = true, refusal = true }: { readonly sound?: boolean; readonly refusal?: boolean } = {},
-  ): boolean => {
+  const applyTerrainStrike = (cell: Vec3, blow: BlockBlow, sound = true): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
-      return false;
+      return undefined;
     }
     const block = registry.blocks[context.terrain.getBlock(...cell)];
     const result = strikeTerrain(
@@ -1782,11 +1773,10 @@ export const createSession = (options: SessionOptions) => {
       blow,
     );
     if (!result) {
-      return false;
+      return undefined;
     }
     if (result.cause === 'canopy') {
-      canopyRefusal(refusal);
-      return true;
+      return result;
     }
     if (result.outcome === 'broken') {
       options.onTerrainEdited?.(result.edited);
@@ -1797,7 +1787,40 @@ export const createSession = (options: SessionOptions) => {
     if (block?.solid && sound) {
       playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
     }
-    return true;
+    return result;
+  };
+  /** The player's terrain blow; only the player hears why a trunk holding canopy refuses it. */
+  const strikeTerrainCell = (
+    cell: Vec3,
+    blow: BlockBlow,
+    { sound = true, refusal = true }: { readonly sound?: boolean; readonly refusal?: boolean } = {},
+  ): boolean => {
+    const result = applyTerrainStrike(cell, blow, sound);
+    if (refusal && result?.cause === 'canopy') {
+      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
+    }
+    return result !== undefined;
+  };
+  /** The first solid, non-rubble terrain cell touching an actor's obstacle probe. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The body-volume scan must examine every cell on three axes.
+  const terrainCellTouching = (probe: Body): Vec3 | undefined => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return undefined;
+    }
+    const halfDepth = probe.halfDepth ?? probe.halfWidth;
+    for (let x = Math.floor(probe.pos[0] - probe.halfWidth); x <= Math.floor(probe.pos[0] + probe.halfWidth); x++) {
+      for (let y = Math.floor(probe.pos[1]); y <= Math.floor(probe.pos[1] + probe.height); y++) {
+        for (let z = Math.floor(probe.pos[2] - halfDepth); z <= Math.floor(probe.pos[2] + halfDepth); z++) {
+          const cell: Vec3 = [x, y, z];
+          const block = registry.blocks[context.terrain.getBlock(...cell)];
+          if (block?.solid && !standingRubble(world, registry, cell) && boxIntersectsBody(cell, [1, 1, 1], probe)) {
+            return cell;
+          }
+        }
+      }
+    }
+    return undefined;
   };
   inventory.buried = () => body.buried !== undefined;
   const collapseSolid = (x: number, y: number, z: number): boolean =>
@@ -1953,8 +1976,20 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     }),
     meleeBlocker,
-    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
-    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashObstacle: (ahead, strength, kind) => {
+      const piece = entities.pieceTouching(ahead);
+      if (piece) {
+        return bashPiece(piece, strength);
+      }
+      const cell = terrainCellTouching(ahead);
+      if (!cell) {
+        return;
+      }
+      const outcome = applyTerrainStrike(cell, { strength, kind })?.outcome;
+      // A refused terrain break leaves the obstacle intact without a landed blow, so the actor keeps looking for a way.
+      return outcome === 'refused' ? undefined : outcome;
+    },
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined || terrainCellTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
