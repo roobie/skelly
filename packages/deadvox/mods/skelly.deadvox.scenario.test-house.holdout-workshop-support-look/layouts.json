@@ -100,12 +100,12 @@
           "template": "holdout_power_plant"
         },
         {
-          "position": [28, 20.5, 14],
+          "position": [30, 20.5, 14],
           "rotation": 0,
           "template": "workshop_office"
         },
         {
-          "position": [36, 20.5, 14],
+          "position": [38, 20.5, 14],
           "rotation": 0,
           "template": "workshop_parts_store"
         },
@@ -124,7 +124,7 @@
       },
       "player": {
         "bearing": 0,
-        "position": [23, 21, 20]
+        "position": [24, 21, 23]
       },
       "showroom": {
         "capacity": 3,
