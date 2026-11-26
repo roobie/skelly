@@ -14,6 +14,7 @@ import {
 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { bluntBlowLanding } from './pieceBlows.ts';
 
 const registry = baseRegistry();
 const defs = [...registry.furniture.values()];
@@ -102,7 +103,7 @@ it('lists the pieces of each column as a full scan does through adds, moves, rem
   expect(entities.byUid(far.uid)).toBeUndefined();
   expect(indexMismatches(entities)).toEqual([]);
 
-  expect(entities.bash(seamDoor, { strength: doorDef.breach.durability, kind: 'blunt' })).toBe('broken');
+  expect(entities.bash(seamDoor, bluntBlowLanding(registry, doorDef.id, doorDef.breach.durability))).toBe('broken');
   expect(indexMismatches(entities)).toEqual([]);
 
   entities.lift(raised);

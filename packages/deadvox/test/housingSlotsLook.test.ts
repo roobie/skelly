@@ -11,6 +11,7 @@ import { expect, it } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { bluntBlowLanding } from './pieceBlows.ts';
 
 const mod = 'skelly.deadvox.scenario.test-house.housing-slots-look';
 const selected = withReusedBuilds(() => selectBundledMods(productModIntake, [mod]));
@@ -169,7 +170,9 @@ it('stages worn modules one blow from ruin: the open one falls to piles with its
     const parts = inventory.entities.housingView(piece).filter(({ part }) => part);
     clock.now += 1;
     const { minimumStrength } = inventory.entities.defOf(piece).breach;
-    expect(inventory.entities.bash(piece, { strength: minimumStrength, kind: 'blunt' })).toBe('ruined');
+    expect(inventory.entities.bash(piece, bluntBlowLanding(inventory.registry, piece.type, minimumStrength))).toBe(
+      'ruined',
+    );
     return { piece, parts, destroyed: ruinFurniture(mover, piece) };
   });
   const open = outcomes.find(({ destroyed }) => destroyed)!;
