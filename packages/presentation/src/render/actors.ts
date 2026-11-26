@@ -155,7 +155,7 @@ export class ActorMeshes {
   ): void {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
-    const actors = [...store.entries()].map(([id, actor]) => {
+    const actors = [...store.entries()].filter(([, actor]) => !actor.body.buried).map(([id, actor]) => {
       const previousTime = actor.renderPrevious.time;
       const actorBackgroundBlend =
         simulationTime !== undefined && previousTime !== undefined

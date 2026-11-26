@@ -2600,6 +2600,9 @@ export class MobActorMeshes implements ActorRenderer {
     this.advanceCrawlFalls(realDt);
     const present = new Set<EntityId>();
     for (const [id, actor] of store.entries()) {
+      if (actor.body.buried) {
+        continue;
+      }
       present.add(id);
       const actorBackgroundBlend = backgroundActorBlend(actor, simulationTime, this.backgroundBlend);
       this.renderBlend = actor.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
