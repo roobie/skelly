@@ -272,11 +272,15 @@ const dependantQueue = (mover: FurnitureMover, roots: readonly BlockEntity[], ru
   return { candidates, gather };
 };
 
-const fallDestination = (mover: FurnitureMover, shadow: Shadow, entity: BlockEntity, ruin: boolean) => {
-  const y = ruin && fastened(mover.inventory, entity) ? undefined : shadow.landing(entity.pos, entity.size);
+const fallDestination = (
+  mover: FurnitureMover,
+  shadow: Shadow,
+  { entity, ruin, from = entity.pos }: { entity: BlockEntity; ruin: boolean; from?: Readonly<Vec3> },
+) => {
+  const y = ruin && fastened(mover.inventory, entity) ? undefined : shadow.landing(from, entity.size);
   return {
     y,
-    refusal: y === undefined ? messagesOf(mover.inventory).nowhereToLand : fallRefusal(mover, entity, y),
+    refusal: y === undefined ? messagesOf(mover.inventory).nowhereToLand : fallRefusal(mover, entity, y, from),
   };
 };
 
@@ -292,18 +296,35 @@ const settle = (
   mover: FurnitureMover,
   shadow: Shadow,
   lifted: BlockEntity | readonly BlockEntity[],
-  { ruin = false, movedTo }: { ruin?: boolean; movedTo?: Vec3 } = {},
+  { ruin = false, movedTo, falling = false }: { ruin?: boolean; movedTo?: Vec3; falling?: boolean } = {},
 ): Settled | string => {
   const roots = 'uid' in lifted ? [lifted] : lifted;
   const vacated = new Set<string>();
   for (const piece of roots) {
     vacate(shadow, vacated, piece);
   }
-  if (movedTo) {
+  if (movedTo && !falling) {
     shadow.fill(roots[0]!, movedTo, true);
   }
-  // Only a piece over a vacated cell can fall, and it shares that cell's column, so candidates come from the columns
-  // of what moved. A fall adds its own columns; the pieces that brings in stand above it, so the lowest-first order holds.
+  const settled = settleDependants(mover, shadow, { roots, ruin, vacated });
+  if (typeof settled === 'string') {
+    return settled;
+  }
+  if (movedTo && falling) {
+    const refusal = settleFallingRoot(mover, shadow, { entity: roots[0]!, to: movedTo, ruin, falls: settled.falls });
+    if (refusal) {
+      return refusal;
+    }
+  }
+  return settled;
+};
+
+/** Only pieces over a vacated cell settle; each new fall adds its columns for the next lower-first candidate. */
+const settleDependants = (
+  mover: FurnitureMover,
+  shadow: Shadow,
+  { roots, ruin, vacated }: { roots: readonly BlockEntity[]; ruin: boolean; vacated: Set<string> },
+): Settled | string => {
   const { candidates, gather } = dependantQueue(mover, roots, ruin);
   const falls: Fall[] = [];
   const ruined: BlockEntity[] = [];
@@ -313,7 +334,7 @@ const settle = (
       continue;
     }
     vacate(shadow, vacated, entity);
-    const { y, refusal } = fallDestination(mover, shadow, entity, ruin);
+    const { y, refusal } = fallDestination(mover, shadow, { entity, ruin });
     if (refusal && !ruin) {
       return refusal;
     }
@@ -328,10 +349,29 @@ const settle = (
   return { falls, ruined };
 };
 
+const settleFallingRoot = (
+  mover: FurnitureMover,
+  shadow: Shadow,
+  { entity, to, ruin, falls }: { entity: BlockEntity; to: Vec3; ruin: boolean; falls: Fall[] },
+): string | undefined => {
+  const { y, refusal } = fallDestination(mover, shadow, { entity, ruin, from: to });
+  if (refusal || y === undefined) {
+    return refusal ?? messagesOf(mover.inventory).nowhereToLand;
+  }
+  shadow.fill(entity, [to[0], y, to[2]], true);
+  falls.unshift({ entity, y });
+  return undefined;
+};
+
 /** Why a piece can't fall to a height: someone is in its path. */
-const fallRefusal = (mover: FurnitureMover, entity: BlockEntity, y: number): string | undefined => {
-  const path: Vec3 = [entity.pos[0], y, entity.pos[2]];
-  const pathSize: Vec3 = [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]];
+const fallRefusal = (
+  mover: FurnitureMover,
+  entity: BlockEntity,
+  y: number,
+  from: Readonly<Vec3> = entity.pos,
+): string | undefined => {
+  const path: Vec3 = [from[0], y, from[2]];
+  const pathSize: Vec3 = [entity.size[0], from[1] + entity.size[1] - y, entity.size[2]];
   return fallingBoxRefusal(mover, path, pathSize);
 };
 
@@ -820,6 +860,14 @@ const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | unde
   return supportRefusal(mover, entity, true);
 };
 
+const floorState = (mover: FurnitureMover, pos: Readonly<Vec3>, size: Readonly<Vec3>): 'whole' | 'partial' | 'none' => {
+  const floor = footprint(pos, size).map(([x, y, z]) => mover.terrainSolid(x, y - 1, z));
+  if (floor.every(Boolean)) {
+    return 'whole';
+  }
+  return floor.some(Boolean) ? 'partial' : 'none';
+};
+
 /** Plans before committing, so a refused floor step never disturbs the stack or its loose items. */
 export const slideFurniture = (
   mover: FurnitureMover,
@@ -845,18 +893,20 @@ export const slideFurniture = (
   if (!shadow.free(pos, entity.size)) {
     return messages.noRoom;
   }
-  if (
-    ![...footprint(entity.pos, entity.size), ...footprint(pos, entity.size)].every(([x, y, z]) =>
-      mover.terrainSolid(x, y - 1, z),
-    )
-  ) {
+  if (floorState(mover, entity.pos, entity.size) !== 'whole') {
     return messages.floorOnly;
   }
-  const standing = standRefusal(mover, shadow, pos, entity);
-  if (standing) {
-    return standing;
+  const targetFloor = floorState(mover, pos, entity.size);
+  if (targetFloor === 'partial') {
+    return messages.floorOnly;
   }
-  const settled = settle(mover, shadow, entity, { movedTo: pos });
+  if (targetFloor === 'whole') {
+    const standing = standRefusal(mover, shadow, pos, entity);
+    if (standing) {
+      return standing;
+    }
+  }
+  const settled = settle(mover, shadow, entity, { movedTo: pos, falling: targetFloor === 'none' });
   if (typeof settled === 'string') {
     return settled;
   }
@@ -866,7 +916,7 @@ export const slideFurniture = (
     { pos, size: entity.size },
     ...falls.flatMap(({ entity: fallen, y }) => [
       fallen,
-      { pos: [fallen.pos[0], y, fallen.pos[2]] as Vec3, size: fallen.size },
+      { pos: (fallen === entity ? [pos[0], y, pos[2]] : [fallen.pos[0], y, fallen.pos[2]]) as Vec3, size: fallen.size },
     ]),
   ];
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, boxes));
