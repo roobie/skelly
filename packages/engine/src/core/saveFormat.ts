@@ -720,7 +720,11 @@ const longAction = obj({
     union(
       longJob(enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment', 'wait', 'vehicleWork'])),
       longJob(enumeration(['forceDoor']), { method: str({ id: true }) }),
-      longJob(enumeration(['cutCell']), { cell: tuple(safeInt, safeInt, safeInt), sinceStrike: nonNegative }),
+      longJob(enumeration(['cutCell']), {
+        cell: tuple(safeInt, safeInt, safeInt),
+        strikeIntervalSimSeconds: positive,
+        sinceStrike: nonNegative,
+      }),
     ),
   ),
   wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),

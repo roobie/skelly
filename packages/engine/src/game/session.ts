@@ -3336,7 +3336,7 @@ export const createSession = (options: SessionOptions) => {
     /** Starts cutting a terrain cell with a carried tool, or says why not. */
     cutCell: (cell: Vec3, toolUid?: number) => {
       const plan = cellCutPlan(inventory, world, cell, toolUid);
-      return plan.ok ? sim.actions.beginCutting(cell, plan.tool.uid, plan.strikeInterval) : plan.reason;
+      return plan.ok ? sim.actions.beginCutting(cell, plan.tool.uid, plan.strikeIntervalSimSeconds) : plan.reason;
     },
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */

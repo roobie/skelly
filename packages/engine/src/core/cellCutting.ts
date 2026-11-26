@@ -22,8 +22,7 @@ export type CellCutPlan =
       ok: true;
       tool: Item;
       blow: Blow;
-      /** Sim seconds between strikes. */
-      strikeInterval: number;
+      strikeIntervalSimSeconds: number;
       strikeSound: SoundId;
       /** Canister fill one strike spends from `tool`. */
       strikeFuel: number;
@@ -50,7 +49,7 @@ const strikeOf = (registry: Registry, tool: Item) => {
   return (
     cut && {
       blow: { strength: cut.strength, kind: cut.damageKind },
-      strikeInterval: cut.strikeIntervalSimSeconds,
+      strikeIntervalSimSeconds: cut.strikeIntervalSimSeconds,
       strikeSound: cut.strikeSound,
       strikeFuel: workFuel(registry, tool, cut.strikeIntervalSimSeconds),
     }

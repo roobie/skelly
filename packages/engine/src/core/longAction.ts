@@ -61,7 +61,7 @@ export type LongJob =
       last: number;
       cell: [number, number, number];
       toolUid: number;
-      strikeInterval: number;
+      strikeIntervalSimSeconds: number;
       /** Sim seconds since the last strike; the cut's progress is the cell's retained damage, not kept here. */
       sinceStrike: number;
     }
@@ -263,11 +263,11 @@ const validateCutting = (job: Extract<LongJob, { jobType: 'cutCell' }>): void =>
       Number.isSafeInteger(job.toolUid)
     ) ||
     job.toolUid < 1 ||
-    !Number.isFinite(job.strikeInterval) ||
-    job.strikeInterval <= 0 ||
+    !Number.isFinite(job.strikeIntervalSimSeconds) ||
+    job.strikeIntervalSimSeconds <= 0 ||
     !Number.isFinite(job.sinceStrike) ||
     job.sinceStrike < 0 ||
-    job.sinceStrike >= job.strikeInterval
+    job.sinceStrike >= job.strikeIntervalSimSeconds
   ) {
     throw new Error('Invalid cutting descriptor');
   }
@@ -675,7 +675,7 @@ export class LongActions {
     const sinceStrike =
       previous?.jobType === 'cutCell' &&
       previous.toolUid === toolUid &&
-      previous.strikeInterval === strikeIntervalSimSeconds &&
+      previous.strikeIntervalSimSeconds === strikeIntervalSimSeconds &&
       previous.cell.every((value, axis) => value === cell[axis])
         ? previous.sinceStrike
         : 0;
@@ -687,7 +687,7 @@ export class LongActions {
       last: this.sim.time,
       cell: [cell[0], cell[1], cell[2]],
       toolUid,
-      strikeInterval: strikeIntervalSimSeconds,
+      strikeIntervalSimSeconds,
       sinceStrike,
     };
     return undefined;
@@ -1069,8 +1069,8 @@ export class LongActions {
   private advanceCutting(job: Extract<LongJob, { jobType: 'cutCell' }>, seconds: number): boolean {
     let since = job.sinceStrike + seconds;
     // Tick lengths sum with rounding error, so a strike due within the scheduler's epsilon lands now.
-    while (since >= job.strikeInterval - SCHEDULER_TIME_EPSILON) {
-      since = Math.max(0, since - job.strikeInterval);
+    while (since >= job.strikeIntervalSimSeconds - SCHEDULER_TIME_EPSILON) {
+      since = Math.max(0, since - job.strikeIntervalSimSeconds);
       const result = this.cutting!.strike(job.cell, job.toolUid);
       if (result === 'cut') {
         return true;
