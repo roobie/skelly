@@ -76,7 +76,7 @@ local plot(id, outhouse, garage, cellar) =
       kitchen: { kind: 'standing', at: at(15, 1, 12) },
       woodshed: { kind: 'standing', at: yard(16, 1, 19) },
       toilet: { kind: 'standing', at: if outhouse then yard(16, 1, 29) else at(11, 1, 11) },
-    } + (if cellar then { cellar: { kind: 'standing', at: [8, 1, 10] } } else {}),
+    } + (if cellar then { cellar: { kind: 'standing', at: [9, 1, 10] } } else {}),
     ports: [],
     access: {
       ground: 'ground',
