@@ -64,7 +64,16 @@ import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { advanceEventRules } from '../core/eventRules.ts';
-import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import {
+  blastCells,
+  blastShare,
+  bodyCentre,
+  type ExplosiveSpec,
+  Fuses,
+  fragmentDirections,
+  fragmentHitsOnBody,
+  inSight,
+} from '../core/explosive.ts';
 import { isLongGun } from '../core/firearmFitting.ts';
 import {
   type FirearmsCombatTuning,
@@ -1695,17 +1704,28 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
+  const worldSoundFor = (sound: boolean): ((event: SoundId, position: Vec3) => void) =>
+    sound ? playNoisyWorldSound : () => undefined;
+  const bashPieceSound = (target: BlockEntity, sound: boolean): void => {
+    if (sound) {
+      playNoisyWorldSound(
+        registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
+        boxCentre(target.pos, target.size),
+      );
+    }
+  };
   const bashPiece = (
     target: BlockEntity | undefined,
     strength: number,
     part?: FurniturePart,
+    sound = true,
   ): BashOutcome | undefined => {
     if (target && blowLandsOnPane(entities, target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
         {
           entities,
-          sound: playNoisyWorldSound,
+          sound: worldSoundFor(sound),
           emitItem: (type, count) => {
             const alongX = target.facing === 'n' || target.facing === 's';
             const normal = alongX ? 2 : 0;
@@ -1724,10 +1744,7 @@ export const createSession = (options: SessionOptions) => {
     if (!(target && outcome)) {
       return undefined;
     }
-    playNoisyWorldSound(
-      registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
-      boxCentre(target.pos, target.size),
-    );
+    bashPieceSound(target, sound);
     if (outcome === 'ruined') {
       for (const piece of ruinFurniture(furnitureMover(), target) ?? []) {
         forgetPiece(piece);
@@ -1739,7 +1756,7 @@ export const createSession = (options: SessionOptions) => {
   const tearPiece = (piece: BlockEntity): void => {
     bashPiece(piece, entities.defOf(piece).breach.durability);
   };
-  const applyTerrainStrike = (cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
+  const applyTerrainStrike = (cell: Vec3, blow: BlockBlow, sound = true): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
       return undefined;
@@ -1767,15 +1784,19 @@ export const createSession = (options: SessionOptions) => {
     for (const destroyed of result.destroyed) {
       forgetPiece(destroyed);
     }
-    if (block?.solid) {
+    if (block?.solid && sound) {
       playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
     }
     return result;
   };
   /** The player's terrain blow; only the player hears why a trunk holding canopy refuses it. */
-  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
-    const result = applyTerrainStrike(cell, blow);
-    if (result?.cause === 'canopy') {
+  const strikeTerrainCell = (
+    cell: Vec3,
+    blow: BlockBlow,
+    { sound = true, refusal = true }: { readonly sound?: boolean; readonly refusal?: boolean } = {},
+  ): boolean => {
+    const result = applyTerrainStrike(cell, blow, sound);
+    if (refusal && result?.cause === 'canopy') {
       (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
     }
     return result !== undefined;
@@ -2173,6 +2194,41 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
+  const explosiveTerrainTargets = (at: Vec3, spec: ExplosiveSpec, directions: readonly Vec3[]) => {
+    const cells = [...blastCells({ origin: at, blast: spec.blast, blockSize: s, isSolid: apertureTerrain })].map(
+      ({ cell, share }) => ({ cell, strength: spec.blast.materialStrength * share, kind: 'blast' as const }),
+    );
+    const fragments = directions.flatMap((direction) => {
+      const hit = raycast(at, direction, spec.fragments.rangeMetres / s, apertureTerrain);
+      return hit ? [{ cell: hit.block, strength: spec.fragments.damage, kind: 'fragment' as const }] : [];
+    });
+    const pieces = [...entities.all].flatMap((piece) => {
+      const centre = boxCentre(piece.pos, piece.size);
+      const share = blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+      return share > 0 &&
+        inSight(at, centre, (x, y, z) => (entities.at(x, y, z) === piece ? false : physicalSolid(x, y, z)))
+        ? [{ piece, strength: spec.blast.materialStrength * share }]
+        : [];
+    });
+    return { cells: [...cells, ...fragments], pieces };
+  };
+  const strikeExplosiveTerrain = (targets: ReturnType<typeof explosiveTerrainTargets>, soundLimit: number): void => {
+    let sounds = 0;
+    const sound = () => sounds < soundLimit;
+    for (const { cell, strength, kind } of targets.cells) {
+      if (strikeTerrainCell(cell, { strength, kind }, { sound: sound(), refusal: false }) && sound()) {
+        sounds += 1;
+      }
+    }
+    for (const { piece, strength } of targets.pieces) {
+      if (entities.byUid(piece.uid) !== piece) {
+        continue;
+      }
+      if (bashPiece(piece, strength, undefined, sound()) && sound()) {
+        sounds += 1;
+      }
+    }
+  };
   /** The explosive is used up; the blast and its fragments hurt actors and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
@@ -2186,6 +2242,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
     const { damage, impulse, rangeMetres } = spec.fragments;
+    const terrainTargets = explosiveTerrainTargets(at, spec, directions);
     actorSystem.detonate({
       blast: spec.blast,
       fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
@@ -2207,6 +2264,7 @@ export const createSession = (options: SessionOptions) => {
     })) {
       sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
     }
+    strikeExplosiveTerrain(terrainTargets, spec.blast.strikeSoundLimit);
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
     admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });

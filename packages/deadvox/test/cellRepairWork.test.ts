@@ -365,7 +365,8 @@ it('stops a cell repair at the content default ceiling and refuses a cell standi
   finish(s, workUidOf(s.sim.actions.job));
   const after = s.world.blockDamage.get(CELL)!.damage;
   expect(damage - after, 'the ceiling held back part of the amount').toBeLessThan(AMOUNT);
-  expect(1 - after / durability).toBeGreaterThanOrEqual(ceiling);
+  // The repair lands on the ceiling itself, not just somewhere in its band: an overshoot is a failure.
+  expect(1 - after / durability).toBeCloseTo(ceiling, 9);
   expect(conditionWord(registry, 1 - after / durability)).toBe(conditionWord(registry, ceiling));
   expect(s.inventory.cellRepair!.refusal(CELL, epoch, BLOCK, { amount: AMOUNT, ceiling })).toBeDefined();
 });

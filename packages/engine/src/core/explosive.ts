@@ -96,6 +96,56 @@ export class Fuses {
 export const blastShare = ({ radiusMetres }: ExplosiveSpec['blast'], distanceMetres: number): number =>
   Math.max(0, 1 - distanceMetres / radiusMetres);
 
+export interface BlastCell {
+  readonly cell: Vec3;
+  readonly share: number;
+}
+
+/**
+ * Solid cells whose centres lie inside the blast's radius and which the blast can reach. The target cell is excluded
+ * from the sight blocker so its near face admits the blast while another solid still shields it.
+ */
+export function* blastCells({
+  origin,
+  blast,
+  blockSize,
+  isSolid,
+}: {
+  origin: Vec3;
+  blast: ExplosiveSpec['blast'];
+  blockSize: number;
+  isSolid: SolidAt;
+}): Generator<BlastCell> {
+  const radiusBlocks = blast.radiusMetres / blockSize;
+  const reach = Math.ceil(radiusBlocks);
+  for (let x = Math.floor(origin[0] - reach); x <= Math.floor(origin[0] + reach); x++) {
+    for (let y = Math.floor(origin[1] - reach); y <= Math.floor(origin[1] + reach); y++) {
+      for (let z = Math.floor(origin[2] - reach); z <= Math.floor(origin[2] + reach); z++) {
+        if (!isSolid(x, y, z)) {
+          continue;
+        }
+        const cell: Vec3 = [x, y, z];
+        const centre: Vec3 = [x + 0.5, y + 0.5, z + 0.5];
+        const sight: Vec3 = [
+          Math.max(x, Math.min(origin[0], x + 1)),
+          Math.max(y, Math.min(origin[1], y + 1)),
+          Math.max(z, Math.min(origin[2], z + 1)),
+        ];
+        const distanceBlocks = Math.hypot(centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]);
+        const share = blastShare(blast, distanceBlocks * blockSize);
+        if (
+          share > 0 &&
+          inSight(origin, sight, (sightX, sightY, sightZ) =>
+            sightX === x && sightY === y && sightZ === z ? false : isSolid(sightX, sightY, sightZ),
+          )
+        ) {
+          yield { cell, share };
+        }
+      }
+    }
+  }
+}
+
 /** A body's centre, in blocks. */
 export const bodyCentre = (body: Body): Vec3 => [body.pos[0], body.pos[1] + body.height / 2, body.pos[2]];
 
@@ -105,7 +155,12 @@ export const inSight = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   const distance = Math.hypot(...delta);
   return (
     distance === 0 ||
-    raycast(from, [delta[0] / distance, delta[1] / distance, delta[2] / distance], distance, isSolid) === undefined
+    raycast(
+      from,
+      [delta[0] / distance, delta[1] / distance, delta[2] / distance],
+      Math.max(0, distance - 1e-6),
+      isSolid,
+    ) === undefined
   );
 };
 
