@@ -1,6 +1,7 @@
 import { buildRegistry, type Registry, requireDayCycle } from '@skelly/engine/content';
 import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { bindReach } from '@skelly/engine/internal/core/reach.ts';
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
@@ -30,6 +31,9 @@ import lookManifest from '../mods/skelly.deadvox.scenario.test-house.rubble-look
   type: 'json',
 };
 import supportLookManifest from '../mods/skelly.deadvox.scenario.test-house.support-look/pack/manifest.json' with {
+  type: 'json',
+};
+import torchCutLookManifest from '../mods/skelly.deadvox.scenario.test-house.torch-cut-look/pack/manifest.json' with {
   type: 'json',
 };
 import windowKitLookManifest from '../mods/skelly.deadvox.scenario.test-house.window-kit-look/pack/manifest.json' with {
@@ -366,6 +370,21 @@ describe('authored debug scenario mod', () => {
         .map(([x, , z]) => `${Math.sign(x - aimed.cell[0])},${Math.sign(z - aimed.cell[2])}`),
     );
     expect(directions.size, JSON.stringify(dropped)).toBeGreaterThanOrEqual(2);
+  });
+
+  // The torch-cut look's whole staging is the joist end its start aims at: the torch in hand must cut it, and its loss
+  // must leave what the run carries unheld.
+  it('aims the torch-cut look start at a cell its torch cuts and whose loss drops what it carries', async () => {
+    const { registry, site, aimed, reachable, start } = await lookAim(torchCutLookManifest.id);
+    expect(reachable, 'aimed joist out of reach').toBe(true);
+    const held = start.kit.find(({ destination }) => destination.kind === 'hand')!;
+    const cut = registry.items.get(held.item)!.tool!.cut!;
+    const material = registry.blockMaterials.get(registry.blocks[aimed.block]!.material)!;
+    expect(bashBlock({ material, damage: 0 }, { strength: cut.strength, kind: cut.damageKind }).outcome).not.toBe(
+      'resisted',
+    );
+    const placement = site.placements.find((candidate) => placedBlockAt(candidate, aimed.cell) === aimed.block)!;
+    expect(droppedByBreaking(registry, placement, aimed)).not.toEqual([]);
   });
 
   it('stays out of the default packs and content unless selected', () => {

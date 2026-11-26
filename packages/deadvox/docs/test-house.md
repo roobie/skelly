@@ -145,6 +145,8 @@ The rubble look combines rubble and a cracked wall so one visit compares both ce
 
 The support look start is staging for judging a support cascade by eye: its own free-standing post holds a beam run and a floor that reach out from its top, and the start puts a sledgehammer in hand, because breaking the post is the whole check and the debug build tool's destroy key is the fallback. The prop is template content, so it may move or change material; what must hold is checked as the start's own property in `test/debugScenarioMod.test.ts`: the start's first aim meets a post cell whose loss leaves both runs unheld. Its checks are in the mod's README. See `mods/skelly.deadvox.scenario.test-house.support-look/layouts.jsonnet`, `test_house_support_post`.
 
+The torch-cut look start stages a wall-held joist run carrying a slab, with a fuelled torch in hand, because cutting the run's end cell and watching what it held fall is the whole check. Like the support look, its prop may move or change material; what must hold is checked as the start's own property in `test/debugScenarioMod.test.ts`: the start's first aim meets a cell the kit's torch cuts, whose loss leaves what it carries unheld. Its checks are in the mod's README. See `mods/skelly.deadvox.scenario.test-house.torch-cut-look/layouts.jsonnet`, `test_house_torch_cut`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker
