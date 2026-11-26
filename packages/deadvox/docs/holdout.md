@@ -57,6 +57,10 @@ A destination's envelope has one owner. A road transition docked at a gate belon
 lies inside the destination's envelope and not in the road between destinations. See
 `packages/engine/src/core/composeLayout.ts`, `containmentFailure`.
 
+A literal joins the destination catalogue only once the support proof holds it, because
+an unheld cell falls in a later cascade. Rural eligibility is a second gate, not permission
+to bypass that proof. `test/buildingSupport.test.ts`, "reports support and rural eligibility for every Holdout admission candidate", keeps the evidence current.
+
 ## Shelter plot
 
 The shelter is a whole damaged rural home plot, not an isolated house. Its yard and
