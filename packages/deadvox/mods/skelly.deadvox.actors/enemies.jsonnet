@@ -66,7 +66,7 @@ local bite = {
 };
 local shambler = {
   id: 'shambler', name: 'Shambler', cause: 'a shambler', model: 'humanoid', breathes: false,
-  figureSeeds: figureSeeds, strength: 5, canJumpObstacles: true, spawnWeight: 1,
+  figureSeeds: figureSeeds, strength: 5, bashKind: 'blunt', canJumpObstacles: true, spawnWeight: 1,
   footstepSound: 'shambler',
   sounds: { idle: 'shambler_idle', alert: 'shambler_alert', attack: 'shambler_attack', hurt: 'shambler_hurt' },
   regions: { head: 60, torso: 60, leftArm: 24, rightArm: 24, leftLeg: 24, rightLeg: 24 },
@@ -94,7 +94,7 @@ local actors = [
   shambler + { id: 'worker_shambler', name: 'Worker shambler', cause: 'a worker shambler', authoredOnly: true, loot: 'worker_pockets' },
   shambler + { id: 'medic_shambler', name: 'Medic shambler', cause: 'a medic shambler', authoredOnly: true, loot: 'medic_pockets' },
   shambler + {
-    id: 'brute_shambler', name: 'Brute shambler', cause: 'a brute shambler', figure: 'broad-humanoid', authoredOnly: true,
+    id: 'brute_shambler', name: 'Brute shambler', cause: 'a brute shambler', figure: 'broad-humanoid', strength: 12, authoredOnly: true,
     // Heavy-hit response belongs to this figure's content (`docs/stagger.md`, "Which types stagger").
     stagger:: null,
     regions: { head: 120, torso: 120, leftArm: 48, rightArm: 48, leftLeg: 48, rightLeg: 48 },

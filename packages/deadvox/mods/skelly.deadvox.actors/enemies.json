@@ -141,6 +141,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.29999999999999999
       },
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "capability": ["settlementHorde", "settlementWanderer"],
@@ -525,6 +526,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a military shambler",
@@ -908,6 +910,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a farmer shambler",
@@ -1291,6 +1294,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a worker shambler",
@@ -1674,6 +1678,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a medic shambler",
@@ -2057,6 +2062,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a brute shambler",
@@ -2293,7 +2299,7 @@
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stepLength": 0.80000000000000004,
-      "strength": 5
+      "strength": 12
     },
     {
       "abilities": [],
@@ -2436,6 +2442,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.25
       },
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a runner",
@@ -2781,6 +2788,7 @@
         "reach": 1.2,
         "windupSimSeconds": 0.40000000000000002
       },
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a crawler",
@@ -3134,6 +3142,7 @@
         "windupSimSeconds": 1
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "bodyScale": 4,
       "breathes": false,
       "canJumpObstacles": false,
@@ -3506,6 +3515,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "an acid zombie",

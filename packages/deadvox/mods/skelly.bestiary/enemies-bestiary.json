@@ -121,6 +121,7 @@
         "windupSimSeconds": 0.5
       },
       "authoredOnly": true,
+      "bashKind": "blunt",
       "breathes": false,
       "canJumpObstacles": true,
       "cause": "a leaper",

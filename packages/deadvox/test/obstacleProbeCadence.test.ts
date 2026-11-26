@@ -50,7 +50,10 @@ const chaseHeldUp = (
   entities: BlockEntities,
   solid: SolidAt,
   seconds: number,
-  overrides: { bashObstacle?: () => BashOutcome | undefined; type?: typeof SHAMBLER } = {},
+  overrides: {
+    bashObstacle?: (strength: number, kind: string) => BashOutcome | undefined;
+    type?: typeof SHAMBLER;
+  } = {},
 ) => {
   const blows: Body[] = [];
   const target: Vec3 = [5, 1, -3];
@@ -73,9 +76,9 @@ const chaseHeldUp = (
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: (ahead) => {
+    bashObstacle: (ahead, strength, kind) => {
       blows.push(ahead);
-      return overrides.bashObstacle?.();
+      return overrides.bashObstacle?.(strength, kind);
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
@@ -108,6 +111,19 @@ it('spaces a held-up chaser whose blow never lands one probe per content interva
   const interval = SHAMBLER.agent!.wander.wayAroundProbeIntervalSimSeconds;
   expect(probes).toBeGreaterThan(0);
   expect(probes).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
+});
+
+it('carries the actor’s authored blow kind to its obstacle owner', () => {
+  const kinds: string[] = [];
+  const { entities, solid } = doorway();
+  chaseHeldUp(entities, solid, SHAMBLER.attack!.cooldownSimSeconds + 1, {
+    type: { ...SHAMBLER, bashKind: 'cut' },
+    bashObstacle: (_strength, kind) => {
+      kinds.push(kind);
+      return 'damaged';
+    },
+  });
+  expect(kinds).toContain('cut');
 });
 
 it('keeps landed blows on the attack cooldown when the probe interval outlasts it', () => {

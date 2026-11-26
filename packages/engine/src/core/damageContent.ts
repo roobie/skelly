@@ -76,6 +76,7 @@ const checkItem = (item: ItemDef, checker: Checker, registry: Registry): void =>
 
 const checkActor = (actor: ActorDef, checker: Checker): void => {
   checker.keys('.damageResistance', actor.damageResistance);
+  checker.selected('.bashKind', actor.bashKind);
   actor.attack?.moves.forEach((move, i) => {
     checker.selected(`.attack.moves[${i}].damageKind`, move.damageKind);
   });

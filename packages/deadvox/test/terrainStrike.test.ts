@@ -49,6 +49,7 @@ const leafType = 'terrain_fixture_leaf';
 const floorType = 'terrain_fixture_floor';
 const rubbleType = 'terrain_fixture_rubble';
 const lampType = 'terrain_fixture_lamp';
+const grenadeType = 'frag_grenade';
 /** Hung under the struck block, which is its ceiling. */
 const lampPos: Vec3 = [cell[0], cell[1] - 1, cell[2]];
 const stockRoll = (condition: number) => ({ type: stock, count: 1, condition });
@@ -796,6 +797,18 @@ describe('supply-aware terrain destruction', () => {
     expect(f.inventory.entities.at(...lampPos)).toBeUndefined();
   });
 
+  it('passes over a ceiling mount that its blast ruined with the block it hangs from', () => {
+    const f = fixture({ lamp: true, resident: true, arrived: true });
+    const grenade = f.inventory.create(grenadeType);
+    f.session.fuses.togglePin(grenade);
+    expect(f.inventory.add(grenade, { kind: 'pile', pos: [lampPos[0], lampPos[1] - 1, lampPos[2]] })).toBe(true);
+    const fuse = f.registry.items.get(grenadeType)!.explosive!.fuseSimSeconds;
+    expect(() => f.session.sim.scheduler.advance(fuse + 0.5)).not.toThrow();
+    expect(f.inventory.itemByUid(grenade.uid)).toBeUndefined();
+    expect(f.world.getBlock(...cell)).not.toBe(f.floor);
+    expect(f.inventory.entities.at(...lampPos)).toBeUndefined();
+  });
+
   it('removes a floorless fixed leaf instead of merely opening it', () => {
     const f = fixture({ leaf: true });
     expect(f.strike()?.outcome).toBe('broken');
@@ -864,5 +877,125 @@ describe('supply-aware terrain destruction', () => {
         expect(f.world.blockDamage.get(target)?.damage).toBe(2);
       }
     }
+  });
+});
+
+/**
+ * An actor shut in a pocket of one-cell-thick terrain walls, authored into the terrain plan so they reach the
+ * session's collision shape, with the player pacing outside so footsteps give the actor a target past the wall.
+ */
+const pocket = (actorType: string, wallType: string) => {
+  const registry = fixtureRegistry();
+  const world = new World();
+  const floor = registry.blockIds.get(floorType)!;
+  const wall = registry.blockIds.get(wallType)!;
+  const [x0, x1, z0, z1, top] = [6, 9, 6, 9, 5];
+  const walls: BlockBox[] = [
+    { min: [x0, 1, z0], max: [x1 + 1, top, z0 + 1], block: wall },
+    { min: [x0, 1, z1], max: [x1 + 1, top, z1 + 1], block: wall },
+    { min: [x0, 1, z0 + 1], max: [x0 + 1, top, z1], block: wall },
+    { min: [x1, 1, z0 + 1], max: [x1 + 1, top, z1], block: wall },
+  ];
+  const terrain: TerrainPlan = {
+    seed: 7,
+    scale,
+    blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
+    shape: {
+      minHeightMetres: 0,
+      maxHeightMetres: 0,
+      beachBelowMetres: 0,
+      dirtDepthMetres: 1,
+      featureSizeMetres: 1,
+      octaves: 1,
+    },
+    site: { kind: 'natural' },
+    structures: walls,
+  };
+  const evaluator = createTerrainEvaluator(terrain);
+  const canonical = new CanonicalTerrain(world, evaluator);
+  const source: ColumnSource = {
+    furnitureIn: () => [],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    actorsIn: () => [],
+  };
+  let paces = 0;
+  const session = createSession({
+    registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
+    world,
+    scale,
+    seed: 7,
+    start: 43_200,
+    spawn: [(x0 + x1) / 2, 1, z1 + 4],
+    terrainDestruction: { terrain: canonical, source },
+    isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    ready: () => true,
+    controls: {
+      active: () => true,
+      // Paces to and fro along the wall, so its footsteps carry and it never walks off.
+      intent: () => {
+        paces += 1;
+        return { ...IDLE, right: Math.floor(paces / 60) % 2 === 0 ? 1 : -1 };
+      },
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => true,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    refusal: () => undefined,
+    onRead: () => undefined,
+  });
+  installColumn(world, evaluator.generateColumn(0, 0));
+  session.sim.paused = false;
+  const id = session.actors.add(registry.actors.get(actorType)!, [(x0 + x1 + 1) / 2, 1, (z0 + z1 + 1) / 2]);
+  const actor = () => session.actors.store.get(id)!;
+  const wallCells = walls.flatMap(({ min: [mx, my, mz], max: [nx, ny, nz] }) => {
+    const cells: Vec3[] = [];
+    for (let x = mx; x < nx; x++) {
+      for (let y = my; y < ny; y++) {
+        for (let z = mz; z < nz; z++) {
+          cells.push([x, y, z]);
+        }
+      }
+    }
+    return cells;
+  });
+  const damaged = () => wallCells.filter((at) => world.blockDamage.get(at) !== undefined);
+  const broken = () => wallCells.filter((at) => world.getBlock(...at) !== wall);
+  /** Steps simulated time until `done` holds or the bound runs out; true when it held. */
+  const run = (simSecondsBound: number, done: () => boolean) => {
+    const dt = 1 / 30;
+    for (let t = 0; t < simSecondsBound; t += dt) {
+      if (done()) {
+        return true;
+      }
+      session.frame(dt);
+    }
+    return done();
+  };
+  const outside = () => actor().body.pos[2] > z1 + 1;
+  return { registry, world, session, actor, wall, wallCells, damaged, broken, run, outside };
+};
+
+describe('actor blows on terrain', () => {
+  it.each(['plank_wall', 'brick'])(
+    'leaves a %s wall a shambler cannot break whole and unmarked, and tells the shambler its blow was resisted',
+    (wallType) => {
+      const f = pocket('shambler', wallType);
+      expect(f.run(60, () => f.actor().agent!.bashResisted)).toBe(true);
+      expect(f.broken()).toEqual([]);
+      expect(f.damaged()).toEqual([]);
+      expect(f.outside()).toBe(false);
+    },
+  );
+
+  it.each(['plank_wall', 'brick'])('lets a brute break a %s cell and walk out through the gap', (wallType) => {
+    const f = pocket('brute_shambler', wallType);
+    expect(f.run(600, f.outside)).toBe(true);
+    expect(f.broken().length).toBeGreaterThan(0);
   });
 });

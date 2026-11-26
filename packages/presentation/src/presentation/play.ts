@@ -1942,7 +1942,7 @@ const startPlayWith = (
     },
     feet,
     showNotice,
-    strikeTerrainCell: (cell, blow) => (replayPlayer ? undefined : session.strikeTerrainCell(cell, blow)),
+    strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
     repairCell: (cell) => {
       if (replayPlayer) {
         return 'Input replay owns this run';

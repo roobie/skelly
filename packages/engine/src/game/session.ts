@@ -66,7 +66,16 @@ import { craftActionHooks } from '../core/craftWork.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { advanceEventRules } from '../core/eventRules.ts';
-import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import {
+  blastCells,
+  blastShare,
+  bodyCentre,
+  type ExplosiveSpec,
+  Fuses,
+  fragmentDirections,
+  fragmentHitsOnBody,
+  inSight,
+} from '../core/explosive.ts';
 import { isLongGun } from '../core/firearmFitting.ts';
 import {
   type FirearmsCombatTuning,
@@ -136,7 +145,7 @@ import {
   vehicleDistance,
 } from '../core/reach.ts';
 import type { ReadRequest } from '../core/readable.ts';
-import { worldRubbleClearing } from '../core/rubble.ts';
+import { standingRubble, worldRubbleClearing } from '../core/rubble.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
@@ -1697,13 +1706,28 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (target: BlockEntity | undefined, blow: Blow, part?: FurniturePart): BashOutcome | undefined => {
+  const worldSoundFor = (sound: boolean): ((event: SoundId, position: Vec3) => void) =>
+    sound ? playNoisyWorldSound : () => undefined;
+  const bashPieceSound = (target: BlockEntity, sound: boolean): void => {
+    if (sound) {
+      playNoisyWorldSound(
+        registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
+        boxCentre(target.pos, target.size),
+      );
+    }
+  };
+  const bashPiece = (
+    target: BlockEntity | undefined,
+    blow: Blow,
+    part?: FurniturePart,
+    sound = true,
+  ): BashOutcome | undefined => {
     if (target && blowLandsOnPane(entities, target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
         {
           entities,
-          sound: playNoisyWorldSound,
+          sound: worldSoundFor(sound),
           emitItem: (type, count) => {
             const alongX = target.facing === 'n' || target.facing === 's';
             const normal = alongX ? 2 : 0;
@@ -1722,10 +1746,7 @@ export const createSession = (options: SessionOptions) => {
     if (!(target && outcome)) {
       return undefined;
     }
-    playNoisyWorldSound(
-      registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
-      boxCentre(target.pos, target.size),
-    );
+    bashPieceSound(target, sound);
     if (outcome === 'ruined') {
       for (const piece of ruinFurniture(furnitureMover(), target) ?? []) {
         forgetPiece(piece);
@@ -1740,11 +1761,8 @@ export const createSession = (options: SessionOptions) => {
   const tearPiece = (piece: BlockEntity): void => {
     bashPiece(piece, { strength: entities.defOf(piece).breach.durability, kind: 'crush' });
   };
-  /**
-   * Lands one blow on a terrain cell; undefined when nothing there takes it. It sounds as `sound`, by default the
-   * struck material's blow.
-   */
-  const strikeTerrainCell = (cell: Vec3, blow: Blow, sound?: SoundId): TerrainStrikeResult | undefined => {
+  /** Lands one blow on a terrain cell; undefined when nothing there takes it. */
+  const applyTerrainStrike = (cell: Vec3, blow: Blow, sound = true): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
       return undefined;
@@ -1764,7 +1782,6 @@ export const createSession = (options: SessionOptions) => {
       return undefined;
     }
     if (result.cause === 'canopy') {
-      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
       return result;
     }
     if (result.outcome === 'broken') {
@@ -1773,10 +1790,43 @@ export const createSession = (options: SessionOptions) => {
     for (const destroyed of result.destroyed) {
       forgetPiece(destroyed);
     }
-    if (block?.solid) {
-      playNoisyWorldSound(sound ?? registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+    if (block?.solid && sound) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
     }
     return result;
+  };
+  /** The player's terrain blow; only the player hears why a trunk holding canopy refuses it. */
+  const strikeTerrainCell = (
+    cell: Vec3,
+    blow: Blow,
+    { sound = true, refusal = true }: { readonly sound?: boolean; readonly refusal?: boolean } = {},
+  ): boolean => {
+    const result = applyTerrainStrike(cell, blow, sound);
+    if (refusal && result?.cause === 'canopy') {
+      (options.refusal ?? options.notice)(coreMessage(registry, 'trunkHoldsCanopy'));
+    }
+    return result !== undefined;
+  };
+  /** The first solid, non-rubble terrain cell touching an actor's obstacle probe. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The body-volume scan must examine every cell on three axes.
+  const terrainCellTouching = (probe: Body): Vec3 | undefined => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return undefined;
+    }
+    const halfDepth = probe.halfDepth ?? probe.halfWidth;
+    for (let x = Math.floor(probe.pos[0] - probe.halfWidth); x <= Math.floor(probe.pos[0] + probe.halfWidth); x++) {
+      for (let y = Math.floor(probe.pos[1]); y <= Math.floor(probe.pos[1] + probe.height); y++) {
+        for (let z = Math.floor(probe.pos[2] - halfDepth); z <= Math.floor(probe.pos[2] + halfDepth); z++) {
+          const cell: Vec3 = [x, y, z];
+          const block = registry.blocks[context.terrain.getBlock(...cell)];
+          if (block?.solid && !standingRubble(world, registry, cell) && boxIntersectsBody(cell, [1, 1, 1], probe)) {
+            return cell;
+          }
+        }
+      }
+    }
+    return undefined;
   };
   inventory.buried = () => body.buried !== undefined;
   const collapseSolid = (x: number, y: number, z: number): boolean =>
@@ -1872,7 +1922,7 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, blow) !== undefined;
     }
-    return hit ? strikeTerrainCell(hit.block, blow) !== undefined : false;
+    return hit ? strikeTerrainCell(hit.block, blow) : false;
   };
   /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
    * read and published before the damage lands, so the damaged world survives streaming and saves. */
@@ -1933,8 +1983,20 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     }),
     meleeBlocker,
-    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), { strength, kind: 'blunt' }),
-    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    bashObstacle: (ahead, strength, kind) => {
+      const piece = entities.pieceTouching(ahead);
+      if (piece) {
+        return bashPiece(piece, { strength, kind });
+      }
+      const cell = terrainCellTouching(ahead);
+      if (!cell) {
+        return;
+      }
+      const outcome = applyTerrainStrike(cell, { strength, kind })?.outcome;
+      // A refused terrain break leaves the obstacle intact without a landed blow, so the actor keeps looking for a way.
+      return outcome === 'refused' ? undefined : outcome;
+    },
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined || terrainCellTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
@@ -2139,6 +2201,41 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
+  const explosiveTerrainTargets = (at: Vec3, spec: ExplosiveSpec, directions: readonly Vec3[]) => {
+    const cells = [...blastCells({ origin: at, blast: spec.blast, blockSize: s, isSolid: apertureTerrain })].map(
+      ({ cell, share }) => ({ cell, strength: spec.blast.materialStrength * share, kind: 'blast' as const }),
+    );
+    const fragments = directions.flatMap((direction) => {
+      const hit = raycast(at, direction, spec.fragments.rangeMetres / s, apertureTerrain);
+      return hit ? [{ cell: hit.block, strength: spec.fragments.damage, kind: 'fragment' as const }] : [];
+    });
+    const pieces = [...entities.all].flatMap((piece) => {
+      const centre = boxCentre(piece.pos, piece.size);
+      const share = blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+      return share > 0 &&
+        inSight(at, centre, (x, y, z) => (entities.at(x, y, z) === piece ? false : physicalSolid(x, y, z)))
+        ? [{ piece, strength: spec.blast.materialStrength * share }]
+        : [];
+    });
+    return { cells: [...cells, ...fragments], pieces };
+  };
+  const strikeExplosiveTerrain = (targets: ReturnType<typeof explosiveTerrainTargets>, soundLimit: number): void => {
+    let sounds = 0;
+    const sound = () => sounds < soundLimit;
+    for (const { cell, strength, kind } of targets.cells) {
+      if (strikeTerrainCell(cell, { strength, kind }, { sound: sound(), refusal: false }) && sound()) {
+        sounds += 1;
+      }
+    }
+    for (const { piece, strength } of targets.pieces) {
+      if (entities.byUid(piece.uid) !== piece) {
+        continue;
+      }
+      if (bashPiece(piece, { strength, kind: 'blast' }, undefined, sound()) && sound()) {
+        sounds += 1;
+      }
+    }
+  };
   /** The explosive is used up; the blast and its fragments hurt actors and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
@@ -2152,6 +2249,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
     const { damage, impulse, rangeMetres } = spec.fragments;
+    const terrainTargets = explosiveTerrainTargets(at, spec, directions);
     actorSystem.detonate({
       blast: spec.blast,
       fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
@@ -2173,6 +2271,7 @@ export const createSession = (options: SessionOptions) => {
     })) {
       sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
     }
+    strikeExplosiveTerrain(terrainTargets, spec.blast.strikeSoundLimit);
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
     admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
@@ -2994,10 +3093,11 @@ export const createSession = (options: SessionOptions) => {
         return { stop: plan.reason };
       }
       spendFuel(inventory, plan.tool, plan.strikeFuel);
-      const result = strikeTerrainCell([...cell], plan.blow, plan.strikeSound);
+      const result = applyTerrainStrike([...cell], plan.blow, false);
       if (!result) {
         return { stop: coreMessage(registry, 'gone') };
       }
+      playNoisyWorldSound(plan.strikeSound, boxCentre([...cell], [1, 1, 1]));
       if (result.outcome === 'refused') {
         return { stop: coreMessage(registry, result.cause === 'canopy' ? 'trunkHoldsCanopy' : 'noRoom') };
       }
