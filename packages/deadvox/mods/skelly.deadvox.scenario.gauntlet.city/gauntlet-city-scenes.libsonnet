@@ -26,7 +26,7 @@ local scenes = [
     ],
   },
   {
-    id: 'packed', beats: 1, weight: 3, only: ['lower', 'cellar', 'ground', 'room'],
+    id: 'packed', beats: 1, weight: 3, only: ['lower', 'spandrel', 'cellar', 'ground', 'room'],
     things: [
       at('wardrobe', 0, 11, loot='gauntlet_home_wardrobe'), at('bed', 4, 10, 'e'),
       at('crate', 2, 10, loot='gauntlet_packed_bag'), at('crate', 6, 6, loot='gauntlet_packed_bag'),
@@ -67,11 +67,14 @@ assert std.all([scene.beats <= 1 for scene in scenes]) : 'a room holds at most o
 // that band can be walked. The storey a body enters by gives its back east corner to the kitchen and
 // bathroom, `lower` under a stair and `ground` under the roof, and the cellar gives the same corner to
 // its boiler, shelves and drain (`gauntlet-city-services.libsonnet`).
+// Over a cellar, the house flight's spandrel takes the front band's inner row beside it as well.
 local stairsLower = { rows: [2, 3], columns: [0, 10] };
+local stairsSpandrel = { rows: [1, 3], columns: [0, 10] };
 local stairsMiddle = { rows: [8, 9], columns: [0, 10] };
 local backCorner = { rows: [6, 11], columns: [8, 13] };
 local carves = {
-  lower: [stairsLower, backCorner], cellar: [stairsLower, backCorner], middle: [stairsMiddle], ground: [backCorner],
+  lower: [stairsLower, backCorner], spandrel: [stairsSpandrel, backCorner], cellar: [stairsLower, backCorner],
+  middle: [stairsMiddle], ground: [backCorner],
   room: [],
 };
 local within(range, value) = value >= range[0] && value <= range[1];

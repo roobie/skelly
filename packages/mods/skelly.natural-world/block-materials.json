@@ -163,7 +163,7 @@
       "fallsTo": "timber_rubble",
       "id": "timber",
       "massKg": 65,
-      "minimumStrength": 3.5,
+      "minimumStrength": 5,
       "resistance": {
         "acid": 0.5,
         "blast": 0.10000000000000001,

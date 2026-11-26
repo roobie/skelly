@@ -249,8 +249,12 @@ const PlaceAskSchema = strictObject({
       ),
     }),
   ),
-  /** Fixed metres [x, z] for the building's centre, in place of a random spot. Excludes `distance`. */
+  /** Fixed metres [x, z] for the building's footprint's minimum corner in the turn it takes, in place of a random
+   * spot. Excludes `distance`. */
   at: optional(tuple([OnPlacementGrid, OnPlacementGrid])),
+  /** Metres the ask owns: its footprint with the apron, and the road transitions docked at its gates, stand wholly
+   * inside in the turn they take, so a large compound cannot spill into a neighbour's area. */
+  within: optional(LayoutRect),
 });
 
 const AnchorFields = {
