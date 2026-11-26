@@ -10,7 +10,13 @@ import {
   actorRegionsMatchModel,
 } from './actors.ts';
 import { AttributeSchema } from './attributes.ts';
-import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema, SupportTuningSchema } from './blocks.ts';
+import {
+  BlockMaterialSchema,
+  BlockSchema,
+  FireTuningSchema,
+  FootstepSoundSchema,
+  SupportTuningSchema,
+} from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { BuildingBriefSchema, WorldSettingSchema } from './buildingBriefs.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
@@ -79,6 +85,7 @@ const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
   blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   supportTuning: { schema: optional(array(SupportTuningSchema)), label: 'support tuning', order: 0.15 },
+  fireTuning: { schema: optional(array(FireTuningSchema)), label: 'fire tuning', order: 0.16 },
   footstepSounds: { schema: optional(array(FootstepSoundSchema)), label: 'footstep sounds', order: 0.2 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   wearSlots: { schema: optional(array(WearSlotSchema)), label: 'wear slots', order: 1.2 },

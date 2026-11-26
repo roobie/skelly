@@ -78,6 +78,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.interaction-ray-toggle', 'KeyU'),
     one('debug.build-toggle', 'KeyB'),
     one('debug.build-damage', 'KeyD'),
+    { id: 'debug.build-ignite', keys: [shifted('KeyX')] },
     one('debug.build-destroy', 'KeyX'),
     one('debug.take-apart-target', 'NumpadDecimal'),
     { id: 'debug.repair-cell', keys: [shifted('KeyR')] },

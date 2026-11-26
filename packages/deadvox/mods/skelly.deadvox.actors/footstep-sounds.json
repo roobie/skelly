@@ -217,6 +217,12 @@
       "sound": "shambler_step_stone"
     },
     {
+      "block": "charred_remains",
+      "family": "shambler",
+      "id": "8_shambler_charred_remains",
+      "sound": "shambler_step_wood"
+    },
+    {
       "block": "timber_rubble",
       "family": "shambler",
       "id": "8_shambler_timber_rubble",

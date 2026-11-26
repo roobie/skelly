@@ -11,9 +11,13 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
-/** The blocks that are rubble: the fallen form some material names in `fallsTo`. */
+/** Fallen and burnt remnants share clearing, even when burning and falling name different results. */
 export const rubbleBlockIds = (registry: Registry): ReadonlySet<string> =>
-  new Set([...registry.blockMaterials.values()].map(({ fallsTo }) => fallsTo));
+  new Set(
+    [...registry.blockMaterials.values()].flatMap(({ fallsTo, flammability }) =>
+      flammability ? [fallsTo, flammability.burnsTo] : [fallsTo],
+    ),
+  );
 
 /** The rubble block standing at a cell, when rubble stands there in a loaded column. */
 export const standingRubble = (world: TerrainRead, registry: Registry, cell: Readonly<Vec3>): string | undefined => {

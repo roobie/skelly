@@ -15,4 +15,5 @@ export const KNOWN_SCHEDULER_IDS: ReadonlySet<string> = new Set([
   'handling',
   'firearms',
   'support',
+  'fire',
 ]);

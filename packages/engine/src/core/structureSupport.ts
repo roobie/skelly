@@ -180,6 +180,13 @@ export class SupportState {
     this.enqueueSideways(registry, cell);
   }
 
+  /** A material replacement may lose span without losing solidity, so judge it as well as its dependants. */
+  replaced(registry: Registry, cell: Readonly<Vec3>): void {
+    this.markPlaced(cell);
+    this.enqueue([...cell] as Vec3, false);
+    this.lost(registry, cell);
+  }
+
   /** Queues the cells whose sideways run may pass through or end at `cell`. */
   enqueueSideways(registry: Registry, cell: Readonly<Vec3>): void {
     const reach = widestSpan(registry);

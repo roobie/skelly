@@ -1,6 +1,7 @@
 import { BlockDamage } from './blockDamage.ts';
 import { Chunk } from './chunk.ts';
 import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { Fire } from './fire.ts';
 import { Rubble } from './rubble.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { SupportState } from './structureSupport.ts';
@@ -77,6 +78,7 @@ const decodeChunk = (cx: number, cz: number, saved: SavedChunk, blockId: (conten
 export class World {
   readonly chunks = new Map<string, Chunk>();
   readonly blockDamage = new BlockDamage(this);
+  readonly fire = new Fire(this);
   readonly rubble = new Rubble(this);
   readonly support = new SupportState(this);
   private readonly columnChunks = new Map<string, number>();
@@ -202,6 +204,7 @@ export class World {
       this.addChunk(chunk);
     }
     if (chunk.get(toLocal(x), toLocal(y), toLocal(z)) !== id) {
+      this.fire.clear([x, y, z]);
       this.blockDamage.clear([x, y, z]);
       this.rubble.noteChange([x, y, z]);
       this.support.clear([x, y, z]);

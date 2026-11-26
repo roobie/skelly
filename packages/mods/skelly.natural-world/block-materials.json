@@ -161,6 +161,11 @@
       },
       "durability": 100,
       "fallsTo": "timber_rubble",
+      "flammability": {
+        "burnDurationGameMinutes": 2,
+        "burnsTo": "charred_remains",
+        "ignitionStrength": 10
+      },
       "id": "timber",
       "massKg": 65,
       "minimumStrength": 5,
@@ -408,9 +413,86 @@
       ],
       "rubbleClearTimeGameMinutes": 15,
       "span": 7
+    },
+    {
+      "blowSound": "door_bash",
+      "breakable": true,
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#29231f"
+      },
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.40000000000000002,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.75,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
+      "durability": 12,
+      "fallsTo": "charred_remains",
+      "id": "charred",
+      "massKg": 12,
+      "minimumStrength": 0,
+      "resistance": {
+        "acid": 0,
+        "blast": 0,
+        "blunt": 0,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0,
+        "fragment": 0,
+        "pierce": 0
+      },
+      "rubble": [
+        {
+          "count": 1,
+          "item": "wood_offcut"
+        }
+      ],
+      "rubbleClearTimeGameMinutes": 2,
+      "span": 0
     }
   ],
   "blocks": [
+    {
+      "color": "#29231f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "charred_remains",
+      "material": "charred",
+      "name": "Charred remains",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    },
     {
       "color": "#685744",
       "drops": {
@@ -505,6 +587,13 @@
       "pattern": "rough",
       "solid": true,
       "weatherable": false
+    }
+  ],
+  "fireTuning": [
+    {
+      "capability": "fire",
+      "cellsPerTick": 64,
+      "id": "core"
     }
   ]
 }

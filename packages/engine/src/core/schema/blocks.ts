@@ -100,6 +100,13 @@ export const BlockMaterialSchema = strictObject({
   massKg: Positive,
   span: Count,
   fallsTo: Id,
+  flammability: optional(
+    strictObject({
+      ignitionStrength: NonNegative,
+      burnDurationGameMinutes: PositiveGameMinutes,
+      burnsTo: Id,
+    }),
+  ),
   /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
   breakable: vBoolean(),
   rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
@@ -108,6 +115,12 @@ export const BlockMaterialSchema = strictObject({
   blowSound: Id,
   broken: strictObject({ tint: Color, strength: Fraction }),
   cracks: CrackPatternSchema,
+});
+
+export const FireTuningSchema = strictObject({
+  id: Id,
+  capability: capabilityField('fireTuning'),
+  cellsPerTick: pipe(Count, minValue(1)),
 });
 
 /** How a support cascade paces itself (`packages/deadvox/SLICE-5.md`, "Support"). */

@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
+  - you're changing cell-fire ownership, burn-out support, charred clearing or its fire-look fixture
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
@@ -20,8 +21,8 @@ read_if:
 **Status. Built: the power network core, the placed-entity store, battery charging,
 world repair and take-apart with their review, world-destination crafting and placement
 picking with the timber kit and window covers, support and collapse with burial
-(see "Support"), and the first wave rule. Open: fire and exposure, and the integration
-proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+(see "Support"), the saved cell-fire owner, and the first wave rule. Open: fire spread,
+suppression, smoke, fire lighting and exposure, and the integration proofs.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`, `CraftCommands.repairCell`
@@ -30,8 +31,8 @@ and `CraftCommands.place`; `packages/presentation/src/ui/inventoryScreen.ts`,
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. Door and
 window covers share one recipe result, a `boardings` cover attached to a standing opening; see
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
-`packages/engine/src/core/blockEntities.ts`, `BlockEntities.board`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No fire or smoke
-model exists in `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.board`. The bear trap is built (`INTERACTIONS.md`, "Traps"). Fire's ownership boundary is in
+`packages/engine/src/core/fire.ts`, `Fire`; smoke remains outside that owner. The question from `EPIC.md`, "Slices", is: **Is a
 base worth building and defending?**
 This plan separates settled intent from choices that must precede dependent work.
 The slice process is in `EPIC.md`, "How each slice runs".
@@ -252,6 +253,19 @@ implementation selects; this plan retains only the cross-system obligations.
 - **Fire grain:** burning is per cell, so material destruction, neighbouring spread
   and local exposure share a spatial boundary. Bound simulation work and lighting
   invalidation without changing that grain; fluid fire is not required.
+- **Fire ownership:** burning belongs to the world, saved whole alongside damage,
+  rubble and support, because leaving the view must not pause a burning site or
+  erase its remaining burn. See `packages/engine/src/core/world.ts`, `World`, and
+  `packages/engine/src/core/fire.ts`, `Fire`.
+- **Burnt material:** exhaustion leaves authored charred terrain, clearable through
+  take-apart, because a burnt structure should leave a consequential remnant.
+  Binary span support already distinguishes a grounded burnt post from a burnt
+  beam or cantilever; burning must not introduce a second support rule. Falling
+  and burning need separate authored results because gravity and exhaustion are
+  different events. A shared char material suffices without restricting which
+  materials may burn. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`;
+  `packages/engine/src/core/structureSupport.ts`, `SupportState.replaced`; and
+  `packages/engine/src/core/rubble.ts`, `rubbleClearWork`.
 - **Smoke effects:** smoke is a visual, sight-blocking field, so visible smoke has
   a sensory consequence rather than being decoration. Smoke inhalation levels are
   deferred to #1074; reconsider them when a shared body-effect model exists for
@@ -659,13 +673,17 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
   `packages/engine/src/core/needs.ts`, `stepNeeds`, demonstrates boundary splitting;
   `packages/engine/src/core/food.ts`, `spoilage`, does not establish refrigeration history. Failure
   blocks appliance integration, not a relaxation of the deterministic contract.
-- **Fire cost and light invalidation:** burn a small material boundary beside a
-  doorway and then a connected larger surface, with smoke and lamps visible.
-  Measure simulation work, mesh/lighting churn and GPU time separately against
-  `CHALLENGES.md`, "Lighting", and `CHALLENGES.md`, "Half-metre blocks".
-  Vary view/residency without changing simulation outcomes; reject a performance
-  win that makes the room permanently dark. Failure blocks per-cell fire integration,
-  not permission to switch grain without a decision.
+- **Fire cost and light invalidation:** the cost spike admits the per-cell owner:
+  repeated fire-off/on pairs isolate a small incremental fire cost in the Firefox
+  acceptance comparison. Chromium's weak-hardware absolute frame-budget miss also
+  occurs with fire off, so attributing that miss to fire would reject the wrong
+  mechanism. Independent GPU timing complements the Firefox comparison where its
+  timer extension is unavailable. Pooled light per burning cluster avoids making
+  each burning face a lighting-bake invalidation source; see
+  `packages/presentation/src/render/lightPool.ts`, `LightPool`. This cost gate is not
+  acceptance of spread, smoke or integrated fire lighting. View/residency must not
+  alter outcomes, and a performance win that leaves the room permanently dark is
+  still a failure under `CHALLENGES.md`, "Lighting", and `CHALLENGES.md`, "Half-metre blocks".
 - **Fire catch-up and cross-border spread:** replay the same seeded ignition across
   a region edge, varying load order and player horizon transitions. Test near
   agreement separately from far deterministic coarse results, including save/resume

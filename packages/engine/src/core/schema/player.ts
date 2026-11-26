@@ -31,6 +31,7 @@ export const PlayerSchema = strictObject({
   reach: Positive,
   debugBlockTool: strictObject({
     damageKind: Id,
+    ignitionStrength: NonNegative,
     reachMetres: Positive,
     stepDurabilityFraction: pipe(Positive, ltValue(1)),
   }),
