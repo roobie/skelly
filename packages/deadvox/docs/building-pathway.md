@@ -10,6 +10,7 @@ read_if:
   - you place a briefed building in a look fixture's layout
   - you declare or turn a building's front edge, or wonder which edge its entrance must reach
   - you give a building's door a local way from the road, or change how trails and steps are placed
+  - you decide whether an outbuilding needs its own road approach
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
   - you review the pavilion or village shop support fixtures
@@ -207,21 +208,16 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). The walk
   proves the entrance opens on the front edge, not that a road reaches it: the local way
   below is what carries a body from the road.
-- **approach**: the building type declares, on its own `access.approach`, whether its door
-  gets a local way from the lot's road connection and of which kind, because what makes
-  sense differs per type: a country house trods a dirt trail, a door on a slope needs
-  steps, a door that meets the road needs nothing. `kind: 'trail'` rides the terrain's
-  tracks, `kind: 'steps'` shapes the ground into half-metre treads rising to the door's
-  own floor, and the `surface` and `widthMetres` are the type's content
-  (`packages/engine/src/core/schema/templates.ts`, `ApproachSchema`). The way attaches at
-  the front-edge opening the entrance walk reaches
-  (`packages/engine/src/core/templateSpatial.ts`, `templateFrontOpening`) and runs to the
-  first road along the front, placed by the lot and terrain path that already places the
-  building — no parallel mechanism (`packages/engine/src/core/lotApproach.ts`,
-  `layoutApproaches` and `cityLotWays`). No way is drawn where the door meets the road,
-  where the front reaches no road, or where another building stands between, and validate
-  rejects an approach whose surface no block provides or whose entrance reaches no
-  front-edge opening.
+- **approach**: the building type owns whether its door needs a local way from the road,
+  because a plausible approach depends on the type, not on a universal road rule. See
+  `packages/engine/src/core/schema/templates.ts`, `ApproachSchema`. The way must reach the
+  entrance walk's front opening, and belongs to the placement path that already knows the
+  lot and terrain, rather than a parallel mechanism; see
+  `packages/engine/src/core/templateSpatial.ts`, `templateFrontOpening`, and
+  `packages/engine/src/core/lotApproach.ts`, `layoutApproaches` and `cityLotWays`.
+  Outbuildings declare no approach, because none stands on a lot of its own; their plot's
+  authored path joins their doors instead. See `mods/skelly.deadvox.buildings/outbuildings.jsonnet`.
+  Revisit this rule when content places an outbuilding alone.
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
@@ -353,7 +349,9 @@ and `mods/skelly.deadvox.buildings/rural-house.jsonnet`, `withCellar`. A twin mu
 - **Have a cellar room in its brief** before the twin is built, or the fit check never walks
   the cellar ([Brief](#brief)).
 - **Raise every part above the footing by the cellar's depth**, so each storey keeps its
-  layout, door, windows and services, and every slot keeps its place against the others. The
+  layout, door, windows and services, and every slot keeps its place against the others. A part
+  moves only where the cellar's stair needs its room, as the townhouse street door does
+  ([Worked example: city townhouse](#worked-example-city-townhouse)). The
   depth is the fitted corner's height and the ceiling over it, so every briefed cellar takes
   the shared corner whole; see `tools/jsonnet/lib/cellar-plant.libsonnet`.
 - **Stand the cellar on a footing and keep a floor over it.** Anchors need solid support, so
@@ -469,6 +467,11 @@ city pool's commonest building meets the same rules as the villa. See
   no house flight rises, the stairwell stays reserved air. Each height draws its twin as a
   share of its own rows; see `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`,
   `mapPools`.
+- **Open treads stand on a spandrel, and the street door clears it.** A tread needs support
+  in its own row, and the space under the flight is the cellar flight's headroom, so each tread
+  rests on a spandrel along the flight's front. The spandrel leaves one row of the front band
+  beside it and a body needs two, so a twin under a house flight opens its street door, and the
+  yard path before it, east of the spandrel, where the band stays two rows deep.
 - **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
   the back east corner of that storey, so the walk from the street door reaches them in every
   kind; over a cellar they rise with the street storey. The room scenes keep out of

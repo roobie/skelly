@@ -1,0 +1,16 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 1,
+        "minimumStrength": 1
+      },
+      "color": "#9a7b4f",
+      "id": "furniture_push_look_crate",
+      "massKg": 100,
+      "material": "wood",
+      "name": "Push-off crate",
+      "size": [1, 2, 1]
+    }
+  ]
+}
