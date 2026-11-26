@@ -269,6 +269,41 @@ it('names the ask when its footprint cannot fit within the content retry budget'
   expect(() => composeLayout(11, registry, scenario)).toThrow('ask "home" did not fit after 1 attempts');
 });
 
+const CELL = { x0: 20, z0: 20, x1: 30, z1: 30 };
+const cellScenario = (within: typeof CELL): ComposedSiteDef => {
+  const scenario = scenarioFixture();
+  const { distance: _distance, ...stock } = scenario.asks[1]!;
+  scenario.asks[1] = { ...stock, within };
+  return scenario;
+};
+
+it('keeps an owned ask and its apron inside its rectangle in every quarter turn', () => {
+  const scenario = cellScenario(CELL);
+  const { registry, issues } = load(scenario);
+  expect(issues).toEqual([]);
+  const turns = new Set<number>();
+  // Seeds until every turn has stood, so the property is not met by one lucky rotation.
+  for (let seed = 1; turns.size < 4 && seed <= 64; seed++) {
+    const { layout, reservations } = composeLayout(seed, registry, scenario);
+    const own = reservations.find((reservation) => reservation.ask === 'stock')!;
+    expect(own.x0).toBeGreaterThanOrEqual(CELL.x0);
+    expect(own.z0).toBeGreaterThanOrEqual(CELL.z0);
+    expect(own.x1).toBeLessThanOrEqual(CELL.x1);
+    expect(own.z1).toBeLessThanOrEqual(CELL.z1);
+    turns.add(layout.buildings[1]!.rotation);
+  }
+  expect(turns.size).toBe(4);
+});
+
+it('refuses an ask too large for its rectangle, naming the ask, rectangle and overhang', () => {
+  const scenario = cellScenario({ x0: 20, z0: 20, x1: 24, z1: 24 });
+  const { registry } = load(scenario);
+  expect(() => composeLayout(11, registry, scenario)).toThrow(
+    // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
+    /ask "stock" did not fit after \d+ attempts: ask "stock" footprint with its apron overhangs its rectangle x 20\.\.24, z 20\.\.24 by (west|north|east|south) \d/,
+  );
+});
+
 it('suppresses authored template actors only when composed population disallows markers', () => {
   const scenario = scenarioFixture();
   const { registry, issues } = load(scenario, undefined, true);
@@ -869,6 +904,29 @@ it('refuses a source ask whose road cannot leave, naming the same whole link con
     // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
     /ask "homestead" did not fit after 20 attempts: link "lane" cannot join ask "homestead" port "gate" to ask "barn" port "gate" through road profile "fixture_road" with transition "fixture_corner" \(fixture-kits\.json:mapAssemblies\[\d+\]\): no room beside ask "homestead" for the road to leave/,
   );
+});
+
+it('refuses an ask whose rectangle holds its apron but not the transition docked at its gate', () => {
+  // The barn is 2 m square from a fixed corner, so it covers the same square in every turn; a 1 m apron fits the 5 m
+  // rectangle centred on it, but the 2 m transition docked at its gate reaches 3 m from that centre.
+  const base = roadScenario(LANE);
+  const { distance: _distance, ...barn } = base.asks[1]!;
+  const scenario: ComposedSiteDef = {
+    ...base,
+    placement: { ...base.placement, apronMetres: 1 },
+    asks: [
+      { ...base.asks[0]!, at: [-20, 0] },
+      { ...barn, at: [20, 0], within: { x0: 18.5, z0: -1.5, x1: 23.5, z1: 3.5 } },
+    ],
+  };
+  const { registry } = composeRoads(scenario, true);
+  expect(() => composeLayout(11, registry, scenario)).toThrow(
+    // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
+    /ask "barn" did not fit after \d+ attempts: ask "barn" transition "fixture_corner" of link "lane" overhangs its rectangle x 18\.5\.\.23\.5, z -1\.5\.\.3\.5 by (west|north|east|south) 0\.5 m$/,
+  );
+  // The same site without the rectangle joins, so the transition alone is what refuses.
+  const unowned: ComposedSiteDef = { ...scenario, asks: [scenario.asks[0]!, { ...barn, at: [20, 0] }] };
+  expect(() => composeLayout(11, composeRoads(unowned, true).registry, unowned)).not.toThrow();
 });
 
 it('rejects a transition whose route joins ports other than the named gate and outward', () => {
