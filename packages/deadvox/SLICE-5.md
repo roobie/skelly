@@ -625,10 +625,9 @@ rounds are tracked under #1332.
   already limits a blast to the faces it reaches, so a second flood path would repeat
   that boundary; separate strengths let wall-cracking and body harm tune apart as melee
   terrain impulse and body damage do. Fragments strike the first solid cell on each
-  existing ray by fragment resistance. Breach charges follow, then furniture knock-out
-  and push-off. The torch cuts steel cells by ordinary blows
-  (`DESIGN.md`, "Cutting cells"); its next round, under #2046, cuts steel pieces and
-  breaks a steel door open by cutting.
+  existing ray by fragment resistance. Breach charges follow, then furniture knock-out.
+  The torch cuts steel cells by ordinary blows (`DESIGN.md`, "Cutting cells"); its next
+  round, under #2046, cuts steel pieces and breaks a steel door open by cutting.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and
