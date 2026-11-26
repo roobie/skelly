@@ -5,7 +5,7 @@ read_if:
 
 # Fire look fixture
 
-Start `firelook` with the fire-look mod enabled.
+Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.fire-look#{debug:true}).
 
 - [ ] The shed's burning wall cells show flames on exposed faces.
 - [ ] Nearby surfaces receive fire light.
