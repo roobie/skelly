@@ -12,6 +12,8 @@ read_if:
   - you give a building's door a local way from the road, or change how trails and steps are placed
   - you build or change the fit check between an assembly and its brief
   - a briefed building's slab, floor or roof must hold under the support rule
+  - you review the pavilion or village shop support fixtures
+  - you choose a floor's material, or a block's look against its material
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
   - you set a house on a plot with outbuildings, or decide how often a site draws each variant
@@ -267,6 +269,11 @@ One rule is proved by a test beside validate rather than by validate itself:
   them. A slab or floor wider than its material spans needs
   something under it that stands, such as a wall, a column or a beam; a beam beside it in the
   same course does not, because a run only reaches a cell that stands, not one held sideways.
+  A material's span is how far the real thing reaches, and a block's look is separate from its
+  material. A modern storey floor is a reinforced-concrete slab that spans wall to wall, so it
+  holds a room without columns or joists; its block may wear floorboards or bare concrete over
+  that material. Honest material values keep one support rule, where props the real building
+  lacks would bend the plan to a span it does not have.
   An answer known not to hold yet is skipped by name, citing the issue that tracks it. A skipped
   answer that holds, or that no pack declares, fails the test, so a skip ends with its fix.
 
@@ -673,6 +680,11 @@ and the wall over the stair stay open over most of the run, not only above the t
 `packages/engine/src/core/stairFlight.ts`, `STAIR_BODY_HEIGHT`. The detached town house's
 stair is the same; see `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 
+**Bearing below the decks.** The floor over the shop and the flat's roof need a plausible
+load path, not a higher material span to excuse unsupported centres. The sales floor stays open
+rather than gaining a dividing wall, and circulation and furnishing keep their headroom; see
+`mods/skelly.deadvox.buildings/village-shop.jsonnet`, `shop`, `living` and `kitchen`.
+
 **The shopfront is the shared hinged window.** A shop reads from the road by its broad
 display window and the fascia board over it, so the street face says shop without a sign
 model; the shared pack's hinged window is shopfront sized, and the fascia is trim in the
@@ -688,6 +700,18 @@ waits on a usage the engine does not have.
 uses the kitchen counter, which reads close enough on the sheet; a shop counter belongs in
 the shared pack when a model is drawn for it ([Shared pieces](#shared-pieces)).
 
-**Seen only through its look fixture.** The shop stands in no pool, so its look fixture is
-the one place it appears, both styles along a road beside `small_house`; see
+**Seen through its look fixtures.** No settlement pool names `village_shop`, so its look
+fixtures are the only places it appears: `skelly.deadvox.scenario.buildings.village-shop-look`
+and `skelly.deadvox.scenario.buildings.misc-support-look`. The dedicated fixture compares it
+with the hand-drawn baseline; see
 `mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet`.
+
+## Support comparison fixtures
+
+A condition check must not depend on an unsupported shell: a later collapse would hide the
+condition the fixture exists to show. The pavilion's condition variants therefore share one
+bearing frame; see `mods/skelly.deadvox.scenario.buildings.assembly-condition-look/buildings.jsonnet`,
+`shell`.
+
+The combined support look puts the pavilion beside the shop so bearing can be judged without
+setting up another world; see `mods/skelly.deadvox.scenario.buildings.misc-support-look/layouts.jsonnet`.

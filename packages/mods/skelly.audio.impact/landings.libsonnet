@@ -6,7 +6,7 @@ local built = import 'packages/skelly-assets/built/manifest.json';
 // Sound family -> the released object whose takes it plays.
 local objects = { brass_case: 'brass_case_9mm' };
 // Block material -> the released surface it sounds like; a material left out keeps the any-item drop.
-local blockSurfaces = { masonry: 'concrete', metal: 'metal', timber: 'wood', soil: 'dirt' };
+local blockSurfaces = { masonry: 'concrete', reinforced_concrete: 'concrete', metal: 'metal', timber: 'wood', soil: 'dirt' };
 // Furniture material -> the released surface it sounds like.
 local furnitureSurfaces = { wood: 'wood', steel: 'metal' };
 

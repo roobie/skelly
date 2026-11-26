@@ -385,6 +385,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.front-edge-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.misc-support-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.json"
     },
@@ -431,6 +443,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-upper-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet",
@@ -811,6 +835,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.blast-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.build-kit-look/layouts.jsonnet",
