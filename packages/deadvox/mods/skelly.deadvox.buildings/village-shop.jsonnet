@@ -20,6 +20,7 @@ local palette = {
   q: { role: 'interior_floor', material: 'store_floor' },
   r: { role: 'interior_floor', material: 'roof_deck' },
   c: { role: 'roof', material: 'roofing' },
+  j: { role: 'support', material: 'joists' },
 };
 local claims(layers) = [
   [std.join('', [std.get({ '_': 'R', ',': '.', '-': '.', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
@@ -78,8 +79,8 @@ local back = {
   bay: ',#######---########,',
   wall: ring,
 };
-local groundRows(frontRow, hallRow, sideRow, aisleRow, partition, hallDoor, backRow) =
-  [porch, frontRow, hallRow, hallRow, hallRow, hall, sideRow, sideRow, aisleRow, counterAisle, partition, storeFront,
+local groundRows(frontRow, hallRow, sideRow, aisleRow, partition, hallDoor, backRow, beamWalk=hall) =
+  [porch, frontRow, hallRow, hallRow, hallRow, beamWalk, sideRow, sideRow, aisleRow, counterAisle, partition, storeFront,
    hallDoor, hallDoor, nook, nook, backRow, outside];
 local groundShell = piece('village_shop_ground_shell', [20, 7, 18], [
   groundRows(front.door, hall, stairSide, counterAisle, storeDoorway, hallDoorway, back.door),
@@ -90,7 +91,7 @@ local groundShell = piece('village_shop_ground_shell', [20, 7, 18], [
 ] + [
   groundRows(front.bay, hallBay, stairSideBay, counterAisleBay, storeWall, storeWalk, back.bay),
   groundRows(front.bay, hall, stairSide, counterAisle, storeWall, storeWalk, back.wall),
-  groundRows(front.fascia, hall, stairSide, counterAisle, storeWall, storeWalk, back.wall),
+  groundRows(front.fascia, hall, stairSide, counterAisle, storeWall, storeWalk, back.wall, ',#____i-----------#,'),
 ]);
 
 // The stair rises one block a tread, south along the west wall, onto the upper floor.
@@ -215,14 +216,16 @@ local doorway(id, at, leaf) = slot(id, at, spans[leaves[leaf].span].size, [
 // side behind it; the store room keeps shelves along the shop wall and crates of stock by the back door.
 local air(width) = std.join('', ['.' for _ in std.range(1, width)]);
 local shop = piece('village_shop_shop', [11, 7, 8], [
-  ['e.--......h', 'e.--......h', 'f.--......k', 'f.--......k', 'g.--.AABBCC', 'g.--.......', 'FF--------.', 'FF--------.']
+  ['e.--......h', 'e.--......h', 'f.--......k', 'f.--.j....k', 'g.--.AABBCC', 'g.--.......', 'FF--------.', 'FF--------.']
   for _ in [1, 2]
 ] + [
-  ['e.--......h', 'e.--......h', 'f.--......k', 'f.--......k', 'g.--.......', 'g.--.......', 'FF--------.', 'FF--------.']
+  ['e.--......h', 'e.--......h', 'f.--......k', 'f.--.j....k', 'g.--.......', 'g.--.......', 'FF--------.', 'FF--------.']
   for _ in [3, 4]
 ] + [
-  ['..--.......', '..--.......', '..--.......', '..--.......', '..--.......', '..--.......', '..--------.', '..--------.']
-  for _ in [5, 6, 7]
+  ['..--.......', '..--.......', '..--.......', '..--.j.....', '..--.......', '..--.......', '..--------.', '..--------.']
+  for _ in [5, 6]
+] + [
+  ['..--.......', '..--.......', '..--.......', 'jjjjjjjjjjj', '..--.......', '..--.......', '..--------.', '..--------.']
 ], {
   e: { furniture: 'shelf', facing: 'e', loot: 'snacks' },
   f: { furniture: 'shelf', facing: 'e', loot: 'kitchen_cupboard' },
@@ -263,7 +266,9 @@ local living = piece('village_shop_living', [8, 7, 6], [
   ['........', '........', '........', 'e.--....', 'e.--....', 'ii--...H'],
 ] + [
   ['........', '........', '........', '..--....', '..--....', 'ii--...H']
-  for _ in [5, 6, 7]
+  for _ in [5, 6]
+] + [
+  ['........', '........', 'jjjjjjjj', '..--....', '..--....', 'ii--...H']
 ], chimney + {
   a: { furniture: 'sofa', facing: 's' },
   e: { furniture: 'shelf', facing: 'e', loot: 'shelf' },
@@ -279,7 +284,9 @@ local kitchen = piece('village_shop_kitchen', [7, 7, 6], [
   for _ in [3, 4]
 ] + [
   ['.......', '.......', '.......', '--.....', '--.....', '--.....']
-  for _ in [5, 6, 7]
+  for _ in [5, 6]
+] + [
+  ['.......', '.......', 'jjjjjjj', '--.....', '--.....', '--.....']
 ], {
   F: { furniture: 'fridge', facing: 's', loot: 'fridge' },
   T: { furniture: 'kitchen_table' },
@@ -319,6 +326,7 @@ local bedroom = piece('village_shop_bedroom', [6, 7, 4], [
 
 local materials(facade, fascia) = {
   facade: { role: 'shell', block: facade },
+  joists: { role: 'support', block: 'steel_joist' },
   fascia: { role: 'trim', block: fascia },
   partition: { role: 'interior_wall', block: 'plaster' },
   footing: { role: 'support', block: 'concrete' },

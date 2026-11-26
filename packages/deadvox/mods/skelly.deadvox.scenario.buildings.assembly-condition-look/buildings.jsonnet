@@ -2,14 +2,17 @@ local context = { usage: [], tier: 'Tier1' };
 local condition(mean, spread=0) = { mean: mean, spread: spread, paneThreshold: 0.5 };
 local shell = {
   id: 'condition_pavilion_shell', style: 'condition_pavilion_style', size: [8, 7, 7], lootContext: context,
-  palette: { '#': { role: 'shell', material: 'wall' }, '.': { role: 'opening', material: 'air' } },
+  palette: {
+    '#': { role: 'shell', material: 'wall' }, '.': { role: 'opening', material: 'air' },
+    b: { role: 'support', material: 'beam' },
+  },
   layers: [
     ['########', '########', '########', '########', '########', '########', '########'],
     ['#####..#', '#......#', '#......#', '#......#', '#......#', '#......#', '########'],
     ['#...#..#', '#......#', '#......#', '#......#', '#......#', '#......#', '########'],
     ['#...#..#', '#......#', '#......#', '#......#', '#......#', '#......#', '########'],
     ['#...#..#', '#......#', '#......#', '#......#', '#......#', '#......#', '########'],
-    ['########', '#......#', '#......#', '#......#', '#......#', '#......#', '########'],
+    ['########', '#......#', '#......#', '#bbbbbb#', '#......#', '#......#', '########'],
     ['########', '########', '########', '########', '########', '########', '########'],
   ],
   ownership: { layers: [
@@ -18,7 +21,7 @@ local shell = {
     ['S...SRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SSSSSSSS'],
     ['S...SRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SSSSSSSS'],
     ['S...SRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SRRRRRRS', 'SSSSSSSS'],
-    ['SSSSSSSS', 'SAAAAAAS', 'SAAAAAAS', 'SAAAAAAS', 'SAAAAAAS', 'SAAAAAAS', 'SSSSSSSS'],
+    ['SSSSSSSS', 'SAAAAAAS', 'SAAAAAAS', 'SSSSSSSS', 'SAAAAAAS', 'SAAAAAAS', 'SSSSSSSS'],
     ['SSSSSSSS', 'SSSSSSSS', 'SSSSSSSS', 'SSSSSSSS', 'SSSSSSSS', 'SSSSSSSS', 'SSSSSSSS'],
   ] },
   anchors: {}, ports: [],
@@ -61,6 +64,7 @@ local building(id, policy, nested=false) = {
   }],
   mapStyles: [{ id: shell.style, bindings: {
     wall: { role: 'shell', block: 'brick' }, air: { role: 'opening', block: 'air' },
+    beam: { role: 'support', block: 'planks' },
   } }],
   mapPieces: [shell, window],
   mapAssemblies: [windowOwner,
