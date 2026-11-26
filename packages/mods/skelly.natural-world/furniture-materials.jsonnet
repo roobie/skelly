@@ -2,8 +2,7 @@ local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local resistance = (import 'tools/jsonnet/lib/damage-resistance.libsonnet').resistance;
 // Heat answers as it does on the block materials (`block-materials.jsonnet`). Steel shrugs off the hand-struck kinds as
 // metal does there, so only heat really gets into it. Any other kind lands whole, so a piece's own breach decides how
-// it takes those blows. A crush stays whole on every material, since a piece torn off or brought down by a
-// collapse takes one of its whole durability and must ruin.
+// it takes those blows.
 {
   furnitureMaterials: [
     {

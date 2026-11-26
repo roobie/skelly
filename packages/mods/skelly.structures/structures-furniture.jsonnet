@@ -417,7 +417,7 @@ local unshaped = [
   furnitureMaterials: [
     {
       id: 'plastic', drops: { default: 'item_drop_wood' }, blowSound: 'door_bash',
-      // Heat melts plastic through, so it lands whole like every other kind.
+      // Heat melts plastic through fastest, as players expect, so it lands whole like every other kind.
       resistance: resistance(0, 0, 0, 0, 0, 0, 0, 0, 0),
       damaged: [
         { from: 0.01, tint: '#4a4a44', strength: 0.15 },

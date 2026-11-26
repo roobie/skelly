@@ -18,3 +18,11 @@ export const bluntBlowLanding = (registry: Registry, type: string, strength: num
   }
   return { strength: struck, kind: 'blunt' };
 };
+
+/** Makes the material of pieces of `type` resist crushing whole in a registry the caller owns. */
+export const crushProof = (registry: Registry, type: string): Registry => {
+  const id = registry.furniture.get(type)!.material;
+  const material = registry.furnitureMaterials.get(id)!;
+  registry.furnitureMaterials.set(id, { ...material, resistance: { ...material.resistance, crush: 1 } });
+  return registry;
+};

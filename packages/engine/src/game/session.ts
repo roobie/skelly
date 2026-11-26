@@ -1742,8 +1742,14 @@ export const createSession = (options: SessionOptions) => {
         position,
       );
     }
-    const outcome = target && entities.bash(target, blow);
-    if (!(target && outcome)) {
+    return target && settlePiece(target, entities.bash(target, blow), sound);
+  };
+  const settlePiece = (
+    target: BlockEntity,
+    outcome: BashOutcome | undefined,
+    sound: boolean,
+  ): BashOutcome | undefined => {
+    if (!outcome) {
       return undefined;
     }
     bashPieceSound(target, sound);
@@ -1754,12 +1760,9 @@ export const createSession = (options: SessionOptions) => {
     }
     return outcome;
   };
-  /**
-   * A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. The
-   * blow is a crush, the kind a climber's weight deals.
-   */
+  /** A climber a piece can't bear tears it off: the load decides it, so it ruins with no blow, as loud as one. */
   const tearPiece = (piece: BlockEntity): void => {
-    bashPiece(piece, { strength: entities.defOf(piece).breach.durability, kind: 'crush' });
+    settlePiece(piece, entities.ruin(piece), true);
   };
   /** Lands one blow on a terrain cell; undefined when nothing there takes it. */
   const applyTerrainStrike = (cell: Vec3, blow: Blow, sound = true): TerrainStrikeResult | undefined => {

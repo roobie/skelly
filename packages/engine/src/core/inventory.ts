@@ -854,9 +854,8 @@ export class Inventory {
     const entity = this.furnish(spec, loot, surfaceLoot, fixedCount);
     if (entity && wear !== undefined) {
       if (wear === 1) {
-        // A fixture starts at a retained ruin, not at a new destruction event that releases its internals. The ruin is
-        // a crush, the kind a collapse under its own weight deals.
-        this.entities.bash(entity, { strength: this.entities.defOf(entity).breach.durability, kind: 'crush' });
+        // A fixture starts at a retained ruin, not at a new destruction event that releases its internals.
+        this.entities.ruin(entity);
       } else {
         this.entities.wear(entity, wear);
       }
