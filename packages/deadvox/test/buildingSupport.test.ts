@@ -27,16 +27,12 @@ import { withReusedBuilds } from './bundledContentReuse.ts';
  * A skipped building that holds, or that no pack declares, fails the test, so the list cannot go stale.
  */
 const KNOWN_UNSUPPORTED: ReadonlySet<string> = new Set([
-  'condition_pavilion_intact',
-  'condition_pavilion_nested',
-  'condition_pavilion_worn',
   'rural_flat_roof_house_cellar',
   'rural_flat_roof_house_wc_cellar',
   'rural_plot_privy_cellar',
   'rural_plot_privy_garage_cellar',
   'rural_plot_wc_cellar',
   'rural_plot_wc_garage_cellar',
-  'village_shop',
 ]);
 
 const declaresBriefed = ({ files }: PackInput): boolean =>

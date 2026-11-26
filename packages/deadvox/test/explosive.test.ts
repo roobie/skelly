@@ -1,7 +1,7 @@
 import { actorFigure } from '@skelly/engine/content';
 import type { ActorRegions } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { Detonation } from '@skelly/engine/internal/core/actorSystem.ts';
-import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
+import { blastCells, fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { severedItem } from '@skelly/engine/internal/core/severedItem.ts';
@@ -69,16 +69,20 @@ const runtime = (
     onDetonation,
     onFuseLit,
     intent,
+    terrainDestruction,
+    world = new World(),
   }: {
     onDetonation?: (position: Vec3, radiusMetres: number) => void;
     onFuseLit?: (item: Item) => void;
     intent?: () => MoveIntent;
+    terrainDestruction?: Parameters<typeof createSession>[0]['terrainDestruction'];
+    world?: World;
   } = {},
 ) =>
   createSession({
     registry: content,
     actorFigureFiles: withFixtureFigures(stackActorFigureFiles(content), { [PARTS_FIXTURE]: SHAMBLER.id }),
-    world: new World(),
+    world,
     isSolid,
     isOpaque: () => false,
     scale: makeScale(BLOCK),
@@ -99,6 +103,7 @@ const runtime = (
     onRead: () => undefined,
     ...(onDetonation ? { onDetonation } : {}),
     ...(onFuseLit ? { onFuseLit } : {}),
+    ...(terrainDestruction ? { terrainDestruction } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -140,6 +145,43 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
     rangeMetres: 10,
   },
 });
+
+const PLANK_WALL = registry.blockIds.get('plank_wall')!;
+const FLOOR = registry.blockIds.get('concrete')!;
+type TerrainDestruction = NonNullable<Parameters<typeof createSession>[0]['terrainDestruction']>;
+
+/** A session whose blasts strike the blocks of `world`, which is its whole terrain: concrete at y 0, air elsewhere. */
+const destructible = (world: World): Runtime => {
+  const terrain = {
+    world,
+    terrain: { scale: { minCy: 0, maxCy: 0 } },
+    getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
+    naturalBlock: (_x: number, y: number, _z: number) => (y === 0 ? FLOOR : 0),
+    ensureColumn: () => undefined,
+    ensureCell: () => undefined,
+  } as unknown as TerrainDestruction['terrain'];
+  const source: TerrainDestruction['source'] = {
+    furnitureIn: () => [],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    actorsIn: () => [],
+  };
+  return runtime((x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid, undefined, registry, {
+    terrainDestruction: { terrain, source },
+    world,
+  });
+};
+
+/** Fills the block box from `min` to `max`, both inclusive. */
+const fill = (world: World, [x0, y0, z0]: Vec3, [x1, y1, z1]: Vec3, block: number): void => {
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
+      for (let z = z0; z <= z1; z++) {
+        world.setBlock(x, y, z, block);
+      }
+    }
+  }
+};
 
 describe('hand grenade', () => {
   it('detonates a lit grenade after release has committed it to the pile', () => {
@@ -357,6 +399,106 @@ describe('hand grenade', () => {
     expect(resumed.inventory.itemByUid(held.uid)).toBeUndefined();
   });
 
+  it('shares a blast among visible solid cells and leaves cells behind a face shielded', () => {
+    const cells = [
+      ...blastCells({
+        origin: [0.5, 1, 0.5],
+        blast: {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
+        blockSize: 1,
+        isSolid: WALL_AT_X2,
+      }),
+    ];
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every(({ cell }) => cell[0] <= 2)).toBe(true);
+    expect(cells.some(({ cell }) => cell[0] === 2)).toBe(true);
+    expect(cells.every(({ share }) => share > 0 && share <= 1)).toBe(true);
+  });
+
+  it('reaches floor cells in sight along the floor surface', () => {
+    const cells = [
+      ...blastCells({
+        origin: [0.5, 1.25, 0.5],
+        blast: {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
+        blockSize: 1,
+        isSolid: (_x, y) => y === 0,
+      }),
+    ];
+    expect(cells.length).toBeGreaterThan(1);
+    expect(cells.every(({ share }) => share > 0)).toBe(true);
+  });
+
+  it('keeps mirrored walls equally shielded while terrain strikes resolve', () => {
+    const world = new World();
+    for (const x of [-4, -2, 2, 4]) {
+      world.setBlock(x, 0, 0, FLOOR);
+      world.setBlock(x, 1, 0, PLANK_WALL);
+    }
+    world.setBlock(0, 0, 0, FLOOR);
+    const session = destructible(world);
+    landedGrenade(session, [0, 1, 0]);
+    session.sim.scheduler.advance(FUSE + 0.5);
+    const damage = (x: number) => world.blockDamage.get([x, 1, 0])?.damage ?? 0;
+    expect(damage(-4)).toBe(damage(4));
+    expect(damage(-2)).toBe(damage(2));
+    expect(world.getBlock(-4, 1, 0)).toBe(world.getBlock(4, 1, 0));
+    expect(world.getBlock(-2, 1, 0)).toBe(world.getBlock(2, 1, 0));
+  });
+
+  it('marks most of the open floor within its radius when it goes off lying on it', () => {
+    const { radiusMetres } = registry.items.get(GRENADE)!.explosive!.blast;
+    const reach = Math.ceil(radiusMetres / BLOCK) + 1;
+    const world = new World();
+    fill(world, [-reach, 0, -reach], [reach, 0, reach], FLOOR);
+    const session = destructible(world);
+    session.body.pos = [0.5, 1, reach + 4];
+    landedGrenade(session, [0, 1, 0]);
+    session.sim.scheduler.advance(FUSE + 0.5);
+    const side = 2 * reach + 1;
+    const inRadius = Array.from(
+      { length: side ** 2 },
+      (_, i): Vec3 => [(i % side) - reach, 0, Math.floor(i / side) - reach],
+    ).filter(([x, , z]) => Math.hypot(x, 0.75, z) * BLOCK < radiusMetres);
+    const marked = inRadius.filter(
+      ([x, y, z]) => world.getBlock(x, y, z) !== FLOOR || world.blockDamage.get([x, y, z]) !== undefined,
+    );
+    expect(marked.length).toBeGreaterThan(inRadius.length / 2);
+  });
+
+  it('spares the player and a shambler behind mirrored walls that its blast breaks', () => {
+    const world = new World();
+    fill(world, [-8, 0, -8], [8, 0, 8], FLOOR);
+    for (const x of [-2, 2]) {
+      fill(world, [x, 1, -8], [x, 10, 8], PLANK_WALL);
+    }
+    const session = destructible(world);
+    session.body.pos = [4, 1, 0.5];
+    landedGrenade(session, [0, 1, 0]);
+    session.sim.scheduler.advance(FUSE - 0.5);
+    const shambler = session.actorStore.get(session.actors.add(SHAMBLER, [-3, 1, 0.5]))!;
+    const before = { ...shambler.regions };
+    const { health } = session.sim.body;
+    session.sim.scheduler.advance(1);
+    const broken = (x: number) =>
+      Array.from({ length: 10 }, (_, y) => world.getBlock(x, y + 1, 0)).some((block) => block === 0);
+    expect([broken(-2), broken(2)]).toEqual([true, true]);
+    expect(session.sim.body.health).toBe(health);
+    expect(healthLost(before, shambler.regions)).toBe(0);
+  });
+
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
     const session = runtime();
     const origin: Vec3 = [0, 1, 0];
@@ -364,7 +506,16 @@ describe('hand grenade', () => {
     const far = session.actorStore.get(session.actors.add(SHAMBLER, [-6, 0, 0]))!;
     const beyond = session.actorStore.get(session.actors.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
-    session.actors.detonate(detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }));
+    session.actors.detonate(
+      detonation(origin, {
+        damageKind: 'blunt',
+        radiusMetres: 6,
+        damage: 20,
+        materialStrength: 20,
+        strikeSoundLimit: 1,
+        impulse: 1,
+      }),
+    );
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
     );
@@ -379,7 +530,18 @@ describe('hand grenade', () => {
     const open = session.actorStore.get(session.actors.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
     session.actors.detonate(
-      detonation([0.5, 1, 0.5], { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }, 400),
+      detonation(
+        [0.5, 1, 0.5],
+        {
+          damageKind: 'blunt',
+          radiusMetres: 6,
+          damage: 20,
+          materialStrength: 20,
+          strikeSoundLimit: 1,
+          impulse: 1,
+        },
+        400,
+      ),
     );
     expect(healthLost(before[0]!, sheltered.regions)).toBe(0);
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
@@ -396,7 +558,16 @@ describe('hand grenade', () => {
     const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: rags } };
     const id = session.actors.add(type, [1, 0, 0]);
     const actor = session.actorStore.get(id)!;
-    session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
+    session.actors.detonate(
+      detonation([0, 1, 0], {
+        damageKind: 'blunt',
+        radiusMetres: 6,
+        damage: 1000,
+        materialStrength: 1000,
+        strikeSoundLimit: 1,
+        impulse: 1,
+      }),
+    );
     expect(session.actorStore.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
