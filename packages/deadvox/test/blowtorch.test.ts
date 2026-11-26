@@ -502,19 +502,25 @@ describe('torch cutting a steel cell', () => {
     expect(f.damageAt(joist)).toBeGreaterThan(kept);
   });
 
-  it('carries a cut through a save and goes on cutting', async () => {
+  it('carries a cut through a save and strikes on the beat it kept', async () => {
     const f = cutFixture('open');
     f.holdFuelled(canisterCapacity);
     expect(f.session.cutCell(joist)).toBeUndefined();
     f.strike();
-    f.strike();
+    // Saved between strikes, so the time already spent towards the next one must carry over.
+    const halfStrike = torchCut.strikeIntervalSimSeconds / 2;
+    f.sim.scheduler.advance(halfStrike);
+    const saved = f.damageAt(joist);
 
     const restored = await reloadCut(f, 'open');
 
-    expect(restored.damageAt(joist)).toBe(f.damageAt(joist));
+    expect(restored.damageAt(joist)).toBe(saved);
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'cutCell', cell: joist, stopped: false });
-    restored.strike();
-    expect(restored.damageAt(joist)).toBeGreaterThan(f.damageAt(joist));
+    for (const run of [f, restored]) {
+      run.sim.scheduler.advance(halfStrike);
+    }
+    expect(restored.damageAt(joist)).toBeGreaterThan(saved);
+    expect(restored.damageAt(joist)).toBe(f.damageAt(joist));
   });
 
   it('refuses time compression while a cut runs', () => {
