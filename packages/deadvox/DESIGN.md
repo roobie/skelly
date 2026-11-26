@@ -729,8 +729,9 @@ because rearranging a room should not require destroying its contents. See `pack
   without a reachable landing is refused rather than letting a piece fall out of
   the known world. A derived fall record preserves that discrete rule while the
   view draws gravity; a pile that loses its floor has its own record because the
-  model has no riding relation. See `packages/engine/src/core/furnitureMove.ts`,
-  `settle`.
+  model has no riding relation. The landed terrain state remains hidden until its
+  recorded source arrives, so a cascade never shows rubble floating below a later
+  drop. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
