@@ -1,17 +1,21 @@
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
 import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
 import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
 import { swapCanister } from '@skelly/engine/internal/core/torch.ts';
 import { cellActionsFor } from '@skelly/engine/internal/game/cellActions.ts';
-import { freshDropTarget, Inventory, type Target } from '@skelly/engine/inventory';
+import { CraftCommands, freshDropTarget, HandlingQueue, Inventory, type Target } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
+import { bindReach, Character } from '@skelly/engine/sim';
 import { BlockEntities, createTerrainEvaluator, type TerrainPlan, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { Simulation } from './simulationFixture.ts';
 import {
   blockId,
   contentLookup,
@@ -509,5 +513,71 @@ describe('torch cutting a steel cell', () => {
 
     expect(f.sim.compress().ok).toBe(false);
     expect(f.sim.actions.job?.stopped).toBe(false);
+  });
+});
+
+/** A crafter with the recipe known and its first component of each group in a pile at their feet. */
+const craftFixture = (recipeId: string) => {
+  const character = new Character(registry);
+  character.initializeProgression({}, [recipeId]);
+  const inventory = new Inventory(registry, undefined, undefined, character);
+  const sim = new Simulation({ seed: 1 });
+  const position: Vec3 = [0, 0, 0];
+  const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
+  sim.actions.craft = craftActionHooks(inventory, character, reach, {
+    feet: () => position,
+    calendar: () => sim.calendar,
+  });
+  const commands = new CraftCommands({ inventory, character, sim, queue: new HandlingQueue(inventory), reach });
+  const recipe = registry.recipes.get(recipeId)!;
+  const stock = (item: ReturnType<Inventory['create']>) => {
+    if (!inventory.add(item, { kind: 'pile', pos: position })) {
+      throw new Error('fixture stock did not fit');
+    }
+  };
+  for (const group of recipe.components) {
+    const part = group.find((entry) => 'item' in entry)!;
+    stock(inventory.create(part.item, part.count));
+  }
+  return { inventory, sim, commands, recipe, stock };
+};
+
+describe('crafting with a fuelled tool', () => {
+  it('refuses a torch craft on an empty cartridge', () => {
+    const r = craftFixture('cut_sheet_metal_torch');
+    r.stock(fuelledTorch(r.inventory, 0));
+
+    expect(r.commands.start(r.recipe.id)).toBeTypeOf('string');
+    expect(r.inventory.hands.right?.work).toBeUndefined();
+  });
+
+  it('spends the gas the craft burns when it finishes', () => {
+    const r = craftFixture('cut_sheet_metal_torch');
+    const torch = fuelledTorch(r.inventory, canisterCapacity);
+    r.stock(torch);
+
+    expect(r.commands.start(r.recipe.id)).toBeUndefined();
+    const work = r.inventory.hands.right!.work!;
+    const burnSeconds = work.duration / BASE_CLOCK.ratio;
+    r.sim.scheduler.advance(work.duration / r.sim.clock.ratio / 2);
+    expect(chargeOf(registry, torch)).toBe(canisterCapacity);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    expect(r.recipe.result).toMatchObject({ item: r.inventory.hands.right!.type });
+    expect(chargeOf(registry, torch)).toBeCloseTo(canisterCapacity - torchTool.fuel!.fillPerSimSecond * burnSeconds, 9);
+  });
+
+  it('spends no gas on a saw craft with a fuelled torch to hand', () => {
+    const r = craftFixture('cut_sheet_metal_saw');
+    const torch = fuelledTorch(r.inventory, canisterCapacity);
+    r.stock(torch);
+    r.stock(r.inventory.create('hacksaw'));
+
+    expect(r.commands.start(r.recipe.id)).toBeUndefined();
+    const work = r.inventory.hands.right!.work!;
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    expect(r.recipe.result).toMatchObject({ item: r.inventory.hands.right!.type });
+    expect(chargeOf(registry, torch)).toBe(canisterCapacity);
   });
 });

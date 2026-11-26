@@ -14,6 +14,7 @@ import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import type { CellDisassemblyPlan } from './rubble.ts';
 import { SKILL_LEVEL_MIN } from './skillLevels.ts';
+import { fuelCovers, fuelRefusal, workFuel } from './torch.ts';
 import type { WorldDestination } from './worldDestination.ts';
 
 interface CraftComponent {
@@ -523,6 +524,40 @@ export const admissionRefusal = (
   character: CraftCharacter,
 ): string | undefined =>
   refusalReason(snapshot.player.inventory.registry, recipe, {}, equipmentStatus(recipe, snapshot, character));
+
+/**
+ * The fuel a craft burns over `durationGameSeconds`, from the fuelled tool each required quality comes from, or why
+ * no such tool holds enough. A quality a workstation or a fuel-free tool meets burns nothing.
+ */
+export const craftFuel = (
+  recipe: RecipeDef,
+  snapshot: ReachSnapshot,
+  durationGameSeconds: number,
+): { tool: Item; amount: number }[] | string => {
+  const { registry } = snapshot.player.inventory;
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
+  const simSeconds = durationGameSeconds / snapshot.player.clock.ratio;
+  const spends: { tool: Item; amount: number }[] = [];
+  for (const [quality, level] of Object.entries(recipe.qualities).sort(([a], [b]) => compareCodeUnits(a, b))) {
+    if (snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level)) {
+      continue;
+    }
+    const providers = (index.qualities.get(quality) ?? [])
+      .filter((provider) => provider.level >= level)
+      .map(({ entry }) => entry.item);
+    if (providers.length === 0 || providers.some((provider) => !registry.items.get(provider.type)?.tool?.fuel)) {
+      continue;
+    }
+    const tool = providers.find((candidate) =>
+      fuelCovers(registry, candidate, workFuel(registry, candidate, simSeconds)),
+    );
+    if (!tool) {
+      return fuelRefusal(registry, providers);
+    }
+    spends.push({ tool, amount: workFuel(registry, tool, simSeconds) });
+  }
+  return spends;
+};
 
 const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
   Boolean(recipe.workstation) && station.id === recipe.workstation;
