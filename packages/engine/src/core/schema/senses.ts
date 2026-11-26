@@ -1,7 +1,7 @@
 import { check, minValue, number, pipe, strictObject } from 'valibot';
 import { capabilityField } from './capability.ts';
 import { LoweredStanceSchema } from './player.ts';
-import { Count, Fraction, Id, NonNegative, Positive, PositiveSimSeconds } from './primitives.ts';
+import { Color, Count, Fraction, Id, NonNegative, Positive, PositiveSimSeconds } from './primitives.ts';
 
 export const SenseSchema = strictObject({
   id: Id,
@@ -54,6 +54,13 @@ export const SenseSchema = strictObject({
     renderedBeamLimit: pipe(Count, minValue(2)),
     /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
     renderedFixtureLimit: pipe(Count, minValue(1)),
+    /** Burning terrain uses fixture slots, so its nearest cells never expand the point-light budget. */
+    terrainFire: strictObject({
+      color: Color,
+      intensity: Positive,
+      radiusMetres: Positive,
+      flame: strictObject({ heightMetres: Positive, radiusMetres: Positive }),
+    }),
     /**
      * Item-lamp pool budgets: even inactive shadow slots cost shader samplers and varyings.
      */

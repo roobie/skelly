@@ -95,6 +95,7 @@ import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
 import { TerrainCracks } from './terrainCracks.ts';
+import { TerrainFire } from './terrainFire.ts';
 import { VehicleMeshes } from './vehicles.ts';
 
 const corpseBudget = (
@@ -356,7 +357,8 @@ export const createPlayView = (
     scene.add(decals.mesh);
   }
   const cracks = new TerrainCracks({ seed: config.seed, blockSize: s, registry });
-  scene.add(cracks.mesh);
+  const terrainFire = new TerrainFire();
+  scene.add(cracks.mesh, terrainFire.group);
   const itemThrows = new ItemThrows(registry, models, s, config.seed);
   const targetCell = config.debug
     ? (block: Vec3) => {
@@ -411,6 +413,7 @@ export const createPlayView = (
     gore.dispose();
     decals?.dispose();
     cracks.dispose();
+    terrainFire.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
@@ -728,6 +731,7 @@ export const createPlayView = (
       corpses.sync(entities);
       decals?.sync(entities);
       cracks.sync(engine.simulationWorld, engine.isOpaque, meshes);
+      terrainFire.sync(engine.simulationWorld.fire.cells(), engine.isOpaque, s, lightTuning.terrainFire);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       actorMeshes.setCamera?.(camera);
@@ -855,6 +859,7 @@ export const createPlayView = (
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         meetsView: (source) => lampReach?.meetsView(source, lampCamera, lampCellInView) ?? true,
         fixtures: poweredLights(),
+        fires: terrainFire.lights(),
         glows: [...acidGlows(actorMeshes.anchors?.() ?? []), ...castShots.glows()],
       });
       fixtureReach?.update(lightPool.reachSlots);
