@@ -107,7 +107,8 @@ export const BlockMaterialSchema = strictObject({
   durability: Positive,
   resistance: record(Id, Fraction),
   massKg: Positive,
-  span: Count,
+  /** Sideways reach in metres. */
+  span: NonNegative,
   structural: vBoolean(),
   fallsTo: FallResultSchema,
   flammability: optional(

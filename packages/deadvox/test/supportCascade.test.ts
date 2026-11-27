@@ -78,7 +78,7 @@ const fixtureRegistry = (cascadeCellsPerTick?: number, breathes = false) => {
     registry.blockMaterials.set(id, { ...fixtureBlockMaterial(RUBBLE), id, span, breakable: true });
   };
   material('support_cascade_post_material', 0);
-  material('support_cascade_beam_material', 2);
+  material('support_cascade_beam_material', 1);
   for (const [id, of] of [
     [GROUND, 'support_cascade_post_material'],
     [POST, 'support_cascade_post_material'],

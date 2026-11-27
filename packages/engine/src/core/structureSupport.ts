@@ -19,6 +19,7 @@ const SIDEWAYS: readonly (readonly [number, number])[] = [
 
 /** The cells a support judgement reads. */
 export interface SupportView {
+  readonly blockSize: number;
   /** The block id standing at a cell inside the world's height. */
   readonly block: (x: number, y: number, z: number) => number;
   /** Whether the solid block at a cell is untouched natural ground. */
@@ -42,7 +43,9 @@ export interface Support {
  */
 export const createSupport = (registry: Registry, view: SupportView): Support => {
   const solid = registry.blocks.map((block) => block.solid);
-  const span = registry.blocks.map((block) => registry.blockMaterials.get(block.material)?.span ?? 0);
+  const span = registry.blocks.map((block) =>
+    Math.floor((registry.blockMaterials.get(block.material)?.span ?? 0) / view.blockSize),
+  );
   const bearings = registry.blocks.map((block) => (block.loadPath ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0]));
   const standing = new Map<string, boolean>();
   const held = new Map<string, boolean>();
@@ -174,7 +177,7 @@ export class SupportState {
    * A cell stopped holding: queue its receivers in the row above, then its bounded same-row dependants.
    * A cell is followed once per cascade.
    */
-  lost(registry: Registry, cell: Readonly<Vec3>): void {
+  lost(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
     const key = keyOf(cell);
     if (this.lostCells.has(key)) {
       return;
@@ -185,19 +188,19 @@ export class SupportState {
       const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
       this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);
     }
-    this.enqueueSideways(registry, cell);
+    this.enqueueSideways(registry, cell, blockSize);
   }
 
   /** A material replacement may lose span without losing solidity, so judge it as well as its dependants. */
-  replaced(registry: Registry, cell: Readonly<Vec3>): void {
+  replaced(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
     this.markPlaced(cell);
     this.enqueue([...cell] as Vec3, false);
-    this.lost(registry, cell);
+    this.lost(registry, cell, blockSize);
   }
 
   /** Queues the cells whose sideways run may pass through or end at `cell`. */
-  enqueueSideways(registry: Registry, cell: Readonly<Vec3>): void {
-    const reach = widestSpan(registry);
+  enqueueSideways(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
+    const reach = Math.floor(widestSpan(registry) / blockSize);
     for (let dx = -reach; dx <= reach; dx++) {
       const depth = reach - Math.abs(dx);
       for (let dz = -depth; dz <= depth; dz++) {
@@ -311,6 +314,7 @@ export const terrainSupportView = (
     placing !== undefined && x === placing.cell[0] && y === placing.cell[1] && z === placing.cell[2];
   const block = (x: number, y: number, z: number): number => (at(x, y, z) ? placing!.block : terrain.getBlock(x, y, z));
   return {
+    blockSize: scale.blockSize,
     minY,
     maxY,
     block,

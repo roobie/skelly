@@ -132,6 +132,7 @@ const supportDrops = (registry: Registry, template: CompiledTemplate, weakest = 
   const stamped = (x: number, y: number, z: number) => placedBlockAt(placement, [x, y, z]);
   const natural = (x: number, y: number, z: number) => stamped(x, y, z) === undefined && y <= surface;
   const support = createSupport(registry, {
+    blockSize: 0.5,
     minY: -2,
     maxY: template.size[1] + 1,
     block: (x, y, z) => {

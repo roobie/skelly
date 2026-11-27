@@ -138,7 +138,8 @@ unbuilt. Unanswered gates block only their dependent work.
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
 - **Support:** binary gravity support prevents floating walls without claiming to
-  simulate physical stress. Bending accommodates corners without a corner-specific
+  simulate physical stress. Metre-authored reach keeps member limits independent of
+  world resolution. Bending accommodates corners without a corner-specific
   tunable; refusing merely sideways-held endpoints prevents endless cantilevers.
   Downward bearing preserves memo termination and query-order independence without
   ports or a second support graph. Struts move the bearing point geometrically, not

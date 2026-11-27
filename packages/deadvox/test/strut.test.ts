@@ -129,6 +129,7 @@ describe('strut content and geometry', () => {
       }
     }
     const view = {
+      blockSize: 0.5,
       minY: 0,
       maxY: template.size[1]!,
       block: (x: number, y: number, z: number) => blocks.get(`${x},${y},${z}`) ?? 0,

@@ -1397,7 +1397,7 @@ const startPlayWith = (
       body: sim.body,
       damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
       igniteCell: (cell, strength) => session.igniteTerrainCell(cell, strength),
-      loseSupport: (cell) => engine.simulationWorld.support.lost(registry, cell),
+      loseSupport: (cell) => engine.simulationWorld.support.lost(registry, cell, s),
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);

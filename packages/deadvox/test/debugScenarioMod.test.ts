@@ -129,6 +129,7 @@ const droppedByBreaking = (
     const block = (x: number, y: number, z: number) =>
       gone(x, y, z) ? 0 : (inProp([x, y, z]) ?? (y < oy ? aimed.block : 0));
     return createSupport(registry, {
+      blockSize: 0.5,
       minY: oy - 1,
       maxY: oy + sy,
       block,

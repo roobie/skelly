@@ -208,7 +208,7 @@ const breakCell = (context: TerrainStrike, cell: Vec3, yields: BlockMaterialDef[
         destroyed = commitRuin({ ...mover, inventory: live }, plan);
         edited = world.setBlock(...cell, 0);
       });
-      world.support.lost(registry, cell);
+      world.support.lost(registry, cell, terrain.terrain.scale.blockSize);
       return { outcome: 'broken', destroyed, edited };
     } catch (error) {
       if (error !== expanded) {
@@ -340,7 +340,7 @@ export const cascadeSupport = (
     }
     if (support.holds(cell)) {
       if (lostFloor) {
-        state.enqueueSideways(registry, cell);
+        state.enqueueSideways(registry, cell, terrain.terrain.scale.blockSize);
       }
       return false;
     }
@@ -363,7 +363,7 @@ export const cascadeSupport = (
     const lost = judge(cell, entry.lostFloor);
     state.judged();
     if (lost) {
-      state.lost(registry, cell);
+      state.lost(registry, cell, terrain.terrain.scale.blockSize);
     }
   }
   return { destroyed, edited };

@@ -125,7 +125,7 @@
         }
       ],
       "rubbleClearTimeGameMinutes": 12,
-      "span": 2,
+      "span": 1,
       "structural": false
     },
     {
@@ -194,7 +194,7 @@
         }
       ],
       "rubbleClearTimeGameMinutes": 6,
-      "span": 3,
+      "span": 1.5,
       "structural": true
     },
     {
@@ -258,7 +258,7 @@
         }
       ],
       "rubbleClearTimeGameMinutes": 12,
-      "span": 4,
+      "span": 2,
       "structural": true
     },
     {
@@ -322,7 +322,7 @@
         }
       ],
       "rubbleClearTimeGameMinutes": 2,
-      "span": 1,
+      "span": 0.5,
       "structural": false
     },
     {
@@ -432,7 +432,7 @@
         }
       ],
       "rubbleClearTimeGameMinutes": 15,
-      "span": 7,
+      "span": 3.5,
       "structural": false
     },
     {
