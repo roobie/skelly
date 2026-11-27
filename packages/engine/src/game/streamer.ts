@@ -417,6 +417,32 @@ export class Streamer {
     }
   }
 
+  /** Hides landed cells from the render world and schedules their remesh through this streamer's single dirty owner. */
+  maskLanded(cells: readonly Vec3[]): void {
+    const world = this.maskableWorld();
+    this.markEdited(cells.flatMap((cell) => world.mask(cell)));
+  }
+
+  /** Restores landed cells after their view-only fall has played, batching all affected chunks in this call. */
+  unmaskLanded(cells: readonly Vec3[]): void {
+    const world = this.maskableWorld();
+    this.markEdited(cells.flatMap((cell) => world.unmask(cell)));
+  }
+
+  private maskableWorld(): World & {
+    mask: (cell: Readonly<Vec3>) => Vec3[];
+    unmask: (cell: Readonly<Vec3>) => Vec3[];
+  } {
+    const world = this.opts.world as World & {
+      mask?: (cell: Readonly<Vec3>) => Vec3[];
+      unmask?: (cell: Readonly<Vec3>) => Vec3[];
+    };
+    if (!(world.mask && world.unmask)) {
+      throw new Error('View-only masking needs a render world');
+    }
+    return world as World & { mask: (cell: Readonly<Vec3>) => Vec3[]; unmask: (cell: Readonly<Vec3>) => Vec3[] };
+  }
+
   /** Call after editing blocks with the chunks World.setBlock returned. */
   markEdited(chunks: Vec3[]): void {
     this.settled = false;

@@ -45,12 +45,24 @@ interface PileMove {
   placed: Placed;
   to: Vec3;
   at: Spot;
+  /** Set only when this pile lost its floor, never for an aside displacement. */
+  fallFrom?: Vec3;
 }
 
 interface Fall {
   entity: BlockEntity;
   y: number;
 }
+
+/** Publishes only piles that lost floor support; an aside relocation is not a gravity fall. */
+const shiftSettledPiles = (inventory: Inventory, moves: readonly PileMove[]): void => {
+  inventory.shiftPiles(moves);
+  for (const { placed, to, fallFrom } of moves) {
+    if (fallFrom) {
+      inventory.entities.falls.emit({ kind: 'pile', uid: placed.item.uid, from: fallFrom, to: [...to] });
+    }
+  }
+};
 
 // A chunk that isn't loaded reads as air, so a fall that finds no floor within this
 // many cells is a missing floor, not a deep one.
@@ -416,12 +428,16 @@ const resettlePiles = (
   } = {},
 ): PileMove[] | undefined => {
   const { inventory } = mover;
-  const moving: Loose[] = piles
+  const moving: (Loose & { fallFrom?: Vec3 })[] = piles
     .filter((pile) => shadow.occupied(pile.pos) || !shadow.occupied(below(pile.pos)))
-    .map((pile) => ({
-      items: pile.items,
-      targets: shadow.occupied(pile.pos) ? shadow.aside(pile.pos) : fallTargets(pile.pos),
-    }));
+    .map((pile) => {
+      const falling = !shadow.occupied(below(pile.pos));
+      return {
+        items: pile.items,
+        targets: falling ? fallTargets(pile.pos) : shadow.aside(pile.pos),
+        ...(falling ? { fallFrom: [...pile.pos] as Vec3 } : {}),
+      };
+    });
   const leaving = new Set(moving.flatMap((pile) => pile.items));
   const grids = new Map<string, Placed[]>();
   const gridAt = (cell: Vec3) => {
@@ -433,14 +449,15 @@ const resettlePiles = (
     return placed;
   };
   const moves: PileMove[] = [];
-  for (const { items, targets } of [...moving, ...loose]) {
+  const settling: (Loose & { fallFrom?: Vec3 })[] = [...moving, ...loose];
+  for (const { items, targets, fallFrom } of settling) {
     for (const placed of items) {
       const move = fitPlaced(mover, targets, gridAt, placed);
       if (!move) {
         return undefined;
       }
       gridAt(move.to).push({ ...move.at, item: placed.item });
-      moves.push(move);
+      moves.push({ ...move, ...(fallFrom ? { fallFrom } : {}) });
     }
   }
   return moves;
@@ -772,7 +789,10 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
     crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
-  inventory.shiftPiles(moves.filter(({ loose }) => !loose));
+  shiftSettledPiles(
+    inventory,
+    moves.filter(({ loose }) => !loose),
+  );
   inventory.landLoose(moves.filter(({ loose }) => loose));
   return destroyed;
 };
@@ -828,7 +848,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
     crushFall(mover, fallen, y);
     inventory.entities.drop(fallen, y);
   }
-  inventory.shiftPiles(moves);
+  shiftSettledPiles(inventory, moves);
   return undefined;
 };
 
@@ -930,7 +950,7 @@ export const slideFurniture = (
       crushFall(mover, fallen, y);
       inventory.entities.drop(fallen, y);
     }
-    inventory.shiftPiles(moves);
+    shiftSettledPiles(inventory, moves);
   }
   return undefined;
 };
@@ -1086,7 +1106,7 @@ export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): st
   }
   inventory.settleFurnitureFood(entity);
   inventory.entities.place(entity, result.pos);
-  inventory.shiftPiles(moves);
+  shiftSettledPiles(inventory, moves);
   return undefined;
 };
 

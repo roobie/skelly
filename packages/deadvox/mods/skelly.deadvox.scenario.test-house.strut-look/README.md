@@ -35,4 +35,4 @@ All members sit above standing head height. Brick backstops catch shots through 
 Bodies still reserve a whole strut cell. Do not use these high members to judge exact body
 passage. Timber torch charring and loaded-char crumbling are separate work; this check
 covers cutting, bearing, ray passage and salvage. Reasons: `packages/deadvox/SLICE-5.md`,
-"Support" and "Strut geometry".
+"Support", and `packages/deadvox/SLICE-5.md`, "Strut geometry".

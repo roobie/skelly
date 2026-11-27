@@ -157,14 +157,16 @@ unbuilt. Unanswered gates block only their dependent work.
   before spending inputs so the player learns why first; see
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
   Falling rubble makes collapse visible rather than leaving rubble suspended where
-  structure stood. A thin member instead leaves salvage: a rubble cube would invent
-  a doorway-blocking mass where a slim brace fell. Block overrides and material defaults
-  share one failure selection, and yields reuse the break planner so falling, cutting
-  and later char failure cannot disagree about salvage. Scrap and offcuts remain useful;
-  a placeable strut item waits for player strut construction rather than offering an item
-  with no way back into the world. Occupied vehicle fittings stop rubble because vehicle
-  impact damage has no owner. Collapse is danger, not arbitrary deletion: conserve anything
-  it did not break through the shared ruin and buried-content owners; see
+  structure stood. The view masks a landed rubble cell until its recorded drop lands,
+  because cascades otherwise expose their result before the source arrives. A thin member
+  instead leaves salvage: a rubble cube would invent a doorway-blocking mass where a slim
+  brace fell. Block overrides and material defaults share one failure selection, and yields
+  reuse the break planner so falling, cutting and later char failure cannot disagree about
+  salvage. Scrap and offcuts remain useful; a placeable strut item waits for player strut
+  construction rather than offering an item with no way back into the world. Occupied vehicle
+  fittings stop rubble because vehicle impact damage has no owner. Collapse is danger, not
+  arbitrary deletion: conserve anything it did not break through the shared ruin and
+  buried-content owners; see
   `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
   Walls stay walls: evacuation through solids would let collapse breach a sealed base
   by teleporting its occupants. Burial and content-owned breathing let collapse kill

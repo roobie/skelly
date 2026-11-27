@@ -195,6 +195,8 @@ export class FurnitureMeshes {
     this.marker.visible = true;
   }
 
+  private hiddenPieceUids: ReadonlySet<number> = new Set();
+
   /**
    * Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. Pieces that never move
    * between syncs are drawn as one instanced batch per geometry, material and sector, so a frame draws, culls and
@@ -202,8 +204,15 @@ export class FurnitureMeshes {
    * piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
    * reveal changed, and draws what looking at every piece would.
    */
-  sync(entities: BlockEntities, poweredLights: readonly PoweredLight[] = []): void {
-    const glowChanged = this.updateGlow(entities, poweredLights);
+  sync(
+    entities: BlockEntities,
+    poweredLights: readonly PoweredLight[] = [],
+    hiddenPieceUids: ReadonlySet<number> = new Set(),
+  ): void {
+    const glowChanged = new Set([
+      ...this.updateGlow(entities, poweredLights),
+      ...this.updateHidden(entities, hiddenPieceUids),
+    ]);
     const revealVersion = this.reveal?.revealVersion ?? 0;
     const modelsVersion = this.content?.models.version ?? 0;
     const modelsArrived = modelsVersion !== this.drawnModels;
@@ -245,6 +254,18 @@ export class FurnitureMeshes {
     }
   }
 
+  private updateHidden(entities: BlockEntities, hidden: ReadonlySet<number>): Set<BlockEntity> {
+    const changed = new Set<BlockEntity>();
+    for (const uid of new Set([...this.hiddenPieceUids, ...hidden])) {
+      const entity = entities.byUid(uid);
+      if (entity && this.hiddenPieceUids.has(uid) !== hidden.has(uid)) {
+        changed.add(entity);
+      }
+    }
+    this.hiddenPieceUids = new Set(hidden);
+    return changed;
+  }
+
   private updateGlow(entities: BlockEntities, poweredLights: readonly PoweredLight[]): Set<BlockEntity> {
     const glowing = new Set<BlockEntity>();
     for (const { body } of poweredLights) {
@@ -268,9 +289,10 @@ export class FurnitureMeshes {
   private restage(entity: BlockEntity, entities: BlockEntities, modelsVersion: number, redraw: Set<string>): void {
     const definition = entities.defOf(entity);
     const step = definition.stockAppearance ? `:stock:${stockShapeStep(entity, definition)}` : '';
-    const pose = entities.stands(entity)
-      ? `${poseKey(entity, entities.wearOf(entity))}:${this.glowing.has(entity)}${step}`
-      : undefined;
+    const pose =
+      entities.stands(entity) && !this.hiddenPieceUids.has(entity.uid)
+        ? `${poseKey(entity, entities.wearOf(entity))}:${this.glowing.has(entity)}${step}`
+        : undefined;
     const kept = this.pieces.get(entity);
     if (kept !== undefined && kept.pose === pose && (kept.models === undefined || kept.models === modelsVersion)) {
       return;

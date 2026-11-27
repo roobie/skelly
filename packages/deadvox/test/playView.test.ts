@@ -156,7 +156,9 @@ const fixture = (physicalSolid: SolidAt = () => false) => {
       fogCurveExponent: FOG_CURVE_EXPONENT,
     },
     isOpaque: physicalSolid,
+    entities: inventory.entities,
     simulationWorld: new World(),
+    streamer: { maskLanded: vi.fn(), unmaskLanded: vi.fn() },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
@@ -288,6 +290,9 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       fogCurveExponent: FOG_CURVE_EXPONENT,
     },
     skylight: sky,
+    entities: inventory.entities,
+    simulationWorld: new World(),
+    streamer: { maskLanded: vi.fn(), unmaskLanded: vi.fn() },
     materialPatches,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: meshFixture(),
@@ -688,6 +693,9 @@ describe('play presentation ownership', () => {
       scene: new Scene(),
       camera: new PerspectiveCamera(),
       meshes: meshFixture(),
+      entities: inventory.entities,
+      simulationWorld: new World(),
+      streamer: { maskLanded: vi.fn(), unmaskLanded: vi.fn() },
       sky: {},
     } as unknown as Engine;
     const view = createPlayView(engine, inventory, vi.fn(), {

@@ -4,7 +4,7 @@ import { Inventory, itemFlightPoint } from '@skelly/engine/inventory';
 import { reachTuning } from '@skelly/engine/sim';
 import { ItemThrows } from '@skelly/presentation/internal/render/itemThrows.ts';
 import { PileMeshes } from '@skelly/presentation/render';
-import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
@@ -15,6 +15,38 @@ const { throwFlightSimSeconds: ITEM_FLIGHT_SECONDS } = reachTuning(base);
 
 const fixtureRegistry = () => ({ ...base, items: new Map(base.items) });
 const pile = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
+
+it('moves a pile fall clone in world space without moving its frozen landed model', () => {
+  const registry = fixtureRegistry();
+  registry.items.set('fall_fixture', { ...base.items.get('rag')!, id: 'fall_fixture', model: 'fall_fixture' });
+  const source = new Group();
+  const geometry = new BoxGeometry();
+  const material = new MeshBasicMaterial();
+  source.add(new Mesh(geometry, material));
+  const models = {
+    version: 1,
+    has: (id: string) => id === 'fall_fixture',
+    groundLook: () => source.clone(),
+  } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
+  const inventory = new Inventory(registry);
+  const item = inventory.create('fall_fixture');
+  expect(inventory.add(item, pile)).toBe(true);
+  const piles = new PileMeshes(0.5, models);
+  piles.sync(inventory);
+  const landed = piles.drawnModel(item.uid)!;
+  expect(landed).toBeDefined();
+  const copy = piles.fallModel(item.uid)!;
+  const start = copy.getWorldPosition(new Vector3());
+  copy.position.y += 1;
+  copy.updateMatrixWorld(true);
+  expect(copy.getWorldPosition(new Vector3()).y).toBeCloseTo(start.y + 1);
+  expect(landed.getWorldPosition(new Vector3()).y).toBeCloseTo(start.y);
+  piles.sync(inventory, new Set([item.uid]));
+  expect(piles.drawnModel(item.uid)).toBeUndefined();
+  piles.dispose();
+  geometry.dispose();
+  material.dispose();
+});
 
 it('aligns a landing with the bundle after excluding another active throw', () => {
   const registry = fixtureRegistry();
