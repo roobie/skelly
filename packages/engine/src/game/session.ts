@@ -966,6 +966,15 @@ export const createSession = (options: SessionOptions) => {
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
   const rayCells = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), physicalSolid);
+  const meleeRays = new Map<Parameters<typeof meleeBlocker>[0]['motion'], ReturnType<typeof blockRayQuery>>();
+  const meleeRayCells = (motion: Parameters<typeof meleeBlocker>[0]['motion']) => {
+    let query = meleeRays.get(motion);
+    if (!query) {
+      query = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), meleeBlocker({ kind: 'player', motion }));
+      meleeRays.set(motion, query);
+    }
+    return query;
+  };
   const terrainRayCells = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), isSolid);
   const apertureTerrain = terrainSolid(world, registry);
   const apertureRay = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), apertureTerrain);
@@ -1952,16 +1961,7 @@ export const createSession = (options: SessionOptions) => {
     if (picked?.entity.window) {
       return bashPiece(picked.entity, weapon.impulse, picked.part) !== undefined;
     }
-    const hit = raycast(
-      origin,
-      direction,
-      reachBlocks,
-      blockRayQuery(
-        registry,
-        (x, y, z) => world.getBlock(x, y, z),
-        meleeBlocker({ kind: 'player', motion: weapon.motion }),
-      ),
-    );
+    const hit = raycast(origin, direction, reachBlocks, meleeRayCells(weapon.motion));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse) !== undefined;

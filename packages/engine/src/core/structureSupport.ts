@@ -151,6 +151,8 @@ const widestSpan = (registry: Registry, beam: boolean): number =>
     return Math.max(widest, span);
   }, 0);
 
+const registryBearings = new WeakMap<Registry, Set<keyof typeof BEARING_OFFSETS | undefined>>();
+
 /**
  * World-owned support state that play produces. A placed mark lasts as long as the block placed with it, so any block
  * change at the cell ends it, as it ends the cell's damage. A cascade is a first-in, first-out frontier of cells to
@@ -198,9 +200,13 @@ export class SupportState {
       return;
     }
     this.lostCells.set(key, [...cell] as Vec3);
-    const bearings = new Set(
-      registry.blocks.map((block) => (block.loadPath?.kind === 'strut' ? block.loadPath.bearing : undefined)),
-    );
+    let bearings = registryBearings.get(registry);
+    if (!bearings) {
+      bearings = new Set(
+        registry.blocks.map((block) => (block.loadPath?.kind === 'strut' ? block.loadPath.bearing : undefined)),
+      );
+      registryBearings.set(registry, bearings);
+    }
     for (const bearing of bearings) {
       const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
       this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);

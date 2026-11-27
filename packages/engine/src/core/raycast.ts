@@ -39,7 +39,10 @@ const hitCell = (
   }
   const local = ray.origin.map((v, axis) => v - cell[axis]!) as Vec3;
   const hit = candidate(local, ray.dir, ray.exit);
-  return hit && hit.distance >= ray.enter && hit.distance <= ray.exit ? { block: [...cell], ...hit } : undefined;
+  // A shape bounded by its cell cannot be entered before the cell.
+  return hit && hit.distance <= ray.exit
+    ? { block: [...cell], ...hit, distance: Math.max(hit.distance, ray.enter) }
+    : undefined;
 };
 
 /** Walks the voxel grid along a ray (Amanatides & Woo) and returns the first solid block. */

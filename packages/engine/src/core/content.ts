@@ -3161,7 +3161,7 @@ const checkBlockBurnResult = (registry: Registry, block: BlockDef, report: Repor
         'blocks',
         block.id,
         '.burnsTo',
-        'burn-out must preserve strut orientation, discard beam orientation and use a solid zero-span material',
+        'burn-out must preserve strut orientation, discard beam orientation and use a solid zero-span material so char cannot bridge unsupported gaps',
       );
     }
   }
