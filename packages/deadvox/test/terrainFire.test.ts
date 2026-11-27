@@ -38,6 +38,7 @@ describe('terrain fire view', () => {
       tuning,
     );
 
+    expect(fire.group.children).toHaveLength(exposedFaces.length);
     for (const [index, flame] of fire.group.children.entries()) {
       const face = exposedFaces[index]!;
       const facePlane = (cell[1] + 0.5 + face[1]! * 0.5) * blockSize;
