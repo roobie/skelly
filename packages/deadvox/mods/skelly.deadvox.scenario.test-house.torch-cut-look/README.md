@@ -11,8 +11,8 @@ Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.torch-cut-look
 
 A concrete wall carries a steel joist run out over a concrete pad at eye height, and a concrete slab lies on the run.
 The wall holds the run only through the joist end cell beside it, so cutting that cell drops the run and the slab.
-The player starts south of that cell, outside the fall zone, facing it at noon, with a blowtorch in hand on a full
-cartridge, a spare cartridge in the jeans, and every skill at its top level from the start kit. A chain-link run, a
+The player starts south of that cell, outside the fall zone, facing it at noon, with a blowtorch in hand on a nearly
+empty cartridge, a full spare cartridge in the jeans, and every skill at its top level from the start kit. A chain-link run, a
 galvanized wall and a plank post stand clear of the fall zone. The rules the look checks are under
 `packages/deadvox/DESIGN.md`, "Cutting cells".
 
@@ -22,15 +22,14 @@ galvanized wall and a plank post stand clear of the fall zone. The rules the loo
 2. Without moving, interact with the aimed joist end (`packages/mods/skelly.controls/controls.jsonnet`,
    "world.interact") and choose Cut. Time speeds up as it does while taking a piece apart; the torch strikes at a
    steady beat with its own sound, the cell cracks as it takes damage, and the cartridge fill drops strike by strike.
-3. Stop the cut part way, save and reload: the cracks are as they were. Choose Cut again and it carries on from that
-   damage rather than starting over.
-4. Let the cut finish. The cut cell breaks and drops its yield as items, and the rest of the run and the slab drop
-   straight down onto the pad as rubble with no warning beforehand. The player, outside the fall zone, is unharmed.
-5. The chain-link run and the galvanized wall both offer Cut. The concrete wall and the plank post offer none: heat
-   leaves masonry alone, and timber too until the torch chars it (#2046).
-6. Cut the metal runs until the cartridge runs dry. The cut stops by itself, time drops back to normal, a notice says
-   the torch is out of fuel, and no Continue or Stop prompt waits. Walk away at once without pressing Stop.
-7. Refuel: open the inventory (`packages/mods/skelly.controls/controls.jsonnet`, "ui.inventory-toggle"), select the
+3. Within a few strikes the cartridge runs dry. The cut stops by itself, time drops back to normal, a notice says the
+   torch is out of fuel, and no Continue or Stop prompt waits. Walk away at once without pressing Stop.
+4. Refuel: open the inventory (`packages/mods/skelly.controls/controls.jsonnet`, "ui.inventory-toggle"), select the
    spare cartridge in the jeans and activate it ("inventory.activate"), which offers putting it in the blowtorch in
-   hand. The empty cartridge drops at your feet. Choose Cut again on the cell that ran dry and it carries on from its
-   damage.
+   hand. The empty cartridge drops at your feet. Choose Cut again on the joist end and it carries on from its damage.
+5. Stop the cut part way, save and reload: the cracks are as they were. Choose Cut again and it carries on from that
+   damage rather than starting over.
+6. Let the cut finish. The cut cell breaks and drops its yield as items, and the rest of the run and the slab drop
+   straight down onto the pad as rubble with no warning beforehand. The player, outside the fall zone, is unharmed.
+7. The chain-link run and the galvanized wall both offer Cut. The concrete wall and the plank post offer none: heat
+   leaves masonry alone, and timber too until the torch chars it (#2046).

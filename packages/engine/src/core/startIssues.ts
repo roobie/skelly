@@ -1,6 +1,7 @@
 import { claimed } from './capabilities.ts';
 import { startReservationIssues } from './cityPlan.ts';
 import type { ElementPath, Registry } from './content.ts';
+import { setInitialFill } from './fill.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
 import { Inventory, wornOccupancyIssue, wornSlotOf } from './inventory.ts';
 import { type Item, ItemFactory, setInitialCylinder } from './items.ts';
@@ -102,6 +103,13 @@ const kitRowIssues = (
       setInitialCylinder(registry, item, entry.cylinder);
     } catch (error) {
       fail('.cylinder', String(error));
+    }
+  }
+  if (entry.fill !== undefined && def) {
+    try {
+      setInitialFill(registry, new ItemFactory().create(registry, entry.item, entry.count), entry.fill);
+    } catch (error) {
+      fail('.fill', String(error));
     }
   }
   destinationIssues(registry, entry, kit, fail);

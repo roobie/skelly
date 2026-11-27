@@ -40,6 +40,8 @@ export const StartKitEntrySchema = strictObject({
   item: Id,
   count: optional(pipe(Count, minValue(1))),
   condition: optional(Fraction),
+  /** How full it starts, as a share of its own capacity in charge, fuel or liquid; absent means as found. */
+  fill: optional(Fraction),
   lit: optional(literal(true)),
   /** The world region pair a paper map covers; only a paper-map item takes it. See `packages/deadvox/DESIGN.md`, "Regional paper maps". */
   paperMap: optional(strictObject({ x: pipe(number(), integer()), z: pipe(number(), integer()) })),

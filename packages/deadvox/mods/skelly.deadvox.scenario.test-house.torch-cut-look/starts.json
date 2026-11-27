@@ -77,6 +77,7 @@
             "parent": "blowtorch",
             "slot": "canister"
           },
+          "fill": 0.02,
           "id": "cartridge",
           "item": "gas_canister"
         },

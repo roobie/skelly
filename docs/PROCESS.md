@@ -127,6 +127,11 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, and `packages/engine/src/core/startState.ts`,
   `startSkills`. Reason: low skill adds spread and failure, which hides what the look is
   checking. A start that tests skills opts out in its own row with `allSkills: null`.
+- **A kit row sets how full its item starts with `fill`, on the row of the item that holds the
+  charge, fuel or liquid,** such as a cartridge fitted in a torch rather than the torch; see
+  `packages/engine/src/core/fill.ts`, `setInitialFill`. Reason: fill is a share of the item's own
+  capacity, as condition is of its wear, so the author needs no item's units or capacity and the
+  type alone makes it valid. A look that waits on something running out starts it nearly empty.
 - **Quote the maintainer's verdict verbatim.** A verdict on one item never counts for another.
 
 ## Slice decision rules

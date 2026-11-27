@@ -1,4 +1,6 @@
 import { buildRegistry, type Registry } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/internal/core/items.ts';
+import { chargeShare } from '@skelly/engine/internal/core/lights.ts';
 import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import { type StartDef, StartSchema } from '@skelly/engine/internal/core/schema/starts.ts';
 import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
@@ -308,6 +310,40 @@ describe('new-game application', () => {
     applyStartState(context.inventory, start, context);
     expect(context.inventory.hands.right?.cartridges).toEqual(start.kit[0]!.cartridges);
     expect(context.inventory.hands.right?.cartridges).not.toBe(start.kit[0]!.cartridges);
+  });
+
+  it('starts a battery, a canister, a lamp and a liquid container at an authored share of their own capacity', () => {
+    const start = makeStart({ kit: [] });
+    const { registry } = setup(start);
+    const items = [...registry.items.values()];
+    const fill = 0.25;
+    const holders = [
+      items.find(({ battery }) => battery && !battery.rechargeable),
+      items.find(({ battery }) => battery?.rechargeable),
+      items.find(({ canister }) => canister),
+      items.find(({ light, vessel }) => light?.liquidFuel && vessel),
+      items.find(({ light, vessel }) => !light && vessel?.initialContents.kind === 'filled'),
+    ];
+    expect(holders.every(Boolean)).toBe(true);
+    const share = (item: Item): number | undefined => {
+      const def = registry.items.get(item.type)!;
+      return def.vessel && !def.light
+        ? (item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0) /
+            def.vessel.capacityMicrolitres
+        : chargeShare(registry, item);
+    };
+    for (const holder of holders) {
+      start.kit = [{ id: 'held', item: holder!.id, fill, destination: { kind: 'hand', role: 'dominant' } }];
+      registry.starts.set(start.id, start);
+      expect(startIssues(registry).filter(({ id }) => id === start.id)).toEqual([]);
+      const context = setup(start);
+      applyStartState(context.inventory, start, context);
+      expect(share(context.inventory.hands.right!)).toBeCloseTo(fill, 5);
+    }
+    start.kit = [{ id: 'held', item: 'fixture_start_stock', fill, destination: { kind: 'hand', role: 'dominant' } }];
+    expect(startIssues(registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'held', path: '.fill' } }),
+    );
   });
 
   const cylinderFixture = () => {
