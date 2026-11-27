@@ -13,7 +13,7 @@ function(materials) [
     color: row.color,
     solid: true,
     opaque: false,
-    bearing: direction.bearing,
+    loadPath: { kind: 'strut', bearing: direction.bearing },
     strut: { rise: direction.rise, widthBlocks: row.widthBlocks },
     weatherable: false,
     drops: { default: 'item_drop_wood' } + landings.forBlock(row.material),

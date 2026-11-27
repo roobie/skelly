@@ -180,12 +180,21 @@ unbuilt. Unanswered gates block only their dependent work.
   `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
   `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`.
 - **Strut geometry:** shape belongs to a construction block, not to a material whitelist,
-  so another structural material can reuse the same mechanism. Content derives oriented
+  so another structural material can reuse the same mechanism. A single load-path field
+  keeps support reading one load description rather than competing shape-specific fields;
+  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Content derives oriented
   burn replacements to avoid turning an open member into a cube. The bounded prism keeps
   mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
   a sloping face normal. See `packages/engine/src/core/strutShape.ts`, `strutFaces`;
   `packages/engine/src/core/mesher.ts`, `emitStruts`; and
   `packages/mods/skelly.natural-world/struts.libsonnet`.
+  Shots and aim use the visible member because stopping a bullet on its empty gap is
+  misleading. Sight uses opacity independently. Bodies remain whole-cell because exact
+  body contact also needs sweep and step-up work; templates keep members above head
+  height rather than adding a temporary player-height placement restriction. Wire keeps
+  its existing passage policy until exact wire rays are requested. See
+  `packages/engine/src/core/raycast.ts`, `raycast`; and
+  `packages/engine/src/core/blockRay.ts`, `blockRayQuery`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";

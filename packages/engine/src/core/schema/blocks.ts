@@ -3,6 +3,7 @@ import {
   check,
   gtValue,
   integer,
+  literal,
   maxValue,
   minValue,
   number,
@@ -151,8 +152,8 @@ export const SupportTuningSchema = strictObject({
 export const BlockSchema = strictObject({
   id: Id,
   material: Id,
-  /** The cell carrying this block is always one row down; the selector offsets its horizontal position. */
-  bearing: optional(picklist(['below', '-x', '+x', '-z', '+z'])),
+  /** One load description per block; strut bearing always descends one row. */
+  loadPath: optional(strictObject({ kind: literal('strut'), bearing: picklist(['-x', '+x', '-z', '+z']) })),
   strut: optional(
     strictObject({
       rise: picklist(['+x', '-x', '+z', '-z']),

@@ -486,7 +486,6 @@
   ],
   "blocks": [
     {
-      "bearing": "-x",
       "color": "#6e6965",
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
@@ -496,6 +495,10 @@
         "player": "footstep_stone"
       },
       "id": "steel_strut_px",
+      "loadPath": {
+        "bearing": "-x",
+        "kind": "strut"
+      },
       "material": "metal",
       "name": "Steel strut",
       "opaque": false,
@@ -507,7 +510,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+x",
       "color": "#6e6965",
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
@@ -517,6 +519,10 @@
         "player": "footstep_stone"
       },
       "id": "steel_strut_nx",
+      "loadPath": {
+        "bearing": "+x",
+        "kind": "strut"
+      },
       "material": "metal",
       "name": "Steel strut",
       "opaque": false,
@@ -528,7 +534,6 @@
       "weatherable": false
     },
     {
-      "bearing": "-z",
       "color": "#6e6965",
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
@@ -538,6 +543,10 @@
         "player": "footstep_stone"
       },
       "id": "steel_strut_pz",
+      "loadPath": {
+        "bearing": "-z",
+        "kind": "strut"
+      },
       "material": "metal",
       "name": "Steel strut",
       "opaque": false,
@@ -549,7 +558,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+z",
       "color": "#6e6965",
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
@@ -559,6 +567,10 @@
         "player": "footstep_stone"
       },
       "id": "steel_strut_nz",
+      "loadPath": {
+        "bearing": "+z",
+        "kind": "strut"
+      },
       "material": "metal",
       "name": "Steel strut",
       "opaque": false,
@@ -570,7 +582,6 @@
       "weatherable": false
     },
     {
-      "bearing": "-x",
       "burnsTo": "charred_strut_px",
       "color": "#a0763f",
       "drops": {
@@ -581,6 +592,10 @@
         "player": "footstep_wood"
       },
       "id": "timber_strut_px",
+      "loadPath": {
+        "bearing": "-x",
+        "kind": "strut"
+      },
       "material": "timber",
       "name": "Timber strut",
       "opaque": false,
@@ -592,7 +607,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+x",
       "burnsTo": "charred_strut_nx",
       "color": "#a0763f",
       "drops": {
@@ -603,6 +617,10 @@
         "player": "footstep_wood"
       },
       "id": "timber_strut_nx",
+      "loadPath": {
+        "bearing": "+x",
+        "kind": "strut"
+      },
       "material": "timber",
       "name": "Timber strut",
       "opaque": false,
@@ -614,7 +632,6 @@
       "weatherable": false
     },
     {
-      "bearing": "-z",
       "burnsTo": "charred_strut_pz",
       "color": "#a0763f",
       "drops": {
@@ -625,6 +642,10 @@
         "player": "footstep_wood"
       },
       "id": "timber_strut_pz",
+      "loadPath": {
+        "bearing": "-z",
+        "kind": "strut"
+      },
       "material": "timber",
       "name": "Timber strut",
       "opaque": false,
@@ -636,7 +657,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+z",
       "burnsTo": "charred_strut_nz",
       "color": "#a0763f",
       "drops": {
@@ -647,6 +667,10 @@
         "player": "footstep_wood"
       },
       "id": "timber_strut_nz",
+      "loadPath": {
+        "bearing": "+z",
+        "kind": "strut"
+      },
       "material": "timber",
       "name": "Timber strut",
       "opaque": false,
@@ -658,7 +682,6 @@
       "weatherable": false
     },
     {
-      "bearing": "-x",
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
@@ -667,6 +690,10 @@
         "player": "footstep_wood"
       },
       "id": "charred_strut_px",
+      "loadPath": {
+        "bearing": "-x",
+        "kind": "strut"
+      },
       "material": "charred",
       "name": "Charred strut",
       "opaque": false,
@@ -678,7 +705,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+x",
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
@@ -687,6 +713,10 @@
         "player": "footstep_wood"
       },
       "id": "charred_strut_nx",
+      "loadPath": {
+        "bearing": "+x",
+        "kind": "strut"
+      },
       "material": "charred",
       "name": "Charred strut",
       "opaque": false,
@@ -698,7 +728,6 @@
       "weatherable": false
     },
     {
-      "bearing": "-z",
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
@@ -707,6 +736,10 @@
         "player": "footstep_wood"
       },
       "id": "charred_strut_pz",
+      "loadPath": {
+        "bearing": "-z",
+        "kind": "strut"
+      },
       "material": "charred",
       "name": "Charred strut",
       "opaque": false,
@@ -718,7 +751,6 @@
       "weatherable": false
     },
     {
-      "bearing": "+z",
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
@@ -727,6 +759,10 @@
         "player": "footstep_wood"
       },
       "id": "charred_strut_nz",
+      "loadPath": {
+        "bearing": "+z",
+        "kind": "strut"
+      },
       "material": "charred",
       "name": "Charred strut",
       "opaque": false,

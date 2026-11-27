@@ -3083,7 +3083,7 @@ const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): v
       report('blocks', block.id, '.strut', 'struts require a structural material');
     }
     if (
-      block.bearing !== opposite[block.strut.rise] ||
+      block.loadPath?.bearing !== opposite[block.strut.rise] ||
       !block.solid ||
       block.opaque !== false ||
       block.wireMesh ||

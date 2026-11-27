@@ -8,7 +8,7 @@ import { fusedMassStrikeOrigin } from './fusedMassFigure.ts';
 import type { FusedMassShape } from './fusedMassShape.ts';
 import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, raycast, type SolidAt } from './raycast.ts';
 import type { ActorBody } from './schema/actors.ts';
 import type { HumanoidHitRegion } from './schema.ts';
 
@@ -116,7 +116,7 @@ const withinAttackReach = (probe: AttackReachProbe): boolean => {
 };
 
 /** Nothing solid between two points: the line rule every attack's start and resolve share. */
-export const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
+export const clearLine = (from: Vec3, to: Vec3, isSolid: RayAt): boolean => {
   const toward = sub(to, from);
   const lineDistance = Math.hypot(...toward);
   return lineDistance > 0 && raycast(from, unit(toward), lineDistance, isSolid) === undefined;
