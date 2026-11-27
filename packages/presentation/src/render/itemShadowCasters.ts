@@ -1,44 +1,100 @@
-import { Box3, InstancedMesh, type Mesh, type PointLight, SkinnedMesh, Sphere } from 'three';
+import {
+  Box3,
+  type BufferGeometry,
+  InstancedMesh,
+  Matrix4,
+  type Mesh,
+  type PointLight,
+  SkinnedMesh,
+  Sphere,
+} from 'three';
 
 interface Entry {
   mesh: Mesh;
   box: Box3;
+  sphere: Sphere;
+  /** What the bounds were taken from; a caster is measured again only when one of these changes. */
+  matrix: Matrix4;
+  geometry: BufferGeometry;
+  count: number;
+  instances: number;
 }
 
-/** One frame's world-space caster bounds, shared by every lamp rather than rediscovered on each cube face. */
+/**
+ * World-space caster bounds shared by every lamp rather than rediscovered on each cube face, and kept across frames:
+ * a caster is measured again only when its placement changes, and the index re-sorted only when a bound or the set
+ * does. Instance placements count as changed through their attribute's version, which an upload needs anyway.
+ */
 export class ItemShadowCasters {
-  private readonly entries: Entry[];
-  private readonly width: number;
-  private readonly unbounded: Mesh[] = [];
-  private readonly order: Map<Mesh, number>;
+  private casters: readonly Mesh[] = [];
+  private order = new Map<Mesh, number>();
+  private readonly measured = new Map<Mesh, Entry>();
+  private entries: Entry[] = [];
+  private width = 0;
+  private unbounded: Mesh[] = [];
 
-  constructor(casters: readonly Mesh[]) {
-    this.order = new Map(casters.map((mesh, index) => [mesh, index]));
-    const sphere = new Sphere();
-    const entries: Entry[] = [];
-    for (const mesh of casters) {
-      if (mesh instanceof InstancedMesh && mesh.count === 0) {
-        continue;
-      }
-      // Geometry bounds cannot prove shader-placed or skeletal vertices stay outside a lamp's reach.
-      if (!mesh.frustumCulled || mesh instanceof SkinnedMesh) {
-        this.unbounded.push(mesh);
-        continue;
-      }
-      if (mesh instanceof InstancedMesh) {
-        mesh.computeBoundingSphere();
-        sphere.copy(mesh.boundingSphere!);
-      } else {
-        if (!mesh.geometry.boundingSphere) {
-          mesh.geometry.computeBoundingSphere();
-        }
-        sphere.copy(mesh.geometry.boundingSphere!);
-      }
-      sphere.applyMatrix4(mesh.matrixWorld);
-      entries.push({ mesh, box: sphere.getBoundingBox(new Box3()) });
+  /** Takes this frame's casters in drawing order; returns whether the set differs from the last frame's. */
+  update(casters: readonly Mesh[]): boolean {
+    const changed =
+      casters.length !== this.casters.length || casters.some((mesh, index) => mesh !== this.casters[index]);
+    if (changed) {
+      this.takeSet(casters);
     }
-    this.entries = entries.sort((a, b) => a.box.min.x - b.box.min.x);
-    this.width = entries.reduce((width, { box }) => Math.max(width, box.max.x - box.min.x), 0);
+    let moved = false;
+    const entries: Entry[] = [];
+    const unbounded: Mesh[] = [];
+    for (const mesh of casters) {
+      const bounds = boundsOf(mesh);
+      if (bounds !== 'bounded') {
+        this.measured.delete(mesh);
+        if (bounds === 'unbounded') {
+          unbounded.push(mesh);
+        }
+        continue;
+      }
+      const known = this.measured.get(mesh);
+      const entry = known ?? this.entryOf(mesh);
+      if (!known || stale(entry)) {
+        measure(entry);
+        moved = true;
+      }
+      entries.push(entry);
+    }
+    this.unbounded = unbounded;
+    if (moved || entries.length !== this.entries.length) {
+      this.entries = entries.sort((a, b) => a.box.min.x - b.box.min.x);
+      this.width = entries.reduce((width, { box }) => Math.max(width, box.max.x - box.min.x), 0);
+    }
+    return changed;
+  }
+
+  private takeSet(casters: readonly Mesh[]): void {
+    this.casters = [...casters];
+    this.order = new Map(casters.map((mesh, index) => [mesh, index]));
+    for (const mesh of this.measured.keys()) {
+      if (!this.order.has(mesh)) {
+        this.measured.delete(mesh);
+      }
+    }
+  }
+
+  private entryOf(mesh: Mesh): Entry {
+    const entry = {
+      mesh,
+      box: new Box3(),
+      sphere: new Sphere(),
+      matrix: new Matrix4(),
+      geometry: mesh.geometry,
+      count: -1,
+      instances: -1,
+    };
+    this.measured.set(mesh, entry);
+    return entry;
+  }
+
+  /** A bounded caster's world bounding sphere, as last measured. */
+  sphereOf(mesh: Mesh): Sphere | undefined {
+    return this.measured.get(mesh)?.sphere;
   }
 
   query(light: PointLight): Mesh[] {
@@ -68,3 +124,35 @@ export class ItemShadowCasters {
     return found.sort((a, b) => this.order.get(a)! - this.order.get(b)!);
   }
 }
+
+const boundsOf = (mesh: Mesh): 'empty' | 'unbounded' | 'bounded' => {
+  if (mesh instanceof InstancedMesh && mesh.count === 0) {
+    return 'empty';
+  }
+  // Geometry bounds cannot prove shader-placed or skeletal vertices stay outside a lamp's reach.
+  return !mesh.frustumCulled || mesh instanceof SkinnedMesh ? 'unbounded' : 'bounded';
+};
+
+const stale = ({ mesh, matrix, geometry, count, instances }: Entry): boolean =>
+  mesh.geometry !== geometry ||
+  !matrix.equals(mesh.matrixWorld) ||
+  (mesh instanceof InstancedMesh && (mesh.count !== count || mesh.instanceMatrix.version !== instances));
+
+const measure = (entry: Entry): void => {
+  const { mesh, sphere } = entry;
+  if (mesh instanceof InstancedMesh) {
+    mesh.computeBoundingSphere();
+    sphere.copy(mesh.boundingSphere!);
+    entry.count = mesh.count;
+    entry.instances = mesh.instanceMatrix.version;
+  } else {
+    if (!mesh.geometry.boundingSphere) {
+      mesh.geometry.computeBoundingSphere();
+    }
+    sphere.copy(mesh.geometry.boundingSphere!);
+  }
+  entry.geometry = mesh.geometry;
+  entry.matrix.copy(mesh.matrixWorld);
+  sphere.applyMatrix4(mesh.matrixWorld);
+  sphere.getBoundingBox(entry.box);
+};

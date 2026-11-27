@@ -61,6 +61,7 @@ function fixture() {
   };
   return {
     scene,
+    shadows,
     source,
     drawn,
     frame,
@@ -141,6 +142,25 @@ describe('item shadow maps', () => {
     f.source.intensity = 1;
     expect(f.frame()).toEqual([1]);
     expect(f.frame()).toEqual([0]);
+  });
+
+  it('keeps its caster set across frames and rebuilds it only when a caster joins, leaves or stops casting', () => {
+    const f = fixture();
+    const rebuilt = () => {
+      f.frame();
+      return f.shadows.itemStats.rebuilt;
+    };
+    const door = f.blocker();
+    expect([rebuilt(), rebuilt()]).toEqual([true, false]);
+    door.rotation.y = Math.PI / 2;
+    f.scene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()), new Group());
+    expect(rebuilt()).toBe(false);
+    const added = f.blocker();
+    expect([rebuilt(), rebuilt()]).toEqual([true, false]);
+    f.scene.remove(added);
+    expect([rebuilt(), rebuilt()]).toEqual([true, false]);
+    door.castShadow = false;
+    expect([rebuilt(), rebuilt()]).toEqual([true, false]);
   });
 
   it('walks only in-range casters on cube faces while retaining unbounded shader casters', () => {
