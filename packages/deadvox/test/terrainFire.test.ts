@@ -38,6 +38,8 @@ describe('terrain fire view', () => {
       tuning,
     );
 
+    const cubeFaceCount = 6;
+    expect(exposedFaces).toHaveLength(cubeFaceCount);
     expect(fire.group.children).toHaveLength(exposedFaces.length);
     for (const [index, flame] of fire.group.children.entries()) {
       const face = exposedFaces[index]!;
