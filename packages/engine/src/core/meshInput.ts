@@ -59,7 +59,7 @@ export const isOnFloor = (cy: number, bottomCy: number): boolean => cy - 1 < bot
  */
 export const neighbourhoodOf = (world: World, coords: Vec3, bottomCy = Number.NEGATIVE_INFINITY): Neighbourhood => {
   const chunks = neighbourCoords(coords).map((at): ChunkBlocks => {
-    const chunk = world.getChunk(...at);
+    const chunk = world.meshChunk(...at);
     return chunk ? (chunk.raw() ?? chunk.uniformId ?? 0) : 0;
   });
   return { chunks, onFloor: isOnFloor(coords[1], bottomCy) };

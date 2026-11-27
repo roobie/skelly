@@ -22,7 +22,7 @@ import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { contentLookup } from '@skelly/presentation/ui';
-import { Box3, Quaternion } from 'three';
+import { Box3, InstancedMesh, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -595,13 +595,49 @@ describe('floor furniture steps', () => {
     );
   });
 
-  it('settles unsupported pieces and loose items once, leaving a partly supported stack in place', () => {
+  it('removes a falling piece from its landed batch and restores it without a simulation edit', () => {
+    const { inventory, entity } = fixture();
+    const meshes = new FurnitureMeshes(0.5);
+    const count = () =>
+      meshes.group.children.reduce((sum, child) => sum + (child instanceof InstancedMesh ? child.count : 0), 0);
+    meshes.sync(inventory.entities);
+    expect(count()).toBe(1);
+    meshes.sync(inventory.entities, [], new Set([entity.uid]));
+    expect(count()).toBe(0);
+    meshes.sync(inventory.entities);
+    expect(count()).toBe(1);
+    meshes.dispose();
+  });
+
+  it('reports a standing piece drop with its source and landing', () => {
+    const { inventory, entity } = fixture();
+    const records = inventory.entities.falls.reader();
+    const from = [...entity.pos];
+    inventory.entities.drop(entity, entity.pos[1] - 1);
+    expect(records.read()).toEqual([{ kind: 'piece', uid: entity.uid, from, to: entity.pos }]);
+  });
+
+  it('reports no fall for a level slide or the pile it shunts aside', () => {
+    const { inventory, entity, mover } = fixture();
+    const item = inventory.create('canned_beans');
+    expect(inventory.add(item, { kind: 'pile', pos: [9, 1, 5] })).toBe(true);
+    const records = inventory.entities.falls.reader();
+    expect(slideFurniture(mover, entity, 'push')).toBeUndefined();
+    expect(inventory.locate(item)).not.toMatchObject({ pile: { pos: [9, 1, 5] } });
+    expect(records.read()).toEqual([]);
+  });
+
+  it('reports a pile fall only when its floor is lost, leaving a supported stack in place', () => {
     const { inventory, entity, mover } = fixture();
     const top = inventory.furnish({ ...spec, type: 'slide_fixture_small', pos: [5, 5, 5], size: [1, 1, 1] })!;
     const supported = inventory.furnish({ ...spec, type: 'slide_fixture_small', pos: [7, 5, 5], size: [1, 1, 1] })!;
     const item = inventory.create('canned_beans');
     expect(inventory.add(item, { kind: 'pile', pos: [5, 6, 5] })).toBe(true);
+    const records = inventory.entities.falls.reader();
     expect(slideFurniture(mover, entity, 'push')).toBeUndefined();
+    expect(records.read().filter((record) => record.kind === 'pile')).toEqual([
+      { kind: 'pile', uid: item.uid, from: [5, 6, 5], to: [5, 2, 5] },
+    ]);
     expect(top.pos).toEqual([5, 1, 5]);
     expect(supported.pos).toEqual([7, 5, 5]);
     expect(inventory.pileAt([5, 2, 5])?.items.some((placed) => placed.item === item)).toBe(true);
