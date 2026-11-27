@@ -28,7 +28,7 @@ const PATCH: Vec3[] = [
   [6, 1, 6],
 ];
 const OTHER: Vec3 = [2, 1, 8];
-const fixture = (restored?: Readonly<SaveSnapshot>) => {
+const fixture = (restored?: Readonly<SaveSnapshot>, withLandingPost = false) => {
   const registry = baseRegistry();
   const burn = { ignitionStrength: 3, burnDurationGameMinutes: gameMinutes(1), burnsTo: CHAR };
   for (const [id, span, flammability] of [
@@ -90,6 +90,7 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
     structures: [
       { min: POST, max: [3, 4, 4], block: wood },
       { min: BEAM, max: [4, 4, 4], block: wood },
+      ...(withLandingPost ? [{ min: [3, 1, 3] as Vec3, max: [4, 2, 4] as Vec3, block: wood }] : []),
       { min: PATCH[0]!, max: [7, 2, 7], block: wood },
       { min: OTHER, max: [3, 2, 9], block: registry.blockIds.get(FIBRE)! },
       { min: [3, 1, 8], max: [4, 2, 9], block: ground },
@@ -197,6 +198,35 @@ describe('cell fire owner', () => {
     expect(f.terrain.getBlock(...BEAM)).toBe(0);
     expect(f.block([POST[0], POST[1] + 1, POST[2]])).toBe(RUBBLE);
     expect(f.block([BEAM[0], 1, BEAM[2]])).toBe(RUBBLE);
+  });
+
+  it('drops a side-held beam when its anchor chars, leaving the unloaded supported char', () => {
+    const f = fixture();
+    const anchor: Vec3 = [POST[0], BEAM[1], POST[2]];
+    expect(f.block(BEAM)).toBe(WOOD);
+    expect(f.ignite(anchor)).toBe(true);
+    f.tick(f.duration + f.step);
+    settle(f);
+    expect(f.block(anchor)).toBe(CHAR);
+    expect(f.terrain.getBlock(...BEAM)).toBe(0);
+    expect(f.block([BEAM[0], 1, BEAM[2]])).toBe(RUBBLE);
+  });
+
+  it('breaks unloaded char when a terrain cell falls onto it later', () => {
+    const f = fixture(undefined, true);
+    const landing: Vec3 = [BEAM[0], 1, BEAM[2]];
+    const anchor: Vec3 = [POST[0], BEAM[1], POST[2]];
+    expect(f.ignite(landing)).toBe(true);
+    f.tick(f.duration + f.step);
+    settle(f);
+    expect(f.block(landing)).toBe(CHAR);
+    expect(f.block(BEAM)).toBe(WOOD);
+    expect(f.ignite(anchor)).toBe(true);
+    f.tick(f.duration + f.step);
+    settle(f);
+    expect(f.terrain.getBlock(...BEAM)).toBe(0);
+    expect(f.block(landing)).toBe(RUBBLE);
+    expect(f.terrain.getBlock(BEAM[0], landing[1] + 1, BEAM[2])).toBe(0);
   });
 
   it('keeps unloaded grounded char but drops an unsupported burnt beam and clears it through take-apart', () => {

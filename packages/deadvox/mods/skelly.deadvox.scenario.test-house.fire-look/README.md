@@ -9,7 +9,8 @@ Open the [fixture](/?start-mod=skelly.deadvox.scenario.test-house.fire-look#{deb
 
 - [ ] The burning post ahead crumbles when it chars, bringing down its beam and floor.
 - [ ] The isolated burning timber beside the post leaves grounded char instead of crumbling.
-- [ ] The separate char cell stays as unloaded remains. Placement on it awaits the placement rule in #2063.
+- [ ] The separate char cell stays as unloaded remains.
+- [ ] Try placing a plank block on the char cell: placement is refused as unsupported, without breaking the char. Building stock and tools are beside the start.
 - [ ] The shed to the left shows flames on exposed burning wall faces.
 - [ ] Nearby surfaces receive fire light.
 - [ ] The debug ignition still lights another flammable cell.
