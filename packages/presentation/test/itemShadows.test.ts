@@ -4,6 +4,7 @@ import {
   Group,
   InstancedMesh,
   type Light,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -144,6 +145,18 @@ describe('item shadow maps', () => {
     expect(f.frame()).toEqual([1]);
     expect(f.shadows.itemStats.rebuilt).toBe(true);
     expect(f.frame()).toEqual([0]);
+  });
+
+  it('redraws when an instanced blocker uploads new placements, and only then', () => {
+    const f = fixture();
+    const mesh = f.blocker();
+    const instanced = new InstancedMesh(mesh.geometry, mesh.material, 2);
+    instanced.castShadow = true;
+    f.scene.add(instanced);
+    expect([f.frame(), f.frame()]).toEqual([[1], [0]]);
+    instanced.setMatrixAt(1, new Matrix4().makeTranslation(1, 0, 0));
+    instanced.instanceMatrix.needsUpdate = true;
+    expect([f.frame(), f.frame()]).toEqual([[1], [0]]);
   });
 
   it('keeps its caster set across frames and rebuilds it only when a caster joins, leaves or stops casting', () => {
