@@ -170,6 +170,45 @@ describe('strut content and geometry', () => {
     inside[across] = base[across]! + 0.1;
     expect(raycast(inside, direction, 1, query)?.distance).toBeGreaterThan(0);
   });
+  it.each((['+x', '-x', '+z', '-z'] as const).flatMap((rise) => [0, 1, 2, 3].map((face) => ({ rise, face }))))(
+    'rays entering boundary seat $face hit at cell entry for rise $rise',
+    ({ rise, face }) => {
+      const axis = rise.endsWith('x') ? 0 : 2;
+      const across = axis === 0 ? 2 : 0;
+      const positive = rise.startsWith('+');
+      const top = face >= 2;
+      const boundaryAxis = face % 2 === 0 ? 1 : axis;
+      const boundary = boundaryAxis === 1 ? Number(top) : Number(top === positive);
+      const base: Vec3 = [5, 3, -7];
+      const query = blockRayQuery(
+        { blocks: [{ ...block, strut: { ...shape, rise } }] },
+        () => 0,
+        (x, y, z) => x === base[0] && y === base[1] && z === base[2],
+      );
+      let seed = 781;
+      const random = () => {
+        seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0;
+        return seed / 2 ** 32;
+      };
+      const inset = (high: boolean, distance: number) => (high ? 1 - distance : distance);
+      for (let sample = 0; sample < 80; sample++) {
+        const seat = (0.1 + random() * 0.8) * shape.widthBlocks;
+        const point: Vec3 = [base[0] + 0.5, base[1] + inset(top, seat), base[2] + 0.5];
+        point[axis] = base[axis]! + inset(top === positive, seat);
+        point[across] += (random() - 0.5) * shape.widthBlocks * 0.8;
+        point[boundaryAxis] = base[boundaryAxis]! + boundary;
+        const direction: Vec3 = [random() - 0.5, random() - 0.5, random() - 0.5];
+        direction[boundaryAxis] = boundary === 0 ? 1 : -1;
+        const length = Math.hypot(...direction);
+        const dir = direction.map((value) => value / length) as Vec3;
+        const distance = 1 + random() * 30;
+        const origin = point.map((value, index) => value - dir[index]! * distance) as Vec3;
+        const hit = raycast(origin, dir, distance + 1, query);
+        expect(hit?.block, `seat ${face}, sample ${sample}`).toEqual(base);
+        expect(hit!.distance).toBeCloseTo(distance, 10);
+      }
+    },
+  );
   it('rejects a strut whose material is declared non-structural', () => {
     const issues = (structural: boolean) =>
       buildRegistry([

@@ -202,7 +202,7 @@ unbuilt. Unanswered gates block only their dependent work.
   misleading. Sight uses opacity independently. Bodies remain whole-cell because exact
   body contact also needs sweep and step-up work; templates keep members above head
   height rather than adding a temporary player-height placement restriction. Wire keeps
-  its existing passage policy until exact wire rays are requested. See
+  its existing passage policy pending the shared wire passage work in #2062. See
   `packages/engine/src/core/raycast.ts`, `raycast`; and
   `packages/engine/src/core/blockRay.ts`, `blockRayQuery`.
   The prepared review keeps the check on passage, carrying and salvage rather than

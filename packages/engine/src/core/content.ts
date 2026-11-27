@@ -3142,7 +3142,12 @@ const checkBlockBurnResult = (registry: Registry, block: BlockDef, report: Repor
       registry.blockMaterials.get(result.material)?.span !== 0 ||
       result.strut?.rise !== block.strut?.rise
     ) {
-      report('blocks', block.id, '.burnsTo', 'burn-out must preserve orientation and use a solid zero-span material');
+      report(
+        'blocks',
+        block.id,
+        '.burnsTo',
+        'burn-out must preserve orientation and use a solid zero-span material so char cannot bridge unsupported gaps',
+      );
     }
   }
 };
