@@ -1,6 +1,8 @@
 import { BlockDamage } from './blockDamage.ts';
 import { Chunk } from './chunk.ts';
 import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { EventQueue } from './events.ts';
+import type { FallRecord } from './fall.ts';
 import { Fire } from './fire.ts';
 import { Rubble } from './rubble.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -81,6 +83,8 @@ export class World {
   readonly fire = new Fire(this);
   readonly rubble = new Rubble(this);
   readonly support = new SupportState(this);
+  /** Gravity moves the view has not consumed; derived and deliberately absent from saves. */
+  readonly falls = new EventQueue<FallRecord>();
   private readonly columnChunks = new Map<string, number>();
   /** Changes whenever blocks visible to simulation queries change. */
   version = 0;
@@ -188,6 +192,10 @@ export class World {
   getBlock(x: number, y: number, z: number): number {
     const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     return chunk ? chunk.get(toLocal(x), toLocal(y), toLocal(z)) : 0;
+  }
+
+  meshChunk(cx: number, cy: number, cz: number): Chunk | undefined {
+    return this.getChunk(cx, cy, cz);
   }
 
   /** Sets a block during play, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
