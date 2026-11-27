@@ -16,6 +16,7 @@ function(materials) [
     loadPath: { kind: 'strut', bearing: direction.bearing },
     strut: { rise: direction.rise, widthBlocks: row.widthBlocks },
     weatherable: false,
+    cracks: false,
     fallsTo: { yields: row.yields },
     drops: { default: 'item_drop_wood' } + landings.forBlock(row.material),
     footsteps: { player: row.footstep },

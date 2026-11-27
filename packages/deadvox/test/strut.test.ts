@@ -1,4 +1,6 @@
+import { BindingRegistry } from '@skelly/engine/input';
 import { blockRayQuery } from '@skelly/engine/internal/core/blockRay.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { buildRegistry } from '@skelly/engine/internal/core/content.ts';
 import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import { CHUNK } from '@skelly/engine/internal/core/coords.ts';
@@ -8,10 +10,17 @@ import { raycast } from '@skelly/engine/internal/core/raycast.ts';
 import type { BlockDef } from '@skelly/engine/internal/core/schema.ts';
 import { traceShot } from '@skelly/engine/internal/core/shotTrace.ts';
 import { createSupport } from '@skelly/engine/internal/core/structureSupport.ts';
+import { World } from '@skelly/engine/world';
+import { TerrainCracks } from '@skelly/presentation/internal/render/terrainCracks.ts';
+import type { Engine } from '@skelly/presentation/play';
+import { Scene } from 'three';
 import { describe, expect, it } from 'vitest';
 import strutFixture from '../mods/skelly.deadvox.scenario.test-house.strut-look/layouts.json' with { type: 'json' };
+import { BuildMode } from '../src/debug/build.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 const shape = { rise: '+x', widthBlocks: 0.2 } as const;
 const block: BlockDef = {
@@ -26,6 +35,77 @@ const block: BlockDef = {
 };
 
 describe('strut content and geometry', () => {
+  it('content can suppress cube-face cracks on an open member without changing cube damage', () => {
+    const registry = baseRegistry();
+    const material = fixtureBlockMaterial(block.id);
+    registry.blockMaterials.set(material.id, material);
+    const world = new World();
+    const scale = { blockSize: 0.5, minCy: 0, maxCy: 0 };
+    const terrain = new CanonicalTerrain(world, fixtureTerrain({ scale, floor: 0 }));
+    terrain.ensureCell(0, 4, 0);
+    for (const enabled of [true, false]) {
+      const id = registry.blocks.length;
+      registry.blocks.push(
+        enabled
+          ? {
+              id: 'fixture_cracked_cube',
+              name: 'Fixture cube',
+              material: material.id,
+              solid: true,
+              color: '#888888',
+              cracks: true,
+            }
+          : { ...block, cracks: false },
+      );
+      world.setBlock(0, 4, 0, id);
+      world.blockDamage.record(terrain, registry, [0, 4, 0], material.durability * 0.9);
+      const view = new TerrainCracks({ seed: 1, blockSize: scale.blockSize, registry });
+      view.sync(world, () => false, { revealVersion: 0, isRevealed: () => true });
+      expect((view.mesh.geometry.attributes.position?.count ?? 0) > 0).toBe(enabled);
+      view.dispose();
+    }
+  });
+  it('debug destruction targets a non-opaque member but not its gap', () => {
+    const registry = baseRegistry();
+    registry.blockMaterials.set(block.material, fixtureBlockMaterial(block.id));
+    const id = registry.blocks.length;
+    registry.blocks.push(block);
+    const world = new World();
+    world.setBlock(0, 3, 0, id);
+    const engine = {
+      registry,
+      simulationWorld: world,
+      scene: new Scene(),
+      config: { debug: true, scale: { blockSize: 0.5 } },
+      isOpaque: () => false,
+    } as unknown as Engine;
+    const strikes: Vec3[] = [];
+    const build = new BuildMode(
+      engine,
+      { pos: [2, 0, 2], vel: [0, 0, 0], halfWidth: 0.3, height: 1.8, onGround: true },
+      5,
+      {
+        rayCells: blockRayQuery(
+          registry,
+          (x, y, z) => world.getBlock(x, y, z),
+          (x, y, z) => world.getBlock(x, y, z) !== 0,
+        ),
+        strikeTerrainCell: (cell) => {
+          strikes.push(cell);
+          return true;
+        },
+        repairCell: () => undefined,
+        takeApartCell: () => undefined,
+        igniteTerrainCell: () => false,
+        bindings: new BindingRegistry(INPUT_BINDINGS),
+      },
+    );
+    build.toggle();
+    expect(build.strike('step', [0.1, 3.75, 2], [0, 0, -1])).toBe(false);
+    expect(strikes).toEqual([]);
+    expect(build.strike('step', [0.75, 3.75, 2], [0, 0, -1])).toBe(true);
+    expect(strikes).toEqual([[0, 3, 0]]);
+  });
   it('the authored look beams hold only while their knee members remain', () => {
     const registry = baseRegistry();
     const template = strutFixture.templates[0]!;

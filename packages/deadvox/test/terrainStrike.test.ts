@@ -406,6 +406,7 @@ const debugBuild = (f: Fixture) => {
     isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
   } as unknown as Engine;
   const build = new BuildMode(engine, f.session.body, 1, {
+    rayCells: f.session.rayCells,
     strikeTerrainCell: (target, blow) => {
       blows.push(blow);
       return f.session.strikeTerrainCell(target, blow);

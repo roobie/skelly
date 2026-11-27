@@ -6,7 +6,7 @@ import { actionText, fillText } from '@skelly/engine/input';
 import type { BlockBlow } from '@skelly/engine/sim';
 import { playerTuning } from '@skelly/engine/sim';
 import { decimalText } from '@skelly/engine/text';
-import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
+import { type Body, bodyOverlapsBlock, type RayAt, raycast, type Vec3 } from '@skelly/engine/world';
 import type { Engine } from '@skelly/presentation/play';
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
@@ -29,6 +29,7 @@ export class BuildMode {
   on = false;
   private selected = 0;
   private readonly engine: Engine;
+  private readonly rayCells: RayAt;
   private hotbar: HTMLElement | undefined;
   private readonly body: Body;
   private readonly reach: number;
@@ -44,12 +45,14 @@ export class BuildMode {
     body: Body,
     reachBlocks: number,
     {
+      rayCells,
       strikeTerrainCell,
       repairCell,
       takeApartCell,
       igniteTerrainCell,
       bindings,
     }: {
+      readonly rayCells: RayAt;
       readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
       readonly repairCell: (cell: Vec3) => string | undefined;
       readonly takeApartCell: (cell: Vec3) => string | undefined;
@@ -58,6 +61,7 @@ export class BuildMode {
     },
   ) {
     this.engine = engine;
+    this.rayCells = rayCells;
     this.strikeTerrainCell = strikeTerrainCell;
     this.repairCell = repairCell;
     this.takeApartCell = takeApartCell;
@@ -110,15 +114,15 @@ export class BuildMode {
 
   /** Breaks (left) or places (right) at the targeted block. */
   click(button: number, eye: Vec3, dir: Vec3): void {
-    const { simulationWorld: world, streamer, registry, isOpaque: isSolid } = this.engine;
-    const hit = this.on ? raycast(eye, dir, this.reach, isSolid) : undefined;
+    const { simulationWorld: world, streamer, registry } = this.engine;
+    const hit = this.on ? raycast(eye, dir, this.reach, this.rayCells) : undefined;
     if (!hit) {
       return;
     }
     if (button === 0) {
       streamer.markEdited(world.setBlock(...hit.block, 0));
     } else if (button === 2) {
-      const target: Vec3 = [hit.block[0] + hit.normal[0], hit.block[1] + hit.normal[1], hit.block[2] + hit.normal[2]];
+      const target: Vec3 = hit.block.map((value, axis) => value + Math.sign(hit.normal[axis]!)) as Vec3;
       const block = this.placeable[this.selected];
       if (block && !bodyOverlapsBlock(this.body, target)) {
         streamer.markEdited(world.setBlock(...target, blockId(registry, block.id)));
@@ -133,7 +137,7 @@ export class BuildMode {
       return undefined;
     }
     const tuning = playerTuning(registry).debugBlockTool;
-    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.engine.isOpaque);
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.rayCells);
     return hit ? this.repairCell(hit.block) : undefined;
   }
 
@@ -144,27 +148,27 @@ export class BuildMode {
       return undefined;
     }
     const tuning = playerTuning(registry).debugBlockTool;
-    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.engine.isOpaque);
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.rayCells);
     return hit ? this.takeApartCell(hit.block) : undefined;
   }
 
   ignite(eye: Vec3, dir: Vec3): boolean {
-    const { config, registry, isOpaque } = this.engine;
+    const { config, registry } = this.engine;
     if (!(config.debug && this.on)) {
       return false;
     }
     const tuning = playerTuning(registry).debugBlockTool;
-    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, isOpaque);
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.rayCells);
     return hit ? this.igniteTerrainCell(hit.block, tuning.ignitionStrength) : false;
   }
 
   strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {
-    const { config, registry, simulationWorld: world, isOpaque } = this.engine;
+    const { config, registry, simulationWorld: world } = this.engine;
     if (!(config.debug && this.on)) {
       return false;
     }
     const tuning = playerTuning(registry).debugBlockTool;
-    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, isOpaque);
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.rayCells);
     if (!hit) {
       return false;
     }
@@ -189,9 +193,9 @@ export class BuildMode {
   }
 
   target(eye: Vec3, dir: Vec3, active: boolean): string {
-    const { simulationWorld: world, registry, config, isOpaque: isSolid } = this.engine;
+    const { simulationWorld: world, registry, config } = this.engine;
     const reach = playerTuning(registry).debugBlockTool.reachMetres / config.scale.blockSize;
-    const hit = this.on && active ? raycast(eye, dir, reach, isSolid) : undefined;
+    const hit = this.on && active ? raycast(eye, dir, reach, this.rayCells) : undefined;
     this.outline.visible = hit !== undefined;
     if (!hit) {
       return '';

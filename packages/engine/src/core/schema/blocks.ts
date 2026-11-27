@@ -169,6 +169,8 @@ export const BlockSchema = strictObject({
     }),
   ),
   fallsTo: optional(FallResultSchema),
+  /** Open geometry can opt out rather than painting cube-face cracks across its gaps. */
+  cracks: optional(vBoolean()),
   /** Content derives an oriented burnt variant rather than changing shape in the fire mechanism. */
   burnsTo: optional(Id),
   name: Name,

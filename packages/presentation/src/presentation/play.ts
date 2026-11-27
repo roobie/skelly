@@ -1873,7 +1873,7 @@ const startPlayWith = (
     keyboard: keyboardInput,
     weather,
     flashlight,
-    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque },
+    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque, rayCells: session.rayCells },
     body,
     inventory,
     character: session.character,

@@ -193,7 +193,9 @@ unbuilt. Unanswered gates block only their dependent work.
   see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Content derives oriented
   burn replacements to avoid turning an open member into a cube. The bounded prism keeps
   mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
-  a sloping face normal. See `packages/engine/src/core/strutShape.ts`, `strutFaces`;
+  a sloping face normal. Open members opt out of cube-face cracks in content so damage
+  cannot paint their empty gaps; see `packages/presentation/src/render/terrainCracks.ts`,
+  `TerrainCracks.sync`. See `packages/engine/src/core/strutShape.ts`, `strutFaces`;
   `packages/engine/src/core/mesher.ts`, `emitStruts`; and
   `packages/mods/skelly.natural-world/struts.libsonnet`.
   Shots and aim use the visible member because stopping a bullet on its empty gap is
@@ -203,6 +205,9 @@ unbuilt. Unanswered gates block only their dependent work.
   its existing passage policy until exact wire rays are requested. See
   `packages/engine/src/core/raycast.ts`, `raycast`; and
   `packages/engine/src/core/blockRay.ts`, `blockRayQuery`.
+  The prepared review keeps the check on passage, carrying and salvage rather than
+  collecting tools; see
+  `packages/deadvox/mods/skelly.deadvox.scenario.test-house.strut-look/README.md`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";
