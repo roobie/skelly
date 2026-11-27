@@ -1,0 +1,82 @@
+{
+  "blocks": [
+    {
+      "burnsTo": "fixture_char",
+      "color": "#888888",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "fixture_step"
+      },
+      "id": "fixture_override_beam_x",
+      "loadPath": {
+        "axis": "x",
+        "kind": "beam",
+        "span": 1.25
+      },
+      "material": "fixture_material",
+      "name": "Fixture beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "burnsTo": "fixture_char",
+      "color": "#888888",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "fixture_step"
+      },
+      "id": "fixture_override_beam_z",
+      "loadPath": {
+        "axis": "z",
+        "kind": "beam",
+        "span": 1.25
+      },
+      "material": "fixture_material",
+      "name": "Fixture beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "burnsTo": "fixture_char",
+      "color": "#888888",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "fixture_step"
+      },
+      "id": "fixture_fallback_beam_x",
+      "loadPath": {
+        "axis": "x",
+        "kind": "beam"
+      },
+      "material": "fixture_material",
+      "name": "Fixture fallback beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "burnsTo": "fixture_char",
+      "color": "#888888",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "fixture_step"
+      },
+      "id": "fixture_fallback_beam_z",
+      "loadPath": {
+        "axis": "z",
+        "kind": "beam"
+      },
+      "material": "fixture_material",
+      "name": "Fixture fallback beam",
+      "solid": true,
+      "weatherable": false
+    }
+  ]
+}

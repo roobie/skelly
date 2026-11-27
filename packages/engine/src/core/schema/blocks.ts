@@ -162,7 +162,12 @@ export const BlockSchema = strictObject({
   id: Id,
   material: Id,
   /** One load description per block; strut bearing always descends one row. */
-  loadPath: optional(strictObject({ kind: literal('strut'), bearing: picklist(['-x', '+x', '-z', '+z']) })),
+  loadPath: optional(
+    union([
+      strictObject({ kind: literal('strut'), bearing: picklist(['-x', '+x', '-z', '+z']) }),
+      strictObject({ kind: literal('beam'), axis: picklist(['x', 'z']), span: optional(NonNegative) }),
+    ]),
+  ),
   strut: optional(
     strictObject({
       rise: picklist(['+x', '-x', '+z', '-z']),

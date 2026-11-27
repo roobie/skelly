@@ -191,8 +191,11 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Strut geometry:** shape belongs to a construction block, not to a material whitelist,
   so another structural material can reuse the same mechanism. A single load-path field
   keeps support reading one load description rather than competing shape-specific fields;
-  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Content derives oriented
-  burn replacements to avoid turning an open member into a cube. The bounded prism keeps
+  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Beam rows share a generator
+  so material variants cannot lose an orientation; see
+  `packages/mods/skelly.natural-world/beams.libsonnet`. A burnt beam loses its axis because
+  char cannot bridge a gap. Strut content instead derives oriented burn replacements to
+  avoid turning an open member into a cube. The bounded prism keeps
   mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
   a sloping face normal. Open members opt out of cube-face cracks in content so damage
   cannot paint their empty gaps; see `packages/presentation/src/render/terrainCracks.ts`,

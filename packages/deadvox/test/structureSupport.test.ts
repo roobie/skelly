@@ -15,6 +15,12 @@ const fixtureBlock = (id: string, span: number): number => {
 const GROUND = fixtureBlock('support_fixture_ground', 0);
 const BEAM = fixtureBlock('support_fixture_beam', 2);
 const POST = fixtureBlock('support_fixture_post', 0);
+const OVERRIDE = fixtureBlock('support_fixture_override', 2);
+const FALLBACK = fixtureBlock('support_fixture_fallback', 2);
+const ZERO = fixtureBlock('support_fixture_zero', 2);
+registry.blocks[OVERRIDE]!.loadPath = { kind: 'beam', axis: 'x', span: 3 };
+registry.blocks[FALLBACK]!.loadPath = { kind: 'beam', axis: 'x' };
+registry.blocks[ZERO]!.loadPath = { kind: 'beam', axis: 'x', span: 0 };
 const STRUT = fixtureBlock('support_fixture_strut', 0);
 const REVERSED = fixtureBlock('support_fixture_reversed', 0);
 const OFFCUT = 'support_fixture_offcut';
@@ -49,6 +55,13 @@ const column = (x: number, height: number, id = POST): [Vec3, number][] =>
   Array.from({ length: height }, (_, at) => [[x, at + 1, 0], id]);
 
 describe('structure support', () => {
+  it('uses a beam override, including zero, and otherwise falls back to its material reach', () => {
+    const run = (id: number): [Vec3, number][] => [...column(0, 3), [[1, 3, 0], id], [[2, 3, 0], id], [[3, 3, 0], id]];
+    expect(world(run(OVERRIDE)).holds([3, 3, 0])).toBe(true);
+    expect(world(run(FALLBACK)).holds([3, 3, 0])).toBe(false);
+    expect(world(run(FALLBACK)).holds([2, 3, 0])).toBe(true);
+    expect(world(run(ZERO)).holds([1, 3, 0])).toBe(false);
+  });
   it('converts authored metre reach through block size, rounding down to whole cells', () => {
     const cells: [Vec3, number][] = [
       ...column(0, 3),

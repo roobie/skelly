@@ -1617,6 +1617,10 @@
       "output": "packages/deadvox/src/feasibility/vehicleFeasibility.json"
     },
     {
+      "source": "packages/deadvox/test/fixtures/content/beams.jsonnet",
+      "output": "packages/deadvox/test/fixtures/content/beams.json"
+    },
+    {
       "source": "packages/deadvox/test/fixtures/content/reachability-unfound.jsonnet",
       "output": "packages/deadvox/test/fixtures/content/reachability-unfound.json"
     },

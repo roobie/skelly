@@ -433,7 +433,7 @@
       ],
       "rubbleClearTimeGameMinutes": 15,
       "span": 3.5,
-      "structural": false
+      "structural": true
     },
     {
       "blowSound": "door_bash",
@@ -501,6 +501,126 @@
     }
   ],
   "blocks": [
+    {
+      "color": "#6e4436",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "steel_beam_x",
+      "loadPath": {
+        "axis": "x",
+        "kind": "beam"
+      },
+      "material": "metal",
+      "name": "Steel beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#6e4436",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "steel_beam_z",
+      "loadPath": {
+        "axis": "z",
+        "kind": "beam"
+      },
+      "material": "metal",
+      "name": "Steel beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "burnsTo": "charred_remains",
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "timber_beam_x",
+      "loadPath": {
+        "axis": "x",
+        "kind": "beam",
+        "span": 1.5
+      },
+      "material": "timber",
+      "name": "Timber beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "burnsTo": "charred_remains",
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "timber_beam_z",
+      "loadPath": {
+        "axis": "z",
+        "kind": "beam",
+        "span": 1.5
+      },
+      "material": "timber",
+      "name": "Timber beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#87847d",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "concrete_beam_x",
+      "loadPath": {
+        "axis": "x",
+        "kind": "beam",
+        "span": 3.5
+      },
+      "material": "reinforced_concrete",
+      "name": "Concrete beam",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#87847d",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "concrete_beam_z",
+      "loadPath": {
+        "axis": "z",
+        "kind": "beam",
+        "span": 3.5
+      },
+      "material": "reinforced_concrete",
+      "name": "Concrete beam",
+      "solid": true,
+      "weatherable": false
+    },
     {
       "color": "#6e6965",
       "cracks": false,

@@ -3096,8 +3096,21 @@ const checkFallResult = (
   }
 };
 
+const checkBeamShape = (registry: Registry, block: BlockDef, report: Report): void => {
+  if (block.loadPath?.kind !== 'beam') {
+    return;
+  }
+  if (!registry.blockMaterials.get(block.material)?.structural) {
+    report('blocks', block.id, '.loadPath', 'beams require a structural material');
+  }
+  if (!block.solid || block.strut || block.wireMesh || block.fencePosts || block.liquid) {
+    report('blocks', block.id, '.loadPath', 'beams require solid bodies and no other shape');
+  }
+};
+
 const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): void => {
-  if (block.loadPath && !block.strut) {
+  checkBeamShape(registry, block, report);
+  if (block.loadPath?.kind === 'strut' && !block.strut) {
     report('blocks', block.id, '.loadPath', 'strut load paths require a strut shape');
   }
   if (block.strut) {
@@ -3110,7 +3123,8 @@ const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): v
       report('blocks', block.id, '.fallsTo', 'struts must fall to yields');
     }
     if (
-      block.loadPath?.bearing !== opposite[block.strut.rise] ||
+      block.loadPath?.kind !== 'strut' ||
+      block.loadPath.bearing !== opposite[block.strut.rise] ||
       !block.solid ||
       block.opaque !== false ||
       block.wireMesh ||
@@ -3129,8 +3143,8 @@ const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): v
 
 const checkBlockBurnResult = (registry: Registry, block: BlockDef, report: Report): void => {
   const burn = registry.blockMaterials.get(block.material)?.flammability;
-  if (block.strut && burn && !block.burnsTo) {
-    report('blocks', block.id, '.burnsTo', 'flammable struts need an oriented burn result');
+  if ((block.strut || block.loadPath?.kind === 'beam') && burn && !block.burnsTo) {
+    report('blocks', block.id, '.burnsTo', 'flammable members need a burn result');
   }
   if (block.burnsTo) {
     if (!burn) {
@@ -3140,9 +3154,15 @@ const checkBlockBurnResult = (registry: Registry, block: BlockDef, report: Repor
     if (
       !result?.solid ||
       registry.blockMaterials.get(result.material)?.span !== 0 ||
-      result.strut?.rise !== block.strut?.rise
+      result.strut?.rise !== block.strut?.rise ||
+      (block.loadPath?.kind === 'beam' && result.loadPath !== undefined)
     ) {
-      report('blocks', block.id, '.burnsTo', 'burn-out must preserve orientation and use a solid zero-span material');
+      report(
+        'blocks',
+        block.id,
+        '.burnsTo',
+        'burn-out must preserve strut orientation, discard beam orientation and use a solid zero-span material',
+      );
     }
   }
 };

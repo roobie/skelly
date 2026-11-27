@@ -44,9 +44,15 @@ export interface Support {
 export const createSupport = (registry: Registry, view: SupportView): Support => {
   const solid = registry.blocks.map((block) => block.solid);
   const span = registry.blocks.map((block) =>
-    Math.floor((registry.blockMaterials.get(block.material)?.span ?? 0) / view.blockSize),
+    Math.floor(
+      ((block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
+        registry.blockMaterials.get(block.material)?.span ??
+        0) / view.blockSize,
+    ),
   );
-  const bearings = registry.blocks.map((block) => (block.loadPath ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0]));
+  const bearings = registry.blocks.map((block) =>
+    block.loadPath?.kind === 'strut' ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0],
+  );
   const standing = new Map<string, boolean>();
   const held = new Map<string, boolean>();
   const solidAt = (x: number, y: number, z: number): boolean =>
@@ -132,9 +138,15 @@ const warnRestoreIssue = (issue: string): void => {
   console.warn(issue);
 };
 
-/** The widest span any material reaches, which bounds how far sideways a lost cell's dependants can be. */
+/** Bounds sideways dependants, including block-authored member overrides. */
 const widestSpan = (registry: Registry): number =>
-  [...registry.blockMaterials.values()].reduce((widest, { span }) => (span > widest ? span : widest), 0);
+  registry.blocks.reduce((widest, block) => {
+    const span =
+      (block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
+      registry.blockMaterials.get(block.material)?.span ??
+      0;
+    return Math.max(widest, span);
+  }, 0);
 
 /**
  * World-owned support state that play produces. A placed mark lasts as long as the block placed with it, so any block
@@ -183,7 +195,9 @@ export class SupportState {
       return;
     }
     this.lostCells.set(key, [...cell] as Vec3);
-    const bearings = new Set(registry.blocks.map((block) => block.loadPath?.bearing));
+    const bearings = new Set(
+      registry.blocks.map((block) => (block.loadPath?.kind === 'strut' ? block.loadPath.bearing : undefined)),
+    );
     for (const bearing of bearings) {
       const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
       this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);
