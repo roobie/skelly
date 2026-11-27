@@ -1,6 +1,8 @@
 import { BlockDamage } from './blockDamage.ts';
 import { Chunk } from './chunk.ts';
 import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { EventQueue } from './events.ts';
+import type { FallRecord } from './fall.ts';
 import { Fire } from './fire.ts';
 import { Rubble } from './rubble.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -81,6 +83,8 @@ export class World {
   readonly fire = new Fire(this);
   readonly rubble = new Rubble(this);
   readonly support = new SupportState(this);
+  /** Gravity moves the view has not consumed; derived and deliberately absent from saves. */
+  readonly falls = new EventQueue<FallRecord>();
   private readonly columnChunks = new Map<string, number>();
   /** Changes whenever blocks visible to simulation queries change. */
   version = 0;
@@ -88,21 +92,18 @@ export class World {
   private readonly touched = new Set<string>();
   /** Saved form of touched columns unchanged since it was built, so a save re-encodes only changed columns. */
   private readonly encoded = new Map<string, Readonly<SavedColumn>>();
-  private readonly watchers = new Set<(cx: number, cy: number, cz: number) => void>();
+  private readonly watchers = new Set<(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void>();
 
-  /**
-   * Calls `changed` with each chunk whose blocks change, at every change that bumps `version`, so a cache can drop
-   * only what reads that chunk. Returns the unsubscribe.
-   */
-  watchChunks(changed: (cx: number, cy: number, cz: number) => void): () => void {
+  /** Block changes alone invalidate spatial caches; save metadata changes need not discard geometry. */
+  watchChunks(changed: (cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void): () => void {
     this.watchers.add(changed);
     return () => this.watchers.delete(changed);
   }
 
-  private changed(cx: number, cy: number, cz: number): void {
+  private changed(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>): void {
     this.version += 1;
     for (const watcher of this.watchers) {
-      watcher(cx, cy, cz);
+      watcher(cx, cy, cz, cell);
     }
   }
 
@@ -193,6 +194,10 @@ export class World {
     return chunk ? chunk.get(toLocal(x), toLocal(y), toLocal(z)) : 0;
   }
 
+  meshChunk(cx: number, cy: number, cz: number): Chunk | undefined {
+    return this.getChunk(cx, cy, cz);
+  }
+
   /** Sets a block during play, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
   setBlock(x: number, y: number, z: number, id: number): Vec3[] {
     const cx = toChunk(x);
@@ -212,7 +217,7 @@ export class World {
       const column = columnKey(cx, cz);
       this.touched.add(column);
       this.encoded.delete(column);
-      this.changed(cx, cy, cz);
+      this.changed(cx, cy, cz, [x, y, z]);
     }
     return affectedChunks(x, y, z);
   }

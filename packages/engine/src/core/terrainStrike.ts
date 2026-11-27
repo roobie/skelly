@@ -270,11 +270,13 @@ const fallCell = (
             );
           }
         }
+        const block = terrain.world.getBlock(...cell);
         const carried = terrain.world.rubble.release(cell);
         const buried = live.buryPile(landing);
         edited = terrain.world.setBlock(...cell, 0);
         edited.push(...terrain.world.setBlock(...landing, rubble));
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
+        terrain.world.falls.emit({ kind: 'terrain', block, from: [...cell], to: [...landing] });
       });
       return { destroyed, edited };
     } catch (error) {

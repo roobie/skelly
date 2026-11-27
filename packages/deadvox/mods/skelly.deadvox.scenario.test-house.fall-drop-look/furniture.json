@@ -1,0 +1,16 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 1,
+        "minimumStrength": 1
+      },
+      "color": "#9a7b4f",
+      "id": "fall_drop_look_crate",
+      "massKg": 100,
+      "material": "wood",
+      "name": "Fall-drop crate",
+      "size": [1, 2, 1]
+    }
+  ]
+}

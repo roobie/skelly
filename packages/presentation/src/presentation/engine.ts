@@ -146,6 +146,7 @@ export function createEngine(
   const { skyFields } = worldSetup;
   const materialPatches = new MaterialPatches();
   materialPatches.add(fabricGrain);
+  materialPatches.watch(scene);
   const skylight =
     skyFields.fields.length > 0
       ? new Skylight(
@@ -171,7 +172,7 @@ export function createEngine(
       camera.position.y / scale.blockSize,
       camera.position.z / scale.blockSize,
     ]);
-    materialPatches.apply(scene);
+    materialPatches.refresh();
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 

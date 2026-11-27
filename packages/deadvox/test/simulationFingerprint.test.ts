@@ -74,6 +74,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'engine/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'engine/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
   'engine/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
+  'engine/core/fall.ts':
+    'Erased fall-record type contract; gravity moves and event emission remain in the runtime graph.',
   'engine/core/massProperties.ts':
     'Voxel mass and bounds of built bodies for ragdolls and severed parts; no simulation module imports it.',
   'engine/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',

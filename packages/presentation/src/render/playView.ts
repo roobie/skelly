@@ -62,6 +62,7 @@ import { CastShots } from './castShots.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
+import { FallDrops } from './fallDrops.ts';
 import { installFixtureReach } from './fixtureReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
@@ -229,6 +230,7 @@ type PlayViewEngine = Readonly<
   Pick<
     Engine,
     | 'config'
+    | 'streamer'
     | 'registry'
     | 'renderer'
     | 'meshes'
@@ -402,6 +404,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    fallDrops.dispose();
     placementGhost.dispose();
     instruments.dispose();
     corpses.dispose();
@@ -429,6 +432,24 @@ export const createPlayView = (
     sectorChunks: graphics.furnitureSectorChunks,
     content: { registry, models },
   });
+  const fallDrops = new FallDrops(
+    s,
+    gravityMetresPerSimSecondSquared,
+    {
+      piece: (uid) => {
+        const entity = engine.entities.byUid(uid);
+        return entity ? furniture.pieceMesh(entity, engine.entities.defOf(entity)) : undefined;
+      },
+      pile: (uid) => piles.fallModel(uid),
+      terrain: (block) => meshes.blockModel(block, registry),
+    },
+    {
+      mask: (cells) => engine.streamer.maskLanded(cells),
+      unmask: (cells) => engine.streamer.unmaskLanded(cells),
+    },
+  );
+  const pieceFalls = engine.entities.falls.reader();
+  const terrainFalls = engine.simulationWorld.falls.reader();
   const instruments = new PlantInstruments(s, claimed(registry.inventory, 'player')!.conditionBands, meshes);
   const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
@@ -478,6 +499,7 @@ export const createPlayView = (
     piles.group,
     vehicles.group,
     furniture.group,
+    fallDrops.group,
     instruments.group,
     corpses.group,
     playerMeshes.group,
@@ -515,6 +537,7 @@ export const createPlayView = (
           bloodiness: (actor) => gore.severity(actor),
         })
       : new ActorMeshes(s, undefined, meshes);
+  actorMeshes.hiddenByFall = (actor) => fallDrops.hidesBuriedCells(actor.body.buried);
   actorMeshes.setWorld?.(physicalSolid, s);
   scene.add(actorMeshes.group);
   // The shadow passes pick the renderer's figures per light (a no-op for the box fallback).
@@ -698,10 +721,13 @@ export const createPlayView = (
       castShots.sync(castProjectiles, frozen ? 0 : Math.min(time - lastActorStep, 1 / ACTIVE_ACTOR_RATE), dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
-      piles.sync(inventory, itemThrows.hiddenItemUids);
+      piles.sync(inventory, new Set([...itemThrows.hiddenItemUids, ...fallDrops.hiddenItemUids]));
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles, time);
-      furniture.sync(entities, poweredLights());
+      fallDrops.read([...pieceFalls.read(), ...terrainFalls.read()]);
+      fallDrops.update(dt);
+      piles.sync(inventory, new Set([...itemThrows.hiddenItemUids, ...fallDrops.hiddenItemUids]));
+      furniture.sync(entities, poweredLights(), fallDrops.hiddenPieceUids);
       instruments.sync(entities, instrumentRead, time);
       corpses.sync(entities);
       decals?.sync(entities);

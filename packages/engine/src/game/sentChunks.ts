@@ -28,7 +28,7 @@ export class SentChunks {
     const transfer: ArrayBuffer[] = [];
     const chunks = neighbourCoords(coords).map((at): SentChunk => {
       const key = chunkKey(...at);
-      const chunk = world.getChunk(...at);
+      const chunk = world.meshChunk(...at);
       const raw = chunk?.raw();
       if (!(chunk && raw)) {
         this.held.delete(key);

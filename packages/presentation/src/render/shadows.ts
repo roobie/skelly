@@ -60,6 +60,7 @@ import {
 import type { ChunkMeshes } from './chunks.ts';
 import { ItemShadowCache } from './itemShadowCache.ts';
 import { ItemShadowCasters } from './itemShadowCasters.ts';
+import { type SceneObjects, sceneObjectsOf } from './sceneObjects.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
@@ -173,9 +174,13 @@ export class Shadows {
   private itemVisible: () => readonly boolean[] = () => [];
   private itemWasVisible: boolean[] = [];
   private readonly itemView = new PerspectiveCamera();
-  private readonly itemCache = new ItemShadowCache();
-  /** The last frame's item-lamp pass, for the debug readout: which slots redrew, and at what CPU cost. */
-  readonly itemStats = { cpuRealMs: 0, faces: 0, active: 0, culled: 0, redraws: [] as number[] };
+  private readonly objects: SceneObjects;
+  private readonly casterIndex = new ItemShadowCasters();
+  private readonly itemCache = new ItemShadowCache((mesh) => this.casterIndex.sphereOf(mesh));
+  private readonly casterScan: Mesh[] = [];
+  /** The last frame's item-lamp pass, for the debug readout: which slots redrew, whether the caster set changed,
+   * and at what CPU cost. */
+  readonly itemStats = { cpuRealMs: 0, faces: 0, active: 0, culled: 0, rebuilt: false, redraws: [] as number[] };
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
    * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
@@ -205,6 +210,7 @@ export class Shadows {
     this.light = light;
     this.rig = rig;
     this.meshes = meshes;
+    this.objects = sceneObjectsOf(scene);
     this.itemView.layers.enable(SHADOW_CROWD_LAYER);
     this.itemView.layers.enable(OPTIC_BODY_LAYER);
     // Enabled for good: programs only contain shadow code while a light casts, and toggling this at
@@ -352,12 +358,15 @@ export class Shadows {
       return;
     }
     this.toSun.copy(light.position).normalize();
-    snapToTexels(center, this.toSun, sunShadowTexelSize(this.state.distance, light.shadow.mapSize.x), this.snapped);
+    const texel = sunShadowTexelSize(this.state.distance, light.shadow.mapSize.x);
+    snapToTexels(center, this.toSun, texel, this.snapped);
     rig.position.copy(this.snapped);
     rig.updateMatrixWorld(true);
+    // The grid turns with the sun, so a still box drifts by a sliver each frame of a turn too small to count;
+    // the box only moves what the map holds once it steps a texel across the light.
     const changed =
       this.stale ||
-      !this.snapped.equals(this.drawnAt) ||
+      this.snapped.distanceToSquared(this.drawnAt) >= (texel / 2) ** 2 ||
       this.toSun.distanceToSquared(this.drawnToSun) > 1e-8 ||
       meshes.version !== this.drawnVersion;
     this.sinceDraw += 1;
@@ -490,9 +499,10 @@ export class Shadows {
     stats.faces = 0;
     stats.active = 0;
     stats.culled = 0;
+    stats.rebuilt = false;
     stats.redraws = this.items.map(() => 0);
     const activeSlots = this.items.map((item, index) => item.intensity > 0 && this.itemVisible()[index] !== false);
-    // Hidden and dark lamps need no caster walk, which visits the whole scene.
+    // Hidden and dark lamps need no caster scan, which visits every object in the scene.
     let work = false;
     for (const [index, item] of this.items.entries()) {
       const active = activeSlots[index]!;
@@ -509,29 +519,35 @@ export class Shadows {
       return;
     }
     const bodies = this.itemBodies();
+    const { casterIndex } = this;
+    const casters = this.casterScan;
+    casters.length = 0;
+    for (const object of this.objects.objects) {
+      if (object instanceof Mesh && object.castShadow) {
+        casters.push(object);
+      }
+    }
+    stats.rebuilt = casterIndex.update(casters);
+    const reached = this.items.map((item, index) => (activeSlots[index] ? casterIndex.query(item) : []));
     // A remote lamp can illuminate receivers behind a thin door, unlike a viewer-mounted beam.
     // Capture entry faces for every blocker, including model materials, not only terrain.
     const sides = new Map<Material, Side | null>();
-    const casters: Mesh[] = [];
-    this.scene.traverse((object) => {
-      if (!(object instanceof Mesh && object.castShadow)) {
-        return;
+    // Keep the original objects and world matrices: their hooks and renderer upload identities matter.
+    // The shadow renderer only walks children; a flat root avoids visiting noncasters on every face.
+    const casterScene = Object.create(scene) as Scene;
+    const children = new Map<Mesh, Object3D[]>();
+    for (const caster of reached.flat()) {
+      if (children.has(caster)) {
+        continue;
       }
-      casters.push(object);
-      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      children.set(caster, caster.children);
+      caster.children = [];
+      for (const material of Array.isArray(caster.material) ? caster.material : [caster.material]) {
         if (!sides.has(material)) {
           sides.set(material, material.shadowSide);
         }
         material.shadowSide = DoubleSide;
       }
-    });
-    const casterIndex = new ItemShadowCasters(casters);
-    // Keep the original objects and world matrices: their hooks and renderer upload identities matter.
-    // The shadow renderer only walks children; a flat root avoids visiting noncasters on every face.
-    const casterScene = Object.create(scene) as Scene;
-    const children = new Map(casters.map((caster) => [caster, caster.children]));
-    for (const caster of casters) {
-      caster.children = [];
     }
     try {
       for (const [index, item] of this.items.entries()) {
@@ -557,7 +573,7 @@ export class Shadows {
           body.visible = false;
         }
         try {
-          casterScene.children = casterIndex.query(item).filter((caster) => {
+          casterScene.children = reached[index]!.filter((caster) => {
             for (let ancestor: Object3D | null = caster; ancestor; ancestor = ancestor.parent) {
               if (!ancestor.visible) {
                 return false;

@@ -4,6 +4,7 @@ read_if:
   - you're adding, removing or regrouping a runtime entry point
   - you're adding a test that needs runtime internals
   - you change terrain aperture clearance or actor collision shape dispatch
+  - you change sunlight exposure or player-sense caching
 ---
 
 # Engine
@@ -41,6 +42,15 @@ terrain discovery work: actor envelopes and fitted openings answer different col
 Clearance margins belong to content rather than actor shape tuning, so authored near-fit tolerance can
 change without changing physical mechanisms. See `src/core/apertureCollision.ts`, `apertureShapes`, and
 `src/core/schema/furniture.ts`, `FurnitureSchema`.
+
+## Sense caching
+
+Sun exposure must stay exact after an edit without repeating sky scans for unrelated world activity or a
+render frame boundary. See `src/core/lights.ts`, `SunExposureCache`, and `src/core/terrainRead.ts`, `ChunkSource`.
+
+Player sense is shared only within an active actor step, including its spawn batch. A later scheduler
+consumer or a command must read live inputs: the player, inventory, terrain or power state may have changed
+between consumers even at the same simulation time. See `src/game/session.ts`, `createSession`.
 
 ## Tests
 
