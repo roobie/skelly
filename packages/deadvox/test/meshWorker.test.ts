@@ -1,6 +1,7 @@
 import { BEDROCK, type Neighbourhood, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { RenderWorld } from '@skelly/engine/internal/game/renderWorld.ts';
 import { SentChunks } from '@skelly/engine/internal/game/sentChunks.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { hash3 } from '@skelly/engine/math';
@@ -162,6 +163,30 @@ it.each([
   expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, [0, 0, 0], bottomCy, init)));
 });
 
+it('keeps landed cells masked across later column publication and edits, then reveals canonical values', () => {
+  const world = new RenderWorld();
+  const cell: Vec3 = [0, 0, 0];
+  world.setBlock(...cell, 1);
+  const init = waterInit();
+  const mesh = () => {
+    const [request] = sendRequest(chunkLink(), world, [0, 0, 0], 0);
+    return buildRequestedMesh(init, request);
+  };
+  expect(mesh().indices.length).toBeGreaterThan(0);
+  world.mask(cell);
+  expect(mesh().indices.length).toBe(0);
+  // The next cascade step republishes the same column, including a changed landing.
+  const published = new Chunk(0, 0, 0);
+  published.set(...cell, 2);
+  world.addChunk(published);
+  world.setBlock(...cell, 3);
+  expect(world.getBlock(...cell)).toBe(3);
+  expect(mesh().indices.length).toBe(0);
+  world.unmask(cell);
+  expect(world.meshChunk(0, 0, 0)?.get(...cell)).toBe(3);
+  expect(mesh().indices.length).toBeGreaterThan(0);
+});
+
 it('hands the mesher the blocks the world holds when requests rely on kept blocks', () => {
   const bottomCy = -1;
   const world = new World();
@@ -215,6 +240,51 @@ it('hands the mesher the blocks the world holds when requests rely on kept block
   const mesh = buildRequestedMesh(init, last!);
   expect(mesh.indices.length).toBeGreaterThan(0);
   expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, east, bottomCy, init)));
+});
+
+it('unmasks several cascade cells in one chunk with one remesh', () => {
+  const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
+  const world = new RenderWorld();
+  const mesher = new CloningMesher();
+  const streamer = new Streamer({
+    world,
+    meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
+    mesher: { count: 1, create: () => mesher },
+    terrain: fixtureTerrain({ scale, floor: 0, blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: WATER } }),
+    colors: waterInit().colors,
+    patterns: waterInit().patterns,
+    weatherable: waterInit().weatherable,
+    scale,
+    radius: 0,
+    preloadRings: 0,
+    columnsPerFrame: 1,
+    hysteresis: 1,
+  });
+  const flush = () => {
+    for (let step = 0; step < 32; step += 1) {
+      streamer.update(0, 0);
+      for (const request of mesher.waiting.splice(0)) {
+        mesher.reply(request);
+      }
+    }
+  };
+  flush();
+  const cells: Vec3[] = [
+    [12, 12, 12],
+    [13, 12, 12],
+    [14, 12, 12],
+  ];
+  for (const cell of cells) {
+    streamer.markEdited(world.setBlock(...cell, 1));
+  }
+  streamer.maskLanded(cells);
+  flush();
+  const post = vi.spyOn(mesher, 'post');
+  streamer.unmaskLanded(cells);
+  flush();
+  expect(
+    post.mock.calls.filter(([message]) => message.type === 'mesh').map(([message]) => (message as MeshRequest).key),
+  ).toEqual(['0,0,0']);
 });
 
 it('draws the blocks as they are after an edit lands while their chunk is being meshed', () => {

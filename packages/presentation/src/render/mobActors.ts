@@ -182,6 +182,7 @@ import { freezeMatrices } from './staticMatrices.ts';
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ActorRenderer {
   readonly group: Group;
+  hiddenByFall?: ((actor: Actor) => boolean) | undefined;
   sync: (
     store: EntityStore<Actor>,
     realDt?: number,
@@ -764,6 +765,7 @@ const crowdMaterials = (
 /** Draws actors as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
 export class MobActorMeshes implements ActorRenderer {
+  hiddenByFall: ((actor: Actor) => boolean) | undefined;
   readonly group = new Group();
   private readonly blockSize: number;
   private readonly poseScene: ActorPoseScene;
@@ -2600,6 +2602,9 @@ export class MobActorMeshes implements ActorRenderer {
     this.advanceCrawlFalls(realDt);
     const present = new Set<EntityId>();
     for (const [id, actor] of store.entries()) {
+      if (this.hiddenByFall?.(actor)) {
+        continue;
+      }
       present.add(id);
       const actorBackgroundBlend = backgroundActorBlend(actor, simulationTime, this.backgroundBlend);
       this.renderBlend = actor.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
