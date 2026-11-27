@@ -352,12 +352,15 @@ export class Shadows {
       return;
     }
     this.toSun.copy(light.position).normalize();
-    snapToTexels(center, this.toSun, sunShadowTexelSize(this.state.distance, light.shadow.mapSize.x), this.snapped);
+    const texel = sunShadowTexelSize(this.state.distance, light.shadow.mapSize.x);
+    snapToTexels(center, this.toSun, texel, this.snapped);
     rig.position.copy(this.snapped);
     rig.updateMatrixWorld(true);
+    // The grid turns with the sun, so a still box drifts by a sliver each frame of a turn too small to count;
+    // the box only moves what the map holds once it steps a texel across the light.
     const changed =
       this.stale ||
-      !this.snapped.equals(this.drawnAt) ||
+      this.snapped.distanceToSquared(this.drawnAt) >= (texel / 2) ** 2 ||
       this.toSun.distanceToSquared(this.drawnToSun) > 1e-8 ||
       meshes.version !== this.drawnVersion;
     this.sinceDraw += 1;
