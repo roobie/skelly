@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
-  - you're changing cell-fire ownership, burn-out support, charred clearing or its fire-look fixture
+  - you're changing cell-fire ownership, material load crumbling, burn-out support, charred clearing or its fire-look fixture
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
@@ -259,15 +259,23 @@ implementation selects; this plan retains only the cross-system obligations.
   rubble and support, because leaving the view must not pause a burning site or
   erase its remaining burn. See `packages/engine/src/core/world.ts`, `World`, and
   `packages/engine/src/core/fire.ts`, `Fire`.
-- **Burnt material:** exhaustion leaves authored charred terrain, clearable through
-  take-apart, because a burnt structure should leave a consequential remnant.
-  Binary span support already distinguishes a grounded burnt post from a burnt
-  beam or cantilever; burning must not introduce a second support rule. Falling
-  and burning need separate authored results because gravity and exhaustion are
-  different events. A shared char material suffices without restricting which
-  materials may burn. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`;
-  `packages/engine/src/core/structureSupport.ts`, `SupportState.replaced`; and
-  `packages/engine/src/core/rubble.ts`, `rubbleClearWork`.
+- **Burnt material:** char holds nothing up or sideways; unloaded, supported char
+  stays as consequential remains for take-apart. This is a material fact, not a
+  burn event, so other remains can select the same rule. Loaded means held by
+  support, and only terrain cells are support load. The support reader denies
+  bearing; the terrain landing reader breaks crumbling material through ordinary
+  ruin when a falling cell reaches it. One definition of load avoids a second
+  predicate disagreeing with support about what a cell carries. See
+  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState.replaced`,
+  and `packages/engine/src/core/terrainStrike.ts`, `landingCell` and `fallCell`.
+  Placement already asks support whether the proposed block holds, so it refuses
+  placement on char as unsupported; overriding that answer for one material would
+  create a second path. See `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
+  Whether furniture, piles or bodies on char should break the floor is a separate
+  question, outside this terrain-support rule.
+  Falling and burning retain separate authored results because gravity and
+  exhaustion are different events; see `packages/engine/src/core/schema/blocks.ts`,
+  `BlockMaterialSchema`.
 - **Smoke effects:** smoke is a visual, sight-blocking field, so visible smoke has
   a sensory consequence rather than being decoration. Smoke inhalation levels are
   deferred to #1074; reconsider them when a shared body-effect model exists for

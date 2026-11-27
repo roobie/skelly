@@ -128,7 +128,9 @@ const built = (registry: Registry, id: string, style: string | undefined): Compi
 const supportDrops = (registry: Registry, template: CompiledTemplate, weakest = new Map<string, number>()): Vec3[] => {
   const placement = { template, origin: [0, 0, 0] as Vec3, turn: 0 as const };
   const surface = template.groundLayer ?? 0;
-  const ground = registry.blocks.findIndex(({ solid }) => solid);
+  const ground = registry.blocks.findIndex(
+    ({ solid, material }) => solid && !registry.blockMaterials.get(material)!.crumblesUnderLoad,
+  );
   const stamped = (x: number, y: number, z: number) => placedBlockAt(placement, [x, y, z]);
   const natural = (x: number, y: number, z: number) => stamped(x, y, z) === undefined && y <= surface;
   const support = createSupport(registry, {

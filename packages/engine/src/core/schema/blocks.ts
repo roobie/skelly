@@ -99,6 +99,7 @@ export const BlockMaterialSchema = strictObject({
   resistance: record(Id, Fraction),
   massKg: Positive,
   span: Count,
+  crumblesUnderLoad: vBoolean(),
   fallsTo: Id,
   flammability: optional(
     strictObject({
