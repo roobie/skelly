@@ -3076,11 +3076,38 @@ const checkBurnResults = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkFallResult = (
+  registry: Registry,
+  report: Report,
+  owner: { section: 'blocks' | 'blockMaterials'; id: string; result: NonNullable<BlockDef['fallsTo']> },
+): void => {
+  const { section, id, result } = owner;
+  if ('block' in result) {
+    const rubble = registry.blockIds.get(result.block);
+    if (rubble === undefined || !registry.blocks[rubble]?.solid) {
+      report(section, id, '.fallsTo.block', `no solid rubble block "${result.block}"`);
+    }
+  } else {
+    result.yields.forEach(({ item }, index) => {
+      if (!registry.items.has(item)) {
+        report(section, id, `.fallsTo.yields[${index}].item`, `no item "${item}"`);
+      }
+    });
+  }
+};
+
 const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): void => {
+  if (block.loadPath && !block.strut) {
+    report('blocks', block.id, '.loadPath', 'strut load paths require a strut shape');
+  }
   if (block.strut) {
     const opposite = { '+x': '-x', '-x': '+x', '+z': '-z', '-z': '+z' } as const;
     if (!registry.blockMaterials.get(block.material)?.structural) {
       report('blocks', block.id, '.strut', 'struts require a structural material');
+    }
+    const fall = block.fallsTo ?? registry.blockMaterials.get(block.material)?.fallsTo;
+    if (!(fall && 'yields' in fall)) {
+      report('blocks', block.id, '.fallsTo', 'struts must fall to yields');
     }
     if (
       block.loadPath?.bearing !== opposite[block.strut.rise] ||
@@ -3098,7 +3125,17 @@ const checkBlockShape = (registry: Registry, block: BlockDef, report: Report): v
       );
     }
   }
+};
+
+const checkBlockBurnResult = (registry: Registry, block: BlockDef, report: Report): void => {
+  const burn = registry.blockMaterials.get(block.material)?.flammability;
+  if (block.strut && burn && !block.burnsTo) {
+    report('blocks', block.id, '.burnsTo', 'flammable struts need an oriented burn result');
+  }
   if (block.burnsTo) {
+    if (!burn) {
+      report('blocks', block.id, '.burnsTo', 'burn overrides require a flammable material');
+    }
     const result = registry.blocks[registry.blockIds.get(block.burnsTo) ?? -1];
     if (
       !result?.solid ||
@@ -3114,15 +3151,16 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
   checkBurnResults(registry, report);
   for (const block of registry.blocks.slice(1)) {
     checkBlockShape(registry, block, report);
+    checkBlockBurnResult(registry, block, report);
+    if (block.fallsTo) {
+      checkFallResult(registry, report, { section: 'blocks', id: block.id, result: block.fallsTo });
+    }
     if (!registry.blockMaterials.has(block.material)) {
       report('blocks', block.id, '.material', `no block material "${block.material}"`);
     }
   }
   for (const material of registry.blockMaterials.values()) {
-    const rubble = registry.blockIds.get(material.fallsTo);
-    if (rubble === undefined || !registry.blocks[rubble]?.solid) {
-      report('blockMaterials', material.id, '.fallsTo', `no solid rubble block "${material.fallsTo}"`);
-    }
+    checkFallResult(registry, report, { section: 'blockMaterials', id: material.id, result: material.fallsTo });
     if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
       report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
     }

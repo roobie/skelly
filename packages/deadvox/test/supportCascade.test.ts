@@ -23,6 +23,7 @@ const RUBBLE = 'support_cascade_rubble';
 const STOCK = 'support_cascade_stock';
 const PIECE = 'support_cascade_piece';
 const VEHICLE = 'support_cascade_vehicle';
+const STRUT = 'support_cascade_strut';
 
 const fixtureRegistry = (cascadeCellsPerTick?: number, breathes = false) => {
   const registry = baseRegistry();
@@ -83,6 +84,18 @@ const fixtureRegistry = (cascadeCellsPerTick?: number, breathes = false) => {
     registry.blockIds.set(id, registry.blocks.length);
     registry.blocks.push({ id, name: id, material: of, solid: true, color: '#888888' });
   }
+  registry.blockIds.set(STRUT, registry.blocks.length);
+  registry.blocks.push({
+    id: STRUT,
+    name: STRUT,
+    material: 'support_cascade_post_material',
+    solid: true,
+    opaque: false,
+    color: '#888888',
+    strut: { rise: '+x', widthBlocks: 0.2 },
+    loadPath: { kind: 'strut', bearing: '-x' },
+    fallsTo: { yields: [{ item: STOCK, count: 2 }] },
+  });
   for (const sound of blockMaterialFixture(RUBBLE).sounds) {
     registry.sounds.set(sound.id, {
       ...sound,
@@ -254,7 +267,62 @@ const settle = (f: Fixture) => {
   }
 };
 
+const knee: typeof structures = (registry) => [
+  column(2, 2, registry.blockIds.get(POST)!),
+  row(3, 3, 3, registry.blockIds.get(STRUT)!),
+  row(3, 4, 4, registry.blockIds.get(BEAM)!),
+];
+
 describe('support cascade', () => {
+  it.each([
+    ['strut', [3, 3, Z]],
+    ['diagonal foot', [2, 2, Z]],
+  ] as const)('cutting the %s reaches the knee beam', (_name, cell) => {
+    const f = fixture(undefined, undefined, false, { layout: knee });
+    expect(createSupport(f.registry, terrainSupportView(f.canonical)).holds([4, 4, Z])).toBe(true);
+    expect(f.strike([...cell])).toBe(true);
+    settle(f);
+    expect(f.block([3, 3, Z])).not.toBe(STRUT);
+    expect(f.block([3, 4, Z])).not.toBe(BEAM);
+    expect(f.block([4, 4, Z])).not.toBe(BEAM);
+    const loose = [...f.session.inventory.items()].map(({ item }) => item);
+    const buried = f.world.rubble
+      .snapshotState()
+      .entries.flatMap((entry) => (entry.buried ?? []).map(({ item }) => item));
+    expect([...loose, ...buried].filter((item) => item.type === STOCK).reduce((sum, item) => sum + item.count, 0)).toBe(
+      2,
+    );
+  });
+
+  it('restores a capped diagonal cascade to the same result as an uninterrupted cascade', async () => {
+    const direct = fixture(undefined, undefined, false, { layout: knee });
+    const capped = fixture(1, undefined, false, { layout: knee });
+    expect(direct.strike([2, 2, Z])).toBe(true);
+    expect(capped.strike([2, 2, Z])).toBe(true);
+    capped.tick();
+    expect(capped.world.support.cascading).toBe(true);
+    const restored = await reload(capped, 1);
+    settle(direct);
+    settle(restored);
+    expect(direct.block([4, 4, Z])).not.toBe(BEAM);
+    expect(rowBlocks(restored)).toEqual(rowBlocks(direct));
+  });
+
+  it('an unsupported strut settles as its yields pile without a rubble cell', () => {
+    const layout: typeof structures = (registry) => knee(registry, false).slice(0, 2);
+    const f = fixture(undefined, undefined, false, { layout });
+    expect(f.strike([2, 2, Z])).toBe(true);
+    settle(f);
+    expect(f.canonical.getBlock(3, 3, Z)).toBe(0);
+    expect(f.canonical.getBlock(3, 1, Z)).toBe(0);
+    const pile = f.session.inventory.pileAt([3, 1, Z]);
+    expect(pile).toBeDefined();
+    expect(
+      [...f.session.inventory.items()]
+        .filter(({ item }) => item.type === STOCK)
+        .reduce((sum, { item }) => sum + item.count, 0),
+    ).toBe(2);
+  });
   it('saves a trapped player and suffocates it over simulation time, without allowing self clearing', async () => {
     const f = fixture(undefined, undefined, false, { layout: chamber, spawn: [4.5, 1, Z + 0.5] });
     expect(f.strike([2, 6, Z])).toBe(true);

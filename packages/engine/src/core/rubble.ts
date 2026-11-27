@@ -7,17 +7,29 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import type { DisassemblyOutput } from './disassembly.ts';
 import type { PlacedState } from './items.ts';
+import type { BlockDef, BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
+/** Block overrides and material defaults share one failure rule. */
+export const blockFallResult = (registry: Registry, block: BlockDef): BlockMaterialDef['fallsTo'] =>
+  block.fallsTo ?? registry.blockMaterials.get(block.material)!.fallsTo;
+
+export const blockBreakYields = (registry: Registry, block: BlockDef): BlockMaterialDef['rubble'] => {
+  const result = blockFallResult(registry, block);
+  return 'yields' in result ? result.yields : registry.blockMaterials.get(block.material)!.rubble;
+};
+
 /** Fallen and burnt remnants share clearing, even when burning and falling name different results. */
 export const rubbleBlockIds = (registry: Registry): ReadonlySet<string> =>
-  new Set(
-    [...registry.blockMaterials.values()].flatMap(({ fallsTo, flammability }) =>
-      flammability ? [fallsTo, flammability.burnsTo] : [fallsTo],
-    ),
-  );
+  new Set([
+    ...[...registry.blockMaterials.values()].flatMap(({ fallsTo, flammability }) => [
+      ...('block' in fallsTo ? [fallsTo.block] : []),
+      ...(flammability ? [flammability.burnsTo] : []),
+    ]),
+    ...registry.blocks.flatMap(({ fallsTo }) => (fallsTo && 'block' in fallsTo ? [fallsTo.block] : [])),
+  ]);
 
 /** The rubble block standing at a cell, when rubble stands there in a loaded column. */
 export const standingRubble = (world: TerrainRead, registry: Registry, cell: Readonly<Vec3>): string | undefined => {

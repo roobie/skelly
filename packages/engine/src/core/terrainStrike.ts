@@ -6,7 +6,8 @@ import type { createColumnSupply } from './columnSupply.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { commitRuin, type FurnitureMover, fallingBoxRefusal, hungOnTerrain, planRuin } from './furnitureMove.ts';
-import { rubbleBlockIds } from './rubble.ts';
+import { blockBreakYields, blockFallResult, rubbleBlockIds } from './rubble.ts';
+import type { BlockMaterialDef } from './schema.ts';
 import { createSupport, terrainSupportView } from './structureSupport.ts';
 
 interface TerrainStrike {
@@ -176,6 +177,19 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     });
     return { outcome: 'damaged', destroyed: [], edited: [] };
   }
+  const result = breakCell(context, cell, blockBreakYields(registry, block));
+  if (result.outcome === 'refused') {
+    world.blockDamage.record(terrain, registry, cell, bash.damage);
+  }
+  return result;
+};
+
+const breakCell = (context: TerrainStrike, cell: Vec3, yields: BlockMaterialDef['rubble']): TerrainStrikeResult => {
+  const { terrain, supply, mover } = context;
+  const { world } = terrain;
+  const { registry } = mover.inventory;
+  const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
+  supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
     const { revision } = supply;
     try {
@@ -183,9 +197,8 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
       const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
       const roots = [...floorLossRoots(projected, above), ...hostLossRoots(projected, [cell[0], cell[1] - 1, cell[2]])];
       const pile = projected.inventory.pileAt(above);
-      const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
+      const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields }]);
       if (!plan) {
-        world.blockDamage.record(terrain, registry, cell, bash.damage);
         return { outcome: 'refused', destroyed: [], edited: [] };
       }
       let destroyed: BlockEntity[] = [];
@@ -219,13 +232,36 @@ const landingCell = (context: TerrainStrike, cell: Vec3): Vec3 => {
   return landing;
 };
 
-/** An instant drop: furniture loses the source cell, and its debris plans around the landed rubble. */
+const followBurial = (mover: FurnitureMover, cell: Vec3, landing: Vec3): void => {
+  // Follow the debris so clearing its source cannot free a victim still trapped at the landing.
+  for (const body of [mover.player, ...mover.others]) {
+    if (body.buried?.some((at) => at.every((value, axis) => value === cell[axis]))) {
+      body.pos[1] = Math.min(body.pos[1], landing[1]);
+      body.buried = body.buried.map((at) => (at.every((value, axis) => value === cell[axis]) ? [...landing] : at));
+    }
+  }
+};
+
+/** Both outcomes use the same failure owner; yields reuse the break planner, not a second pile writer. */
 const fallCell = (
   context: TerrainStrike,
   cell: Vec3,
-  rubble: number,
+  result: BlockMaterialDef['fallsTo'],
+): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
+  if ('block' in result) {
+    return fallBlock(context, cell, result.block);
+  }
+  const broken = breakCell(context, cell, result.yields);
+  return broken.outcome === 'broken' ? broken : undefined;
+};
+
+const fallBlock = (
+  context: TerrainStrike,
+  cell: Vec3,
+  rubble: string,
 ): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
   const { terrain, supply, mover } = context;
+  const rubbleId = mover.inventory.registry.blockIds.get(rubble)!;
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
@@ -260,19 +296,11 @@ const fallCell = (
         terrain.ensureCell(...cell);
         destroyed = plan ? commitRuin({ ...mover, inventory: live }, plan) : [];
         mover.crush?.(landing, [1, cell[1] - landing[1] + 1, 1], landing, [1, 1, 1]);
-        // Follow the debris so clearing its source cannot free a victim still trapped at the landing.
-        for (const body of [mover.player, ...mover.others]) {
-          if (body.buried?.some((at) => at.every((value, axis) => value === cell[axis]))) {
-            body.pos[1] = Math.min(body.pos[1], landing[1]);
-            body.buried = body.buried.map((at) =>
-              at.every((value, axis) => value === cell[axis]) ? [...landing] : at,
-            );
-          }
-        }
+        followBurial(mover, cell, landing);
         const carried = terrain.world.rubble.release(cell);
         const buried = live.buryPile(landing);
         edited = terrain.world.setBlock(...cell, 0);
-        edited.push(...terrain.world.setBlock(...landing, rubble));
+        edited.push(...terrain.world.setBlock(...landing, rubbleId));
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
       });
       return { destroyed, edited };
@@ -314,9 +342,8 @@ export const cascadeSupport = (
       }
       return false;
     }
-    const material = registry.blockMaterials.get(block.material)!;
     // A projection publishes once, so each fall reads the supply afresh.
-    const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
+    const fell = fallCell({ ...context, supply: context.project() }, cell, blockFallResult(registry, block));
     if (!fell) {
       return false;
     }

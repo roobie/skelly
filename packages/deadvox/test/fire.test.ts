@@ -42,7 +42,7 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
       id,
       span,
       breakable: true,
-      fallsTo: CHAR,
+      fallsTo: { block: CHAR },
       flammability,
     });
     registry.blockIds.set(id, registry.blocks.length);
@@ -156,6 +156,43 @@ const settle = (f: ReturnType<typeof fixture>) => {
 };
 
 describe('cell fire owner', () => {
+  it('uses a block burn override to preserve an oriented member instead of the material cube', () => {
+    const f = fixture();
+    const source = 'fixture_oriented_source';
+    const result = 'fixture_oriented_char';
+    const yieldId = 'fixture_char_yield';
+    f.registry.items.set(yieldId, {
+      id: yieldId,
+      name: 'Fixture offcut',
+      category: 'material',
+      size: [1, 1],
+      weight: 1,
+      workInProgress: false,
+    });
+    for (const [id, material] of [
+      [source, WOOD],
+      [result, CHAR],
+    ] as const) {
+      f.registry.blockIds.set(id, f.registry.blocks.length);
+      f.registry.blocks.push({
+        id,
+        material,
+        name: id,
+        color: '#555555',
+        solid: true,
+        opaque: false,
+        loadPath: { kind: 'strut', bearing: '-z' },
+        strut: { rise: '+z', widthBlocks: 0.2 },
+        fallsTo: { yields: [{ item: yieldId, count: 1 }] },
+        ...(id === source ? { burnsTo: result } : {}),
+      });
+    }
+    f.world.setBlock(...POST, f.registry.blockIds.get(source)!);
+    expect(f.ignite(POST)).toBe(true);
+    f.world.fire.tick(f.terrain, f.registry, gameSeconds(f.burn.burnDurationGameMinutes), 1);
+    expect(f.block(POST)).toBe(result);
+    expect(f.registry.blocks[f.terrain.getBlock(...POST)]!.strut?.rise).toBe('+z');
+  });
   it('ignites only above the authored material strength, including a non-timber material but not liquid or metal', () => {
     const f = fixture();
     expect(f.ignite(POST, f.burn.ignitionStrength)).toBe(false);

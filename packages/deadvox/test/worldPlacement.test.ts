@@ -16,6 +16,7 @@ import { bindReach, Character } from '@skelly/engine/sim';
 import { World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureTerrain } from './fixtures/terrain.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -46,7 +47,18 @@ registry.items.set(STOCK, {
   workInProgress: false,
 });
 registry.blockIds.set(BLOCK, registry.blocks.length);
-registry.blocks.push({ ...registry.blocks.find((block) => block.solid)!, id: BLOCK, name: 'Fixture block' });
+registry.blockMaterials.set('placement_material', {
+  ...fixtureBlockMaterial(BLOCK),
+  id: 'placement_material',
+  span: 0,
+});
+registry.blocks.push({
+  id: BLOCK,
+  name: 'Fixture block',
+  material: 'placement_material',
+  solid: true,
+  color: '#888888',
+});
 registry.furniture.set(PIECE, {
   id: PIECE,
   name: 'Fixture piece',

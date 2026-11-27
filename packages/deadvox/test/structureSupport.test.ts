@@ -15,6 +15,28 @@ const fixtureBlock = (id: string, span: number): number => {
 const GROUND = fixtureBlock('support_fixture_ground', 0);
 const BEAM = fixtureBlock('support_fixture_beam', 2);
 const POST = fixtureBlock('support_fixture_post', 0);
+const STRUT = fixtureBlock('support_fixture_strut', 0);
+const REVERSED = fixtureBlock('support_fixture_reversed', 0);
+const OFFCUT = 'support_fixture_offcut';
+registry.items.set(OFFCUT, {
+  id: OFFCUT,
+  name: OFFCUT,
+  category: 'material',
+  size: [1, 1],
+  weight: 1,
+  workInProgress: false,
+});
+for (const [id, rise, bearing] of [
+  [STRUT, '+x', '-x'],
+  [REVERSED, '-x', '+x'],
+] as const) {
+  Object.assign(registry.blocks[id]!, {
+    loadPath: { kind: 'strut', bearing },
+    strut: { rise, widthBlocks: 0.2 },
+    opaque: false,
+    fallsTo: { yields: [{ item: OFFCUT, count: 1 }] },
+  });
+}
 
 /** Ground fills y <= 0 and every ground block is natural; every other cell is what the case sets. */
 const world = (cells: readonly (readonly [Vec3, number])[]) => {
@@ -27,6 +49,18 @@ const column = (x: number, height: number, id = POST): [Vec3, number][] =>
   Array.from({ length: height }, (_, at) => [[x, at + 1, 0], id]);
 
 describe('structure support', () => {
+  it('carries a beam through a held diagonal foot, but not a floating or reversed strut', () => {
+    const cells: [Vec3, number][] = [...column(0, 2), [[1, 3, 0], STRUT], [[1, 4, 0], BEAM]];
+    const held = world(cells);
+    expect(held.holds([1, 4, 0])).toBe(true);
+    expect(held.holds([1, 3, 0])).toBe(true);
+    const reversed = world([...column(0, 2), [[1, 3, 0], REVERSED], [[1, 4, 0], BEAM]]);
+    expect(reversed.holds([1, 3, 0])).toBe(false);
+    expect(reversed.holds([1, 4, 0])).toBe(false);
+    const floating = world(cells.slice(1));
+    expect(floating.holds([1, 3, 0])).toBe(false);
+    expect(floating.holds([1, 4, 0])).toBe(false);
+  });
   it('holds a column standing on natural ground and drops one whose foot is gone', () => {
     expect(world(column(0, 3)).holds([0, 3, 0])).toBe(true);
     expect(world(column(0, 3).slice(1)).holds([0, 3, 0])).toBe(false);

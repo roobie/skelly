@@ -137,15 +137,16 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** natural terrain anchors structure; a face-adjacent solid path may bend
-  on its own row, within the querying cell's material span, to a standing or natural
-  cell. Bending fixes corners without a corner-specific rule or another tunable.
-  Merely sideways-held cells cannot anchor another run: otherwise chained beams would
-  cantilever without end. Ending at a standing cell keeps dependencies on the same row
-  and rows below, preserving memo termination. The material span bounds both the search
-  and the cascade's same-row diamond, keeping invalidation local. This avoids floating
-  walls without simulating physical stress; see
-  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState.enqueueSideways`.
+- **Support:** binary gravity support prevents floating walls without claiming to
+  simulate physical stress. Bending accommodates corners without a corner-specific
+  tunable; refusing merely sideways-held endpoints prevents endless cantilevers.
+  Downward bearing preserves memo termination and query-order independence without
+  ports or a second support graph. Struts move the bearing point geometrically, not
+  by granting a span bonus. Reverse bearing reach matters because losing a diagonal
+  foot must invalidate its receiver even when no block stands straight above it.
+  Bounded sideways reach keeps cascade invalidation local. See
+  `packages/engine/src/core/structureSupport.ts`, `createSupport`, `SupportState.lost`
+  and `SupportState.enqueueSideways`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
   or left floating both read wrong, and refusal keeps timber yield open. An exhausted
   search has not cleared the trunk; see
@@ -156,9 +157,14 @@ unbuilt. Unanswered gates block only their dependent work.
   before spending inputs so the player learns why first; see
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
   Falling rubble makes collapse visible rather than leaving rubble suspended where
-  structure stood. Occupied vehicle fittings stop rubble because vehicle impact damage
-  has no owner. Collapse is danger, not arbitrary deletion: conserve anything it did not
-  break through the shared ruin and buried-content owners; see
+  structure stood. A thin member instead leaves salvage: a rubble cube would invent
+  a doorway-blocking mass where a slim brace fell. Block overrides and material defaults
+  share one failure selection, and yields reuse the break planner so falling, cutting
+  and later char failure cannot disagree about salvage. Scrap and offcuts remain useful;
+  a placeable strut item waits for player strut construction rather than offering an item
+  with no way back into the world. Occupied vehicle fittings stop rubble because vehicle
+  impact damage has no owner. Collapse is danger, not arbitrary deletion: conserve anything
+  it did not break through the shared ruin and buried-content owners; see
   `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
   Walls stay walls: evacuation through solids would let collapse breach a sealed base
   by teleporting its occupants. Burial and content-owned breathing let collapse kill

@@ -38,7 +38,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 30,
-      "fallsTo": "soil_rubble",
+      "fallsTo": {
+        "block": "soil_rubble"
+      },
       "id": "soil",
       "massKg": 180,
       "minimumStrength": 2,
@@ -100,7 +102,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 300,
-      "fallsTo": "masonry_rubble",
+      "fallsTo": {
+        "block": "masonry_rubble"
+      },
       "id": "masonry",
       "massKg": 260,
       "minimumStrength": 9,
@@ -162,7 +166,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 100,
-      "fallsTo": "timber_rubble",
+      "fallsTo": {
+        "block": "timber_rubble"
+      },
       "flammability": {
         "burnDurationGameMinutes": 2,
         "burnsTo": "charred_remains",
@@ -229,7 +235,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 400,
-      "fallsTo": "metal_rubble",
+      "fallsTo": {
+        "block": "metal_rubble"
+      },
       "id": "metal",
       "massKg": 180,
       "minimumStrength": 9,
@@ -291,7 +299,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 15,
-      "fallsTo": "textile_rubble",
+      "fallsTo": {
+        "block": "textile_rubble"
+      },
       "id": "textile",
       "massKg": 8,
       "minimumStrength": 0,
@@ -340,7 +350,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 1,
-      "fallsTo": "soil_rubble",
+      "fallsTo": {
+        "block": "soil_rubble"
+      },
       "id": "liquid",
       "massKg": 125,
       "minimumStrength": 0,
@@ -397,7 +409,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 400,
-      "fallsTo": "reinforced_concrete_rubble",
+      "fallsTo": {
+        "block": "reinforced_concrete_rubble"
+      },
       "id": "reinforced_concrete",
       "massKg": 300,
       "minimumStrength": 9,
@@ -459,7 +473,9 @@
         "widthBlocks": 0.035000000000000003
       },
       "durability": 12,
-      "fallsTo": "charred_remains",
+      "fallsTo": {
+        "block": "charred_remains"
+      },
       "id": "charred",
       "massKg": 12,
       "minimumStrength": 0,
@@ -491,6 +507,14 @@
         "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_stone"
       },
@@ -514,6 +538,14 @@
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
+      },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
       },
       "footsteps": {
         "player": "footstep_stone"
@@ -539,6 +571,14 @@
         "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_stone"
       },
@@ -562,6 +602,14 @@
       "drops": {
         "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
+      },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
       },
       "footsteps": {
         "player": "footstep_stone"
@@ -588,6 +636,14 @@
         "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_wood"
       },
@@ -612,6 +668,14 @@
       "drops": {
         "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
+      },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
       },
       "footsteps": {
         "player": "footstep_wood"
@@ -638,6 +702,14 @@
         "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_wood"
       },
@@ -663,6 +735,14 @@
         "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_wood"
       },
@@ -685,6 +765,14 @@
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
+      },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
       },
       "footsteps": {
         "player": "footstep_wood"
@@ -709,6 +797,14 @@
       "drops": {
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_wood"
       },
@@ -732,6 +828,14 @@
       "drops": {
         "default": "item_drop_wood"
       },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
+      },
       "footsteps": {
         "player": "footstep_wood"
       },
@@ -754,6 +858,14 @@
       "color": "#29231f",
       "drops": {
         "default": "item_drop_wood"
+      },
+      "fallsTo": {
+        "yields": [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ]
       },
       "footsteps": {
         "player": "footstep_wood"

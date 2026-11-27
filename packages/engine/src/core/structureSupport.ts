@@ -8,6 +8,8 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { World } from './world.ts';
 
 /** Sideways run directions, in the fixed order every peer searches them. */
+const BEARING_OFFSETS = { '-x': [-1, 0], '+x': [1, 0], '-z': [0, -1], '+z': [0, 1] } as const;
+
 const SIDEWAYS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -41,6 +43,7 @@ export interface Support {
 export const createSupport = (registry: Registry, view: SupportView): Support => {
   const solid = registry.blocks.map((block) => block.solid);
   const span = registry.blocks.map((block) => registry.blockMaterials.get(block.material)?.span ?? 0);
+  const bearings = registry.blocks.map((block) => (block.loadPath ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0]));
   const standing = new Map<string, boolean>();
   const held = new Map<string, boolean>();
   const solidAt = (x: number, y: number, z: number): boolean =>
@@ -52,7 +55,8 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     const key = `${x},${y},${z}`;
     let answer = standing.get(key);
     if (answer === undefined) {
-      answer = y - 1 < view.minY || holdsAt(x, y - 1, z);
+      const [dx, dz] = bearings[view.block(x, y, z)] ?? [0, 0];
+      answer = y - 1 < view.minY || holdsAt(x + dx!, y - 1, z + dz!);
       standing.set(key, answer);
     }
     return answer;
@@ -167,8 +171,8 @@ export class SupportState {
   }
 
   /**
-   * A cell stopped holding: it was broken, cleared or fell. Queues what may have depended on it: the cell above
-   * first, then the same-row diamond out to the widest span. A cell is followed once per cascade.
+   * A cell stopped holding: queue its receivers in the row above, then its bounded same-row dependants.
+   * A cell is followed once per cascade.
    */
   lost(registry: Registry, cell: Readonly<Vec3>): void {
     const key = keyOf(cell);
@@ -176,7 +180,11 @@ export class SupportState {
       return;
     }
     this.lostCells.set(key, [...cell] as Vec3);
-    this.enqueue([cell[0], cell[1] + 1, cell[2]], true);
+    const bearings = new Set(registry.blocks.map((block) => block.loadPath?.bearing));
+    for (const bearing of bearings) {
+      const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
+      this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);
+    }
     this.enqueueSideways(registry, cell);
   }
 

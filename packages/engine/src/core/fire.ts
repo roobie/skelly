@@ -105,7 +105,7 @@ export class Fire {
       }
       const block = registry.blocks[terrain.getBlock(...entry.cell)];
       const burn = block && registry.blockMaterials.get(block.material)?.flammability;
-      const result = burn && registry.blockIds.get(burn.burnsTo);
+      const result = burn && registry.blockIds.get(block?.burnsTo ?? burn.burnsTo);
       if (result === undefined) {
         throw new Error('Burning cell has no exhaustion block');
       }
