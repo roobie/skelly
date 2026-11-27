@@ -39,6 +39,6 @@ describe('sideways support invalidation', () => {
         }
       }
     }
-    expect([...queued].sort()).toEqual(expectedCells.sort());
+    expect(queued).toEqual(new Set(expectedCells));
   });
 });
