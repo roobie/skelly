@@ -7,7 +7,10 @@ import { PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import { raycast } from '@skelly/engine/internal/core/raycast.ts';
 import type { BlockDef } from '@skelly/engine/internal/core/schema.ts';
 import { traceShot } from '@skelly/engine/internal/core/shotTrace.ts';
+import { createSupport } from '@skelly/engine/internal/core/structureSupport.ts';
 import { describe, expect, it } from 'vitest';
+import strutFixture from '../mods/skelly.deadvox.scenario.test-house.strut-look/layouts.json' with { type: 'json' };
+import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
 const shape = { rise: '+x', widthBlocks: 0.2 } as const;
@@ -23,6 +26,44 @@ const block: BlockDef = {
 };
 
 describe('strut content and geometry', () => {
+  it('the authored look beams hold only while their knee members remain', () => {
+    const registry = baseRegistry();
+    const template = strutFixture.templates[0]!;
+    const blocks = new Map<string, number>();
+    const beams: Vec3[] = [];
+    const members: Vec3[] = [];
+    const cells = template.layers.flatMap((layer, y) =>
+      layer.flatMap((row, z) => [...row].map((glyph, x) => ({ glyph, cell: [x, y, z] as Vec3 }))),
+    );
+    for (const { glyph, cell } of cells) {
+      const id = registry.blockIds.get(template.palette[glyph as keyof typeof template.palette]);
+      if (id === undefined) {
+        throw new Error('Fixture references an unknown block');
+      }
+      blocks.set(cell.join(','), id);
+      if (glyph === 'a' || glyph === 'f') {
+        beams.push(cell);
+      }
+      if (registry.blocks[id]!.strut) {
+        members.push(cell);
+      }
+    }
+    const view = {
+      minY: 0,
+      maxY: template.size[1]!,
+      block: (x: number, y: number, z: number) => blocks.get(`${x},${y},${z}`) ?? 0,
+      natural: (_x: number, y: number) => y === 0,
+    };
+    expect(beams.length).toBeGreaterThan(0);
+    expect(members.length).toBeGreaterThan(0);
+    const before = createSupport(registry, view);
+    expect(beams.every((cell) => before.holds(cell))).toBe(true);
+    for (const cell of members) {
+      blocks.delete(cell.join(','));
+    }
+    const after = createSupport(registry, view);
+    expect(beams.every((cell) => !after.holds(cell))).toBe(true);
+  });
   it.each(['+x', '-x', '+z', '-z'] as const)('shots hit the visible member and pass its gap for rise %s', (rise) => {
     const axis = rise.endsWith('x') ? 0 : 2;
     const across = axis === 0 ? 2 : 0;
