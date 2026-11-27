@@ -5,7 +5,7 @@ const tuning = {
   color: '#ff6a00',
   intensity: 1,
   radiusMetres: 1,
-  flame: { heightMetres: 1, radiusMetres: 1 },
+  flame: { coreColor: '#fff', heightMetres: 1, radiusMetres: 1, tipColor: '#f00' },
 };
 
 describe('terrain fire view', () => {

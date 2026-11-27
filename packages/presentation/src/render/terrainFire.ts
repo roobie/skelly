@@ -7,7 +7,12 @@ export interface TerrainFireTuning {
   readonly color: string;
   readonly intensity: number;
   readonly radiusMetres: number;
-  readonly flame: { readonly heightMetres: number; readonly radiusMetres: number };
+  readonly flame: {
+    readonly coreColor: string;
+    readonly heightMetres: number;
+    readonly radiusMetres: number;
+    readonly tipColor: string;
+  };
 }
 
 const FACES: readonly Vec3[] = [
@@ -84,7 +89,7 @@ export class TerrainFire {
           continue;
         }
         const key = `${x},${y},${z}:${nx},${ny},${nz}`;
-        const flame = this.drawn.get(key) ?? this.flames.mesh(tuning.color);
+        const flame = this.drawn.get(key) ?? this.flames.terrainMesh(tuning.flame.tipColor, tuning.flame.coreColor);
         flame.scale.set(tuning.flame.radiusMetres, tuning.flame.heightMetres, tuning.flame.radiusMetres);
         flame.position.set(
           (x + 0.5 + nx * 0.5) * blockSize,

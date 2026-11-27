@@ -38,7 +38,12 @@ describe('terrain fire light pool', () => {
       ],
       () => false,
       1,
-      { color: '#ffffff', intensity: 1, radiusMetres: 1, flame: { heightMetres: 1, radiusMetres: 1 } },
+      {
+        color: '#ffffff',
+        intensity: 1,
+        radiusMetres: 1,
+        flame: { coreColor: '#fff', heightMetres: 1, radiusMetres: 1, tipColor: '#f00' },
+      },
     );
     const pool = new LightPool(new Scene(), tuning);
     pool.update(new Inventory(baseRegistry()), {
@@ -64,7 +69,12 @@ describe('terrain fire light pool', () => {
       ],
       () => false,
       1,
-      { color: '#ffffff', intensity: 1, radiusMetres: 1, flame: { heightMetres: 1, radiusMetres: 1 } },
+      {
+        color: '#ffffff',
+        intensity: 1,
+        radiusMetres: 1,
+        flame: { coreColor: '#fff', heightMetres: 1, radiusMetres: 1, tipColor: '#f00' },
+      },
     );
     const pool = new LightPool(new Scene(), tuning);
     pool.update(new Inventory(baseRegistry()), {

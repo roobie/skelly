@@ -3,7 +3,16 @@
 
 import type { Registry } from '@skelly/engine/content';
 import { defOf, type Item } from '@skelly/engine/inventory';
-import { ConeGeometry, Mesh, MeshBasicMaterial, type Object3D, Quaternion, Vector3 } from 'three';
+import {
+  AdditiveBlending,
+  ConeGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  Quaternion,
+  Vector3,
+} from 'three';
 
 export class ModelFlames {
   private readonly geometry = new ConeGeometry(1, 1, 6);
@@ -14,12 +23,50 @@ export class ModelFlames {
     this.name = name;
   }
 
+  private material(color: string, additive = false): MeshBasicMaterial {
+    const key = `${color}:${additive}`;
+    const known = this.materials.get(key);
+    if (known) {
+      return known;
+    }
+    const material = additive
+      ? new MeshBasicMaterial({
+          color,
+          toneMapped: false,
+          transparent: true,
+          opacity: 0.8,
+          blending: AdditiveBlending,
+          depthWrite: false,
+        })
+      : new MeshBasicMaterial({ color, toneMapped: false });
+    this.materials.set(key, material);
+    return material;
+  }
+
   /** A unit flame in `color`, for the caller to size and place. */
   mesh(color: string): Mesh {
-    const material = this.materials.get(color) ?? new MeshBasicMaterial({ color, toneMapped: false });
-    this.materials.set(color, material);
-    const flame = new Mesh(this.geometry, material);
+    const flame = new Mesh(this.geometry, this.material(color));
     flame.name = this.name;
+    return flame;
+  }
+
+  /** A unit flame with a hot core and tapered outer tongues, for the caller to size and place. */
+  terrainMesh(tipColor: string, coreColor: string): Group {
+    const flame = new Group();
+    flame.name = this.name;
+    const outer = this.material(tipColor, true);
+    const tongue = (x: number, z: number, scale: number, tilt: number): Mesh => {
+      const mesh = new Mesh(this.geometry, outer);
+      mesh.position.set(x, scale / 2, z);
+      mesh.scale.set(scale, scale, scale);
+      mesh.rotation.z = tilt;
+      return mesh;
+    };
+    flame.add(tongue(0, 0, 1, 0), tongue(-0.22, 0.08, 0.55, -0.28), tongue(0.2, -0.1, 0.48, 0.3));
+    const core = new Mesh(this.geometry, this.material(coreColor, true));
+    core.position.y = 0.28;
+    core.scale.set(0.42, 0.56, 0.42);
+    flame.add(core);
     return flame;
   }
 
