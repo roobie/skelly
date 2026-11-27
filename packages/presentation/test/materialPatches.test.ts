@@ -1,4 +1,4 @@
-import { Mesh, MeshStandardMaterial, Scene } from 'three';
+import { Group, Mesh, MeshStandardMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
 import { MaterialPatches, materialPatch } from '../src/render/materialPatches.ts';
 
@@ -51,5 +51,27 @@ describe('material patches', () => {
     patches.apply(scene);
     material.onBeforeCompile({} as never, {} as never);
     expect(compiles).toBe(1);
+  });
+
+  it('reach what joins a watched scene, swapped materials and later patches, but not what left it', () => {
+    const patches = new MaterialPatches();
+    patches.add(keyed('first'));
+    const scene = new Scene();
+    patches.watch(scene);
+    const keys = (material: MeshStandardMaterial) => material.customProgramCacheKey().split(':').slice(1);
+    const nested = new Mesh(undefined, new MeshStandardMaterial());
+    scene.add(new Group().add(new Group().add(nested)));
+    patches.refresh();
+    expect(keys(nested.material)).toEqual(['first']);
+    const swapped = new MeshStandardMaterial();
+    nested.material = swapped;
+    patches.add(keyed('second'));
+    patches.refresh();
+    expect(keys(swapped)).toEqual(['first', 'second']);
+    nested.removeFromParent();
+    const after = new MeshStandardMaterial();
+    nested.material = after;
+    patches.refresh();
+    expect(keys(after)).toEqual([]);
   });
 });
