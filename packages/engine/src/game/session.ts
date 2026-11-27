@@ -999,30 +999,15 @@ export const createSession = (options: SessionOptions) => {
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
-  // Actor ticks share vertical block geometry; revisions keep edits visible to every caller.
-  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
+  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking, {
+    world,
+    entities,
+    occluders: vehicleLight,
+  });
   // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
   const skyFields = sessionSkyFields(options.skyFields, { world, entities, registry }, scale, skyTop);
   skyFields.setOccluders(vehicleLight);
-  let cachedWorldVersion = world.version;
-  let cachedEntityVersion = entities.version;
-  let cachedVehicleVersion = inventory.vehicles.version;
-  const clearSunExposureCache = (): void => {
-    sunExposureCache.clear();
-    cachedWorldVersion = world.version;
-    cachedEntityVersion = entities.version;
-    cachedVehicleVersion = inventory.vehicles.version;
-  };
-  const isSunExposedAt = (pos: Vec3, hour: number): boolean => {
-    if (
-      cachedWorldVersion !== world.version ||
-      cachedEntityVersion !== entities.version ||
-      cachedVehicleVersion !== inventory.vehicles.version
-    ) {
-      clearSunExposureCache();
-    }
-    return sunExposureCache.isExposedAt(pos, hour, dayCycle);
-  };
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => sunExposureCache.isExposedAt(pos, hour, dayCycle);
   const quickbar = new Quickbar();
   const spawner = new ActorSpawner();
   const actorStore = new MapEntityStore<Actor>();
@@ -1646,6 +1631,8 @@ export const createSession = (options: SessionOptions) => {
       soundSources: power?.sounds().map(({ key, pos, radiusMetres }) => ({ key, pos, radiusMetres })),
     };
   };
+  // A spawn batch and its active actor step read the same inputs; outside that step commands read live state.
+  let actorTickPlayerSense: ReturnType<typeof playerSense> | undefined;
   const heldItemUids = () => ({
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
@@ -2040,7 +2027,7 @@ export const createSession = (options: SessionOptions) => {
     blockSize: s,
     physics,
     tuning: senseTuning,
-    player: playerSense,
+    player: () => actorTickPlayerSense ?? playerSense(),
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: ({ damage: amount, hitRegions, attacker, kind, guardable }) => {
@@ -2318,19 +2305,24 @@ export const createSession = (options: SessionOptions) => {
       for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
         detonate(item);
       }
-      spawner.advance({ calendar: sim.calendar, registry, actors: actorSystem });
-      if (scenarioRun) {
-        advanceEventRules({
-          rules: options.scenario?.eventRules ?? [],
-          run: scenarioRun,
-          calendar: sim.calendar,
-          dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
-          player: body.pos,
-          registry,
-          actors: actorSystem,
-        });
+      actorTickPlayerSense = playerSense();
+      try {
+        spawner.advance({ calendar: sim.calendar, registry, actors: actorSystem });
+        if (scenarioRun) {
+          advanceEventRules({
+            rules: options.scenario?.eventRules ?? [],
+            run: scenarioRun,
+            calendar: sim.calendar,
+            dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
+            player: body.pos,
+            registry,
+            actors: actorSystem,
+          });
+        }
+        actorSystem.tickActive(dt, time, heldItemUids());
+      } finally {
+        actorTickPlayerSense = undefined;
       }
-      actorSystem.tickActive(dt, time, heldItemUids());
       traps.step(dt, {
         player: body.pos,
         actors: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
@@ -3581,7 +3573,6 @@ export const createSession = (options: SessionOptions) => {
       if (scenarioRun?.won) {
         return;
       }
-      clearSunExposureCache();
       updateStance();
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
@@ -3594,7 +3585,6 @@ export const createSession = (options: SessionOptions) => {
       if (scenarioRun?.won) {
         return;
       }
-      clearSunExposureCache();
       updateStance();
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {

@@ -1,6 +1,6 @@
 import { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Chunk } from './chunk.ts';
-import { CHUNK, toChunk } from './coords.ts';
+import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import type { TerrainEvaluator } from './terrainEvaluator.ts';
 import { type BlockRead, type ChunkRead, NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import { type SavedColumn, World } from './world.ts';
@@ -15,11 +15,11 @@ export class SimulationTerrain implements SimulationWorld {
   readonly canonical: CanonicalTerrain;
   private readonly published = new Set<string>();
   private publicationVersion = 0;
-  private readonly watchers = new Set<(cx: number, cy: number, cz: number) => void>();
+  private readonly watchers = new Set<(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void>();
 
   constructor(terrain: TerrainEvaluator) {
     this.canonical = new CanonicalTerrain(this.state, terrain);
-    this.state.watchChunks((cx, cy, cz) => this.notify(cx, cy, cz));
+    this.state.watchChunks((cx, cy, cz, cell) => this.notify(cx, cy, cz, cell));
   }
 
   get version(): number {
@@ -98,7 +98,7 @@ export class SimulationTerrain implements SimulationWorld {
     this.state.restoreColumns(columns, blockId);
   }
 
-  watchChunks(changed: (cx: number, cy: number, cz: number) => void): () => void {
+  watchChunks(changed: (cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void): () => void {
     this.watchers.add(changed);
     return () => this.watchers.delete(changed);
   }
@@ -111,9 +111,9 @@ export class SimulationTerrain implements SimulationWorld {
     }
   }
 
-  private notify(cx: number, cy: number, cz: number): void {
+  private notify(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>): void {
     for (const changed of this.watchers) {
-      changed(cx, cy, cz);
+      changed(cx, cy, cz, cell);
     }
   }
 }

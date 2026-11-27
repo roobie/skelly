@@ -88,21 +88,18 @@ export class World {
   private readonly touched = new Set<string>();
   /** Saved form of touched columns unchanged since it was built, so a save re-encodes only changed columns. */
   private readonly encoded = new Map<string, Readonly<SavedColumn>>();
-  private readonly watchers = new Set<(cx: number, cy: number, cz: number) => void>();
+  private readonly watchers = new Set<(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void>();
 
-  /**
-   * Calls `changed` with each chunk whose blocks change, at every change that bumps `version`, so a cache can drop
-   * only what reads that chunk. Returns the unsubscribe.
-   */
-  watchChunks(changed: (cx: number, cy: number, cz: number) => void): () => void {
+  /** Block changes alone invalidate spatial caches; save metadata changes need not discard geometry. */
+  watchChunks(changed: (cx: number, cy: number, cz: number, cell?: Readonly<Vec3>) => void): () => void {
     this.watchers.add(changed);
     return () => this.watchers.delete(changed);
   }
 
-  private changed(cx: number, cy: number, cz: number): void {
+  private changed(cx: number, cy: number, cz: number, cell?: Readonly<Vec3>): void {
     this.version += 1;
     for (const watcher of this.watchers) {
-      watcher(cx, cy, cz);
+      watcher(cx, cy, cz, cell);
     }
   }
 
@@ -212,7 +209,7 @@ export class World {
       const column = columnKey(cx, cz);
       this.touched.add(column);
       this.encoded.delete(column);
-      this.changed(cx, cy, cz);
+      this.changed(cx, cy, cz, [x, y, z]);
     }
     return affectedChunks(x, y, z);
   }

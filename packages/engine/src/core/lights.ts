@@ -6,11 +6,11 @@
 // does when the battery is taken out alone.
 
 import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
-import type { BlockEntity } from './blockEntities.ts';
+import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
-import type { Vec3 } from './coords.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
@@ -22,6 +22,10 @@ import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import type { PoweredLight } from './sitePower.ts';
 import { sunDirection } from './sky.ts';
+import type { SkyOccluders } from './skyField.ts';
+import type { SkyBounds } from './skylight.ts';
+import { furnitureBounds } from './skySnapshot.ts';
+import type { ChunkSource } from './terrainRead.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
 export type LightExposure = 'carried' | 'world';
@@ -202,6 +206,12 @@ export const fixedLightSenseSourceFor = (light: PoweredLight): LightSenseSource 
         ...(light.body ? { body: light.body } : {}),
       };
 
+interface SunExposureOwner {
+  world: ChunkSource;
+  entities: BlockEntities;
+  occluders?: SkyOccluders;
+}
+
 /** Reuses the highest opaque block in each vertical column for the session's sun checks. */
 export class SunExposureCache {
   private readonly opaqueTopByColumn = new Map<string, number | null>();
@@ -209,17 +219,73 @@ export class SunExposureCache {
   private readonly skyBottom: number;
   private readonly isOpaque: SolidAt;
 
-  constructor(skyTop: number, skyBottom: number, isOpaque: SolidAt) {
+  private readonly owner: SunExposureOwner | undefined;
+  private readonly unwatch: (() => void) | undefined;
+  private blockerVersion = '';
+  private blockers = new Map<string, SkyBounds>();
+
+  constructor(skyTop: number, skyBottom: number, isOpaque: SolidAt, owner?: SunExposureOwner) {
     this.skyTop = skyTop;
     this.skyBottom = skyBottom;
     this.isOpaque = isOpaque;
+    this.owner = owner;
+    this.unwatch = owner?.world.watchChunks((cx, cy, cz, cell) => {
+      const min: Vec3 = cell ? [...cell] : [cx * CHUNK, cy * CHUNK, cz * CHUNK];
+      const extent = cell ? 1 : CHUNK;
+      this.invalidate({ min, max: min.map((value) => value + extent) as Vec3 });
+    });
   }
 
-  clear(): void {
-    this.opaqueTopByColumn.clear();
+  dispose(): void {
+    this.unwatch?.();
+  }
+
+  private invalidate({ min, max }: SkyBounds): void {
+    if (min[1] > this.skyTop || max[1] <= this.skyBottom) {
+      return;
+    }
+    for (const [key, top] of this.opaqueTopByColumn) {
+      const [x, z] = key.split(',').map(Number) as [number, number];
+      // Cells below the highest blocker cannot change whether any position sees the sky.
+      if (
+        x >= Math.floor(min[0]) &&
+        x < Math.ceil(max[0]) &&
+        z >= Math.floor(min[2]) &&
+        z < Math.ceil(max[2]) &&
+        (top === null || max[1] > top)
+      ) {
+        this.opaqueTopByColumn.delete(key);
+      }
+    }
+  }
+
+  private refreshBlockers(): void {
+    const { owner } = this;
+    if (!owner) {
+      return;
+    }
+    const version = `${owner.entities.standing}:${owner.occluders?.version}`;
+    if (version === this.blockerVersion) {
+      return;
+    }
+    const boxes = [...furnitureBounds(owner.entities), ...(owner.occluders?.boxes() ?? [])];
+    const blockers = new Map(boxes.map((box) => [`${box.min.join()},${box.max.join()}`, box]));
+    for (const [key, box] of blockers) {
+      if (!this.blockers.has(key)) {
+        this.invalidate(box);
+      }
+    }
+    for (const [key, box] of this.blockers) {
+      if (!blockers.has(key)) {
+        this.invalidate(box);
+      }
+    }
+    this.blockers = blockers;
+    this.blockerVersion = version;
   }
 
   isExposedAt(position: readonly [number, number, number], gameHours: number, cycle: DayCycle): boolean {
+    this.refreshBlockers();
     if (sunDirection(gameHours, cycle)[1] <= 0 || this.skyTop - position[1] <= 0) {
       return false;
     }
