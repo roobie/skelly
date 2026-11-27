@@ -304,11 +304,13 @@ const fallCell = (
         mover.crush?.(landing, [1, cell[1] - landing[1] + 1, 1], landing, [1, 1, 1]);
         // Follow the debris so clearing its source cannot free a victim still trapped at the landing.
         followBuriedDebris(mover, cell, landing);
+        const block = terrain.world.getBlock(...cell);
         const carried = terrain.world.rubble.release(cell);
         const buried = live.buryPile(landing);
         edited = terrain.world.setBlock(...cell, 0);
         edited.push(...terrain.world.setBlock(...landing, rubble));
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
+        terrain.world.falls.emit({ kind: 'terrain', block, from: [...cell], to: [...landing] });
       });
       return { destroyed: [...impact.destroyed, ...destroyed], edited: [...impact.edited, ...edited], fell: true };
     } catch (error) {

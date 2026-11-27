@@ -31,6 +31,7 @@ const REGION_FOR_PART: Readonly<Record<Part, HumanoidHitRegion>> = {
 /** Six instanced boxes, never one draw object per actor. */
 export class ActorMeshes {
   readonly group = new Group();
+  hiddenByFall: ((actor: Actor) => boolean) | undefined;
   private readonly meshes = new Map<Part, InstancedMesh>();
   private readonly dummy = new Object3D();
   private readonly stepOffsets = new Map<EntityId, StepOffset>();
@@ -155,19 +156,21 @@ export class ActorMeshes {
   ): void {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
-    const actors = [...store.entries()].map(([id, actor]) => {
-      const previousTime = actor.renderPrevious.time;
-      const actorBackgroundBlend =
-        simulationTime !== undefined && previousTime !== undefined
-          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
-          : backgroundBlend;
-      return this.renderPose(
-        id,
-        actor,
-        actor.tier === 'background' ? actorBackgroundBlend : blend,
-        freezeLiving ? 0 : realDt,
-      );
-    });
+    const actors = [...store.entries()]
+      .filter(([, actor]) => !this.hiddenByFall?.(actor))
+      .map(([id, actor]) => {
+        const previousTime = actor.renderPrevious.time;
+        const actorBackgroundBlend =
+          simulationTime !== undefined && previousTime !== undefined
+            ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
+            : backgroundBlend;
+        return this.renderPose(
+          id,
+          actor,
+          actor.tier === 'background' ? actorBackgroundBlend : blend,
+          freezeLiving ? 0 : realDt,
+        );
+      });
     this.discardMissingOffsets(new Set(actors.map(({ id }) => id)));
     const revealed = actors.filter(({ position }) => this.reveal?.isRevealed(position[0], position[2]) ?? true);
     for (const part of PARTS) {

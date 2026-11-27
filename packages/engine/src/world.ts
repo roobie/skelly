@@ -25,6 +25,7 @@ export { terrainSolid, worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlo
 export { createColumnSupply } from './core/columnSupply.ts';
 export { CHUNK, chunkKey, compassBearing, toChunk, toLocal, type Vec3, yawFromBearing } from './core/coords.ts';
 export { DECAL_KINDS } from './core/decalKinds.ts';
+export type { FallRecord } from './core/fall.ts';
 export { Forest } from './core/forest.ts';
 export {
   advanceFloorLockedPlacement,

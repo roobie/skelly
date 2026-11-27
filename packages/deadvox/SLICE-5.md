@@ -155,7 +155,9 @@ unbuilt. Unanswered gates block only their dependent work.
   before spending inputs so the player learns why first; see
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
   Falling rubble makes collapse visible rather than leaving rubble suspended where
-  structure stood. Occupied vehicle fittings stop rubble because vehicle impact damage
+  structure stood. The view masks a landed rubble cell until its recorded drop lands,
+  because cascades otherwise expose their result before the source arrives. Occupied
+  vehicle fittings stop rubble because vehicle impact damage
   has no owner. Collapse is danger, not arbitrary deletion: conserve anything it did not
   break through the shared ruin and buried-content owners; see
   `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
