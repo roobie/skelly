@@ -145,7 +145,8 @@ unbuilt. Unanswered gates block only their dependent work.
   ports or a second support graph. Struts move the bearing point geometrically, not
   by granting a span bonus. Reverse bearing reach matters because losing a diagonal
   foot must invalidate its receiver even when no block stands straight above it.
-  Bounded sideways reach keeps cascade invalidation local. See
+  Bounding the bending search separately from straight members keeps a long beam from
+  expanding every cascade into a wide neighbourhood. See
   `packages/engine/src/core/structureSupport.ts`, `createSupport`, `SupportState.lost`
   and `SupportState.enqueueSideways`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble

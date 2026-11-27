@@ -139,8 +139,11 @@ const warnRestoreIssue = (issue: string): void => {
 };
 
 /** Bounds sideways dependants, including block-authored member overrides. */
-const widestSpan = (registry: Registry): number =>
+const widestSpan = (registry: Registry, beam: boolean): number =>
   registry.blocks.reduce((widest, block) => {
+    if ((block.loadPath?.kind === 'beam') !== beam) {
+      return widest;
+    }
     const span =
       (block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
       registry.blockMaterials.get(block.material)?.span ??
@@ -214,13 +217,19 @@ export class SupportState {
 
   /** Queues the cells whose sideways run may pass through or end at `cell`. */
   enqueueSideways(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
-    const reach = Math.floor(widestSpan(registry) / blockSize);
+    const reach = Math.floor(widestSpan(registry, false) / blockSize);
     for (let dx = -reach; dx <= reach; dx++) {
       const depth = reach - Math.abs(dx);
       for (let dz = -depth; dz <= depth; dz++) {
         if (dx !== 0 || dz !== 0) {
           this.enqueue([cell[0] + dx, cell[1], cell[2] + dz], false);
         }
+      }
+    }
+    const beamReach = Math.floor(widestSpan(registry, true) / blockSize);
+    for (let distance = 1; distance <= beamReach; distance++) {
+      for (const [dx, dz] of SIDEWAYS) {
+        this.enqueue([cell[0] + dx * distance, cell[1], cell[2] + dz * distance], false);
       }
     }
   }
