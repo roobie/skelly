@@ -1,4 +1,5 @@
 import { Material, type Mesh, type Object3D } from 'three';
+import { type SceneObjects, sceneObjectsOf } from './sceneObjects.ts';
 
 type CompileHook = Material['onBeforeCompile'];
 
@@ -73,22 +74,61 @@ export const materialPatch = (change: Change): MaterialPatch => {
   };
 };
 
-/** Patches that apply together, so one walk of a scene installs them all. */
+type Drawn = Material | readonly Material[];
+
+const sameMaterials = (material: Drawn, seen: Drawn | undefined): boolean =>
+  material === seen ||
+  (Array.isArray(material) &&
+    Array.isArray(seen) &&
+    material.length === seen.length &&
+    material.every((entry, index) => entry === seen[index]));
+
+/**
+ * Patches that apply together, so one walk of a scene installs them all. A watched scene installs them on an
+ * object's materials when it joins and whenever it is given other materials, so a frame checks material identity
+ * rather than walking the tree and installing. Whether a patch applies is judged at install, so a material's own
+ * flags for it must be set before it is drawn.
+ */
 export class MaterialPatches {
   private readonly patches: MaterialPatch[] = [];
+  private readonly watched: SceneObjects[] = [];
+  private installed = new WeakMap<Object3D, Drawn>();
 
   add(patch: MaterialPatch): void {
     this.patches.push(patch);
+    this.installed = new WeakMap();
   }
 
   apply(root: Object3D): void {
-    root.traverse((object) => {
-      const { material } = object as Mesh;
-      for (const entry of material ? [material].flat() : []) {
-        for (const patch of this.patches) {
-          patch.install(entry);
+    root.traverse((object) => this.install(object));
+  }
+
+  watch(root: Object3D): void {
+    this.watched.push(sceneObjectsOf(root));
+  }
+
+  /** Installs on watched objects that joined or changed materials since the last call; call before each render. */
+  refresh(): void {
+    for (const { objects } of this.watched) {
+      for (const object of objects) {
+        const { material } = object as Mesh;
+        if (material && !sameMaterials(material, this.installed.get(object))) {
+          this.install(object);
         }
       }
-    });
+    }
+  }
+
+  private install(object: Object3D): void {
+    const { material } = object as Mesh;
+    if (!material) {
+      return;
+    }
+    this.installed.set(object, Array.isArray(material) ? [...material] : material);
+    for (const entry of [material].flat()) {
+      for (const patch of this.patches) {
+        patch.install(entry);
+      }
+    }
   }
 }
