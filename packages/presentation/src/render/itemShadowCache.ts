@@ -12,6 +12,13 @@ export class ItemShadowCache {
   private readonly previous = new Map<number, readonly unknown[]>();
   private readonly sphere = new Sphere();
 
+  private readonly measured: (mesh: Mesh) => Sphere | undefined;
+
+  /** `measured` gives a caster's world bounding sphere when it is already known this frame. */
+  constructor(measured: (mesh: Mesh) => Sphere | undefined = () => undefined) {
+    this.measured = measured;
+  }
+
   changed(slot: number, light: PointLight, casters: readonly Mesh[], extra: readonly unknown[]): boolean {
     let changingVertexShader = false;
     const inputs: unknown[] = [
@@ -22,7 +29,7 @@ export class ItemShadowCache {
       ...extra,
     ];
     for (const mesh of casters) {
-      if (!this.inRange(mesh, light)) {
+      if (!this.inRange(mesh, light, this.measured(mesh))) {
         continue;
       }
       this.appendMesh(inputs, mesh);
@@ -39,8 +46,10 @@ export class ItemShadowCache {
     );
   }
 
-  private inRange(mesh: Mesh, light: PointLight): boolean {
-    if (mesh instanceof InstancedMesh) {
+  private inRange(mesh: Mesh, light: PointLight, measured: Sphere | undefined): boolean {
+    if (measured) {
+      this.sphere.copy(measured);
+    } else if (mesh instanceof InstancedMesh) {
       if (mesh.count === 0) {
         return false;
       }
@@ -71,7 +80,9 @@ export class ItemShadowCache {
       inputs.push(attr, 'version' in attr ? attr.version : attr.data.version);
     }
     if (mesh instanceof InstancedMesh) {
-      inputs.push(mesh.count, ...mesh.instanceMatrix.array.subarray(0, mesh.count * 16));
+      // The pass draws the placements last uploaded: three uploads a new attribute whatever its version, and the same
+      // attribute again only when its version moves.
+      inputs.push(mesh.count, mesh.instanceMatrix, mesh.instanceMatrix.version);
     }
     if (mesh.morphTargetInfluences) {
       inputs.push(...mesh.morphTargetInfluences);
