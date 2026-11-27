@@ -80,8 +80,9 @@ export class ItemShadowCache {
       inputs.push(attr, 'version' in attr ? attr.version : attr.data.version);
     }
     if (mesh instanceof InstancedMesh) {
-      // The pass draws the placements last uploaded, and three uploads them only when the version moves.
-      inputs.push(mesh.count, mesh.instanceMatrix.version);
+      // The pass draws the placements last uploaded: three uploads a new attribute whatever its version, and the same
+      // attribute again only when its version moves.
+      inputs.push(mesh.count, mesh.instanceMatrix, mesh.instanceMatrix.version);
     }
     if (mesh.morphTargetInfluences) {
       inputs.push(...mesh.morphTargetInfluences);

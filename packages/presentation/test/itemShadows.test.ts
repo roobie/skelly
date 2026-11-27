@@ -2,6 +2,7 @@ import {
   BoxGeometry,
   DirectionalLight,
   Group,
+  InstancedBufferAttribute,
   InstancedMesh,
   type Light,
   Matrix4,
@@ -157,6 +158,45 @@ describe('item shadow maps', () => {
     instanced.setMatrixAt(1, new Matrix4().makeTranslation(1, 0, 0));
     instanced.instanceMatrix.needsUpdate = true;
     expect([f.frame(), f.frame()]).toEqual([[1], [0]]);
+  });
+
+  it('reaches a blocker whose own geometry is edited into reach, plain and instanced', () => {
+    const f = fixture();
+    const plain = f.blocker();
+    plain.geometry = new BoxGeometry().translate(100, 0, 0);
+    plain.geometry.computeBoundingSphere();
+    const instanced = new InstancedMesh(new BoxGeometry().translate(100, 0, 0), new MeshBasicMaterial(), 1);
+    instanced.castShadow = true;
+    f.scene.add(instanced);
+    f.frame();
+    expect(f.drawn.at(-1)!.casters).not.toContain(plain);
+    expect(f.drawn.at(-1)!.casters).not.toContain(instanced);
+    // Same geometry objects: translate edits their positions and recomputes their bounds in place.
+    plain.geometry.translate(-100, 0, 0);
+    instanced.geometry.translate(-100, 0, 0);
+    expect(f.frame()).toEqual([1]);
+    expect(f.drawn.at(-1)!.casters).toContain(plain);
+    expect(f.drawn.at(-1)!.casters).toContain(instanced);
+  });
+
+  it('notices instance placements replaced by an attribute at the same version', () => {
+    const f = fixture();
+    const instanced = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 1);
+    instanced.castShadow = true;
+    f.scene.add(instanced);
+    expect([f.frame(), f.frame()]).toEqual([[1], [0]]);
+    const placedAt = (x: number) => {
+      const placements = new InstancedBufferAttribute(new Float32Array(16), 16);
+      new Matrix4().makeTranslation(x, 0, 0).toArray(placements.array);
+      expect(placements.version).toBe(instanced.instanceMatrix.version);
+      return placements;
+    };
+    instanced.instanceMatrix = placedAt(1);
+    expect(f.frame()).toEqual([1]);
+    expect(f.drawn.at(-1)!.casters).toContain(instanced);
+    instanced.instanceMatrix = placedAt(100);
+    expect(f.frame()).toEqual([1]);
+    expect(f.drawn.at(-1)!.casters).not.toContain(instanced);
   });
 
   it('keeps its caster set across frames and rebuilds it only when a caster joins, leaves or stops casting', () => {

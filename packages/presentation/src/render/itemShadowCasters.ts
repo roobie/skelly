@@ -1,7 +1,10 @@
 import {
   Box3,
+  type BufferAttribute,
   type BufferGeometry,
+  type InstancedBufferAttribute,
   InstancedMesh,
+  type InterleavedBufferAttribute,
   Matrix4,
   type Mesh,
   type PointLight,
@@ -16,14 +19,22 @@ interface Entry {
   /** What the bounds were taken from; a caster is measured again only when one of these changes. */
   matrix: Matrix4;
   geometry: BufferGeometry;
+  positions: Positions;
+  positionVersion: number;
+  /** The geometry's own bounding sphere when measured. */
+  local: Sphere;
   count: number;
+  matrices: InstancedBufferAttribute | undefined;
   instances: number;
 }
+
+type Positions = BufferAttribute | InterleavedBufferAttribute | undefined;
 
 /**
  * World-space caster bounds shared by every lamp rather than rediscovered on each cube face, and kept across frames:
  * a caster is measured again only when its placement changes, and the index re-sorted only when a bound or the set
- * does. Instance placements count as changed through their attribute's version, which an upload needs anyway.
+ * does. Placement covers the world matrix, the instance attribute's identity and version, and the geometry's
+ * positions and own bounds, so edits made in place are seen as well as replacements.
  */
 export class ItemShadowCasters {
   /** Undefined until the first update, which always takes the set. */
@@ -86,7 +97,11 @@ export class ItemShadowCasters {
       sphere: new Sphere(),
       matrix: new Matrix4(),
       geometry: mesh.geometry,
+      positions: undefined,
+      positionVersion: -1,
+      local: new Sphere(),
       count: -1,
+      matrices: undefined,
       instances: -1,
     };
     this.measured.set(mesh, entry);
@@ -134,25 +149,49 @@ const boundsOf = (mesh: Mesh): 'empty' | 'unbounded' | 'bounded' => {
   return !mesh.frustumCulled || mesh instanceof SkinnedMesh ? 'unbounded' : 'bounded';
 };
 
-const stale = ({ mesh, matrix, geometry, count, instances }: Entry): boolean =>
-  mesh.geometry !== geometry ||
-  !matrix.equals(mesh.matrixWorld) ||
-  (mesh instanceof InstancedMesh && (mesh.count !== count || mesh.instanceMatrix.version !== instances));
+const versionOf = (attribute: Positions): number => {
+  if (attribute === undefined) {
+    return -1;
+  }
+  return 'isInterleavedBufferAttribute' in attribute ? attribute.data.version : attribute.version;
+};
+
+/** Edits in place keep the geometry object: its positions or its own bounds still move what it covers. */
+const geometryEdited = ({ positions, positionVersion, local }: Entry, geometry: BufferGeometry): boolean => {
+  const position: Positions = geometry.attributes.position;
+  return position !== positions || versionOf(position) !== positionVersion || !geometry.boundingSphere?.equals(local);
+};
+
+/** A replaced placement attribute is uploaded whatever its version, so its identity counts too. */
+const placementsMoved = ({ mesh, count, matrices, instances }: Entry): boolean =>
+  mesh instanceof InstancedMesh &&
+  (mesh.count !== count || mesh.instanceMatrix !== matrices || mesh.instanceMatrix.version !== instances);
+
+const stale = (entry: Entry): boolean =>
+  entry.mesh.geometry !== entry.geometry ||
+  !entry.matrix.equals(entry.mesh.matrixWorld) ||
+  geometryEdited(entry, entry.mesh.geometry) ||
+  placementsMoved(entry);
 
 const measure = (entry: Entry): void => {
   const { mesh, sphere } = entry;
+  const { geometry } = mesh;
   if (mesh instanceof InstancedMesh) {
     mesh.computeBoundingSphere();
     sphere.copy(mesh.boundingSphere!);
     entry.count = mesh.count;
+    entry.matrices = mesh.instanceMatrix;
     entry.instances = mesh.instanceMatrix.version;
   } else {
-    if (!mesh.geometry.boundingSphere) {
-      mesh.geometry.computeBoundingSphere();
+    if (!geometry.boundingSphere) {
+      geometry.computeBoundingSphere();
     }
-    sphere.copy(mesh.geometry.boundingSphere!);
+    sphere.copy(geometry.boundingSphere!);
   }
-  entry.geometry = mesh.geometry;
+  entry.geometry = geometry;
+  entry.positions = geometry.attributes.position;
+  entry.positionVersion = versionOf(entry.positions);
+  entry.local.copy(geometry.boundingSphere!);
   entry.matrix.copy(mesh.matrixWorld);
   sphere.applyMatrix4(mesh.matrixWorld);
   sphere.getBoundingBox(entry.box);
