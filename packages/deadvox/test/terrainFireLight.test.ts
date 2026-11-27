@@ -42,7 +42,7 @@ describe('terrain fire light pool', () => {
         color: '#ffffff',
         intensity: 1,
         radiusMetres: 1,
-        flame: { coreColor: '#fff', heightMetres: 1, radiusMetres: 1, tipColor: '#f00' },
+        flame: { coreColor: '#fff', heightMetres: 1, opacity: 0.8, radiusMetres: 1, tipColor: '#f00' },
       },
     );
     const pool = new LightPool(new Scene(), tuning);
@@ -73,7 +73,7 @@ describe('terrain fire light pool', () => {
         color: '#ffffff',
         intensity: 1,
         radiusMetres: 1,
-        flame: { coreColor: '#fff', heightMetres: 1, radiusMetres: 1, tipColor: '#f00' },
+        flame: { coreColor: '#fff', heightMetres: 1, opacity: 0.8, radiusMetres: 1, tipColor: '#f00' },
       },
     );
     const pool = new LightPool(new Scene(), tuning);

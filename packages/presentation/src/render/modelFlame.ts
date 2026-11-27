@@ -1,5 +1,5 @@
-// A burning light's flame (`packages/deadvox/DESIGN.md`, "Light"): a small cone in the light's colour, standing upright
-// over its model's `flame` anchor whether the light is held or set down.
+// Item flames (`packages/deadvox/DESIGN.md`, "Light") are small cones standing upright over their model's `flame`
+// anchor. Terrain fires reuse that geometry for additive hot cores and tapered tongues.
 
 import type { Registry } from '@skelly/engine/content';
 import { defOf, type Item } from '@skelly/engine/inventory';
@@ -23,8 +23,8 @@ export class ModelFlames {
     this.name = name;
   }
 
-  private material(color: string, additive = false): MeshBasicMaterial {
-    const key = `${color}:${additive}`;
+  private material(color: string, additive?: { readonly opacity: number }): MeshBasicMaterial {
+    const key = `${color}:${additive?.opacity}`;
     const known = this.materials.get(key);
     if (known) {
       return known;
@@ -34,7 +34,7 @@ export class ModelFlames {
           color,
           toneMapped: false,
           transparent: true,
-          opacity: 0.8,
+          opacity: additive.opacity,
           blending: AdditiveBlending,
           depthWrite: false,
         })
@@ -50,20 +50,21 @@ export class ModelFlames {
     return flame;
   }
 
-  /** A unit flame with a hot core and tapered outer tongues, for the caller to size and place. */
-  terrainMesh(tipColor: string, coreColor: string): Group {
+  /** A unit terrain flame with a hot core and tapered outer tongues. Its base sits at the origin, unlike `mesh()`. */
+  terrainMesh(tipColor: string, coreColor: string, opacity: number): Group {
     const flame = new Group();
     flame.name = this.name;
-    const outer = this.material(tipColor, true);
+    const additive = { opacity };
+    const outer = this.material(tipColor, additive);
     const tongue = (x: number, z: number, scale: number, tilt: number): Mesh => {
       const mesh = new Mesh(this.geometry, outer);
-      mesh.position.set(x, scale / 2, z);
+      mesh.position.set(x, (scale / 2) * Math.cos(tilt) + scale * Math.abs(Math.sin(tilt)), z);
       mesh.scale.set(scale, scale, scale);
       mesh.rotation.z = tilt;
       return mesh;
     };
     flame.add(tongue(0, 0, 1, 0), tongue(-0.22, 0.08, 0.55, -0.28), tongue(0.2, -0.1, 0.48, 0.3));
-    const core = new Mesh(this.geometry, this.material(coreColor, true));
+    const core = new Mesh(this.geometry, this.material(coreColor, additive));
     core.position.y = 0.28;
     core.scale.set(0.42, 0.56, 0.42);
     flame.add(core);

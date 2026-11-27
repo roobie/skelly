@@ -10,6 +10,7 @@ export interface TerrainFireTuning {
   readonly flame: {
     readonly coreColor: string;
     readonly heightMetres: number;
+    readonly opacity: number;
     readonly radiusMetres: number;
     readonly tipColor: string;
   };
@@ -53,7 +54,7 @@ const clusters = (cells: readonly Readonly<Vec3>[]): ReadonlyVec3[][] => {
 
 type ReadonlyVec3 = Readonly<Vec3>;
 
-/** Terrain's burning cells, drawn with the shared item-flame meshes rather than a second flame renderer. */
+/** Terrain's burning cells, drawn as additive hot-core tongues from the shared flame geometry. */
 export class TerrainFire {
   readonly group = new Group();
   private readonly flames = new ModelFlames('terrain-fire-flame');
@@ -89,11 +90,13 @@ export class TerrainFire {
           continue;
         }
         const key = `${x},${y},${z}:${nx},${ny},${nz}`;
-        const flame = this.drawn.get(key) ?? this.flames.terrainMesh(tuning.flame.tipColor, tuning.flame.coreColor);
+        const flame =
+          this.drawn.get(key) ??
+          this.flames.terrainMesh(tuning.flame.tipColor, tuning.flame.coreColor, tuning.flame.opacity);
         flame.scale.set(tuning.flame.radiusMetres, tuning.flame.heightMetres, tuning.flame.radiusMetres);
         flame.position.set(
           (x + 0.5 + nx * 0.5) * blockSize,
-          (y + 0.5 + ny * 0.5 + tuning.flame.heightMetres / (2 * blockSize)) * blockSize,
+          (y + 0.5 + ny * 0.5) * blockSize,
           (z + 0.5 + nz * 0.5) * blockSize,
         );
         next.set(key, flame);
