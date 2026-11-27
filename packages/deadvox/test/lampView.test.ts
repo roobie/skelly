@@ -83,9 +83,8 @@ function shadowPass(visible: () => boolean) {
     tuning.itemShadow,
     () => [visible()],
   );
-  const traverse = vi.spyOn(scene, 'traverse');
   const frame = () => renderer.shadowMap.render([], scene, new PerspectiveCamera());
-  return { frame, shadows, traverse, draws: () => draws };
+  return { frame, shadows, draws: () => draws };
 }
 
 describe('item lamp reach meets the view', () => {
@@ -162,7 +161,8 @@ describe('item lamp reach meets the view', () => {
     const pass = shadowPass(() => visible);
     pass.frame();
     expect(pass.draws()).toBe(glass ? 1 : 0);
-    expect(pass.traverse).toHaveBeenCalledTimes(glass ? 1 : 0);
+    // A first caster scan always takes the set, so this shows whether the scan ran.
+    expect(pass.shadows.itemStats.rebuilt).toBe(glass);
     expect(pass.shadows.itemStats.culled).toBe(glass ? 0 : 1);
     cache.dispose();
   });

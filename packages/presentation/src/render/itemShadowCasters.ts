@@ -26,7 +26,8 @@ interface Entry {
  * does. Instance placements count as changed through their attribute's version, which an upload needs anyway.
  */
 export class ItemShadowCasters {
-  private casters: readonly Mesh[] = [];
+  /** Undefined until the first update, which always takes the set. */
+  private casters: readonly Mesh[] | undefined;
   private order = new Map<Mesh, number>();
   private readonly measured = new Map<Mesh, Entry>();
   private entries: Entry[] = [];
@@ -35,8 +36,8 @@ export class ItemShadowCasters {
 
   /** Takes this frame's casters in drawing order; returns whether the set differs from the last frame's. */
   update(casters: readonly Mesh[]): boolean {
-    const changed =
-      casters.length !== this.casters.length || casters.some((mesh, index) => mesh !== this.casters[index]);
+    const taken = this.casters;
+    const changed = !taken || casters.length !== taken.length || casters.some((mesh, index) => mesh !== taken[index]);
     if (changed) {
       this.takeSet(casters);
     }
