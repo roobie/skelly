@@ -513,7 +513,8 @@
       "id": "steel_beam_x",
       "loadPath": {
         "axis": "x",
-        "kind": "beam"
+        "kind": "beam",
+        "span": 10.5
       },
       "material": "metal",
       "name": "Steel beam",
@@ -532,7 +533,8 @@
       "id": "steel_beam_z",
       "loadPath": {
         "axis": "z",
-        "kind": "beam"
+        "kind": "beam",
+        "span": 10.5
       },
       "material": "metal",
       "name": "Steel beam",
@@ -553,7 +555,7 @@
       "loadPath": {
         "axis": "x",
         "kind": "beam",
-        "span": 1.5
+        "span": 10
       },
       "material": "timber",
       "name": "Timber beam",
@@ -574,7 +576,7 @@
       "loadPath": {
         "axis": "z",
         "kind": "beam",
-        "span": 1.5
+        "span": 10
       },
       "material": "timber",
       "name": "Timber beam",
@@ -594,7 +596,7 @@
       "loadPath": {
         "axis": "x",
         "kind": "beam",
-        "span": 3.5
+        "span": 8
       },
       "material": "reinforced_concrete",
       "name": "Concrete beam",
@@ -614,7 +616,7 @@
       "loadPath": {
         "axis": "z",
         "kind": "beam",
-        "span": 3.5
+        "span": 8
       },
       "material": "reinforced_concrete",
       "name": "Concrete beam",

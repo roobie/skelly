@@ -1,6 +1,7 @@
 local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local struts = import 'struts.libsonnet';
 local beams = import 'beams.libsonnet';
+local beamCalibration = import 'beam-calibration.libsonnet';
 local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
   blunt: blunt, cut: cut, pierce: pierce, blast: blast, fragment: fragment, breach: breach, crush: crush, acid: acid,
 };
@@ -21,7 +22,7 @@ local material(id, minimum, durability, mass, span, resist, tint, yield, clearTi
 local materials = [
   material('soil', 2, 30, 180, 0, resistance(0, 0.1, 0.4, 0, 0.4, 0, 0, 0.4), '#685744', 'rubble_stone', 3),
   material('masonry', 9, 300, 260, 1, resistance(0.1, 0.8, 0.8, 0.1, 0.7, 0, 0.1, 0.8), '#827b71', 'rubble_stone', 12),
-  // Pending sourced member calibration; retain the existing reach, now in metres.
+  // Non-beam bending reach is independent of the calibrated beam clear span.
   material('timber', 5, 100, 65, 1.5, resistance(0.1, 0, 0.5, 0.1, 0.4, 0, 0.1, 0.5), '#776144', 'wood_offcut', 6) + {
     structural: true,
     flammability: { ignitionStrength: 10, burnDurationGameMinutes: 2, burnsTo: 'charred_remains' },
@@ -29,7 +30,7 @@ local materials = [
   material('metal', 9, 400, 180, 2, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6), '#6e6965', 'scrap_metal', 12) + { structural: true },
   material('textile', 0, 15, 8, 0.5, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0), '#68604e', 'cloth_strip', 2),
   material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: { block: 'soil_rubble' }, breakable: false, rubble: [], cracks+: { steps: [] } },
-  // Pending sourced member calibration; retain the existing reach, now in metres.
+  // Non-beam bending reach is independent of the calibrated beam clear span.
   material('reinforced_concrete', 9, 400, 300, 3.5, resistance(0.2, 0.8, 0.8, 0.15, 0.7, 0, 0.2, 0.8), '#87847d', 'rubble_stone', 15) + { structural: true },
 ];
 local charredMaterial = material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0, 0, 0, 0, 0), '#29231f', 'wood_offcut', 2) + {
@@ -39,11 +40,9 @@ local charredMaterial = material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0,
   fireTuning: [{ id: 'core', capability: 'fire', cellsPerTick: 64 }],
   blockMaterials: materials + [charredMaterial],
   blocks: beams([
-    // Steel's beam override awaits the endpoint/clear-span decision; use the existing material reach until then.
-    { id: 'steel', material: 'metal', name: 'Steel beam', color: '#6e4436', footstep: 'footstep_stone' },
-    // Pending sourced member calibration; retain the material's existing reach in metres.
-    { id: 'timber', material: 'timber', name: 'Timber beam', color: '#a0763f', footstep: 'footstep_wood', span: materials[2].span, burnsTo: 'charred_remains' },
-    { id: 'concrete', material: 'reinforced_concrete', name: 'Concrete beam', color: '#87847d', footstep: 'footstep_stone', span: materials[6].span },
+    { id: 'steel', material: 'metal', name: 'Steel beam', color: '#6e4436', footstep: 'footstep_stone', span: beamCalibration.materials.metal.clearSpanMetres },
+    { id: 'timber', material: 'timber', name: 'Timber beam', color: '#a0763f', footstep: 'footstep_wood', span: beamCalibration.materials.timber.clearSpanMetres, burnsTo: 'charred_remains' },
+    { id: 'concrete', material: 'reinforced_concrete', name: 'Concrete beam', color: '#87847d', footstep: 'footstep_stone', span: beamCalibration.materials.reinforced_concrete.clearSpanMetres },
   ]) + struts([
     { id: 'steel', material: 'metal', name: 'Steel strut', color: '#6e6965', widthBlocks: 0.16, yields: materials[3].rubble, footstep: 'footstep_stone' },
     { id: 'timber', material: 'timber', name: 'Timber strut', color: '#a0763f', widthBlocks: 0.22, yields: materials[2].rubble, footstep: 'footstep_wood', burnsTo: 'charred' },

@@ -107,7 +107,7 @@ export const BlockMaterialSchema = strictObject({
   durability: Positive,
   resistance: record(Id, Fraction),
   massKg: Positive,
-  /** Sideways reach in metres. */
+  /** Metres of non-beam sideways reach, or beam clear span when a member has no override. */
   span: NonNegative,
   structural: vBoolean(),
   fallsTo: FallResultSchema,
@@ -165,7 +165,12 @@ export const BlockSchema = strictObject({
   loadPath: optional(
     union([
       strictObject({ kind: literal('strut'), bearing: picklist(['-x', '+x', '-z', '+z']) }),
-      strictObject({ kind: literal('beam'), axis: picklist(['x', 'z']), span: optional(NonNegative) }),
+      strictObject({
+        kind: literal('beam'),
+        axis: picklist(['x', 'z']),
+        /** Clear length between two bearing ends, in metres. */
+        span: optional(NonNegative),
+      }),
     ]),
   ),
   strut: optional(

@@ -10,6 +10,8 @@ import type { World } from './world.ts';
 /** Sideways run directions, in the fixed order every peer searches them. */
 const BEARING_OFFSETS = { '-x': [-1, 0], '+x': [1, 0], '-z': [0, -1], '+z': [0, 1] } as const;
 
+const BEAM_AXES = { x: [1, 0], z: [0, 1] } as const;
+
 const SIDEWAYS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -70,8 +72,35 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     }
     return answer;
   };
+  const beamEnd = ([x, y, z]: Readonly<Vec3>, axis: 'x' | 'z', reach: number, side: number): number | undefined => {
+    const [dx, dz] = BEAM_AXES[axis];
+    for (let distance = 1; distance <= reach; distance++) {
+      const nx = x + dx * distance * side;
+      const nz = z + dz * distance * side;
+      if (!solidAt(nx, y, nz)) {
+        return undefined;
+      }
+      if (view.natural(nx, y, nz) || standsAt(nx, y, nz)) {
+        return distance;
+      }
+      const path = registry.blocks[view.block(nx, y, nz)]?.loadPath;
+      if (path?.kind !== 'beam' || path.axis !== axis) {
+        return undefined;
+      }
+    }
+    return undefined;
+  };
+  const beamAt = (cell: Readonly<Vec3>, axis: 'x' | 'z', reach: number): boolean => {
+    const before = beamEnd(cell, axis, reach, -1);
+    const after = before === undefined ? undefined : beamEnd(cell, axis, reach, 1);
+    return before !== undefined && after !== undefined && before + after - 1 <= reach;
+  };
   const sidewaysAt = (x: number, y: number, z: number): boolean => {
     const reach = span[view.block(x, y, z)] ?? 0;
+    const path = registry.blocks[view.block(x, y, z)]?.loadPath;
+    if (path?.kind === 'beam') {
+      return beamAt([x, y, z], path.axis, reach);
+    }
     const seen = new Set<string>([`${x},${z}`]);
     const open: [number, number, number][] = [[x, z, 0]];
     for (const [cx, cz, distance] of open) {

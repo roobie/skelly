@@ -278,6 +278,21 @@ const knee: typeof structures = (registry) => [
 ];
 
 describe('support cascade', () => {
+  it('cutting a two-ended beam drops the remaining one-ended run and its deck', () => {
+    const layout: typeof structures = (registry) => {
+      const beam = registry.blockIds.get(BEAM)!;
+      const post = registry.blockIds.get(POST)!;
+      registry.blocks[beam]!.loadPath = { kind: 'beam', axis: 'x', span: 1.5 };
+      return [column(2, 3, post), column(6, 3, post), row(3, 5, 3, beam), row(3, 5, 4, post)];
+    };
+    const f = fixture(undefined, undefined, false, { layout });
+    expect(createSupport(f.registry, terrainSupportView(f.canonical)).holds([4, 4, Z])).toBe(true);
+    expect(f.strike([3, 3, Z])).toBe(true);
+    settle(f);
+    expect(f.block([4, 3, Z])).not.toBe(BEAM);
+    expect(f.block([5, 3, Z])).not.toBe(BEAM);
+    expect(f.block([4, 4, Z])).not.toBe(POST);
+  });
   it.each([
     ['strut', [3, 3, Z]],
     ['diagonal foot', [2, 2, Z]],

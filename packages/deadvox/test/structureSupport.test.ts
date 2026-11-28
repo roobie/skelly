@@ -55,12 +55,16 @@ const column = (x: number, height: number, id = POST): [Vec3, number][] =>
   Array.from({ length: height }, (_, at) => [[x, at + 1, 0], id]);
 
 describe('structure support', () => {
-  it('uses a beam override, including zero, and otherwise falls back to its material reach', () => {
-    const run = (id: number): [Vec3, number][] => [...column(0, 3), [[1, 3, 0], id], [[2, 3, 0], id], [[3, 3, 0], id]];
-    expect(world(run(OVERRIDE)).holds([3, 3, 0])).toBe(true);
-    expect(world(run(FALLBACK)).holds([3, 3, 0])).toBe(false);
-    expect(world(run(FALLBACK)).holds([2, 3, 0])).toBe(true);
-    expect(world(run(ZERO)).holds([1, 3, 0])).toBe(false);
+  it('uses a beam override, including zero, and otherwise falls back to its material clear span', () => {
+    const run = (id: number, length: number): [Vec3, number][] => [
+      ...column(0, 3),
+      ...column(length + 1, 3),
+      ...Array.from({ length }, (_, x): [Vec3, number] => [[x + 1, 3, 0], id]),
+    ];
+    expect(world(run(OVERRIDE, 3)).holds([3, 3, 0])).toBe(true);
+    expect(world(run(FALLBACK, 3)).holds([2, 3, 0])).toBe(false);
+    expect(world(run(FALLBACK, 2)).holds([2, 3, 0])).toBe(true);
+    expect(world(run(ZERO, 1)).holds([1, 3, 0])).toBe(false);
   });
   it('converts authored metre reach through block size, rounding down to whole cells', () => {
     const cells: [Vec3, number][] = [
