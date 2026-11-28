@@ -133,7 +133,7 @@ hostile actors would interrupt held-item work and prevent comparisons beside the
 furniture staging. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`, `starts`,
 and `mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet`, `manifest`.
 
-The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
+The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's consumable slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
 
 The cell-repair look prepares a damaged wall within reach so the reviewer judges its crack and the ordinary interaction-to-review repair flow without setup. Damage and supplies belong to start content so tuning cannot leave a runtime fixture behind. See `mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.jsonnet`, `test_house_repair_alcove`, and `mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.jsonnet`, `blockDamage`.
 

@@ -703,7 +703,7 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
   zombie attention; neither can stand in for the other. See `packages/engine/src/core/lights.ts`,
   `lightSenseSourceFor`, and `packages/presentation/src/render/skylight.ts`, `Skylight`. Existing consumable
   light depletion (`packages/engine/src/core/lights.ts`, `drainBurnLight`) and torch gas spending
-  (`packages/engine/src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
+  (`packages/engine/src/core/consumableSlot.ts`, `spendConsumable`) are not a world fire or smoke model.
 
 ## Playtest questions and exit
 

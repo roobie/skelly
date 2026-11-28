@@ -3,6 +3,7 @@ read_if:
   - you check torch cuts on terrain cells by eye (#2046)
   - you change `packages/engine/src/core/cellCutting.ts`, `cellCutPlan`, or `packages/engine/src/core/longAction.ts`, `LongActions.beginCutting`
   - you change the fixture's joist run, slab, metal runs or timber post
+  - you check the torch's cartridge slot on its item card by eye
 ---
 
 # Torch cut look
@@ -22,11 +23,13 @@ galvanized wall and a plank post stand clear of the fall zone. The rules the loo
 2. Without moving, interact with the aimed joist end (`packages/mods/skelly.controls/controls.jsonnet`,
    "world.interact") and choose Cut. Time speeds up as it does while taking a piece apart; the torch strikes at a
    steady beat with its own sound, the cell cracks as it takes damage, and the cartridge fill drops strike by strike.
-3. Within a few strikes the cartridge runs dry. The cut stops by itself, time drops back to normal, a notice says the
-   torch is out of fuel, and no Continue or Stop prompt waits. Walk away at once without pressing Stop.
-4. Refuel: open the inventory (`packages/mods/skelly.controls/controls.jsonnet`, "ui.inventory-toggle"), select the
-   spare cartridge in the jeans and activate it ("inventory.activate"), which offers putting it in the blowtorch in
-   hand. The empty cartridge drops at your feet. Choose Cut again on the joist end and it carries on from its damage.
+3. Within a few strikes the cartridge runs dry. The cut stops by itself, time drops back to normal, a notice says
+   there isn't enough left in the cartridge, and no Continue or Stop prompt waits. Walk away at once without pressing
+   Stop.
+4. Refuel as a flashlight takes a battery: open the inventory (`packages/mods/skelly.controls/controls.jsonnet`,
+   "ui.inventory-toggle"); the blowtorch's card shows a slot holding its cartridge. Drag the spare cartridge from the
+   jeans onto that slot. The empty cartridge is thrown away, not dropped. Choose Cut again on the joist end and it
+   carries on from its damage.
 5. Stop the cut part way, save and reload: the cracks are as they were. Choose Cut again and it carries on from that
    damage rather than starting over.
 6. Let the cut finish. The cut cell breaks and drops its yield as items, and the rest of the run and the slab drop

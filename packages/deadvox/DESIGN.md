@@ -21,7 +21,8 @@ read_if:
   - you change regional paper-map coverage, item ownership, baseline ground-cover tone or persistence
   - you change landscape region precedence, edge profiles or Holdout meadow scope
   - you change held sharpening, blade repair entry points or prepared hand pairs
-  - you change single-option action menus or battery-only loading refusals
+  - you change single-option action menus or consumable-only loading refusals
+  - you change the consumable slot lights and tools share, its card slot or its drain rate
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -1719,7 +1720,7 @@ See `packages/mods/skelly.firearms/firearms-items.jsonnet`, `make_taped_flashlig
 The mount remains a complete light item because removing it or servicing its
 battery must not erase its identity. Battery replacement with the gun in hand
 uses the same work as a handheld light rather than requiring removal of the
-mount. See `packages/engine/src/core/lights.ts`, `lightInHands` and `swapBattery`.
+mount. See `packages/engine/src/core/consumableSlot.ts`, `deviceInHands` and `swapConsumable`.
 
 Putting a switched-on gun light away does not turn its switch off: concealment
 blocks illumination, not battery use. An exposed dropped gun must remain a light
@@ -3053,37 +3054,49 @@ The reservoir readout owns the measured balance; the lamp's status reports only
 its switch state so the same oil cannot appear to be a second battery supply.
 See `packages/engine/src/game/survival.ts`, `Survival.describe`.
 
-Battery loading is deliberate: the player uses the battery on the light, not the
-other way round, or chooses the battery through the inventory card's slot. A dead
-or empty light asks only for a battery, whatever the other hand holds. The player
-can work out that the held battery is usable; mentioning it adds no helpful
-information. A fuller battery hidden in a bag must never replace the player's
-choice. The card slot serves lights without a free hand, including fitted ones.
-Each load rechecks its original reach route at completion so a preview cannot
-outlive the preparation that admitted it. See `packages/engine/src/core/options.ts`,
-`batterySlotOption`, `batteryOption` and `lightOption`; and
-`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`.
+A light's battery and a torch's gas cartridge are one thing: a consumable fitted in the
+device's one consumable slot. So a light and a tool load, unload, drain and refuse
+alike, through one path, and neither kind can drift from the other as a copy for each
+would. The consumable carries its capacity and whether it recharges; the device names
+what it accepts, its swap time and its drain. See `packages/engine/src/core/consumable.ts`,
+`CONSUMABLE_SLOT`, and `packages/engine/src/core/consumableSlot.ts`, `swapConsumable`.
 
-The light's card is the expected way to load and unload a light, so its battery slot is
-an inventory slot: it reads as a slot that takes a battery, empty or full, and the
-fitted battery is picked up and dragged out to a pocket, the ground or a hand like any
-item leaving a slot. This also serves a light with no free hand, such as one fitted to
-a gun, whose card shows the same slot. The slot only asks; the simulation owns the
-change, so a drop and an action-menu unload share one rule. See
-`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`, and
-`packages/engine/src/game/survival.ts`, `Survival.unloadBatteryTo`.
+Every device drains at a rate per Game hour, so rates compare in one unit; devices
+differ only in when they draw. A lit light draws as Game time passes, so it runs down
+through a sleep. A tool draws only over the Sim seconds it works, through the clock
+ratio, so a torch left by the bed keeps its gas. See `packages/engine/src/core/lights.ts`,
+`drainLight`, and `packages/engine/src/core/consumableSlot.ts`, `drainOver`.
 
-A light's battery can be taken out on its own, because a swap needs a spare: without
-one a player could not move a cell to a charger, another light or a pocket. It follows
-magazine removal. Chosen in the held action menu, the light must be in hand and the
-battery goes to the first pocket with room, else the ground. Dragged out of the card
-slot, the light need only be in reach and the battery goes where it is dropped. Either
-way the battery keeps its charge, a dead primary cell is thrown away as in a swap, and
-with nowhere to put it the battery stays fitted and the refusal says why. Taking the
-battery out switches the light off, and an empty light is a valid item that takes a
-battery back as a dead one does. See
-`packages/engine/src/core/lights.ts`, `unloadBattery`; `packages/engine/src/game/itemActions.ts`, `itemActionsFor`;
-`packages/engine/src/core/options.ts`, `stowTarget` and `batterySlotUnloadRefusal`.
+Loading is deliberate: the player uses the consumable on the device, not the other way
+round, or chooses it through the inventory card's slot. A dead or empty device asks only
+for what it takes, whatever the other hand holds. The player can work out that the held
+battery or cartridge is usable; mentioning it adds no helpful information. A fuller one
+hidden in a bag must never replace the player's choice. Each load rechecks its original
+reach route at completion so a preview cannot outlive the preparation that admitted it.
+See `packages/engine/src/core/options.ts`, `consumableSlotOption`, `consumableOption` and
+`lightOption`.
+
+The card is the expected way to load and unload a device, so its consumable slot is an
+inventory slot: it reads as a slot that takes the device's consumable, empty or full, and
+the fitted one is picked up and dragged out to a pocket, the ground or a hand like any
+item leaving a slot. This also serves a device with no free hand, such as a light fitted
+to a gun. The slot only asks; the simulation owns the change, so a drop and an
+action-menu unload share one rule. See `packages/presentation/src/ui/inventoryScreen.ts`,
+`consumableSlotTemplate`, and `packages/engine/src/game/survival.ts`,
+`Survival.unloadConsumableTo`.
+
+A consumable can be taken out on its own, because a swap needs a spare: without one a
+player could not move a cell to a charger, another light or a pocket. It follows magazine
+removal. Chosen in the held action menu, the device must be in hand and the consumable
+goes to the first pocket with room, else the ground. Dragged out of the card slot, the
+device need only be in reach and the consumable goes where it is dropped. Either way it
+keeps its charge, and with nowhere to put it, it stays fitted and the refusal says why. A
+spent one that cannot be recharged, a dead primary cell or an empty cartridge, is thrown
+away, in a swap too, because it is no use to anyone. Taking a battery out switches the
+light off, and an empty device is a valid item that takes a consumable back as a spent one
+does. See `packages/engine/src/core/consumableSlot.ts`, `unloadConsumable` and
+`keptConsumable`; `packages/engine/src/game/itemActions.ts`, `itemActionsFor`; and
+`packages/engine/src/core/options.ts`, `stowTarget` and `consumableSlotUnloadRefusal`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
@@ -3129,7 +3142,7 @@ must still reach the source item.
 With no supported candidate, player put-downs share one refusal and change
 nothing, preserving the existing owner and any unfinished work. Supported but
 full candidates have a separate refusal. A finished repair puts nothing down;
-an unpack into a pocket with room and a discarded dead battery need no landing.
+an unpack into a pocket with room and a discarded spent consumable need no landing.
 
 Car part removal also distinguishes absent ground from full landing space,
 including room needed by its loads, because those are different causes. Removal
@@ -3555,8 +3568,8 @@ cannot be authored, blended or added to without a code change per animation.
 - **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `packages/engine/src/core/options.ts`, `heldDoorBar`, and `packages/engine/src/core/schema/items.ts`, `ItemSchema`.
 - **Forcing routes trade time against noise.** A door offers more than one forcing method so the player chooses how to pay: the crowbar's prying is slow and the quieter route, the sledgehammer's hammering is fast and the louder one, and it is heavy and two-handed to carry. Each method names its own strike sound and times, so the choice is content, and the noise reaches zombies through the same hearing as any sound. Forcing by method and destroying a leaf by damage stay separate, so boarded doors and bashing leave this choice alone. See `packages/engine/src/core/prying.ts`, `pryPlan`, and `packages/engine/src/core/agentPerception.ts`, `hearPlayer`.
 - **Cutting.** A torch strike is an ordinary blow everywhere: a cutting tool strikes with its own strength and damage kind, and the target's resistance to that kind, reduced in the one step terrain and pieces share (`DESIGN.md`, "Damage, destruction and dismemberment"), decides what it cuts. So a cut has no authored time; it follows from the blows against the target's durability. Other cutters are values, not rules: each tool strikes with its own kind and strength, and metal's cut resistance and minimum strength already keep a hacksaw off steel cells. Every metal block cuts, with no opt-out, because a block that should not is honestly a different material, which is content and changes no code. Steel shrugs off the hand-struck kinds so that only heat really gets in, and a brute's bash holds against a steel door or roof hatch, since one that bashed through would make that false. An actor strong enough to rip a steel door off gets through by its own blow strength, never by lowering steel's resistance (#2056). Plastic takes heat whole, so a torch melts through it fastest, as players expect. Timber resists heat fully, and wood offers a door no cut method, only because a torch does not yet set timber burning through the cell-fire owner (#2046).
-- **Cutting cells.** A cut is a run of blows on the chosen cell. Gas is a rate per second of work, spent a strike at a time, because per-strike use falls out of strikes being blows; a cut won't start without gas for one strike and stops when the cartridge runs dry. The menu offers Cut wherever the torch can cut the target, gas or not, because an empty cartridge is a state, as an empty magazine is, and the start check already gives the reason; one check stays one check. Crafting with a fuelled tool spends by the same rate, over the craft's time, when the craft finishes. A part-done cut is the cell's retained damage, which is already saved per cell, so the cut resumes for free: it shows its cracks, survives a save, any torch carries it on, and repair undoes it. What the cell held falls with no warning, as a sledgehammer on a joist gives none. A cut is a long task, so it speeds time up as taking a piece apart does. A cell whose rubble has no room stands with its damage. See `packages/engine/src/core/cellCutting.ts`, `cellCutPlan`, `packages/engine/src/core/longAction.ts`, `LongActions.beginCutting`, and `packages/engine/src/core/crafting.ts`, `craftFuel`.
-- **Cutting steel pieces.** Steel pieces take torch blows like cells in the next round under #2046, and a steel door cut through is broken open one-way, as a bash break is. Until then a steel door's cut is a forcing method, a flame-cutting quality apart from a knife's `cutting`, whose finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door. Refilling a cartridge is direction only, with no source yet. See `packages/engine/src/core/prying.ts`, `pryPlan`, `packages/engine/src/core/longAction.ts`, `LongActions.beginForcing`, and `packages/engine/src/core/schema/furniture.ts`, `DoorForcingSchema`.
+- **Cutting cells.** A cut is a run of blows on the chosen cell. The torch draws its gas over the Sim seconds it works, at its rate per Game hour (`DESIGN.md`, "Light"), spent a strike at a time, because per-strike use falls out of strikes being blows; a cut won't start without gas for one strike and stops when the cartridge runs dry. The menu offers Cut wherever the torch can cut the target, gas or not, because an empty cartridge is a state, as an empty magazine is, and the start check already gives the reason; one check stays one check. Crafting with a fuelled tool spends by the same rate, over the craft's time, when the craft finishes. A part-done cut is the cell's retained damage, which is already saved per cell, so the cut resumes for free: it shows its cracks, survives a save, any torch carries it on, and repair undoes it. What the cell held falls with no warning, as a sledgehammer on a joist gives none. A cut is a long task, so it speeds time up as taking a piece apart does. A cell whose rubble has no room stands with its damage. See `packages/engine/src/core/cellCutting.ts`, `cellCutPlan`, `packages/engine/src/core/longAction.ts`, `LongActions.beginCutting`, and `packages/engine/src/core/crafting.ts`, `craftFuel`.
+- **Cutting steel pieces.** Steel pieces take torch blows like cells in the next round under #2046, and a steel door cut through is broken open one-way, as a bash break is. Until then a steel door's cut is a forcing method, a flame-cutting quality apart from a knife's `cutting`, whose finished cut spends the method's own gas from the torch's swappable cartridge, so one torch does not settle every cut door. The amount stays on the method, because it prices the door's cut rather than the torch's work time. Refilling a cartridge is direction only, with no source yet. See `packages/engine/src/core/prying.ts`, `pryPlan`, `packages/engine/src/core/longAction.ts`, `LongActions.beginForcing`, and `packages/engine/src/core/schema/furniture.ts`, `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
   do not rebuild networks. Resource settlement and timestamped power transitions
   preserve appliance history across absences and wiring changes. The dispatch,
@@ -3572,7 +3585,7 @@ cannot be authored, blended or added to without a code change per animation.
   the unused fraction of the final served millisecond dissipate rather than
   charging network storage as well. An empty rechargeable cell remains worth
   keeping. See `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`,
-  `packages/engine/src/core/battery.ts`, `batteryEnergy`, and `packages/engine/src/core/lights.ts`, `swapBattery`.
+  `packages/engine/src/core/consumable.ts`, `batteryEnergy`, and `packages/engine/src/core/consumableSlot.ts`, `swapConsumable`.
   Unattended work must not reserve the player's hands or depend on an open panel;
   local controls project the world owner instead of driving it. See
   `packages/presentation/src/ui/chargerPanel.ts`, `chargerPanel`, and `packages/engine/src/core/sitePower.ts`, `SitePower`.
