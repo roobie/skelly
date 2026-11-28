@@ -17,8 +17,36 @@ const nearestAxis = (tMax: Vec3): 0 | 1 | 2 => {
 
 export type SolidAt = (x: number, y: number, z: number) => boolean;
 
+/** Intersects a bounded cell-local shape; distances remain parameters of the original ray. */
+export type RayShape = (
+  origin: Vec3,
+  direction: Vec3,
+  maximum: number,
+) => Pick<RayHit, 'distance' | 'normal'> | undefined;
+export type RayAt = (x: number, y: number, z: number) => boolean | RayShape;
+
+const hitCell = (
+  query: boolean | RayShape,
+  cell: Vec3,
+  ray: { origin: Vec3; dir: Vec3; enter: number; exit: number; normal: Vec3 },
+): RayHit | undefined => {
+  const candidate = query;
+  if (!candidate) {
+    return undefined;
+  }
+  if (candidate === true) {
+    return { block: [...cell], normal: ray.normal, distance: ray.enter };
+  }
+  const local = ray.origin.map((v, axis) => v - cell[axis]!) as Vec3;
+  const hit = candidate(local, ray.dir, ray.exit);
+  // A shape bounded by its cell cannot be entered before the cell.
+  return hit && hit.distance <= ray.exit
+    ? { block: [...cell], ...hit, distance: Math.max(hit.distance, ray.enter) }
+    : undefined;
+};
+
 /** Walks the voxel grid along a ray (Amanatides & Woo) and returns the first solid block. */
-export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: SolidAt): RayHit | undefined => {
+export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: RayAt): RayHit | undefined => {
   const pos: Vec3 = [Math.floor(origin[0]), Math.floor(origin[1]), Math.floor(origin[2])];
   const step: Vec3 = [0, 0, 0];
   const tMax: Vec3 = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
@@ -36,8 +64,15 @@ export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: S
     }
   }
 
-  if (isSolid(...pos)) {
-    return { block: [...pos], normal: [0, 0, 0], distance: 0 };
+  const initial = hitCell(isSolid(...pos), pos, {
+    origin,
+    dir,
+    enter: 0,
+    exit: Math.min(maxDistance, ...tMax),
+    normal: [0, 0, 0],
+  });
+  if (initial) {
+    return initial;
   }
 
   for (;;) {
@@ -48,10 +83,15 @@ export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: S
     }
     pos[a] += step[a];
     tMax[a] += tDelta[a];
-    if (isSolid(...pos)) {
-      const normal: Vec3 = [0, 0, 0];
-      normal[a] = -step[a];
-      return { block: [...pos], normal, distance: t };
+    const candidate = isSolid(...pos);
+    if (!candidate) {
+      continue;
+    }
+    const normal: Vec3 = [0, 0, 0];
+    normal[a] = -step[a];
+    const hit = hitCell(candidate, pos, { origin, dir, enter: t, exit: Math.min(maxDistance, ...tMax), normal });
+    if (hit) {
+      return hit;
     }
   }
 };

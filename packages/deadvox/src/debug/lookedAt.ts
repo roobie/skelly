@@ -3,7 +3,7 @@
 
 import type { Registry } from '@skelly/engine/content';
 import { crosshairTarget } from '@skelly/engine/sim';
-import type { BlockEntities, BlockEntity, SolidAt, TerrainRead, Vec3 } from '@skelly/engine/world';
+import type { BlockEntities, BlockEntity, RayAt, TerrainRead, Vec3 } from '@skelly/engine/world';
 
 /** Metres: how far the readout looks. */
 const LOOK_REACH = 16;
@@ -13,7 +13,7 @@ export interface LookedAtWorld {
   registry: Pick<Registry, 'blocks'>;
   entities: BlockEntities;
   /** Blocks and furniture that stop movement. */
-  isSolid: SolidAt;
+  isSolid: RayAt;
   /** Metres per block. */
   blockSize: number;
 }

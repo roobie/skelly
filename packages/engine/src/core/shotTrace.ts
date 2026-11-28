@@ -1,5 +1,5 @@
 import type { Vec3 } from './coords.ts';
-import { type RayHit, raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, type RayHit, raycast } from './raycast.ts';
 
 export interface ShotTrace {
   readonly origin: Vec3;
@@ -13,7 +13,7 @@ export const traceShot = (
   origin: Vec3,
   directions: readonly Vec3[],
   maxDistance: number,
-  isSolid: SolidAt,
+  isSolid: RayAt,
 ): ShotTrace[] =>
   directions.map((direction) => {
     const hit = raycast(origin, direction, maxDistance, isSolid);

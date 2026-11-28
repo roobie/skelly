@@ -38,6 +38,7 @@ import {
   boxIntersectsBody,
   searchTime,
 } from '../core/blockEntities.ts';
+import { blockRayQuery } from '../core/blockRay.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -964,7 +965,19 @@ export const createSession = (options: SessionOptions) => {
   const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const rayCells = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), physicalSolid);
+  const meleeRays = new Map<Parameters<typeof meleeBlocker>[0]['motion'], ReturnType<typeof blockRayQuery>>();
+  const meleeRayCells = (motion: Parameters<typeof meleeBlocker>[0]['motion']) => {
+    let query = meleeRays.get(motion);
+    if (!query) {
+      query = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), meleeBlocker({ kind: 'player', motion }));
+      meleeRays.set(motion, query);
+    }
+    return query;
+  };
+  const terrainRayCells = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), isSolid);
   const apertureTerrain = terrainSolid(world, registry);
+  const apertureRay = blockRayQuery(registry, (x, y, z) => world.getBlock(x, y, z), apertureTerrain);
   physics.terrainShapeOf = apertureShapes(
     inventory.entities,
     (x, y, z) =>
@@ -1291,7 +1304,7 @@ export const createSession = (options: SessionOptions) => {
           ...trajectory,
           // A pellet a body stopped ends at that body, so no wall behind it is marked.
           traces: trajectory.directions.flatMap((direction, index) =>
-            traceShot(trajectory.origin, [direction], Math.min(stops[index] ?? range, range), physicalSolid),
+            traceShot(trajectory.origin, [direction], Math.min(stops[index] ?? range, range), rayCells),
           ),
         },
         time,
@@ -1930,12 +1943,12 @@ export const createSession = (options: SessionOptions) => {
       direction,
       maxDistance: reachBlocks,
       blockSize: s,
-      isSolid: physicalSolid,
+      isSolid: rayCells,
     });
     if (picked?.entity.window) {
       return bashPiece(picked.entity, weapon.impulse, picked.part) !== undefined;
     }
-    const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
+    const hit = raycast(origin, direction, reachBlocks, meleeRayCells(weapon.motion));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse) !== undefined;
@@ -1984,6 +1997,7 @@ export const createSession = (options: SessionOptions) => {
     return 'discarded';
   };
   const actorSystem = new ActorSystem({
+    rayCells,
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
     actorFigureFiles,
     store: actorStore,
@@ -2130,7 +2144,7 @@ export const createSession = (options: SessionOptions) => {
           direction,
           maxDistance: (PLAYER_ARM_REACH_M + weapon.reach) / s,
           blockSize: s,
-          isSolid: physicalSolid,
+          isSolid: rayCells,
         });
         const stopAt = picked?.entity.window ? picked.distanceBlocks : Number.POSITIVE_INFINITY;
         return (
@@ -2224,7 +2238,7 @@ export const createSession = (options: SessionOptions) => {
       ({ cell, share }) => ({ cell, strength: spec.blast.materialStrength * share, kind: 'blast' as const }),
     );
     const fragments = directions.flatMap((direction) => {
-      const hit = raycast(at, direction, spec.fragments.rangeMetres / s, apertureTerrain);
+      const hit = raycast(at, direction, spec.fragments.rangeMetres / s, apertureRay);
       return hit ? [{ cell: hit.block, strength: spec.fragments.damage, kind: 'fragment' as const }] : [];
     });
     const pieces = [...entities.all].flatMap((piece) => {
@@ -2284,7 +2298,7 @@ export const createSession = (options: SessionOptions) => {
       directions,
       rangeBlocks: rangeMetres / s,
       body,
-      isSolid: physicalSolid,
+      isSolid: rayCells,
       regionHeights: bodyTuning.fragmentRegionHeights,
     })) {
       sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
@@ -2474,9 +2488,9 @@ export const createSession = (options: SessionOptions) => {
     const origin = playerEye();
     const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
     const reachBlocks = reachTuning(registry).useReachMetres / s;
-    const hit = raycast(origin, direction, reachBlocks, physicalSolid);
+    const hit = raycast(origin, direction, reachBlocks, rayCells);
     const cell = hit
-      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      ? hit.block.map((coordinate, axis) => coordinate + Math.sign(hit.normal[axis]!))
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reachBlocks));
     return [cell[0]!, cell[1]!, cell[2]!];
   };
@@ -3277,6 +3291,8 @@ export const createSession = (options: SessionOptions) => {
     sim,
     /** Derived vehicle-aware world queries for presentation and input consumers. */
     physicalSolid,
+    rayCells,
+    terrainRayCells,
     isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, {
       entities: inventory.entities,

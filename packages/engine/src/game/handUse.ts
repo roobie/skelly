@@ -12,7 +12,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import type { MeleeProfile } from '../core/meleePose.ts';
 import { doorPlan } from '../core/options.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import type { RayAt, SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { Simulation } from '../core/sim.ts';
 import { openingTargetForHand } from './canOpening.ts';
@@ -43,7 +43,7 @@ type MeleeReadiness = Parameters<typeof primaryMeleeAction>[1];
 /** The interaction pick's world inputs. */
 export interface InteractionPickWorld {
   readonly worldSeed: number;
-  readonly isSolid: SolidAt;
+  readonly isSolid: RayAt;
   readonly isOpaque: SolidAt;
 }
 

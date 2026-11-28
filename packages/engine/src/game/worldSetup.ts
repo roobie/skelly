@@ -194,6 +194,7 @@ export function createWorldSetup(
     publication: simulationWorld,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
+    struts: registry.blocks.map((block) => block.strut),
     liquids: blockLiquids(registry),
     fencePosts: registry.blocks.map((block) => block.fencePosts),
     patterns: blockPatterns(registry),

@@ -44,6 +44,7 @@ export const buildRequestedMesh = (init: MesherInit, { key, neighbourhood }: Rec
     wide: wideFrom(neighbourhood, init.occluders),
     weatherable: init.weatherable,
     wireMeshes: init.wireMeshes,
+    struts: init.struts ?? [],
     liquids: init.liquids,
     fencePosts: init.fencePosts,
     origin: key.split(',').map((coordinate) => Number(coordinate) * CHUNK) as Vec3,

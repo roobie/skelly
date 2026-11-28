@@ -8,6 +8,8 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { World } from './world.ts';
 
 /** Sideways run directions, in the fixed order every peer searches them. */
+const BEARING_OFFSETS = { '-x': [-1, 0], '+x': [1, 0], '-z': [0, -1], '+z': [0, 1] } as const;
+
 const SIDEWAYS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -46,6 +48,7 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     (block) => block.solid && !registry.blockMaterials.get(block.material)?.crumblesUnderLoad,
   );
   const span = registry.blocks.map((block) => registry.blockMaterials.get(block.material)?.span ?? 0);
+  const bearings = registry.blocks.map((block) => (block.loadPath ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0]));
   const standing = new Map<string, boolean>();
   const held = new Map<string, boolean>();
   const solidAt = (x: number, y: number, z: number): boolean =>
@@ -59,7 +62,8 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     const key = `${x},${y},${z}`;
     let answer = standing.get(key);
     if (answer === undefined) {
-      answer = y - 1 < view.minY || holdsAt(x, y - 1, z);
+      const [dx, dz] = bearings[view.block(x, y, z)] ?? [0, 0];
+      answer = y - 1 < view.minY || holdsAt(x + dx!, y - 1, z + dz!);
       standing.set(key, answer);
     }
     return answer;
@@ -140,6 +144,8 @@ const warnRestoreIssue = (issue: string): void => {
 const widestSpan = (registry: Registry): number =>
   [...registry.blockMaterials.values()].reduce((widest, { span }) => (span > widest ? span : widest), 0);
 
+const registryBearings = new WeakMap<Registry, Set<keyof typeof BEARING_OFFSETS | undefined>>();
+
 /**
  * World-owned support state that play produces. A placed mark lasts as long as the block placed with it, so any block
  * change at the cell ends it, as it ends the cell's damage. A cascade is a first-in, first-out frontier of cells to
@@ -178,8 +184,8 @@ export class SupportState {
   }
 
   /**
-   * A cell stopped holding: it was broken, cleared or fell. Queues what may have depended on it: the cell above
-   * first, then the same-row diamond out to the widest span. A cell is followed once per cascade.
+   * A cell stopped holding: queue its receivers in the row above, then its bounded same-row dependants.
+   * A cell is followed once per cascade.
    */
   lost(registry: Registry, cell: Readonly<Vec3>): void {
     const key = keyOf(cell);
@@ -187,7 +193,15 @@ export class SupportState {
       return;
     }
     this.lostCells.set(key, [...cell] as Vec3);
-    this.enqueue([cell[0], cell[1] + 1, cell[2]], true);
+    let bearings = registryBearings.get(registry);
+    if (!bearings) {
+      bearings = new Set(registry.blocks.map((block) => block.loadPath?.bearing));
+      registryBearings.set(registry, bearings);
+    }
+    for (const bearing of bearings) {
+      const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
+      this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);
+    }
     this.enqueueSideways(registry, cell);
   }
 

@@ -110,7 +110,7 @@ import {
   stepBodyHorizontal,
 } from './physics.ts';
 import { Rng } from './random.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, raycast, type SolidAt } from './raycast.ts';
 import type { ActorBody } from './schema/actors.ts';
 import type { MeleeCharge, SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -331,8 +331,10 @@ export interface ActorSystemOptions {
   store?: EntityStore<Actor>;
   terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
-  /** Movement and projectiles use the body's blockers. */
+  /** Whole-cell body blockers. */
   isSolid: SolidAt;
+  /** Shot and aim blockers; isolated full-cube harnesses can use their body query. */
+  rayCells?: RayAt;
   isSoundBlocking?: SolidAt;
   meleeBlocker?: MeleeBlocker;
   /**
@@ -496,7 +498,7 @@ const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Ve
 };
 
 /** The mouth-to-chest line at release, by the same rule as a melee strike. */
-const spitLineClear = (origin: Vec3, chest: Vec3, isSolid: SolidAt): boolean => clearLine(origin, chest, isSolid);
+const spitLineClear = (origin: Vec3, chest: Vec3, isSolid: RayAt): boolean => clearLine(origin, chest, isSolid);
 
 /** What a released spit hands the simulation: the glob's start, its seeded direction and the hit moves it carries. */
 export interface AcidSpitRelease {
@@ -1818,7 +1820,7 @@ export class ActorSystem {
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
       const origin = spitOrigin(actor, scratch.id, this.options);
-      if (!spitLineClear(origin, chest, isSolid)) {
+      if (!spitLineClear(origin, chest, this.options.rayCells ?? isSolid)) {
         return;
       }
       actor.spitWait = spit.cooldownSimSeconds;
@@ -2235,9 +2237,14 @@ export class ActorSystem {
     distance: number,
     poseCache: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>,
   ): CastContact | undefined {
-    const solid = raycast(origin, direction, distance, this.options.isSolid);
+    const solid = raycast(origin, direction, distance, this.options.rayCells ?? this.options.isSolid);
     const reach = solid?.distance ?? distance;
-    const hit = this.firstRegionHit({ origin, direction, isBlocked: this.options.isSolid, poseCache });
+    const hit = this.firstRegionHit({
+      origin,
+      direction,
+      isBlocked: this.options.rayCells ?? this.options.isSolid,
+      poseCache,
+    });
     if (hit && hit.distance <= reach) {
       return { distance: hit.distance, hit };
     }
@@ -2260,14 +2267,14 @@ export class ActorSystem {
     poseCache: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>;
   }): GlobContact | undefined {
     const contacts: GlobContact[] = [];
-    const solid = raycast(origin, direction, distance, this.options.isSolid);
+    const solid = raycast(origin, direction, distance, this.options.rayCells ?? this.options.isSolid);
     if (solid) {
       contacts.push({ kind: 'solid', distance: solid.distance, normal: solid.normal });
     }
     const actor = this.firstRegionHit({
       origin,
       direction,
-      isBlocked: this.options.isSolid,
+      isBlocked: this.options.rayCells ?? this.options.isSolid,
       exclude: source,
       poseCache,
     });
@@ -2306,7 +2313,7 @@ export class ActorSystem {
   }: {
     origin: Vec3;
     direction: Vec3;
-    isBlocked: SolidAt;
+    isBlocked: RayAt;
     poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
     exclude?: EntityId;
   }): RegionHit | undefined {
@@ -2333,7 +2340,7 @@ export class ActorSystem {
       actor: Actor;
       origin: Vec3;
       direction: Vec3;
-      isBlocked: SolidAt;
+      isBlocked: RayAt;
       poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
     },
     nearest: RegionHit | undefined,
@@ -2369,7 +2376,8 @@ export class ActorSystem {
       origin,
       direction,
       weapon,
-      isBlocked: (x, y, z) => this.options.isSolid(x, y, z) || this.options.isOpaque(x, y, z),
+      isBlocked: (x, y, z) =>
+        (this.options.rayCells ?? this.options.isSolid)(x, y, z) || this.options.isOpaque(x, y, z),
     });
   }
 
@@ -2383,7 +2391,7 @@ export class ActorSystem {
     origin: Vec3;
     direction: Vec3;
     weapon: HitWeapon;
-    isBlocked: SolidAt;
+    isBlocked: RayAt;
     poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
   }): ActorAim | undefined {
     const found = this.firstRegionHit({ origin, direction: unit(direction), isBlocked, poseCache });
@@ -2425,7 +2433,7 @@ export class ActorSystem {
         origin: shot.origin,
         direction,
         weapon,
-        isBlocked: this.options.isSolid,
+        isBlocked: this.options.rayCells ?? this.options.isSolid,
         poseCache,
       });
       const actor = aim && aim.distanceMetres <= shot.rangeMetres ? this.store.get(aim.id) : undefined;

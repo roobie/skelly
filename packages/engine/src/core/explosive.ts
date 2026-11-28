@@ -5,7 +5,7 @@ import type { Vec3 } from './coords.ts';
 import type { Item } from './items.ts';
 import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, raycast, type SolidAt } from './raycast.ts';
 import type { BodyTuningDef, ItemDef } from './schema.ts';
 
 /** A thrown charge's content (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
@@ -190,7 +190,7 @@ export const fragmentHitsOnBody = ({
   directions: readonly Vec3[];
   rangeBlocks: number;
   body: Body;
-  isSolid: SolidAt;
+  isSolid: RayAt;
   regionHeights: BodyTuningDef['fragmentRegionHeights'];
 }): BodyRegion[] => {
   const centre = bodyCentre(body);

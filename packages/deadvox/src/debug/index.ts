@@ -1220,6 +1220,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let shellKey = '';
   let noclip = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
+    rayCells: hooks.solidity.rayCells,
     strikeTerrainCell: hooks.strikeTerrainCell,
     igniteTerrainCell: hooks.igniteTerrainCell,
     repairCell: hooks.repairCell,
@@ -1538,7 +1539,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             world: engine.simulationWorld,
             registry: engine.registry,
             entities: engine.entities,
-            isSolid: hooks.solidity.isSolid,
+            isSolid: hooks.solidity.rayCells,
             blockSize: engine.config.scale.blockSize,
           },
           ray.eye,
@@ -1996,7 +1997,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
                   world: engine.simulationWorld,
                   registry: engine.registry,
                   entities: engine.entities,
-                  isSolid: hooks.solidity.isSolid,
+                  isSolid: hooks.solidity.rayCells,
                   blockSize: engine.config.scale.blockSize,
                 },
                 eye,
@@ -2051,7 +2052,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
-      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.solidity.isOpaque);
+      const opaqueHit = raycast(
+        origin,
+        direction,
+        reachMetres / metresPerBlock,
+        (x, y, z) => hooks.solidity.rayCells(x, y, z) || hooks.solidity.isOpaque(x, y, z),
+      );
       const opaqueDistance = opaqueHit?.distance;
       const distanceBlocks = Math.min(
         reachMetres / metresPerBlock,

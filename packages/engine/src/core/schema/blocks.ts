@@ -3,7 +3,9 @@ import {
   check,
   gtValue,
   integer,
+  literal,
   maxValue,
+  minLength,
   minValue,
   number,
   optional,
@@ -12,6 +14,7 @@ import {
   record,
   strictObject,
   tuple,
+  union,
   boolean as vBoolean,
 } from 'valibot';
 import { footstepSoundId } from '../footsteps.ts';
@@ -92,6 +95,12 @@ const CrackPatternSchema = pipe(
   ),
 );
 
+const BlockYieldSchema = strictObject({ item: Id, count: pipe(Count, minValue(1)) });
+const FallResultSchema = union([
+  strictObject({ block: Id }),
+  strictObject({ yields: pipe(array(BlockYieldSchema), minLength(1)) }),
+]);
+
 export const BlockMaterialSchema = strictObject({
   id: Id,
   minimumStrength: NonNegative,
@@ -99,8 +108,9 @@ export const BlockMaterialSchema = strictObject({
   resistance: record(Id, Fraction),
   massKg: Positive,
   span: Count,
+  structural: vBoolean(),
   crumblesUnderLoad: vBoolean(),
-  fallsTo: Id,
+  fallsTo: FallResultSchema,
   flammability: optional(
     strictObject({
       ignitionStrength: NonNegative,
@@ -110,7 +120,7 @@ export const BlockMaterialSchema = strictObject({
   ),
   /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
   breakable: vBoolean(),
-  rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+  rubble: array(BlockYieldSchema),
   /** Game minutes to take apart one rubble cell of this material's fallen form. */
   rubbleClearTimeGameMinutes: PositiveGameMinutes,
   blowSound: Id,
@@ -151,6 +161,19 @@ export const SupportTuningSchema = strictObject({
 export const BlockSchema = strictObject({
   id: Id,
   material: Id,
+  /** One load description per block; strut bearing always descends one row. */
+  loadPath: optional(strictObject({ kind: literal('strut'), bearing: picklist(['-x', '+x', '-z', '+z']) })),
+  strut: optional(
+    strictObject({
+      rise: picklist(['+x', '-x', '+z', '-z']),
+      widthBlocks: pipe(Positive, maxValue(0.5)),
+    }),
+  ),
+  fallsTo: optional(FallResultSchema),
+  /** Open geometry can opt out rather than painting cube-face cracks across its gaps. */
+  cracks: optional(vBoolean()),
+  /** Content derives an oriented burnt variant rather than changing shape in the fire mechanism. */
+  burnsTo: optional(Id),
   name: Name,
   color: Color,
   /** Blocks movement independently of sight and render geometry. */

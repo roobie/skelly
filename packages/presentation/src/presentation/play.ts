@@ -1111,7 +1111,7 @@ const startPlayWith = (
     scale,
     pick: {
       worldSeed: config.seed,
-      isSolid: engine.isSolid,
+      isSolid: (x, y, z) => session.terrainRayCells(x, y, z),
       isOpaque: engine.isOpaque,
     },
     advanceHeldStrip: (uid, time, held) => magazines.advanceHeldStrip(uid, time, held),
@@ -1873,7 +1873,7 @@ const startPlayWith = (
     keyboard: keyboardInput,
     weather,
     flashlight,
-    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque },
+    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque, rayCells: session.rayCells },
     body,
     inventory,
     character: session.character,
@@ -2416,9 +2416,9 @@ const startPlayWith = (
     const origin = eye();
     const direction = lookDir();
     const reach = reachTuning(registry).useReachMetres / s;
-    const hit = raycast(origin, direction, reach, session.physicalSolid);
+    const hit = raycast(origin, direction, reach, session.rayCells);
     const cell = hit
-      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      ? hit.block.map((coordinate, axis) => coordinate + Math.sign(hit.normal[axis]!))
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reach));
     return [cell[0]!, cell[1]!, cell[2]!];
   };
@@ -3102,7 +3102,7 @@ const startPlayWith = (
   };
   /** The solid block in the crosshair within use reach, by its condition and name. */
   const blockHint = (): HintText | undefined => {
-    const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
+    const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.rayCells);
     const block = hit && cellCondition(engine.simulationWorld, registry, hit.block);
     return (
       block &&
@@ -3404,7 +3404,7 @@ const startPlayWith = (
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
     const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
-      { world: engine.simulationWorld, registry, entities, isSolid: session.physicalSolid, blockSize: s },
+      { world: engine.simulationWorld, registry, entities, isSolid: session.rayCells, blockSize: s },
       bore.origin,
       bore.direction,
       rangeBlocks,

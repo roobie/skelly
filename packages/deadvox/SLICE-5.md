@@ -14,6 +14,7 @@ read_if:
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
   - you're changing structure support, bent span reach, cascade landing, buried contents or their clearing
+  - you're changing strut geometry, material admission or ray passage
 ---
 
 # Slice 5 — Holding ground
@@ -136,15 +137,16 @@ unbuilt. Unanswered gates block only their dependent work.
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
-- **Support:** natural terrain anchors structure; a face-adjacent solid path may bend
-  on its own row, within the querying cell's material span, to a standing or natural
-  cell. Bending fixes corners without a corner-specific rule or another tunable.
-  Merely sideways-held cells cannot anchor another run: otherwise chained beams would
-  cantilever without end. Ending at a standing cell keeps dependencies on the same row
-  and rows below, preserving memo termination. The material span bounds both the search
-  and the cascade's same-row diamond, keeping invalidation local. This avoids floating
-  walls without simulating physical stress; see
-  `packages/engine/src/core/structureSupport.ts`, `createSupport` and `SupportState.enqueueSideways`.
+- **Support:** binary gravity support prevents floating walls without claiming to
+  simulate physical stress. Bending accommodates corners without a corner-specific
+  tunable; refusing merely sideways-held endpoints prevents endless cantilevers.
+  Downward bearing preserves memo termination and query-order independence without
+  ports or a second support graph. Struts move the bearing point geometrically, not
+  by granting a span bonus. Reverse bearing reach matters because losing a diagonal
+  foot must invalidate its receiver even when no block stands straight above it.
+  Bounded sideways reach keeps cascade invalidation local. See
+  `packages/engine/src/core/structureSupport.ts`, `createSupport`, `SupportState.lost`
+  and `SupportState.enqueueSideways`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
   or left floating both read wrong, and refusal keeps timber yield open. An exhausted
   search has not cleared the trunk; see
@@ -156,10 +158,15 @@ unbuilt. Unanswered gates block only their dependent work.
   `packages/engine/src/core/worldPlacement.ts`, `createWorldPlacement`.
   Falling rubble makes collapse visible rather than leaving rubble suspended where
   structure stood. The view masks a landed rubble cell until its recorded drop lands,
-  because cascades otherwise expose their result before the source arrives. Occupied
-  vehicle fittings stop rubble because vehicle impact damage
-  has no owner. Collapse is danger, not arbitrary deletion: conserve anything it did not
-  break through the shared ruin and buried-content owners; see
+  because cascades otherwise expose their result before the source arrives. A thin member
+  instead leaves salvage: a rubble cube would invent a doorway-blocking mass where a slim
+  brace fell. Block overrides and material defaults share one failure selection, and yields
+  reuse the break planner so falling, cutting and later char failure cannot disagree about
+  salvage. Scrap and offcuts remain useful; a placeable strut item waits for player strut
+  construction rather than offering an item with no way back into the world. Occupied vehicle
+  fittings stop rubble because vehicle impact damage has no owner. Collapse is danger, not
+  arbitrary deletion: conserve anything it did not break through the shared ruin and
+  buried-content owners; see
   `packages/engine/src/core/terrainStrike.ts`, `fallCell` and `cascadeSupport`.
   Walls stay walls: evacuation through solids would let collapse breach a sealed base
   by teleporting its occupants. Burial and content-owned breathing let collapse kill
@@ -180,6 +187,27 @@ unbuilt. Unanswered gates block only their dependent work.
   frontier preserves interrupted work; see
   `packages/engine/src/core/structureSupport.ts`, `SupportState`, and
   `packages/engine/src/core/terrainStrike.ts`, `cascadeSupport`.
+- **Strut geometry:** shape belongs to a construction block, not to a material whitelist,
+  so another structural material can reuse the same mechanism. A single load-path field
+  keeps support reading one load description rather than competing shape-specific fields;
+  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Content derives oriented
+  burn replacements to avoid turning an open member into a cube. The bounded prism keeps
+  mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
+  a sloping face normal. Open members opt out of cube-face cracks in content so damage
+  cannot paint their empty gaps; see `packages/presentation/src/render/terrainCracks.ts`,
+  `TerrainCracks.sync`. See `packages/engine/src/core/strutShape.ts`, `strutFaces`;
+  `packages/engine/src/core/mesher.ts`, `emitStruts`; and
+  `packages/mods/skelly.natural-world/struts.libsonnet`.
+  Shots and aim use the visible member because stopping a bullet on its empty gap is
+  misleading. Sight uses opacity independently. Bodies remain whole-cell because exact
+  body contact also needs sweep and step-up work; templates keep members above head
+  height rather than adding a temporary player-height placement restriction. Wire keeps
+  its existing passage policy pending the shared wire passage work in #2062. See
+  `packages/engine/src/core/raycast.ts`, `raycast`; and
+  `packages/engine/src/core/blockRay.ts`, `blockRayQuery`.
+  The prepared review keeps the check on passage, carrying and salvage rather than
+  collecting tools; see
+  `packages/deadvox/mods/skelly.deadvox.scenario.test-house.strut-look/README.md`.
 - **Removal contents:** see `DESIGN.md`, "Edits persist".
 - **Interrupted deconstruction:** the reservation is in `DESIGN.md`, "Edits persist".
   Keep resumable work and snapshotted yields under `INTERACTIONS.md`, "Crafting";

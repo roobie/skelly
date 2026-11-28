@@ -187,7 +187,7 @@ export class TerrainCracks {
       const block = typeof blockId === 'number' ? this.registry.blocks[blockId] : undefined;
       const material = block?.solid ? this.registry.blockMaterials.get(block.material) : undefined;
       const crack =
-        material && reveal.isRevealed(cell[0], cell[2])
+        material && block?.cracks !== false && reveal.isRevealed(cell[0], cell[2])
           ? {
               reach: crackReach(1 - damage / material.durability, mended, material.cracks.steps),
               pattern: material.cracks,

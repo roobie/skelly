@@ -47,6 +47,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
     transfer: [
       mesh.positions.buffer,
       mesh.normals.buffer,
+      mesh.cellOffsets.buffer,
       mesh.colors.buffer,
       mesh.patterns.buffer,
       mesh.weatherable.buffer,

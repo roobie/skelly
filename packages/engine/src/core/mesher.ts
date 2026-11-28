@@ -24,11 +24,13 @@ import {
   WIDE,
   wideIndex,
 } from './occlusion.ts';
+import { type StrutShape, strutFaces } from './strutShape.ts';
 import { type Point2, type WireMeshes, wirePolygons } from './wireMesh.ts';
 
 export interface MeshData {
   positions: Float32Array; // chunk-local, 3 per vertex
-  normals: Int8Array; // 3 per vertex, -1/0/1
+  normals: Int8Array; // 3 per vertex, sign vectors normalized by the renderer
+  cellOffsets: Float32Array; // 3 per vertex, position minus an owning-cell sample
   colors: Uint8Array; // RGB, 3 per vertex
   patterns: Uint8Array; // surface pattern id (schema.ts BLOCK_PATTERNS), 1 per vertex; constant per quad
   weatherable: Uint8Array; // content-owned render-weathering flag, 1 per vertex; constant per quad
@@ -120,6 +122,8 @@ const flatAlong = (face: Face, key: number, occ: number, axis: 'u' | 'v'): boole
 interface Context {
   padded: Uint16Array;
   wireMeshes: WireMeshes;
+  struts: readonly (StrutShape | undefined)[];
+  cellOffsets: number[];
   liquids: Uint8Array;
   /** Summed-volume table over the wide solidity array, or undefined when none was given (no occlusion). */
   sums: Int32Array | undefined;
@@ -145,6 +149,7 @@ export interface MeshOptions {
   origin?: Vec3;
   fencePosts?: FencePostDefs;
   wireMeshes?: WireMeshes;
+  struts?: readonly (StrutShape | undefined)[];
   /** Liquid flag per block id (`blockLiquids`). */
   liquids?: Uint8Array;
   patterns?: Uint8Array;
@@ -163,7 +168,7 @@ const RANGE = new Int32Array(6);
  */
 const solid = (ctx: Context, index: number): number => {
   const id = ctx.padded[index]!;
-  return id === 0 || ctx.wireMeshes[id] || ctx.liquids[id] ? 0 : 1;
+  return id === 0 || ctx.wireMeshes[id] || ctx.struts[id] || ctx.liquids[id] ? 0 : 1;
 };
 
 /**
@@ -173,7 +178,7 @@ const solid = (ctx: Context, index: number): number => {
 const faceKey = (ctx: Context, face: Face, base: number): number => {
   const { padded } = ctx;
   const id = padded[base]!;
-  if (id === 0 || id === BEDROCK) {
+  if (id === 0 || id === BEDROCK || ctx.struts[id]) {
     return 0;
   }
   const front = base + face.front;
@@ -342,6 +347,7 @@ const emitQuad = (
     const k = AO_LEVELS[aoAt(key, corner)]!;
     ctx.positions.push(pos[0], pos[1], pos[2]);
     ctx.normals.push(nx, ny, nz);
+    ctx.cellOffsets.push(nx * 0.5, ny * 0.5, nz * 0.5);
     ctx.vcolors.push(ctx.colors[id * 3]! * k, ctx.colors[id * 3 + 1]! * k, ctx.colors[id * 3 + 2]! * k);
     ctx.vpatterns.push(ctx.patterns[id] ?? 0);
     ctx.vweatherable.push(ctx.weatherable[id] ?? 0);
@@ -455,6 +461,36 @@ const emitFencePosts = (ctx: Context, definitions: FencePostDefs, origin: Vec3):
   }
 };
 
+const emitStruts = (ctx: Context): void => {
+  const shapes = ctx.struts.map((shape) => shape && strutFaces(shape));
+  for (let cell = 0; cell < CHUNK ** 3; cell++) {
+    const x = cell % CHUNK;
+    const z = Math.floor(cell / CHUNK) % CHUNK;
+    const y = Math.floor(cell / (CHUNK * CHUNK));
+    const id = ctx.padded[paddedIndex(x + 1, y + 1, z + 1)]!;
+    const faces = shapes[id];
+    if (!faces) {
+      continue;
+    }
+    for (const face of faces) {
+      const base = ctx.positions.length / 3;
+      for (const p of face.vertices) {
+        ctx.positions.push(x + p[0], y + p[1], z + p[2]);
+        ctx.normals.push(...face.normal);
+        ctx.cellOffsets.push(p[0] - 0.5, p[1] - 0.5, p[2] - 0.5);
+        ctx.vcolors.push(ctx.colors[id * 3]!, ctx.colors[id * 3 + 1]!, ctx.colors[id * 3 + 2]!);
+        ctx.vpatterns.push(ctx.patterns[id] ?? 0);
+        ctx.vweatherable.push(ctx.weatherable[id] ?? 0);
+        ctx.voccs.push(255);
+        ctx.vweather.push(1, 0);
+      }
+      for (let i = 1; i < face.vertices.length - 1; i++) {
+        ctx.indices.push(base, base + i, base + i + 1);
+      }
+    }
+  }
+};
+
 /**
  * Builds a mesh for one chunk.
  * @param padded block ids for the chunk plus a 1-block border (see extractPadded)
@@ -470,6 +506,8 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
   const ctx: Context = {
     padded,
     wireMeshes: options.wireMeshes ?? [],
+    struts: options.struts ?? [],
+    cellOffsets: [],
     liquids: options.liquids ?? new Uint8Array(0),
     sums: wide ? SUMS : undefined,
     colors,
@@ -495,10 +533,12 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: Mesh
       }
     }
   }
+  emitStruts(ctx);
   emitFencePosts(ctx, options.fencePosts ?? [], options.origin ?? [0, 0, 0]);
   return {
     positions: new Float32Array(ctx.positions),
     normals: new Int8Array(ctx.normals),
+    cellOffsets: new Float32Array(ctx.cellOffsets),
     colors: new Uint8Array(ctx.vcolors),
     patterns: new Uint8Array(ctx.vpatterns),
     weatherable: new Uint8Array(ctx.vweatherable),

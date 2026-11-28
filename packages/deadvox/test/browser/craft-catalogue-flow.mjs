@@ -538,7 +538,8 @@ const placementFlow = async ({ page, url, output }) => {
   }, spot);
   // One build is one and done: reopening the recipe reviews an unpinned spot again.
   await pressAction(page, 'ui.inventory-tab-crafting');
-  await page.waitForFunction(() => Boolean(document.querySelector('.craft-pick-spot')));
+  // Closed reviews retain their DOM until the frame-owned craft panel syncs with the reopened screen.
+  await page.locator('#crafting:not([hidden]) .craft-pick-spot').waitFor({ state: 'visible' });
   assert.equal(await start.getAttribute('aria-disabled'), 'true', 'a finished build leaves no pinned spot');
   process.stdout.write('placement: build stood and pin cleared\n');
 };

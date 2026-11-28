@@ -9,6 +9,7 @@ import type { MeshData } from '../core/mesher.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
+import type { StrutShape } from '../core/strutShape.ts';
 import type { TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
@@ -79,6 +80,7 @@ export interface StreamerOptions {
   /** Content-owned render-weathering flag per block id. */
   weatherable: Uint8Array;
   wireMeshes?: WireMeshes;
+  struts?: readonly (StrutShape | undefined)[];
   /** Liquid flag per block id (`blockLiquids`). */
   liquids?: Uint8Array;
   fencePosts?: FencePostDefs;
@@ -211,7 +213,7 @@ export class Streamer {
     this.opts = opts;
     opts.meshes.setRevealedColumns(new Set());
     this.occluders = Uint8Array.from({ length: opts.colors.length / 3 }, (_, id) =>
-      Number(id !== 0 && !opts.wireMeshes?.[id] && !opts.liquids?.[id]),
+      Number(id !== 0 && !opts.wireMeshes?.[id] && !opts.struts?.[id] && !opts.liquids?.[id]),
     );
     const { count } = opts.mesher;
     for (let i = 0; i < count; i++) {
@@ -228,6 +230,7 @@ export class Streamer {
         patterns: opts.patterns,
         weatherable: opts.weatherable,
         wireMeshes: opts.wireMeshes ?? [],
+        struts: opts.struts ?? [],
         liquids: opts.liquids ?? new Uint8Array(0),
         fencePosts: opts.fencePosts ?? [],
         occluders: this.occluders,

@@ -2,14 +2,14 @@ import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { pickFurnitureHit } from './furniturePick.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, raycast } from './raycast.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 
 export interface CrosshairTargetWorld {
   readonly world: Pick<TerrainRead, 'getBlock' | 'renderOnly'>;
   readonly registry: Pick<Registry, 'blocks'>;
   readonly entities: BlockEntities;
-  readonly isSolid: SolidAt;
+  readonly isSolid: RayAt;
   readonly blockSize: number;
 }
 

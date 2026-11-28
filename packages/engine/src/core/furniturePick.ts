@@ -2,7 +2,7 @@ import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { type DoorPanelBox, isBodyDoor, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import { casingBoxes, POWER_SWITCH_PART, powerSwitchBoxes, type WorldBox } from './plantInstruments.ts';
-import { type RayHit, raycast, type SolidAt } from './raycast.ts';
+import { type RayAt, type RayHit, raycast } from './raycast.ts';
 import type { FurnitureDef } from './schema.ts';
 import { type WindowPart, windowParts } from './windowParts.ts';
 
@@ -61,7 +61,7 @@ export interface FurniturePickOptions {
   /** Maximum ray distance in blocks. */
   maxDistance: number;
   blockSize: number;
-  isSolid: SolidAt;
+  isSolid: RayAt;
   /** A climber's ray passes through ladders, an open frame, to reach the hatch above. */
   throughLadders?: boolean;
 }
@@ -170,7 +170,7 @@ const firstPickCell = ({
   origin: Vec3;
   direction: Vec3;
   maxDistance: number;
-  isSolid: SolidAt;
+  isSolid: RayAt;
   throughLadders: boolean;
 }): RayHit | undefined =>
   raycast(origin, direction, maxDistance, (x, y, z) => {

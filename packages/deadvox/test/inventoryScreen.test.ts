@@ -873,9 +873,12 @@ describe('inventory screen Lit rendering', () => {
     const world = new World();
     const cell: [number, number, number] = [0, 1, 0];
     const material = [...registry.blockMaterials.values()].find(
-      (row) => registry.blocks[registry.blockIds.get(row.fallsTo)!]?.solid,
+      (row) => 'block' in row.fallsTo && registry.blocks[registry.blockIds.get(row.fallsTo.block)!]?.solid,
     )!;
-    const rubble = registry.blockIds.get(material.fallsTo)!;
+    if (!('block' in material.fallsTo)) {
+      throw new Error('Fixture needs a block fall result');
+    }
+    const rubble = registry.blockIds.get(material.fallsTo.block)!;
     world.setBlock(...cell, rubble);
     inv.rubble = worldRubbleClearing(world, registry);
     screen.openCellWork(cell, 'take_apart');
