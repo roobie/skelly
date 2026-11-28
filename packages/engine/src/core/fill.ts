@@ -1,4 +1,4 @@
-import { batteryCapacityMicrojoules } from './battery.ts';
+import { batteryCapacityMicrojoules } from './consumable.ts';
 import type { Registry } from './content.ts';
 import { defOf, type Item } from './items.ts';
 
@@ -20,16 +20,12 @@ export const setInitialFill = (registry: Registry, item: Item, fill: number): vo
     item.liquidContents = volumeMicrolitres === 0 ? { kind: 'empty' } : { ...contents, volumeMicrolitres };
     return;
   }
-  if (def.battery) {
-    const microjoules = batteryCapacityMicrojoules(registry, item.type);
-    if (microjoules === undefined) {
-      item.charges = fill * def.battery.capacity;
-    } else {
-      item.batteryMicrojoules = Math.floor(fill * microjoules);
-    }
+  const microjoules = batteryCapacityMicrojoules(registry, item.type);
+  if (microjoules !== undefined) {
+    item.batteryMicrojoules = Math.floor(fill * microjoules);
     return;
   }
-  const capacity = def.canister?.capacity ?? def.igniter?.capacity;
+  const capacity = def.consumable?.capacity ?? def.igniter?.capacity;
   if (capacity === undefined) {
     throw new Error('item holds no charge, fuel or liquid to fill');
   }

@@ -15,7 +15,7 @@ const HELD_ACTION_PRESENTATION: Readonly<
 > = {
   'item.unpack': { itemParam: 'uid', dedicated: false },
   'survival.consume': { itemParam: 'itemUid', dedicated: false },
-  'survival.battery': { itemParam: 'lightUid', dedicated: false },
+  'survival.consumable': { itemParam: 'deviceUid', dedicated: false },
   // Dedicated handling must win even before a firearm's model finishes loading.
   'firearm.cock': { itemParam: 'uid', dedicated: true },
   'firearm.load': { itemParam: 'uid', dedicated: true },

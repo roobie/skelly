@@ -1,14 +1,22 @@
 import type { Registry } from '@skelly/engine/content';
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { consumableRefusal } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
 import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
 import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
-import { swapCanister } from '@skelly/engine/internal/core/torch.ts';
 import { cellActionsFor } from '@skelly/engine/internal/game/cellActions.ts';
-import { CraftCommands, freshDropTarget, HandlingQueue, Inventory, type Target } from '@skelly/engine/inventory';
+import {
+  CONSUMABLE_SLOT,
+  CraftCommands,
+  freshDropTarget,
+  HandlingQueue,
+  Inventory,
+  swapConsumable,
+  type Target,
+} from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { bindReach, Character } from '@skelly/engine/sim';
@@ -28,7 +36,7 @@ import {
 
 const doorDef = registry.furniture.get('steel_armoury_door')!;
 const cut = doorDef.door!.methods.cut!;
-const canisterCapacity = registry.items.get('gas_canister')!.canister!.capacity;
+const canisterCapacity = registry.items.get('gas_canister')!.consumable!.capacity;
 
 const makeRuntime = (snapshot?: Parameters<typeof createRuntime>[0]) => {
   const runtime = createRuntime(snapshot, false, undefined, { spawn: [0, 1, 0], active: false });
@@ -74,7 +82,7 @@ const holdTorch = (runtime: Runtime, fill?: number) => {
   if (fill !== undefined) {
     const canister = runtime.inventory.create('gas_canister');
     canister.charges = fill;
-    runtime.inventory.fitSlot(torch, 'canister', canister);
+    runtime.inventory.fitSlot(torch, CONSUMABLE_SLOT, canister);
   }
   return torch;
 };
@@ -130,7 +138,7 @@ it('a stopped cut spends nothing', () => {
   expect(chargeOf(registry, torch)).toBe(canisterCapacity);
 });
 
-it('swapping in a cartridge returns the old one whatever its fill', () => {
+it('swapping in a cartridge throws a spent one away, as a light does a dead battery', () => {
   const inventory = new Inventory(registry);
   const torch = inventory.create('blowtorch');
   const first = inventory.create('gas_canister');
@@ -140,22 +148,20 @@ it('swapping in a cartridge returns the old one whatever its fill', () => {
   expect(inventory.add(first, { kind: 'hand', side: 'left' })).toBe(true);
   expect(inventory.add(second, { kind: 'hand', side: 'right' })).toBe(true);
 
-  expect(swapCanister(inventory, torch, first, feet)).toBeUndefined();
+  expect(swapConsumable(inventory, torch, first, feet)).toBeUndefined();
   expect(chargeOf(registry, torch)).toBe(0);
-  expect(swapCanister(inventory, torch, second, feet)).toBeUndefined();
+  expect(swapConsumable(inventory, torch, second, feet)).toBeUndefined();
 
   expect(chargeOf(registry, torch)).toBe(canisterCapacity);
-  expect(inventory.pileAt([0, 0, 0])!.items.map(({ item }) => [item.type, chargeOf(registry, item)])).toEqual([
-    ['gas_canister', 0],
-  ]);
-  expect(swapCanister(inventory, torch, torch, feet)).toBeTypeOf('string');
+  expect(inventory.pileAt([0, 0, 0])?.items ?? []).toEqual([]);
+  expect(swapConsumable(inventory, torch, torch, feet)).toBeTypeOf('string');
 });
 
 const fittedTorch = () => {
   const inventory = new Inventory(registry);
   const torch = inventory.create('blowtorch');
   const old = inventory.create('gas_canister');
-  inventory.fitSlot(torch, 'canister', old);
+  inventory.fitSlot(torch, CONSUMABLE_SLOT, old);
   const fresh = inventory.create('gas_canister');
   if (!inventory.add(fresh, { kind: 'hand', side: 'left' })) {
     throw new Error('Could not hold the fixture cartridge');
@@ -166,8 +172,8 @@ const fittedTorch = () => {
 it('a cartridge swap with no ground for the old one to land on refuses and leaves the fitted one exactly as it was', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
   const before = { ...old };
-  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
-  expect(torch.slots!.canister).toBe(old);
+  expect(swapConsumable(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
+  expect(torch.slots!.consumable).toBe(old);
   expect(old).toEqual(before);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
@@ -186,7 +192,9 @@ it('plans where the old cartridge lands with the fill it comes out with', () => 
       // Fill the pile until it refuses.
     }
   }
-  expect(swapCanister(inventory, torch, fresh, (item) => freshDropTarget(inventory, item, [0, 0, 0]))).toBeUndefined();
+  expect(
+    swapConsumable(inventory, torch, fresh, (item) => freshDropTarget(inventory, item, [0, 0, 0])),
+  ).toBeUndefined();
   const at = inventory.locate(old);
   expect(at?.kind).toBe('pile');
   expect(at?.kind === 'pile' && at.pile.pos).not.toEqual([0, 0, 0]);
@@ -199,8 +207,8 @@ it('a cartridge swap into full piles refuses rather than losing the old one', ()
   while (inventory.add(filler(), pile)) {
     // Fill with the displaced footprint, without merging partly used cartridges.
   }
-  expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
-  expect(torch.slots!.canister).toBe(old);
+  expect(swapConsumable(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
+  expect(torch.slots!.consumable).toBe(old);
   expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
 
@@ -246,15 +254,16 @@ it('a blunt blow on a steel piece is resisted while the same strength heat lands
 });
 
 const torchTool = registry.items.get('blowtorch')!.tool!;
+const torchDrain = registry.items.get('blowtorch')!.consumableSlot!.drainPerGameHour;
 const torchCut = torchTool.cut!;
-const strikeFuel = torchTool.fuel!.fillPerSimSecond * torchCut.strikeIntervalSimSeconds;
+const strikeFuel = torchDrain * torchCut.strikeIntervalSimSeconds * BASE_CLOCK.ratio;
 
 /** A blowtorch fitted with a cartridge holding `fill`. */
 const fuelledTorch = (inventory: Inventory, fill: number) => {
   const torch = inventory.create('blowtorch');
   const canister = inventory.create('gas_canister');
   canister.charges = fill;
-  inventory.fitSlot(torch, 'canister', canister);
+  inventory.fitSlot(torch, CONSUMABLE_SLOT, canister);
   return torch;
 };
 
@@ -437,7 +446,8 @@ describe('torch cutting a steel cell', () => {
   it('offers Cut on steel but not on masonry or timber', () => {
     const f = cutFixture('open');
     f.holdFuelled(canisterCapacity);
-    const actions = (cell: Vec3) => cellActionsFor(f.inventory, f.world, cell, new Set()).map(({ id }) => id);
+    const actions = (cell: Vec3) =>
+      cellActionsFor(f.inventory, f.world, cell, { knownRecipes: new Set(), clock: f.sim.clock }).map(({ id }) => id);
 
     expect(actions(joist)).toContain('cut');
     expect(actions(masonry)).not.toContain('cut');
@@ -465,7 +475,9 @@ describe('torch cutting a steel cell', () => {
     const f = cutFixture('open');
     const torch = f.holdFuelled(strikeFuel / 2);
 
-    expect(cellActionsFor(f.inventory, f.world, joist, new Set()).map(({ id }) => id)).toContain('cut');
+    expect(
+      cellActionsFor(f.inventory, f.world, joist, { knownRecipes: new Set(), clock: f.sim.clock }).map(({ id }) => id),
+    ).toContain('cut');
     expect(f.session.cutCell(joist)).toBeTypeOf('string');
     expect(f.sim.actions.job).toBeUndefined();
     expect(chargeOf(registry, torch)).toBe(strikeFuel / 2);
@@ -473,7 +485,7 @@ describe('torch cutting a steel cell', () => {
 
   it('ends the cut by itself when the gas runs out, saying why, and leaves the player free to move', () => {
     const f = cutFixture('open');
-    f.holdFuelled(strikeFuel * 2.5);
+    const torch = f.holdFuelled(strikeFuel * 2.5);
 
     expect(f.session.cutCell(joist)).toBeUndefined();
     expect(f.sim.compression.locksInput).toBe(true);
@@ -482,7 +494,7 @@ describe('torch cutting a steel cell', () => {
     expect(f.sim.actions.job?.stopped).toBe(true);
     expect(f.sim.compression.interruption).toBeUndefined();
     expect(f.sim.compression.locksInput).toBe(false);
-    expect(f.notices).toContain(coreMessage(registry, 'outOfFuel'));
+    expect(f.notices).toContain(consumableRefusal(registry, [torch]));
     expect(f.blockAt(joist)).toBe('steel_joist');
     expect(f.damageAt(joist)).toBeGreaterThan(0);
   });
@@ -600,13 +612,12 @@ describe('crafting with a fuelled tool', () => {
 
     expect(r.commands.start(r.recipe.id)).toBeUndefined();
     const work = r.inventory.hands.right!.work!;
-    const burnSeconds = work.duration / BASE_CLOCK.ratio;
     r.sim.scheduler.advance(work.duration / r.sim.clock.ratio / 2);
     expect(chargeOf(registry, torch)).toBe(canisterCapacity);
     r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
 
     expect(r.recipe.result).toMatchObject({ item: r.inventory.hands.right!.type });
-    expect(chargeOf(registry, torch)).toBeCloseTo(canisterCapacity - torchTool.fuel!.fillPerSimSecond * burnSeconds, 9);
+    expect(chargeOf(registry, torch)).toBeCloseTo(canisterCapacity - torchDrain * work.duration, 9);
   });
 
   it('spends no gas on a saw craft with a fuelled torch to hand', () => {
@@ -635,7 +646,7 @@ describe('crafting with a fuelled tool', () => {
     const probe = craftFixture('twin_cut', twin);
     probe.stock(fuelledTorch(probe.inventory, canisterCapacity));
     expect(probe.commands.start(probe.recipe.id)).toBeUndefined();
-    const burn = torchTool.fuel!.fillPerSimSecond * (probe.inventory.hands.right!.work!.duration / BASE_CLOCK.ratio);
+    const burn = torchDrain * probe.inventory.hands.right!.work!.duration;
 
     const r = craftFixture('twin_cut', twin);
     const torch = fuelledTorch(r.inventory, burn * 1.5);

@@ -102,14 +102,14 @@ breach.breaking(shape.colliding({
         { item: 'canned_beans', count: 2 },
         { item: 'can_opener', count: 1 },
         { item: 'water_bottle', count: 2 },
-        { item: 'flashlight', fitted: { battery: 'aa_battery' } },
+        { item: 'flashlight', fitted: { consumable: 'aa_battery' } },
         { item: 'bandage', count: 2 },
       ] }],
     }, {
       // The charge lasts moments of light, so the light module's swap is needed rather than suggested.
       template: 'tutorial_store', position: [5, 0, 10], rotation: 0,
       fixedLoot: [{ at: [1, 1, 1], items: [
-        { item: 'flashlight', fitted: { battery: 'aa_battery' }, charge: 0.01 },
+        { item: 'flashlight', fitted: { consumable: 'aa_battery' }, charge: 0.01 },
         { item: 'aa_battery' },
       ] }],
     }],

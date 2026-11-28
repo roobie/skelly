@@ -359,8 +359,8 @@ describe('fixture save/load continuation', () => {
     }
     expect(source.sim.compression.active).toBe(true);
     expect(loaded.sim.compression.active).toBe(true);
-    const sourceBattery = source.inventory.hands.left?.slots?.battery;
-    const loadedBattery = loaded.inventory.hands.left?.slots?.battery;
+    const sourceBattery = source.inventory.hands.left?.slots?.consumable;
+    const loadedBattery = loaded.inventory.hands.left?.slots?.consumable;
     expect(sourceBattery?.charges).toBeDefined();
     expect(loadedBattery?.charges).toBe(sourceBattery?.charges);
     expect(loaded.sim.needs).toEqual(source.sim.needs);

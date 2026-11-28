@@ -7,12 +7,13 @@
 import type { ItemDef, Registry, ScreenText } from '@skelly/engine/content';
 import { type BindingRegistry, PressHoldInput, type ReplayActionPayload } from '@skelly/engine/input';
 import {
-  batterySlotRefusal,
   bestPocket,
   GRID_CELL_REM as CELL_REM,
+  CONSUMABLE_SLOT,
   type ConditionBand,
   claimed,
   conditionBand,
+  consumableSlotRefusal,
   contentsLine,
   defOf,
   dropTarget,
@@ -41,6 +42,7 @@ import {
   type Target,
   type WorkOperation,
   type WorkOption,
+  wantedConsumable,
   weightOf,
   wornSlotOf,
 } from '@skelly/engine/inventory';
@@ -202,11 +204,11 @@ interface Drag {
   /** Keep the receiver fixed while dragging onto a service target. */
   card: Item | undefined;
   position?: [number, number];
-  hover?: (({ target: Target } | { light: Item } | { receiver: Item }) & { ok: boolean; reason: string }) | undefined;
+  hover?: (({ target: Target } | { device: Item } | { receiver: Item }) & { ok: boolean; reason: string }) | undefined;
 }
 
-/** The drop zone of a light's battery slot on its card. */
-const batterySlotTarget = (lightUid: number): string => `battery:${lightUid}`;
+/** The drop zone of a device's consumable slot on its card. */
+const consumableSlotTarget = (deviceUid: number): string => `consumable:${deviceUid}`;
 
 interface ItemViewModel {
   readonly item: Item;
@@ -310,14 +312,16 @@ interface AttachmentSlotViewModel {
   readonly label: string;
   readonly occupied?: string;
   readonly attachmentUid?: number;
-  readonly battery?: BatterySlotViewModel;
+  readonly consumable?: ConsumableSlotViewModel;
   readonly candidates: readonly { readonly uid: number; readonly name: string; readonly reason?: string }[];
 }
 
-/** A powered light's battery slot, which takes a dragged battery. */
-interface BatterySlotViewModel {
-  readonly lightUid: number;
-  /** The fitted battery, drawn and dragged like any item in an inventory slot. */
+/** A device's consumable slot, which takes a dragged consumable. */
+interface ConsumableSlotViewModel {
+  readonly deviceUid: number;
+  /** The name of the consumable the device asks for. */
+  readonly label: string;
+  /** The fitted consumable, drawn and dragged like any item in an inventory slot. */
   readonly item?: ItemViewModel | undefined;
 }
 
@@ -333,15 +337,15 @@ interface DetailsViewModel {
   /** A fitted vehicle part goes only where its service work takes it. */
   readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
-  readonly battery?: BatterySlotViewModel;
+  readonly consumable?: ConsumableSlotViewModel;
   readonly recovery?: RecoveryProjection;
   readonly reservoir?: string;
   readonly pour?: { readonly label: string; readonly receiverUid?: number; readonly reason?: string };
 }
 
-const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
-  html`<div class="inv-slot inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.item !== undefined}>
-    <span class="inv-slot-label">${text.battery}</span>${slot.item ? itemTemplate(slot.item) : html`<span class="inv-slot-empty">${text.batteryEmpty}</span>`}
+const consumableSlotTemplate = (slot: ConsumableSlotViewModel, text: InventoryText): TemplateResult =>
+  html`<div class="inv-slot inv-service-target" data-target=${consumableSlotTarget(slot.deviceUid)} data-occupied=${slot.item !== undefined}>
+    <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : html`<span class="inv-slot-empty">${text.consumableEmpty}</span>`}
   </div>`;
 
 /** Only a tier content marks `warn` gets the warning style (`packages/deadvox/DESIGN.md`, "Bleeding"). */
@@ -601,7 +605,7 @@ const attachmentSlotTemplate = (
         : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
   </div>
-  ${slot.battery === undefined ? nothing : batterySlotTemplate(slot.battery, text)}
+  ${slot.consumable === undefined ? nothing : consumableSlotTemplate(slot.consumable, text)}
 `;
 
 const recoveryTemplate = (
@@ -662,7 +666,7 @@ const detailsTemplate = (
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
-      ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
+      ${vm.consumable ? consumableSlotTemplate(vm.consumable, text) : nothing}
       ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
       ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined || vm.pour.receiverUid === undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
       ${vm.recovery ? recoveryTemplate(vm.recovery, changeRecovery, text) : nothing}
@@ -1632,25 +1636,25 @@ export class InventoryScreen {
     });
   }
 
-  private loadBattery(light: Item, battery: Item): string | undefined {
+  private loadConsumable(device: Item, consumable: Item): string | undefined {
     return (
       this.hooks.actionRefusal?.() ??
-      this.hooks.dispatch({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: battery.uid })
+      this.hooks.dispatch({ kind: 'consumable.load', deviceUid: device.uid, consumableUid: consumable.uid })
     );
   }
 
-  /** Takes the fitted battery out of its light's card slot to where it was dropped, as an item leaves an inventory slot. */
-  private unloadBattery(light: Item, target: Target): string | undefined {
+  /** Takes the fitted consumable out of its device's card slot to where it was dropped, as an item leaves an inventory slot. */
+  private unloadConsumable(device: Item, target: Target): string | undefined {
     return (
       this.hooks.actionRefusal?.() ??
-      this.hooks.dispatch({ kind: 'light.battery.unload', lightUid: light.uid, target: this.inv.targetState(target) })
+      this.hooks.dispatch({ kind: 'consumable.unload', deviceUid: device.uid, target: this.inv.targetState(target) })
     );
   }
 
-  /** The light whose battery slot holds `item`, if it does. */
-  private fittedBatteryHolder(item: Item): Item | undefined {
+  /** The device whose consumable slot holds `item`, if it does. */
+  private fittedConsumableHolder(item: Item): Item | undefined {
     const at = this.inv.locate(item);
-    return at?.kind === 'slot' && at.slot === 'battery' ? at.owner : undefined;
+    return at?.kind === 'slot' && at.slot === CONSUMABLE_SLOT ? at.owner : undefined;
   }
 
   private refuse(text: string): void {
@@ -2267,12 +2271,12 @@ export class InventoryScreen {
     const slotLabels = attachmentSlotLabels(this.inv.registry, def, this.screenText().attachmentSlot);
     const attachmentSlots = slotIds.map((slotId): AttachmentSlotViewModel => {
       const fitted = item.slots?.[slotId];
-      const battery = fitted && this.batterySlot(fitted);
+      const consumable = fitted && this.consumableSlot(fitted);
       return {
         id: slotId,
         label: slotLabels(slotId),
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
-        ...(battery ? { battery } : {}),
+        ...(consumable ? { consumable } : {}),
         candidates: fitted
           ? []
           : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map(({ item: candidate, reason }) => ({
@@ -2284,7 +2288,7 @@ export class InventoryScreen {
     });
     const text = this.text();
     const name = workName(this.inv.registry, item);
-    const battery = this.batterySlot(item);
+    const consumable = this.consumableSlot(item);
     if (this.recoveryUid !== item.uid) {
       this.recoveryUid = item.uid;
       this.recoveryChoices = {};
@@ -2295,7 +2299,7 @@ export class InventoryScreen {
       ...this.reservoirViewModel(item),
       item,
       empty: false,
-      ...(battery ? { battery } : {}),
+      ...(consumable ? { consumable } : {}),
       category: def.category,
       name: item.count > 1 ? fillText(text.count, { item: name, count: countText(item.count) }) : name,
       condition: conditionBand(this.inv.registry, item.condition),
@@ -2357,13 +2361,15 @@ export class InventoryScreen {
     };
   }
 
-  private batterySlot(light: Item): BatterySlotViewModel | undefined {
-    if (!defOf(this.inv.registry, light.type).light?.power) {
+  private consumableSlot(device: Item): ConsumableSlotViewModel | undefined {
+    const { registry } = this.inv;
+    if (!defOf(registry, device.type).consumableSlot) {
       return undefined;
     }
-    const fitted = light.slots?.battery;
+    const fitted = device.slots?.[CONSUMABLE_SLOT];
     return {
-      lightUid: light.uid,
+      deviceUid: device.uid,
+      label: defOf(registry, wantedConsumable(registry, device.type)).name,
       item: fitted && this.itemViewModel(fitted, 'inv-item inv-item-slot'),
     };
   }
@@ -2581,7 +2587,7 @@ export class InventoryScreen {
     if (drag.moved) {
       this.hover(e.clientX, e.clientY, e.clientX - drag.grab[0], e.clientY - drag.grab[1]);
       const { hover } = drag;
-      if (hover && (!('target' in hover) || this.fittedBatteryHolder(drag.item))) {
+      if (hover && (!('target' in hover) || this.fittedConsumableHolder(drag.item))) {
         this.selected = drag.card;
       }
       if (hover?.ok) {
@@ -2598,11 +2604,11 @@ export class InventoryScreen {
     if ('receiver' in hover) {
       return this.hooks.dispatch({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: hover.receiver.uid });
     }
-    if ('light' in hover) {
-      return this.loadBattery(hover.light, item);
+    if ('device' in hover) {
+      return this.loadConsumable(hover.device, item);
     }
-    const holder = this.fittedBatteryHolder(item);
-    return holder ? this.unloadBattery(holder, hover.target) : this.tryQueue(item, hover.target);
+    const holder = this.fittedConsumableHolder(item);
+    return holder ? this.unloadConsumable(holder, hover.target) : this.tryQueue(item, hover.target);
   }
 
   private endDrag(): void {
@@ -2648,7 +2654,7 @@ export class InventoryScreen {
     if (spec.startsWith('worn:') && wornSlotOf(this.inv.registry, item) !== spec.slice(5)) {
       return { ok: false, reason: this.text().notWornThere };
     }
-    const holder = this.fittedBatteryHolder(item);
+    const holder = this.fittedConsumableHolder(item);
     const plan = holder ? this.inv.planAdd(item, target) : this.inv.plan(item, target);
     return plan.ok ? { ok: true, reason: '', ...(plan.at ? { at: plan.at } : {}) } : { ok: false, reason: plan.reason };
   }
@@ -2730,8 +2736,8 @@ export class InventoryScreen {
       this.hoverReservoir(drag, zone, Number(spec.slice('reservoir:'.length)));
       return true;
     }
-    if (spec.startsWith('battery:')) {
-      this.hoverBatterySlot(drag, zone, Number(spec.slice('battery:'.length)));
+    if (spec.startsWith('consumable:')) {
+      this.hoverConsumableSlot(drag, zone, Number(spec.slice('consumable:'.length)));
       return true;
     }
     return false;
@@ -2750,17 +2756,17 @@ export class InventoryScreen {
     zone.dataset.dropMark = reason ? '×' : '✓';
   }
 
-  private hoverBatterySlot(drag: Drag, zone: HTMLElement, lightUid: number): void {
+  private hoverConsumableSlot(drag: Drag, zone: HTMLElement, deviceUid: number): void {
     const view = this.hooks.reach();
-    const light = view.player.inventory.itemByUid(lightUid);
-    if (!light) {
+    const device = view.player.inventory.itemByUid(deviceUid);
+    if (!device) {
       return;
     }
-    if (this.fittedBatteryHolder(drag.item) === light) {
+    if (this.fittedConsumableHolder(drag.item) === device) {
       return;
     }
-    const reason = batterySlotRefusal(view, light, drag.item);
-    drag.hover = { light, ok: reason === undefined, reason: reason ?? '' };
+    const reason = consumableSlotRefusal(view, device, drag.item);
+    drag.hover = { device, ok: reason === undefined, reason: reason ?? '' };
     zone.classList.add(reason ? 'drop-no' : 'drop-ok');
     zone.dataset.dropShape = reason ? 'blocked' : 'will-land';
     zone.dataset.dropMark = reason ? '×' : '✓';

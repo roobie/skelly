@@ -123,12 +123,12 @@ describe('central loot selection', () => {
     const host = registry.items.get('stock')!;
     registry.items.set(host.id, {
       ...host,
-      light: {
-        intensity: 1,
-        radius: 1,
-        seenFrom: 1,
-        color: '#ffffff',
-        power: { battery: 'wrong_usage', chargePerGameHour: gamePerHour(1), swapSimSeconds: simSeconds(1) },
+      light: { intensity: 1, radius: 1, seenFrom: 1, color: '#ffffff' },
+      consumableSlot: {
+        accepts: ['wrong_usage'],
+        comesWith: 'wrong_usage',
+        drainPerGameHour: gamePerHour(1),
+        swapSimSeconds: simSeconds(1),
       },
     });
     expect(selectLootType(registry, point(), [{ type: host.id, weight: 1 }], Rng.stream(5, 'child'))).toBeUndefined();
@@ -158,7 +158,7 @@ describe('central loot selection', () => {
   it('spawns authored fixed batteries at their authored share of full charge', () => {
     const registry = fixture();
     const host = registry.items.get('stock')!;
-    registry.items.set(host.id, { ...host, battery: { capacity: 2 } });
+    registry.items.set(host.id, { ...host, consumable: { capacity: 2 } });
     const inventory = new Inventory(registry);
     const source: LootSpawnPoint = {
       ...point(),

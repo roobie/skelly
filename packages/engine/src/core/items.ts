@@ -1,6 +1,6 @@
-import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
+import { assertBatteryEnergy, CONSUMABLE_SLOT, consumableFields } from './consumable.ts';
 import type { ItemDef, ModelDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { RecoveryOperation } from './disassembly.ts';
@@ -255,7 +255,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     count: item.count,
     ...(item.lootedCount === undefined ? {} : { lootedCount: item.lootedCount }),
     condition: item.condition,
-    ...batteryFields(item),
+    ...consumableFields(item),
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
@@ -503,7 +503,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     count: state.count,
     ...(state.lootedCount === undefined ? {} : { lootedCount: state.lootedCount }),
     condition: state.condition,
-    ...batteryFields(state),
+    ...consumableFields(state),
     ...(state.on === undefined ? {} : { on: state.on }),
     ...(state.burnRemainingGameSeconds === undefined
       ? {}
@@ -590,14 +590,12 @@ const initializeFittedSlots = (factory: ItemFactory, registry: Registry, item: I
   } else if (def.firearm && firearmSlotIds(registry, def).length > 0) {
     item.slots = {};
   }
-  if (def.light?.power) {
+  const slot = def.consumableSlot;
+  if (slot) {
     item.slots = {
       ...(item.slots ?? {}),
-      battery: factory.create(registry, def.light.power.battery, 1),
+      ...(slot.comesWith ? { [CONSUMABLE_SLOT]: factory.create(registry, slot.comesWith, 1) } : {}),
     };
-  }
-  if (def.tool?.fuel) {
-    item.slots = { ...(item.slots ?? {}) };
   }
   addDefaultAttachments(factory, registry, item, def.model);
 };

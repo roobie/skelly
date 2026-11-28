@@ -1,12 +1,12 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
+import { consumableCovers, consumableRefusal } from './consumableSlot.ts';
 import type { FurnitureDef } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { type EffectActor, modified, UNSKILLED } from './modifiers.ts';
 import type { SoundId } from './soundEvents.ts';
-import { fuelCovers, fuelRefusal } from './torch.ts';
 
 export type PryPlan =
   | {
@@ -16,7 +16,7 @@ export type PryPlan =
       tool: Item;
       strikeInterval: number;
       strikeSound: SoundId;
-      /** Canister fill the finished cut spends from `tool`. */
+      /** Consumable fill the finished cut spends from `tool`. */
       fuel?: number;
     }
   | { ok: false; reason: string; toolNames: string[] };
@@ -56,11 +56,11 @@ export const pryPlan = (
   let dry: string | undefined;
   for (const [method, tuning] of methods) {
     const capable = carried.filter((item) => meets(item.type, tuning));
-    const tool = capable.find((item) => fuelCovers(registry, item, tuning.fuel ?? 0));
+    const tool = capable.find((item) => consumableCovers(registry, item, tuning.fuel ?? 0));
     if (tool) {
       return planFor({ method, tuning, tool, character });
     }
-    dry = capable.length > 0 ? fuelRefusal(registry, capable) : dry;
+    dry = capable.length > 0 ? consumableRefusal(registry, capable) : dry;
   }
   return refuse(dry ?? coreMessage(registry, 'nothingToForce'));
 };

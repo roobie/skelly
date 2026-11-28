@@ -1,21 +1,18 @@
-// Carried lights and their batteries (`packages/deadvox/DESIGN.md`, "Light"). A powered light owns its battery
-// as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
-// while it's on, at its rate per game hour, in closed form: a long step drains exactly
-// what ticking every second would, and the light goes out when the charge runs out.
-// Swapping in a fresh battery is handling; the old one comes out with what it had left, as it
-// does when the battery is taken out alone.
+// Carried lights (`packages/deadvox/DESIGN.md`, "Light"). A light drains only while it's on, at its rate per game
+// hour, in closed form: a long step drains exactly what ticking every second would, and the light goes out when the
+// charge runs out.
 
-import { batteryCharge, batteryEnergy, batteryFields, batteryFits, spentBattery } from './battery.ts';
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { offSide } from './character.ts';
+import { CONSUMABLE_SLOT, consumableCharge, drawConsumable } from './consumable.ts';
+import { slotCharge, wantedConsumableName } from './consumableSlot.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
-import type { Inventory, Location, Pile, Target } from './inventory.ts';
+import type { Inventory, Location, Pile } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { putDownRefusal } from './itemThrow.ts';
 import { isInHeldItemSlotTree, itemRoots, type TreeEntry, walkItemTree } from './itemTree.ts';
 import { vesselFillShare } from './liquids.ts';
 import type { SolidAt } from './raycast.ts';
@@ -103,7 +100,7 @@ export const lightExposureFor = (
   path: string,
 ): LightExposure | undefined => {
   const definition = registry.items.get(item.type);
-  if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
+  if (!(item.on && definition?.light) || (definition.consumableSlot && chargeOf(registry, item) === 0)) {
     return undefined;
   }
   const inCarriedSlotTree =
@@ -315,15 +312,10 @@ export const lightSenseRangeScale = (exposure: LightExposure, sunlit: boolean, t
   return sunlit ? 0 : tuning.lureRangeScale;
 };
 
-/** A battery's charge when full, from its type. */
-const capacityOf = (registry: Registry, batteryType: string): number =>
-  defOf(registry, batteryType).battery?.capacity ?? 0;
-
-/** Battery power, if this source takes replaceable batteries. */
-/** Charge used per game second by a battery- or self-fuelled light. */
+/** Charge used per game second by a light drawing on its consumable or fuelling itself. */
 const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
-  const spec = defOf(registry, light.type).light;
-  return spec?.power?.chargePerGameHour ?? spec?.fuelPerGameHour;
+  const def = defOf(registry, light.type);
+  return def.consumableSlot?.drainPerGameHour ?? def.light?.fuelPerGameHour;
 };
 
 const liquidCharge = (item: Item, accepts: readonly string[]): number => {
@@ -331,39 +323,30 @@ const liquidCharge = (item: Item, accepts: readonly string[]): number => {
   return contents?.kind === 'filled' && accepts.includes(contents.liquid) ? contents.volumeMicrolitres : 0;
 };
 
-/** Charge left in a light's fuel or battery balance; undefined for anything else. */
+/** Charge left in a fuel balance, a consumable or a device's consumable; undefined for anything else. */
 export const chargeOf = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
   if (def.light?.liquidFuel) {
     return liquidCharge(item, def.light.liquidFuel.accepts);
   }
-  if (def.battery) {
-    return batteryCharge(registry, item);
+  if (def.consumable) {
+    return consumableCharge(registry, item);
   }
-  if (def.canister) {
-    return item.charges ?? def.canister.capacity;
-  }
-  if (def.light?.power) {
-    const battery = item.slots?.battery;
-    return battery ? chargeOf(registry, battery) : 0;
-  }
-  if (def.tool?.fuel) {
-    const canister = item.slots?.canister;
-    return canister ? (canister.charges ?? defOf(registry, canister.type).canister?.capacity ?? 0) : 0;
+  if (def.consumableSlot) {
+    return slotCharge(registry, item);
   }
   return def.igniter ? (item.charges ?? def.igniter.capacity) : undefined;
 };
 
-/** Charge as a share of a full battery, 0 to 1. */
+/** Charge as a share of full, 0 to 1. */
 export const chargeShare = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
+  const fitted = item.slots?.[CONSUMABLE_SLOT];
   const capacity =
     (def.light?.liquidFuel ? def.vessel?.capacityMicrolitres : undefined) ??
-    def.battery?.capacity ??
-    def.canister?.capacity ??
+    def.consumable?.capacity ??
     def.igniter?.capacity ??
-    (item.slots?.battery ? capacityOf(registry, item.slots.battery.type) : undefined) ??
-    (item.slots?.canister ? defOf(registry, item.slots.canister.type).canister?.capacity : undefined);
+    (fitted ? defOf(registry, fitted.type).consumable?.capacity : undefined);
   const charge = chargeOf(registry, item);
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };
@@ -380,10 +363,10 @@ export const supplyShare = (registry: Registry, item: Item): SupplyShare | undef
     share = (item.burnRemainingGameSeconds ?? def.light.burnTimeGameHours) / def.light.burnTimeGameHours;
   } else if (def.vessel) {
     share = vesselFillShare(item, def.vessel);
-  } else if (def.battery || def.canister || def.igniter) {
+  } else if (def.consumable || def.igniter) {
     share = chargeShare(registry, item);
-  } else if (def.light?.power || def.tool?.fuel) {
-    if (!(def.light?.power ? item.slots?.battery : item.slots?.canister)) {
+  } else if (def.consumableSlot) {
+    if (!item.slots?.[CONSUMABLE_SLOT]) {
       return { kind: 'absent' };
     }
     share = chargeShare(registry, item);
@@ -410,13 +393,20 @@ const startBurn = (
   return undefined;
 };
 
-const emptyLightReason = (def: ReturnType<typeof defOf>): CoreMessageKey =>
-  def.igniter || def.tool?.fuel || def.light?.liquidFuel ? 'outOfFuel' : 'batteryDead';
+/** Why a light with nothing left to burn or draw can't come on. */
+export const darkLightReason = (registry: Registry, light: Item): string => {
+  if (!defOf(registry, light.type).consumableSlot) {
+    return coreMessage(registry, 'outOfFuel');
+  }
+  const fitted = light.slots?.[CONSUMABLE_SLOT];
+  return fitted
+    ? coreMessage(registry, 'consumableSpent', { item: defOf(registry, fitted.type).name.toLowerCase() })
+    : coreMessage(registry, 'noConsumable', { item: wantedConsumableName(registry, light.type) });
+};
 
 /** Switches a light on or off. Returns why it can't come on, or undefined. */
 export const toggleLight = (registry: Registry, light: Item, calendar = 0): string | undefined => {
-  const def = defOf(registry, light.type);
-  const spec = def.light;
+  const spec = defOf(registry, light.type).light;
   if (spec === undefined) {
     return coreMessage(registry, 'notLight');
   }
@@ -437,10 +427,7 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
       return coreMessage(registry, blocked);
     }
   } else if (chargeOf(registry, light) === 0) {
-    if (spec.power && !light.slots?.battery) {
-      return coreMessage(registry, 'noBattery');
-    }
-    return coreMessage(registry, emptyLightReason(def));
+    return darkLightReason(registry, light);
   }
   light.on = true;
   if (spec.liquidFuel) {
@@ -494,32 +481,14 @@ const drainChargeLight = (
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
-  const cell = light.slots?.battery ?? light.slots?.canister;
+  const fitted = light.slots?.[CONSUMABLE_SLOT];
   const charge = chargeOf(registry, light) ?? 0;
   const lasts = charge / ratePerGameSecond;
-  if (lasts > elapsedGameSeconds) {
-    if (cell) {
-      const mapping = defOf(registry, cell.type).battery?.rechargeable;
-      if (mapping) {
-        cell.batteryMicrojoules = Math.max(
-          0,
-          batteryEnergy(registry, cell) -
-            Math.ceil(ratePerGameSecond * elapsedGameSeconds * mapping.microjoulesPerCharge),
-        );
-        cell.charges = undefined;
-      } else {
-        cell.charges = charge - ratePerGameSecond * elapsedGameSeconds;
-      }
-    }
-    return undefined;
+  if (fitted) {
+    drawConsumable(registry, fitted, Math.min(charge, ratePerGameSecond * elapsedGameSeconds));
   }
-  if (cell) {
-    if (defOf(registry, cell.type).battery?.rechargeable) {
-      cell.batteryMicrojoules = 0;
-      cell.charges = undefined;
-    } else {
-      cell.charges = 0;
-    }
+  if (lasts > elapsedGameSeconds) {
+    return undefined;
   }
   light.on = false;
   return gameSeconds(lasts);
@@ -559,84 +528,4 @@ const drainLiquidLight = (registry: Registry, light: Item, rate: number, calenda
 export const offHandUse = (registry: Registry, inventory: Inventory): Item | undefined => {
   const item = inventory.hands[offSide(inventory.character)];
   return item && defOf(registry, item.type).light ? item : undefined;
-};
-
-/** A fitted light is serviced with its gun in hand, without detaching it. */
-export const lightInHands = (inventory: Inventory, light: Item): boolean => {
-  const at = inventory.locate(light);
-  return (
-    at?.kind === 'hand' ||
-    (at?.kind === 'slot' &&
-      defOf(inventory.registry, at.owner.type).firearm !== undefined &&
-      inventory.locate(at.owner)?.kind === 'hand')
-  );
-};
-
-/** Whether a battery fits a light. */
-export const fitsLight = (registry: Registry, light: Item, battery: Item): boolean =>
-  batteryFits(registry, light.type, battery.type);
-
-/**
- * Puts one of `battery` into `light`, in place. The old battery comes out with its
- * charge and goes to `spent` if it has any left; a dead one is thrown away. Returns
- * why it couldn't, or undefined; a refused swap changes nothing.
- */
-export const swapBattery = (
-  inventory: Inventory,
-  light: Item,
-  battery: Item,
-  spent: (item: Item) => Target | undefined,
-): string | undefined => {
-  const { registry } = inventory;
-  if (!fitsLight(registry, light, battery)) {
-    return coreMessage(registry, 'wrongBattery');
-  }
-  const kept = spentBattery(registry, light.slots?.battery);
-  const target = kept && spent(kept);
-  if (kept) {
-    const refusal = putDownRefusal(inventory, kept, target);
-    if (refusal) {
-      return refusal;
-    }
-  }
-  const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
-  Object.assign(replacement, batteryFields(battery));
-  if (!inventory.consume(battery)) {
-    return coreMessage(registry, 'batteryGone');
-  }
-  inventory.fitSlot(light, 'battery', replacement);
-  if (kept && target) {
-    inventory.add(kept, target);
-  }
-  return undefined;
-};
-
-/** Whether `light` holds a battery that could be taken out. */
-export const canUnloadBattery = (registry: Registry, light: Item): boolean =>
-  defOf(registry, light.type).light?.power !== undefined && light.slots?.battery !== undefined;
-
-/**
- * Takes the battery out of `light` and switches it off. The battery keeps its charge and goes
- * where `stow` puts it; a dead one is thrown away, as in a swap. With nowhere to put it, it stays
- * fitted. Returns why it couldn't, or undefined.
- */
-export const unloadBattery = (
-  inventory: Inventory,
-  light: Item,
-  stow: (item: Item) => Target | undefined,
-): string | undefined => {
-  const { registry } = inventory;
-  const removed = inventory.fitSlot(light, 'battery', undefined);
-  if (!removed) {
-    return coreMessage(registry, 'batteryGone');
-  }
-  const kept = spentBattery(registry, removed);
-  const target = kept && stow(kept);
-  if (kept && !(target && inventory.add(kept, target))) {
-    inventory.fitSlot(light, 'battery', kept);
-    return coreMessage(registry, 'cantStow', { item: defOf(registry, kept.type).name.toLowerCase() });
-  }
-  light.on = false;
-  light.litAtGameTimestamp = undefined;
-  return undefined;
 };

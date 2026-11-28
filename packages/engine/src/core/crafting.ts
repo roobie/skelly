@@ -2,6 +2,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, skillEffectLevel } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
+import { consumableCovers, consumableRefusal, drainOver } from './consumableSlot.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import { allocateLiquids, type CraftLiquid, type LiquidDemand } from './craftLiquids.ts';
@@ -14,7 +15,7 @@ import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import type { CellDisassemblyPlan } from './rubble.ts';
 import { SKILL_LEVEL_MIN } from './skillLevels.ts';
-import { fuelCovers, fuelRefusal, workFuel } from './torch.ts';
+import { gameSeconds } from './time.ts';
 import type { WorldDestination } from './worldDestination.ts';
 
 interface CraftComponent {
@@ -526,9 +527,10 @@ export const admissionRefusal = (
   refusalReason(snapshot.player.inventory.registry, recipe, {}, equipmentStatus(recipe, snapshot, character));
 
 /**
- * The fuel a craft burns over `durationGameSeconds`, one burn per fuelled tool it uses, or why no such tool holds
- * enough. A quality a workstation or a fuel-free tool meets burns nothing, and a tool already burning for one quality
- * serves any other it provides without burning again, since it burns for the craft's time, not per quality.
+ * The consumable fill a craft draws over `durationGameSeconds`, one draw per tool with a consumable slot it uses, or
+ * why no such tool holds enough. A quality a workstation or a tool without a slot meets draws nothing, and a tool
+ * already drawing for one quality serves any other it provides without drawing again, since it draws for the craft's
+ * time, not per quality.
  */
 export const craftFuel = (
   recipe: RecipeDef,
@@ -537,7 +539,7 @@ export const craftFuel = (
 ): { tool: Item; amount: number }[] | string => {
   const { registry } = snapshot.player.inventory;
   const index = indexCraftReach(snapshot, recipe.consumeFitted);
-  const simSeconds = durationGameSeconds / snapshot.player.clock.ratio;
+  const span = gameSeconds(durationGameSeconds);
   const spends: { tool: Item; amount: number }[] = [];
   for (const [quality, level] of Object.entries(recipe.qualities).sort(([a], [b]) => compareCodeUnits(a, b))) {
     if (snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level)) {
@@ -546,19 +548,19 @@ export const craftFuel = (
     const providers = (index.qualities.get(quality) ?? [])
       .filter((provider) => provider.level >= level)
       .map(({ entry }) => entry.item);
-    if (providers.length === 0 || providers.some((provider) => !registry.items.get(provider.type)?.tool?.fuel)) {
+    if (providers.length === 0 || providers.some((provider) => !registry.items.get(provider.type)?.consumableSlot)) {
       continue;
     }
     if (spends.some((spend) => providers.includes(spend.tool))) {
       continue;
     }
     const tool = providers.find((candidate) =>
-      fuelCovers(registry, candidate, workFuel(registry, candidate, simSeconds)),
+      consumableCovers(registry, candidate, drainOver(registry, candidate, span)),
     );
     if (!tool) {
-      return fuelRefusal(registry, providers);
+      return consumableRefusal(registry, providers);
     }
-    spends.push({ tool, amount: workFuel(registry, tool, simSeconds) });
+    spends.push({ tool, amount: drainOver(registry, tool, span) });
   }
   return spends;
 };

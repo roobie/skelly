@@ -105,7 +105,7 @@ local roomClaims = [
 ];
 // The owner's stash holds the game's only blowtorch, with one cartridge fitted.
 local reward = [
-  { item: 'blowtorch', count: 1, fitted: { canister: 'gas_canister' } },
+  { item: 'blowtorch', count: 1, fitted: { consumable: 'gas_canister' } },
   { item: 'cartridge_box_357_h_magnum', count: 2 },
   { item: 'shotshell_box', count: 1 },
 ];

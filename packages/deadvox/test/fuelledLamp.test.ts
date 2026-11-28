@@ -1,7 +1,7 @@
+import { fitsDevice } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { chargeOf, drainLight } from '@skelly/engine/internal/core/lights.ts';
 import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
-import { fitsFuelledTool } from '@skelly/engine/internal/core/torch.ts';
 import { chargeShare, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { contentLookup } from '@skelly/presentation/ui';
@@ -91,8 +91,8 @@ describe('fixed reservoir lights', () => {
     const locations = [inventory.locate(lamp), inventory.locate(bottle)];
     expect(inventory.transferLiquid(bottle.uid, lamp.uid)).toMatchObject({ ok: true, volumeMicrolitres: 9 });
     expect(bottle.liquidContents).toEqual({ kind: 'empty' });
-    expect(lamp.slots?.canister).toBeUndefined();
-    expect(fitsFuelledTool(inventory, lamp, bottle)).toBe(false);
+    expect(lamp.slots?.consumable).toBeUndefined();
+    expect(fitsDevice(registry, lamp, bottle)).toBe(false);
     expect(inventory.transferLiquid(lamp.uid, bottle.uid).ok).toBe(true);
     expect(lamp.liquidContents).toEqual({ kind: 'empty' });
     expect([lamp.uid, bottle.uid]).toEqual(uids);

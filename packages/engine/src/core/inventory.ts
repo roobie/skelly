@@ -901,10 +901,10 @@ export class Inventory {
       item.slots![slot]!.cartridges = [...rounds];
     }
     if (charge !== undefined) {
-      for (const battery of [item, ...Object.values(item.slots ?? {})]) {
-        const capacity = defOf(this.registry, battery.type).battery?.capacity;
+      for (const consumable of [item, ...Object.values(item.slots ?? {})]) {
+        const capacity = defOf(this.registry, consumable.type).consumable?.capacity;
         if (capacity !== undefined) {
-          battery.charges = charge * capacity;
+          consumable.charges = charge * capacity;
         }
       }
     }

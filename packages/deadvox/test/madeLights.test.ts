@@ -115,8 +115,8 @@ describe('made light burn state', () => {
   it('gives the night-vision view only while the goggles are worn, on and charged', () => {
     const { sim, inventory, survival, hold } = setup();
     const goggles = hold('night_vision_goggles');
-    const light = registry.items.get('night_vision_goggles')!.light!;
-    const view = light.nightVision;
+    const { light, consumableSlot } = registry.items.get('night_vision_goggles')!;
+    const view = light!.nightVision;
     expect(view).toBeDefined();
     expect(survival.use(goggles)).toBeUndefined();
     expect(wornNightVision(inventory)).toBeUndefined();
@@ -130,7 +130,7 @@ describe('made light burn state', () => {
     expect(wornNightVision(inventory)).toBeUndefined();
 
     expect(survival.toggleWornLights()).toBeUndefined();
-    const runtime = (chargeOf(registry, goggles)! / light.power!.chargePerGameHour) * simSecondsPerHour(sim.clock);
+    const runtime = (chargeOf(registry, goggles)! / consumableSlot!.drainPerGameHour) * simSecondsPerHour(sim.clock);
     sim.scheduler.advance(runtime + 1, runtime, () => !goggles.on);
     expect(chargeOf(registry, goggles)).toBe(0);
     expect(wornNightVision(inventory)).toBeUndefined();

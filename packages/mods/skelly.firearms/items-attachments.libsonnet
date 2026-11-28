@@ -118,7 +118,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "size": [1, 1],
       "model": "tactical_flashlight_mount",
       "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
-      "light": lights.flashlight
+      "light": lights.flashlight,
+      "consumableSlot": lights.flashlightSlot
     },
     {
       "id": "weapon_sling",

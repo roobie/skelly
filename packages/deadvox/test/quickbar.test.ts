@@ -88,7 +88,7 @@ describe('non-owning item bindings', () => {
     const { inventory, quickbar, survival, queue } = runtime();
     const light = inventory.create('flashlight');
     const battery = inventory.create('aa_battery');
-    const oldBattery = light.slots?.battery;
+    const oldBattery = light.slots?.consumable;
     if (!oldBattery) {
       throw new Error('powered-light fixture has no fitted battery');
     }
@@ -97,9 +97,9 @@ describe('non-owning item bindings', () => {
     expect(inventory.add(battery, { kind: 'hand', side: 'right' })).toBe(true);
     quickbar.assign(0, battery);
     expect(survival.use(battery)).toBeUndefined();
-    queue.tick(registry.items.get('flashlight')!.light!.power!.swapSimSeconds + 0.1);
+    queue.tick(registry.items.get('flashlight')!.consumableSlot!.swapSimSeconds + 0.1);
     expect(inventory.itemByUid(battery.uid)).toBe(battery);
-    expect(light.slots?.battery).toBe(battery);
+    expect(light.slots?.consumable).toBe(battery);
     expect(quickbar.snapshotState(inventory)[0]).toBe(battery.uid);
     expect(chargeOf(registry, battery)).toBeGreaterThan(0.25);
   });

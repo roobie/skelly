@@ -167,7 +167,7 @@ describe('quickbar tap and hold actions', () => {
     const { inventory, queue, actions, notices } = runtime();
     const dominant = dominantSide(inventory.character);
     const light = inventory.create('flashlight');
-    light.slots!.battery!.charges = 0;
+    light.slots!.consumable!.charges = 0;
     const battery = inventory.create('aa_battery');
     const { bag, pocket } = carryInBag(inventory, battery);
     expect(inventory.add(light, { kind: 'hand', side: dominant })).toBe(true);
@@ -182,7 +182,7 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.hands).toMatchObject({ [dominant]: light, [offSide(inventory.character)]: battery });
     actions.hold(battery);
     settle(queue);
-    expect(light.slots?.battery).toBe(battery);
+    expect(light.slots?.consumable).toBe(battery);
   });
 
   it('quickbar-holds a treatment item on its selected wound without wielding it', () => {

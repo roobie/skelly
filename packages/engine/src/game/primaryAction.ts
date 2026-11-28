@@ -94,7 +94,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
       definition.analgesic !== undefined ||
       definition.category === 'medical' ||
       definition.treatment !== undefined ||
-      definition.battery !== undefined,
+      definition.consumable !== undefined,
   },
 ];
 

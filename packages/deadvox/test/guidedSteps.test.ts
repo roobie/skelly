@@ -34,7 +34,7 @@ const fixture = () => {
       { id: 'travelled', when: { kind: 'displacement', blocks: 3 }, enabled: gate(), at: [] },
       { id: 'turned', when: { kind: 'turn', radians: 0.5 }, enabled: gate(), at: [] },
       { id: 'ate', when: { kind: 'consumed', item: 'fixture_food' }, enabled: gate(), at: [] },
-      { id: 'changed', when: { kind: 'battery-swapped', item: 'fixture_lamp' }, enabled: gate(['extra']), at: [] },
+      { id: 'changed', when: { kind: 'consumable-swapped', item: 'fixture_lamp' }, enabled: gate(['extra']), at: [] },
     ],
     steps: [
       step('supplies', gate(['ate'])),
@@ -85,15 +85,15 @@ it('selects authored hint cases in order using the live inventory context', () =
 it('does not credit optional outcomes before the authored choice is available and selected', () => {
   const { guide } = fixture();
   guide.choose('extra');
-  guide.batterySwapped('fixture_lamp');
+  guide.consumableSwapped('fixture_lamp');
   guide.consumed('fixture_food');
   guide.observe({ ...observation(), position: [3, 0, 0], yaw: 1 });
   expect(guide.stage).toBe('done');
   guide.choose('extra');
   expect(guide.stage).toBe('swap');
-  guide.batterySwapped('another_lamp');
+  guide.consumableSwapped('another_lamp');
   expect(guide.stage).toBe('swap');
-  guide.batterySwapped('fixture_lamp');
+  guide.consumableSwapped('fixture_lamp');
   expect(guide.stage).toBe('done');
   expect(guide.canChoose('extra')).toBe(false);
 });

@@ -3,6 +3,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
+import { spendConsumable } from './consumableSlot.ts';
 import type { RecipeDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
@@ -24,7 +25,6 @@ import { recipeSkillRequirements } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, rubbleClearWork } from './rubble.ts';
 import { craftingActivityTier } from './skillTraining.ts';
 import { gameSecondsToMinutes } from './time.ts';
-import { spendFuel } from './torch.ts';
 import { validWorldDestination, type WorldDestination } from './worldDestination.ts';
 
 export const placementRefusal = (
@@ -461,7 +461,7 @@ const finishFuelledWork = (
   const refusal = finishCraftWork(inventory, item, work, context);
   if (refusal === undefined) {
     for (const { tool, amount } of fuel) {
-      spendFuel(inventory, tool, amount);
+      spendConsumable(inventory, tool, amount);
     }
   }
   return refusal;

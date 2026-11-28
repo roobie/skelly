@@ -11,7 +11,7 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
       { id: 'blowtorch', item: 'blowtorch', condition: 1, destination: { kind: 'hand', role: 'dominant' } },
       {
         id: 'cartridge', item: 'gas_canister', fill: 0.02,
-        destination: { kind: 'slot', parent: 'blowtorch', slot: 'canister' },
+        destination: { kind: 'slot', parent: 'blowtorch', slot: 'consumable' },
       },
       { id: 'spare_cartridge', item: 'gas_canister', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
     ],

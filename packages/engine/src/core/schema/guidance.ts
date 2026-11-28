@@ -53,7 +53,7 @@ const Observation = union([
   strictObject({ kind: literal('lit'), item: Id }),
   strictObject({ kind: literal('opened'), item: Id }),
   strictObject({ kind: literal('consumed'), item: Id }),
-  strictObject({ kind: literal('battery-swapped'), item: Id }),
+  strictObject({ kind: literal('consumable-swapped'), item: Id }),
   strictObject({ kind: literal('unarmed-hit') }),
 ]);
 const GuidanceFields = strictObject({

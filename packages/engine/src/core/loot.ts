@@ -5,6 +5,7 @@
 
 import { array, boolean, check, type InferOutput, literal, optional, picklist, pipe, strictObject } from 'valibot';
 import { claimed } from './capabilities.ts';
+import { CONSUMABLE_SLOT } from './consumable.ts';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { spawnHolder } from './holders.ts';
@@ -164,8 +165,9 @@ const installedLootTypes = (
           (entry) => registry.models.get(entry.model ?? '')?.gun?.attachment?.id === attachment.id,
         )?.id,
     );
-  if (item.light?.power && overrides.battery === undefined) {
-    children.push(item.light.power.battery);
+  const comesWith = item.consumableSlot?.comesWith;
+  if (comesWith !== undefined && overrides[CONSUMABLE_SLOT] === undefined) {
+    children.push(comesWith);
   }
   return [...Object.values(overrides), ...children];
 };
@@ -246,7 +248,7 @@ export interface Rolled {
   condition: number;
   /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
   fitted?: Readonly<Record<string, string>>;
-  /** Battery charge as a share of full; only authored fixed loot sets it. */
+  /** Consumable charge as a share of full; only authored fixed loot sets it. */
   charge?: number;
   craftedLiquids?: FixedLootItemDef['craftedLiquids'];
   liquidContents?: FixedLootItemDef['liquidContents'];

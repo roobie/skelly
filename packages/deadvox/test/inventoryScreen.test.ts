@@ -1,7 +1,7 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
+import { swapConsumable } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
-import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
 import { worldRubbleClearing } from '@skelly/engine/internal/core/rubble.ts';
 import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
@@ -17,6 +17,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  CONSUMABLE_SLOT,
   claimed,
   conditionBand,
   firearmSlotIds,
@@ -239,7 +240,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
   let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
-  let loadHandler = (_lightUid: number, _batteryUid: number): string | undefined => undefined;
+  let loadHandler = (_deviceUid: number, _consumableUid: number): string | undefined => undefined;
   let alarm: { gameHour: number | undefined } | undefined;
   const commandOwners: ReplayCommandOwners = {
     inventory: inv,
@@ -257,8 +258,8 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
       queue.enqueueAction('furniture.search', 'Search furniture', 5);
     },
     work: (uid, operation) => workHandler(uid, operation),
-    loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
-    unloadBattery: () => undefined,
+    loadConsumable: (deviceUid, consumableUid) => loadHandler(deviceUid, consumableUid),
+    unloadConsumable: () => undefined,
     toHands: (uid, feet) => toHands(inv, queue, inv.itemByUid(uid)!, feet),
     wieldOrPocket: (uid, feet) => wieldOrPocket(inv, queue, inv.itemByUid(uid)!, feet),
     pickup: () => undefined,
@@ -1255,7 +1256,7 @@ describe('inventory screen Lit rendering', () => {
     screen.update();
 
     const light = firearm.slots![mounted.fitted.mountedAt]!;
-    const battery = root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`);
+    const battery = root.querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"]`);
     expect(battery?.dataset.occupied).toBe('true');
   });
 
@@ -1400,16 +1401,16 @@ describe('inventory screen Lit rendering', () => {
     if (!(t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] }) && t.inv.add(spare, { kind: 'hand', side: 'left' }))) {
       throw new Error('Fixture could not place the light on the ground and the battery in hand');
     }
-    const fitted = light.slots!.battery!;
-    t.setLoadHandler((lightUid, batteryUid) =>
-      swapBattery(t.inv, t.inv.itemByUid(lightUid)!, t.inv.itemByUid(batteryUid)!, () => ({
+    const fitted = light.slots!.consumable!;
+    t.setLoadHandler((deviceUid, consumableUid) =>
+      swapConsumable(t.inv, t.inv.itemByUid(deviceUid)!, t.inv.itemByUid(consumableUid)!, () => ({
         kind: 'pile',
         pos: [0, 0, 0],
       })),
     );
     t.screen.selected = light;
     t.screen.update();
-    const slot = t.root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`)!;
+    const slot = t.root.querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"]`)!;
     const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
 
     t.root
@@ -1425,8 +1426,8 @@ describe('inventory screen Lit rendering', () => {
     );
     hitTest.mockRestore();
 
-    expect(t.lastPayload()).toEqual({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: spare.uid });
-    expect(light.slots?.battery).toBe(spare);
+    expect(t.lastPayload()).toEqual({ kind: 'consumable.load', deviceUid: light.uid, consumableUid: spare.uid });
+    expect(light.slots?.consumable).toBe(spare);
     expect(t.inv.locate(fitted)?.kind).toBe('pile');
     t.screen.close();
   });
@@ -1437,14 +1438,14 @@ describe('inventory screen Lit rendering', () => {
     if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
       throw new Error('Fixture could not place the light on the ground');
     }
-    const fitted = light.slots!.battery!;
+    const fitted = light.slots!.consumable!;
     t.screen.selected = light;
     t.screen.update();
     const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
     const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
 
     t.root
-      .querySelector<HTMLElement>(`[data-target="battery:${light.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
+      .querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
       .dispatchEvent(
         new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
       );
@@ -1457,8 +1458,8 @@ describe('inventory screen Lit rendering', () => {
     hitTest.mockRestore();
 
     expect(t.lastPayload()).toEqual({
-      kind: 'light.battery.unload',
-      lightUid: light.uid,
+      kind: 'consumable.unload',
+      deviceUid: light.uid,
       target: { kind: 'hand', side: 'left' },
     });
     t.screen.close();
@@ -1470,10 +1471,10 @@ describe('inventory screen Lit rendering', () => {
     if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
       throw new Error('Fixture could not place the light on the ground');
     }
-    t.inv.fitSlot(light, 'battery', undefined);
+    t.inv.fitSlot(light, CONSUMABLE_SLOT, undefined);
     t.screen.selected = light;
     t.screen.update();
-    const slot = t.root.querySelector<HTMLElement>(`.inv-slot[data-target="battery:${light.uid}"]`)!;
+    const slot = t.root.querySelector<HTMLElement>(`.inv-slot[data-target="consumable:${light.uid}"]`)!;
     expect(slot.dataset.occupied).toBe('false');
     expect(slot.querySelector('.inv-item')).toBeNull();
     t.screen.close();
@@ -1515,8 +1516,8 @@ describe('inventory screen Lit rendering', () => {
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
         vehicleWork: () => undefined,
         operateVehiclePart: () => undefined,
-        loadBattery: () => undefined,
-        unloadBattery: () => undefined,
+        loadConsumable: () => undefined,
+        unloadConsumable: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,
         interact: () => undefined,

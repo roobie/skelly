@@ -18,7 +18,7 @@ local batteryBeam = lights.batteryBeam;
       model: 'aa_battery',
       size: [1, 1],
       stack: 10,
-      battery: { capacity: 1, rechargeable: { microjoulesPerCharge: 7200000000 } },
+      consumable: { capacity: 1, rechargeable: { microjoulesPerCharge: 7200000000 } },
     },
     {
       id: 'aa_battery',
@@ -27,7 +27,7 @@ local batteryBeam = lights.batteryBeam;
       model: 'aa_battery',
       size: [1, 1],
       stack: 10,
-      battery: { capacity: 1 },
+      consumable: { capacity: 1 },
     },
     {
       id: 'portable_radio',
@@ -47,6 +47,7 @@ local batteryBeam = lights.batteryBeam;
       description: 'A battery-powered flashlight. Its light is visible to nearby zombies.',
       model: 'flashlight',
       light: lights.flashlight,
+      consumableSlot: lights.flashlightSlot,
     },
     {
       id: 'headlamp',
@@ -63,8 +64,8 @@ local batteryBeam = lights.batteryBeam;
         seenFrom=30,
         intensity=3.3,
         beam={ angleDegrees: 48, penumbra: 0.5, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
-        chargePerGameHour=0.2,
       ) + { wornSwitch: true },
+      consumableSlot: lights.aaSlot(0.2),
     },
     {
       id: 'night_vision_goggles',
@@ -81,7 +82,6 @@ local batteryBeam = lights.batteryBeam;
         seenFrom: 8,
         color: '#7dff86',
         intensity: 0.6,
-        power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: 0.15, swapSimSeconds: 2 },
         wornSwitch: true,
         nightVision: {
           gain: 6,
@@ -91,6 +91,7 @@ local batteryBeam = lights.batteryBeam;
           flare: { strength: 0.15, distanceMetres: 3, blastIntensity: 40, recoverRealSeconds: 0.6, haloRadius: 0.12 },
         },
       },
+      consumableSlot: lights.aaSlot(0.15),
     },
   ],
   recipes: [

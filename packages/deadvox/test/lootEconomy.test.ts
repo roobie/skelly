@@ -276,15 +276,15 @@ describe('loot economy descriptions', () => {
           items: [
             {
               ...item('fixture_host'),
-              light: {
-                intensity: 1,
-                radius: 1,
-                seenFrom: 1,
-                color: '#ffffff',
-                power: { battery: 'fixture_battery', chargePerGameHour: 1, swapSimSeconds: 2 },
+              light: { intensity: 1, radius: 1, seenFrom: 1, color: '#ffffff' },
+              consumableSlot: {
+                accepts: ['fixture_battery'],
+                comesWith: 'fixture_battery',
+                drainPerGameHour: 1,
+                swapSimSeconds: 2,
               },
             },
-            { ...item('fixture_battery'), battery: { capacity: 1 } },
+            { ...item('fixture_battery'), consumable: { capacity: 1 } },
             item('fixture_child'),
           ],
           itemEconomy: [

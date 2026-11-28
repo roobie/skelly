@@ -3,13 +3,14 @@ import { type CutWorld, cellCutPlan } from '../core/cellCutting.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { repairCeiling } from '../core/items.ts';
+import type { ClockConversion } from '../core/time.ts';
 import type { ItemAction } from './itemActions.ts';
 
 export const cellActionsFor = (
   inventory: Inventory,
   world: CutWorld,
   cell: Vec3,
-  knownRecipes: ReadonlySet<string>,
+  { knownRecipes, clock }: { readonly knownRecipes: ReadonlySet<string>; readonly clock: ClockConversion },
 ): ItemAction[] => {
   const { registry } = inventory;
   const text = claimed(registry.ui, 'interface')!.screenText.worldService;
@@ -30,7 +31,7 @@ export const cellActionsFor = (
     actions.push({ id: 'repair', label: text.repair });
   }
   // A dry cutter still offers the cut, so choosing it says why it can't start.
-  const cut = cellCutPlan(inventory, world, cell);
+  const cut = cellCutPlan(inventory, world, cell, { clock });
   if (cut.ok || cut.dry) {
     actions.push({ id: 'cut', label: text.cut });
   }

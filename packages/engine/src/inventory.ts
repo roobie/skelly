@@ -1,5 +1,13 @@
-export { batteryCapacityMicrojoules, batteryEnergy } from './core/battery.ts';
 export { claimed, claimedId } from './core/capabilities.ts';
+export { batteryCapacityMicrojoules, batteryEnergy, CONSUMABLE_SLOT } from './core/consumable.ts';
+export {
+  canUnloadConsumable,
+  deviceInHands,
+  spendConsumable,
+  swapConsumable,
+  unloadConsumable,
+  wantedConsumable,
+} from './core/consumableSlot.ts';
 export {
   CraftCommands,
   hasRepairTarget,
@@ -96,7 +104,6 @@ export {
 } from './core/itemThrow.ts';
 export { isInHeldItemSlotTree } from './core/itemTree.ts';
 export {
-  canUnloadBattery,
   chargeOf,
   chargeShare,
   drainBurnLight,
@@ -104,24 +111,21 @@ export {
   inventoryLightEntries,
   inventoryLightSources,
   lightExposureFor,
-  lightInHands,
   offHandUse,
   placedLightEntries,
   SunExposureCache,
   supplyShare,
-  swapBattery,
   toggleLight,
-  unloadBattery,
   wornNightVision,
 } from './core/lights.ts';
 export { corpseLootPoint, rollLoot } from './core/loot.ts';
 export { magazineFits, magazineSpec, magazineWellCalibre, slotsReason } from './core/magazine.ts';
 export {
-  batteryHandRefusal,
-  batterySlotOption,
-  batterySlotRefusal,
-  batterySlotUnloadRefusal,
   bestPocket,
+  consumableHandRefusal,
+  consumableSlotOption,
+  consumableSlotRefusal,
+  consumableSlotUnloadRefusal,
   consumption,
   doorOptions,
   doorPlan,
@@ -156,7 +160,6 @@ export { PILE_BUNDLE_WIDTH } from './core/pileLayout.ts';
 export type { Readable, ReadRequest } from './core/readable.ts';
 export { recipeSkillLevel, recipeSkillRequirements } from './core/recipeSkills.ts';
 export { type PileScatterPlacement, pileScatterPlacements, SPENT_CASE_SCATTER_CAP } from './core/scatterPile.ts';
-export { spendFuel, swapCanister } from './core/torch.ts';
 export { playerWearHooks, wearMeleeWeaponOnHit } from './core/wear.ts';
 export {
   ammoMatchesCalibre,

@@ -493,7 +493,7 @@
                 },
                 {
                   "fitted": {
-                    "battery": "aa_battery"
+                    "consumable": "aa_battery"
                   },
                   "item": "flashlight"
                 },
@@ -516,7 +516,7 @@
                 {
                   "charge": 0.01,
                   "fitted": {
-                    "battery": "aa_battery"
+                    "consumable": "aa_battery"
                   },
                   "item": "flashlight"
                 },
@@ -801,7 +801,7 @@
             "id": "light-swap",
             "when": {
               "item": "flashlight",
-              "kind": "battery-swapped"
+              "kind": "consumable-swapped"
             }
           },
           {

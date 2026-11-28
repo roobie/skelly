@@ -1,4 +1,4 @@
-import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { HandlingQueue, Inventory, wantedConsumable } from '@skelly/engine/inventory';
 import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
@@ -27,8 +27,8 @@ const observation = (): TutorialObservation => ({
   litType: undefined,
   paused: false,
 });
-const lightDefinition = [...BUNDLED_CONTENT.registry.items.values()].find((item) => item.light?.power)!;
-const lightKit = { light: lightDefinition.id, battery: lightDefinition.light!.power!.battery };
+const lightDefinition = [...BUNDLED_CONTENT.registry.items.values()].find((item) => item.light && item.consumableSlot)!;
+const lightKit = { light: lightDefinition.id, battery: wantedConsumable(BUNDLED_CONTENT.registry, lightDefinition.id) };
 const fixture = () => {
   const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, guidanceFixture(lightKit.light));
   const state = observation();
@@ -104,7 +104,7 @@ describe('practice objectives', () => {
       notice: vi.fn(),
       readingLight: () => undefined,
       read: vi.fn(),
-      batterySwapped: (type) => tutorial.batterySwapped(type),
+      consumableSwapped: (type) => tutorial.consumableSwapped(type),
     });
     const light = inventory.create(lightKit.light);
     expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);

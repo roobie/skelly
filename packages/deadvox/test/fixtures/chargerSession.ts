@@ -16,7 +16,7 @@ export const createChargerSession = (
     ...base,
     items: new Map([
       ...base.items,
-      [batteryType, { ...battery, battery: { capacity: 1, rechargeable: { microjoulesPerCharge: 9_000_000_000 } } }],
+      [batteryType, { ...battery, consumable: { capacity: 1, rechargeable: { microjoulesPerCharge: 9_000_000_000 } } }],
     ]),
     powerDevices: new Map([
       ...base.powerDevices,

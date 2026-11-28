@@ -57,6 +57,7 @@ import {
   worldSoundBlocking,
 } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
+import { consumableCovers, consumableRefusal, spendConsumable } from '../core/consumableSlot.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
@@ -174,7 +175,6 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { cascadeSupport, strikeTerrain, type TerrainStrikeResult } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
-import { fuelCovers, spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { vehicleOpeningPlan } from '../core/vehicleOpening.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
@@ -589,7 +589,7 @@ export interface SessionOptions {
   onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
   onDischarge?: (item: Item, sighted: boolean) => void;
   onCompletedSwing?: (isFist: boolean) => void;
-  onBatterySwapped?: ((lightType: string) => void) | undefined;
+  onConsumableSwapped?: ((deviceType: string) => void) | undefined;
   /** An unpack opened a container in place; called with the container's type. */
   onOpened?: ((type: string) => void) | undefined;
   /** An unpack delivered its contents; called with their item type. */
@@ -1354,7 +1354,7 @@ export const createSession = (options: SessionOptions) => {
     read: options.onRead,
     readingLight: () => readingLight(),
     consumed: options.onConsumed,
-    batterySwapped: options.onBatterySwapped,
+    consumableSwapped: options.onConsumableSwapped,
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;
@@ -3110,22 +3110,22 @@ export const createSession = (options: SessionOptions) => {
       }
       const broken = entities.breakLock(entity);
       if (broken === undefined && plan.fuel !== undefined) {
-        spendFuel(inventory, plan.tool, plan.fuel);
+        spendConsumable(inventory, plan.tool, plan.fuel);
       }
       return broken;
     },
   };
   sim.actions.cutting = {
     validate: (cell, toolUid) => {
-      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
       return plan.ok ? undefined : plan.reason;
     },
     strike: (cell, toolUid) => {
-      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
       if (!plan.ok) {
         return { stop: plan.reason };
       }
-      spendFuel(inventory, plan.tool, plan.strikeFuel);
+      spendConsumable(inventory, plan.tool, plan.strikeFuel);
       const result = applyTerrainStrike([...cell], plan.blow, false);
       if (!result) {
         return { stop: coreMessage(registry, 'gone') };
@@ -3137,7 +3137,9 @@ export const createSession = (options: SessionOptions) => {
       if (result.outcome === 'broken') {
         return 'cut';
       }
-      return fuelCovers(registry, plan.tool, plan.strikeFuel) ? 'going' : { stop: coreMessage(registry, 'outOfFuel') };
+      return consumableCovers(registry, plan.tool, plan.strikeFuel)
+        ? 'going'
+        : { stop: consumableRefusal(registry, [plan.tool]) };
     },
   };
 
@@ -3369,7 +3371,7 @@ export const createSession = (options: SessionOptions) => {
     },
     /** Starts cutting a terrain cell with a carried tool, or says why not. */
     cutCell: (cell: Vec3, toolUid?: number) => {
-      const plan = cellCutPlan(inventory, world, cell, toolUid);
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
       return plan.ok ? sim.actions.beginCutting(cell, plan.tool.uid, plan.strikeIntervalSimSeconds) : plan.reason;
     },
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),

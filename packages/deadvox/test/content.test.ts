@@ -802,7 +802,7 @@ describe('content', () => {
       { field: 'food.poisonHealth', reportedAt: '.food' },
       { field: 'food.consumeSimSeconds' },
       { field: 'analgesic.takeSimSeconds' },
-      { field: 'light.power.swapSimSeconds' },
+      { field: 'consumableSlot.swapSimSeconds' },
       { field: 'unpack.simSeconds' },
       { field: 'ammo.loadSimSeconds' },
       { field: 'ammo.stripSimSeconds' },
@@ -2996,13 +2996,8 @@ describe('content references', () => {
             category: 'light',
             weight: 300,
             size: [1, 2],
-            light: {
-              radius: 5,
-              seenFrom: 30,
-              color: '#ffffff',
-              intensity: 1,
-              power: { battery: 'fixture_non_battery', chargePerGameHour: 1, swapSimSeconds: 1 },
-            },
+            light: { radius: 5, seenFrom: 30, color: '#ffffff', intensity: 1 },
+            consumableSlot: { accepts: ['fixture_non_battery'], drainPerGameHour: 1, swapSimSeconds: 1 },
           },
         ],
       },
@@ -3012,7 +3007,7 @@ describe('content references', () => {
       'actors[0].loot',
       'furniture[1].door.methods.pry.strikeSound',
       'furniture[1].material',
-      'items[0].light.power.battery',
+      'items[0].consumableSlot.accepts[0]',
     ]);
   });
 });

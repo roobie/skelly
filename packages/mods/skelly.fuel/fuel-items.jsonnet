@@ -12,7 +12,7 @@
       size: [1, 2],
       stack: 2,
       description: 'Fuel for a blowtorch.',
-      canister: { capacity: 3 },
+      consumable: { capacity: 3 },
     },
   ],
 })

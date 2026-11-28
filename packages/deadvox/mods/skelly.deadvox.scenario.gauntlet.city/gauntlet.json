@@ -23578,7 +23578,7 @@
             {
               "count": 1,
               "fitted": {
-                "canister": "gas_canister"
+                "consumable": "gas_canister"
               },
               "item": "blowtorch"
             },

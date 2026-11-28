@@ -2,6 +2,11 @@
   "items": [
     {
       "category": "tool",
+      "consumableSlot": {
+        "accepts": ["gas_canister"],
+        "drainPerGameHour": 6.75,
+        "swapSimSeconds": 3
+      },
       "description": "A gas torch that cuts steel. It runs on a gas cartridge.",
       "id": "blowtorch",
       "model": "blowtorch",
@@ -13,11 +18,6 @@
           "strength": 12,
           "strikeIntervalSimSeconds": 2,
           "strikeSound": "torch_cut"
-        },
-        "fuel": {
-          "canister": "gas_canister",
-          "fillPerSimSecond": 0.014999999999999999,
-          "swapSimSeconds": 3
         },
         "qualities": {
           "flame_cutting": 1

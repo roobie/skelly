@@ -75,7 +75,7 @@
           "destination": {
             "kind": "slot",
             "parent": "blowtorch",
-            "slot": "canister"
+            "slot": "consumable"
           },
           "fill": 0.02,
           "id": "cartridge",

@@ -49,7 +49,7 @@ function(kit) {
     rule('light', { kind: 'light-cycle' }), rule('crouch', { kind: 'crouch' }), rule('escape', { kind: 'area' }),
     rule('paused', { kind: 'pause' }, at=['pause']),
     rule('light-on', { kind: 'lit', item: kit.light }, gate(['light-choice'])),
-    rule('light-swap', { kind: 'battery-swapped', item: kit.light }, gate(['light-choice'])),
+    rule('light-swap', { kind: 'consumable-swapped', item: kit.light }, gate(['light-choice'])),
     rule('light-relight', { kind: 'lit', item: kit.light }, gate(['light-choice', 'light-swap'])),
     rule('melee', { kind: 'unarmed-hit' }, at=['melee']),
   ],

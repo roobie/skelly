@@ -1384,8 +1384,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       fitAttachment: (firearmUid, slotId, attachmentUid) =>
         session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
       removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
-      loadBattery: (lightUid, batteryUid) => survival.loadBattery(lightUid, batteryUid),
-      unloadBattery: (lightUid, target) => survival.unloadBatteryTo(lightUid, target),
+      loadConsumable: (deviceUid, consumableUid) => survival.loadConsumable(deviceUid, consumableUid),
+      unloadConsumable: (deviceUid, target) => survival.unloadConsumableTo(deviceUid, target),
       toHands: (uid, feetPosition) => {
         const item = inventory.itemByUid(uid);
         return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;

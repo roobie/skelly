@@ -779,7 +779,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       if (!(light?.type === 'glowstick' && torch?.type === 'flashlight')) {
         throw new Error('The held-choice fixture needs its kit glowstick and flashlight in hand');
       }
-      if (!torch.slots?.battery) {
+      if (!torch.slots?.consumable) {
         throw new Error('The held-choice fixture needs a fitted battery');
       }
       return { uid: light.uid, torchUid: torch.uid, start: r.session.sim.time };
@@ -793,7 +793,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
       fixture.uid,
     );
-    await chooseHeldAction(page, 'battery:unload');
+    await chooseHeldAction(page, 'consumable:unload');
     await waitForSimulation(
       page,
       ({ uid }) => {
@@ -805,7 +805,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
         return {
           time: r.session.sim.time,
           paused: r.session.sim.paused,
-          reached: !torch.slots?.battery,
+          reached: !torch.slots?.consumable,
         };
       },
       { uid: fixture.torchUid },
@@ -840,7 +840,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
       artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
-      [{ kind: 'hand.action', itemUid: fixture.torchUid, actionId: 'battery:unload' }],
+      [{ kind: 'hand.action', itemUid: fixture.torchUid, actionId: 'consumable:unload' }],
       'the ring records its choice once, as the action it chose',
     );
     await importReplay(page, 'forward-button-replay.json', replayText);
@@ -855,7 +855,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       return {
         state: status.dataset.state,
         lightOn: r.inventory.itemByUid(uid)?.on,
-        torchLoaded: Boolean(r.inventory.itemByUid(torchUid)?.slots?.battery),
+        torchLoaded: Boolean(r.inventory.itemByUid(torchUid)?.slots?.consumable),
         endSnapshot: r.captureSnapshot(),
       };
     }, fixture);
@@ -2925,7 +2925,7 @@ try {
               def.ammo
             ),
         );
-        if (!(light?.light?.power && !light.twoHanded && tool?.weapon && !tool.twoHanded && inert)) {
+        if (!(light?.light && light.consumableSlot && !light.twoHanded && tool?.weapon && !tool.twoHanded && inert)) {
           throw new Error('Missing hand-action fixture capabilities');
         }
         r.types = {

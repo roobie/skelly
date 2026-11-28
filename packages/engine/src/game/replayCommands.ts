@@ -51,8 +51,8 @@ export type ReplayActionPayload =
       itemUid: number;
     } & VehicleWorkPlacement)
   | { kind: 'vehicle.part'; vehicleId: number; fittingId: string }
-  | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
-  | { kind: 'light.battery.unload'; lightUid: number; target: TargetState }
+  | { kind: 'consumable.load'; deviceUid: number; consumableUid: number }
+  | { kind: 'consumable.unload'; deviceUid: number; target: TargetState }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
   | {
       kind: 'craft.place';
@@ -132,8 +132,8 @@ const PAYLOAD_KINDS = [
   'firearm.attachment.remove',
   'vehicle.work',
   'vehicle.part',
-  'light.battery.load',
-  'light.battery.unload',
+  'consumable.load',
+  'consumable.unload',
   'craft.start',
   'craft.place',
   'craft.repair-entity',
@@ -509,10 +509,10 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isVehicleWorkPayload(payload);
     case 'vehicle.part':
       return isVehiclePartPayload(payload);
-    case 'light.battery.load':
-      return isUid(payload.lightUid) && isUid(payload.batteryUid);
-    case 'light.battery.unload':
-      return isUid(payload.lightUid) && isTargetState(payload.target);
+    case 'consumable.load':
+      return isUid(payload.deviceUid) && isUid(payload.consumableUid);
+    case 'consumable.unload':
+      return isUid(payload.deviceUid) && isTargetState(payload.target);
     case 'inventory.cancel-handling':
     case 'furniture.turn':
     case 'furniture.tip':
@@ -571,10 +571,10 @@ export interface ReplayCommandOwners {
   ) => string | undefined;
   /** Opens a shut vehicle part or shuts an open one, as handling. */
   operateVehiclePart: (vehicleId: number, fittingId: string) => string | undefined;
-  /** Puts a battery into a light from the light's battery slot on its item card. */
-  loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
-  /** Takes a light's battery out of its item-card slot to the chosen place. */
-  unloadBattery: (lightUid: number, target: TargetState) => string | undefined;
+  /** Puts a consumable into a device from the device's consumable slot on its item card. */
+  loadConsumable: (deviceUid: number, consumableUid: number) => string | undefined;
+  /** Takes a device's consumable out of its item-card slot to the chosen place. */
+  unloadConsumable: (deviceUid: number, target: TargetState) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   /** Works a piece; `part` names the aimed part when it decides the action, such as a window's curtain cloth. */
@@ -740,10 +740,10 @@ export const applyReplayActionPayload = (
       );
     case 'vehicle.part':
       return owners.operateVehiclePart(payload.vehicleId, payload.fittingId);
-    case 'light.battery.load':
-      return owners.loadBattery(payload.lightUid, payload.batteryUid);
-    case 'light.battery.unload':
-      return owners.unloadBattery(payload.lightUid, payload.target);
+    case 'consumable.load':
+      return owners.loadConsumable(payload.deviceUid, payload.consumableUid);
+    case 'consumable.unload':
+      return owners.unloadConsumable(payload.deviceUid, payload.target);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

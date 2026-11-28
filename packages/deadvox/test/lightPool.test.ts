@@ -128,7 +128,7 @@ describe('made-light point pool', () => {
     expect(compare()).toEqual([]);
     expect(inventory.move(gun, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(compare().length).toBeGreaterThan(0);
-    const drainRate = mounted.registry.items.get(flashlight.type)!.light!.power!.chargePerGameHour;
+    const drainRate = mounted.registry.items.get(flashlight.type)!.consumableSlot!.drainPerGameHour;
     expect(
       drainLight(mounted.registry, flashlight, gameSeconds(chargeOf(mounted.registry, flashlight)! / drainRate)),
     ).toBeDefined();
@@ -432,7 +432,7 @@ describe('made-light point pool', () => {
       eyeHeightMetres: 1.3,
     });
     expect(mountedSource?.carried).toBe(true);
-    const drainRate = fixtureRegistry.items.get(mountedLight.type)!.light!.power!.chargePerGameHour;
+    const drainRate = fixtureRegistry.items.get(mountedLight.type)!.consumableSlot!.drainPerGameHour;
     expect(
       drainLight(fixtureRegistry, mountedLight, gameSeconds(chargeOf(fixtureRegistry, mountedLight)! / drainRate)),
     ).toBeDefined();

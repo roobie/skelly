@@ -331,8 +331,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       /** @param {string} type */
       const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
       const lightType = [...registry.items.keys()].find((id) => {
-        const light = registry.items.get(id)?.light;
-        return light?.power && !light.burning && chargeOf(registry, roll(id)) > 0;
+        const def = registry.items.get(id);
+        return def?.light && def.consumableSlot && !def.light.burning && chargeOf(registry, roll(id)) > 0;
       });
       if (!lightType) {
         throw new Error('No content light charges for the reader');

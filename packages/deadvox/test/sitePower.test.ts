@@ -283,7 +283,7 @@ const plantRegistry = baseRegistryWith(
           item(CORE),
           item(DUD),
           item(STOCK),
-          { ...item(CELL), battery: { capacity: 100, rechargeable: { microjoulesPerCharge: 1_000_000_000 } } },
+          { ...item(CELL), consumable: { capacity: 100, rechargeable: { microjoulesPerCharge: 1_000_000_000 } } },
         ],
         sounds: [{ ...baseRegistry().sounds.values().next().value!, id: HUM }],
         powerDevices: [

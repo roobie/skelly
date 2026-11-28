@@ -97,6 +97,12 @@
     },
     {
       "category": "light",
+      "consumableSlot": {
+        "accepts": ["aa_battery", "rechargeable_aa_battery"],
+        "comesWith": "aa_battery",
+        "drainPerGameHour": 0.25,
+        "swapSimSeconds": 2
+      },
       "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
       "disassembly": {
         "skill": "mechanics",
@@ -130,12 +136,6 @@
         },
         "color": "#fff1d8",
         "intensity": 4,
-        "power": {
-          "battery": "aa_battery",
-          "chargePerGameHour": 0.25,
-          "compatibleBatteries": ["rechargeable_aa_battery"],
-          "swapSimSeconds": 2
-        },
         "radius": 20,
         "seenFrom": 40
       },

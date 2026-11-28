@@ -74,7 +74,7 @@ describe('illumination', () => {
     expect(litEnoughToRead(sceneWith(inventory), READER)).toBe(false);
     expect(toggleLight(registry, light, 0)).toBeUndefined();
     expect(litEnoughToRead(sceneWith(inventory), READER)).toBe(true);
-    const rate = registry.items.get('flashlight')!.light!.power!.chargePerGameHour / 3600;
+    const rate = registry.items.get('flashlight')!.consumableSlot!.drainPerGameHour;
     drainLight(registry, light, gameSeconds(chargeOf(registry, light)! / rate + 1));
     expect(chargeOf(registry, light)).toBe(0);
     expect(litEnoughToRead(sceneWith(inventory), READER)).toBe(false);

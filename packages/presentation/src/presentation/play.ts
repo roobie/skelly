@@ -1240,7 +1240,7 @@ const startPlayWith = (
         guide?.unarmedHit();
       }
     },
-    onBatterySwapped: (lightType) => guide?.batterySwapped(lightType),
+    onConsumableSwapped: (deviceType) => guide?.consumableSwapped(deviceType),
     onOpened: (type) => guide?.opened(type),
     onUnpacked: (type) => guide?.weapons.unpackedAmmo(type),
     onFirearmEjection: (effect) =>
@@ -2627,7 +2627,10 @@ const startPlayWith = (
         if (mode !== 'wield') {
           return undefined;
         }
-        const actions = cellActionsFor(inventory, engine.simulationWorld, target.cell, session.character.knownRecipes);
+        const actions = cellActionsFor(inventory, engine.simulationWorld, target.cell, {
+          knownRecipes: session.character.knownRecipes,
+          clock: sim.clock,
+        });
         const selected = actionMenu.open(
           'furniture',
           undefined,
@@ -3154,7 +3157,10 @@ const startPlayWith = (
       case 'vehicle':
         return vehiclePartHint(key, target);
       case 'cell': {
-        const [action] = cellActionsFor(inventory, engine.simulationWorld, target.cell, session.character.knownRecipes);
+        const [action] = cellActionsFor(inventory, engine.simulationWorld, target.cell, {
+          knownRecipes: session.character.knownRecipes,
+          clock: sim.clock,
+        });
         return action
           ? html`${blockHint()} · ${fillHint(screenText.interaction.hold, { key, action: action.label })}`
           : blockHint();

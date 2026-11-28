@@ -43,7 +43,7 @@ export const guidanceFixture = (light: string): GuidanceDef => {
       rule('crouch', { kind: 'crouch' }),
       rule('paused', { kind: 'pause' }, gate(), ['pause']),
       rule('light-on', { kind: 'lit', item: light }, gate(['light-choice'])),
-      rule('light-swap', { kind: 'battery-swapped', item: light }, gate(['light-choice'])),
+      rule('light-swap', { kind: 'consumable-swapped', item: light }, gate(['light-choice'])),
       rule('light-relight', { kind: 'lit', item: light }, gate(['light-choice', 'light-swap'])),
     ],
     handling: handlingTracksFixture(),
