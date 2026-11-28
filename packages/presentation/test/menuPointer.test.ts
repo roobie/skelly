@@ -13,7 +13,7 @@ document.body.append(canvas, cursor);
 const input = { locked: true, menuPointer: true, cursorX: 20, cursorY: 40, moveMenuCursor: () => undefined };
 let underCursor: Element | null = null;
 Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => underCursor });
-mountMenuPointer({ input, canvas, cursor });
+const pointer = mountMenuPointer({ input, canvas, cursor });
 
 const host = document.createElement('div');
 document.body.append(host);
@@ -66,6 +66,29 @@ it('keeps focus on the combo field when an option is clicked through the drawn c
 
   expect(focusedAtClick).toBe(field);
   expect(choose).toHaveBeenCalledExactlyOnceWith('fixture-b');
+});
+
+it('skips the hit test and clears hover styling while the pointer is locked with the menu pointer off', () => {
+  render(html`<button id="fixture-hover" type="button">fixture</button>`, host);
+  const button = host.querySelector<HTMLElement>('#fixture-hover')!;
+  const hitTest = vi.fn(() => button);
+  const original = Object.getOwnPropertyDescriptor(document, 'elementFromPoint')!;
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: hitTest });
+  try {
+    pointer.update();
+    expect(button.classList.contains('game-cursor-hover')).toBe(true);
+
+    input.menuPointer = false;
+    hitTest.mockClear();
+    pointer.update();
+
+    expect(hitTest).not.toHaveBeenCalled();
+    expect(document.querySelector('.game-cursor-hover')).toBeNull();
+    expect(cursor.classList.contains('hand')).toBe(false);
+  } finally {
+    input.menuPointer = true;
+    Object.defineProperty(document, 'elementFromPoint', original);
+  }
 });
 
 it('picks the first control that is enabled, shown and outside inert content', () => {
