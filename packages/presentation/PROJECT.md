@@ -5,6 +5,7 @@ read_if:
   - you're adding a test that needs presentation internals
   - you're adding an import to a presentation file
   - you're changing loading readiness, GPU upload pacing or shader warm-up
+  - you're changing furniture rendering or its instancing
 ---
 
 # Presentation
@@ -64,6 +65,10 @@ since, so the first frame waits for exactly the programs it draws and none is sk
 GPU preparation shares the initial loading workload's content-defined deadline so a lost context or
 an unfinished program cannot leave the mask up forever. See `src/presentation/worldLoading.ts`,
 `WorldLoading`, and `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
+
+## Furniture instancing
+
+A closed door or window joins the existing static batch in `src/render/furniture.ts`, `FurnitureMeshes`. An open one keeps its individual mesh until a later sync closes it. Moving parts must leave and rejoin that path rather than creating another instancing route. Static furniture shares geometry and material, so this avoids per-piece scene traversal and draw submission while preserving the moving look when state needs it.
 
 ## Tests
 

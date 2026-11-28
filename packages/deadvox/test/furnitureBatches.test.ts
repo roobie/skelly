@@ -349,6 +349,26 @@ describe('furniture batches', () => {
     expect(drawnInstances(furniture)).toHaveLength(placed.length);
   });
 
+  it('batches a closed door, then restages it loose while open and re-batches it when closed', () => {
+    const { registry, entities } = fixture();
+    const def = registry.furniture.get(door.id)!;
+    const leaf = entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+
+    furniture.sync(entities);
+    expect(drawnInstances(furniture)).toHaveLength(1);
+
+    expect(entities.setOpen(leaf, true)).toBeUndefined();
+    furniture.sync(entities);
+    expect(drawnInstances(furniture)).toHaveLength(0);
+    expect(furniture.group.children.some((child) => !(child instanceof InstancedMesh))).toBe(true);
+
+    expect(entities.setOpen(leaf, false)).toBeUndefined();
+    furniture.sync(entities);
+    expect(drawnInstances(furniture)).toHaveLength(1);
+    furniture.dispose();
+  });
+
   it('leaves an unrevealed piece out of every batch until its column is revealed', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(plain.id)!;
@@ -432,6 +452,7 @@ describe('furniture batches', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(door.id)!;
     const leaf = entities.add({ type: def.id, size: def.size, pos: [2, 1, 3], facing: 'n' })!;
+    expect(entities.setOpen(leaf, true)).toBeUndefined();
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     // Doors and other pieces that move between syncs draw as their own meshes, frozen where they
     // stand (render/staticMatrices.ts): a restage must land the fresh mesh at its new place, not at a

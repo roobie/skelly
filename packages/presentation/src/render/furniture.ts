@@ -389,7 +389,7 @@ export class FurnitureMeshes {
 
   private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Omit<Piece, 'models'> {
     const column = this.columnOf(entity);
-    if (!standsStill(def)) {
+    if (!standsStill(entity, def)) {
       return { pose, mesh: castsAndReceives(this.meshFor(entity, def)), column };
     }
     const mesh = this.standingMesh(entity, def);
@@ -829,9 +829,13 @@ const drawnShape = (def: FurnitureDef, step: number): readonly ShapeBox[] => [
 
 const tintedShape = (shape: readonly ShapeBox[]): boolean => shape.some((box) => box.color);
 
-/** Doors swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
-const standsStill = (def: FurnitureDef): boolean =>
-  def.id !== 'workshop_lift' && !def.vehicle && !def.corpse && !def.door && !def.window;
+/** Open doors and windows swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
+const standsStill = (entity: BlockEntity, def: FurnitureDef): boolean =>
+  def.id !== 'workshop_lift' &&
+  !def.vehicle &&
+  !def.corpse &&
+  !(def.door && entity.open) &&
+  !(def.window && entity.window!.open);
 
 const sameMembers = (kept: readonly Piece[], list: readonly Piece[]): boolean =>
   kept.length === list.length && kept.every((piece, index) => piece === list[index]);
