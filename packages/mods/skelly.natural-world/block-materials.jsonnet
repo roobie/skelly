@@ -33,7 +33,18 @@ local charredMaterial = material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0,
   structural: true, fallsTo: { block: 'charred_remains' }, crumblesUnderLoad: true,
 };
 {
-  fireTuning: [{ id: 'core', capability: 'fire', cellsPerTick: 64 }],
+  fireTuning: [{
+    id: 'core', capability: 'fire', cellsPerTick: 64,
+    smoke: {
+      grainBlocks: 1,
+      stepGameSeconds: 0.25,
+      emissionPerGameSecond: 2,
+      riseFraction: 0.12,
+      decayFraction: 0.002,
+      cutoff: 0.001,
+      sightDepth: 3,
+    },
+  }],
   blockMaterials: materials + [charredMaterial],
   blocks: struts([
     { id: 'steel', material: 'metal', name: 'Steel strut', color: '#6e6965', widthBlocks: 0.16, yields: materials[3].rubble, footstep: 'footstep_stone' },

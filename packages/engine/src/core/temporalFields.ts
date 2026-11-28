@@ -193,6 +193,8 @@ export const TEMPORAL_FIELDS = [
     unit: 'Minutes',
     dimension: 'duration',
   },
+  { path: 'fireTuning[].smoke.stepGameSeconds', clock: 'Game', unit: 'Seconds', dimension: 'duration' },
+  { path: 'fireTuning[].smoke.emissionPerGameSecond', clock: 'Game', unit: 'PerSecond', dimension: 'rate' },
   { path: 'furniture.door.methods.*.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.methods.*.strikeIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.climbable.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },

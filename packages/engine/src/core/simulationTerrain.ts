@@ -9,7 +9,15 @@ export interface SimulationWorld
   extends TerrainRead,
     Pick<
       World,
-      'blockDamage' | 'fire' | 'rubble' | 'support' | 'falls' | 'setBlock' | 'snapshotColumns' | 'restoreColumns'
+      | 'blockDamage'
+      | 'fire'
+      | 'smoke'
+      | 'rubble'
+      | 'support'
+      | 'falls'
+      | 'setBlock'
+      | 'snapshotColumns'
+      | 'restoreColumns'
     > {}
 
 /** Owns terrain facts and publication; neither reads nor waits for render residency. */
@@ -31,6 +39,9 @@ export class SimulationTerrain implements SimulationWorld {
 
   get fire(): World['fire'] {
     return this.state.fire;
+  }
+  get smoke(): World['smoke'] {
+    return this.state.smoke;
   }
   get blockDamage(): World['blockDamage'] {
     return this.state.blockDamage;

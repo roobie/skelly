@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
-  - you're changing cell-fire ownership, material load crumbling, burn-out support, charred clearing or its fire-look fixture
+  - you're changing cell-fire ownership, smoke density or persistence, material load crumbling, burn-out support, charred clearing or its fire-look fixture
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
@@ -304,11 +304,20 @@ implementation selects; this plan retains only the cross-system obligations.
   Falling and burning retain separate authored results because gravity and
   exhaustion are different events; see `packages/engine/src/core/schema/blocks.ts`,
   `BlockMaterialSchema`.
-- **Smoke effects:** smoke is a visual, sight-blocking field, so visible smoke has
-  a sensory consequence rather than being decoration. Smoke inhalation levels are
-  deferred to #1074; reconsider them when a shared body-effect model exists for
-  fire and firearm discharge, avoiding a fire-only health shortcut. Transported
-  harmful volumes and ventilation are not prerequisites for this slice.
+- **Smoke effects:** smoke is an amount, not a blocking shape: thin layers must add
+  optical depth while isolated wisps need not hide someone. The sparse density owner
+  is separate from fire because residual smoke must continue after the last flame.
+  It rises and pools below a ceiling without sideways flow; burnt or extinguished
+  rooms should remain a sight hazard rather than clear instantly. Source time settles
+  before capped exhaustion removes a flame, so queue pressure cannot prolong emission.
+  See `packages/engine/src/core/smoke.ts`, `Smoke`, and
+  `packages/engine/src/core/fire.ts`, `Fire.tick`.
+  The field slice does not complete sight or presentation acceptance. Those consumers
+  must share the density rather than deriving a second field from flame meshes.
+  Smoke inhalation levels are deferred to #1074; reconsider them when a shared
+  body-effect model exists for fire and firearm discharge, avoiding a fire-only
+  health shortcut. Transported harmful volumes and ventilation are not prerequisites
+  for this slice.
 - **Fire suppression:** include direct extinguishing, so players can act on a
   burning shelter rather than only remove fuel or retreat. Application resources
   and persistence need proof; detailed water/heat transport is not required.
