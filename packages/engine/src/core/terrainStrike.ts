@@ -247,7 +247,7 @@ const landingCell = (context: TerrainFallContext, cell: Vec3): TerrainLanding =>
       if (!registry.blockMaterials.get(block.material)!.crumblesUnderLoad) {
         break;
       }
-      const broken = breakCell({ ...context, supply: context.project() }, under);
+      const broken = breakCell({ ...context, supply: context.project() }, under, blockBreakYields(registry, block));
       if (broken.outcome !== 'broken') {
         landing.blocked = true;
         break;

@@ -1,12 +1,12 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
+import { FurnitureBoundsView } from './furnitureBounds.ts';
 import type { SkyBlocker, SkyBounds } from './skylight.ts';
 import {
   type CapturedSky,
   captureSky,
   containsSky,
-  furnitureBounds,
   growSky,
   overlapsSky,
   SKY_SHELL,
@@ -96,7 +96,7 @@ export class SkyFields {
   private occluders: SkyOccluders | undefined;
   /** Counts `setOccluders` calls, so a new source at an old source's version still rescans. */
   private occluderSource = 0;
-  /** The blocking boxes by key, with how many blockers have each, at one standing and occluder version. */
+  private readonly furnitureBounds: FurnitureBoundsView;
   private standing = {
     version: '',
     boxes: [] as SkyBlocker[],
@@ -105,6 +105,7 @@ export class SkyFields {
 
   constructor(owner: SkyFieldOwner, range: { bottom: number; top: number }, boxes: readonly SkyBounds[] = []) {
     this.owner = owner;
+    this.furnitureBounds = new FurnitureBoundsView(owner.entities);
     this.boxes = boxes;
     this.range = range;
     this.entries = boxes.map((box) => {
@@ -265,14 +266,13 @@ export class SkyFields {
   }
 
   /**
-   * One scan of the blockers that are not blocks, per change to the standing pieces or the occluders, shared by
-   * every field's capture and currency check; transport treats them all as furniture. It marks stale each field
-   * that a box added or removed since the last scan overlaps; a field reads boxes as a set, so order does not matter.
+   * Transport treats pieces and external occluders alike; only changed bounds stale overlapping fields.
    */
-  private furniture(): readonly SkyBlocker[] {
-    const version = `${this.owner.entities.standing}:${this.occluderSource}:${this.occluders?.version}`;
+  private furniture(): Iterable<SkyBlocker> {
+    this.furnitureBounds.refresh((box) => this.staleAround(box));
+    const version = `${this.occluderSource}:${this.occluders?.version}`;
     if (this.standing.version !== version) {
-      const boxes = [...furnitureBounds(this.owner.entities), ...(this.occluders?.boxes() ?? [])];
+      const boxes = [...(this.occluders?.boxes() ?? [])];
       const counts = new Map<string, { box: SkyBlocker; count: number }>();
       for (const box of boxes) {
         const key = boxKey(box);
@@ -291,7 +291,12 @@ export class SkyFields {
       }
       this.standing = { version, boxes, counts };
     }
-    return this.standing.boxes;
+    return { [Symbol.iterator]: () => this.allFurniture() };
+  }
+
+  private *allFurniture(): IterableIterator<SkyBlocker> {
+    yield* this.furnitureBounds.boxes();
+    yield* this.standing.boxes;
   }
 
   private staleAround(box: SkyBounds): void {

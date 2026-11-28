@@ -288,6 +288,14 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       cursor.hidden = !(input.locked && input.menuPointer);
       cursor.style.transform = `translate(${input.cursorX}px, ${input.cursorY}px)`;
       document.body.classList.toggle('menu-pointer-locked', input.locked && input.menuPointer);
+      if (input.locked && !input.menuPointer) {
+        hoveredFact?.classList.remove('game-cursor-hover');
+        hoveredElement?.classList.remove('game-cursor-hover');
+        hoveredFact = null;
+        hoveredElement = null;
+        cursor.classList.remove('hand');
+        return;
+      }
       const underCursor = document.elementFromPoint(input.cursorX, input.cursorY);
       hoveredFact?.classList.remove('game-cursor-hover');
       hoveredFact = input.locked && input.menuPointer ? (underCursor?.closest('.fact-detail') ?? null) : null;

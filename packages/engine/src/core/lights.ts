@@ -13,6 +13,7 @@ import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreMessage } from './coreText.ts';
 import type { DayCycle } from './dayPhase.ts';
+import { FurnitureBoundsView } from './furnitureBounds.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
@@ -24,7 +25,6 @@ import type { PoweredLight } from './sitePower.ts';
 import { sunDirection } from './sky.ts';
 import type { SkyOccluders } from './skyField.ts';
 import type { SkyBounds } from './skylight.ts';
-import { furnitureBounds } from './skySnapshot.ts';
 import type { ChunkSource } from './terrainRead.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
@@ -221,7 +221,8 @@ export class SunExposureCache {
 
   private readonly owner: SunExposureOwner | undefined;
   private readonly unwatch: (() => void) | undefined;
-  private blockerVersion = '';
+  private blockerVersion: number | undefined;
+  private readonly furniture: FurnitureBoundsView | undefined;
   private blockers = new Map<string, SkyBounds>();
 
   constructor(skyTop: number, skyBottom: number, isOpaque: SolidAt, owner?: SunExposureOwner) {
@@ -229,6 +230,7 @@ export class SunExposureCache {
     this.skyBottom = skyBottom;
     this.isOpaque = isOpaque;
     this.owner = owner;
+    this.furniture = owner && new FurnitureBoundsView(owner.entities);
     this.unwatch = owner?.world.watchChunks((cx, cy, cz, cell) => {
       const min: Vec3 = cell ? [...cell] : [cx * CHUNK, cy * CHUNK, cz * CHUNK];
       const extent = cell ? 1 : CHUNK;
@@ -264,11 +266,12 @@ export class SunExposureCache {
     if (!owner) {
       return;
     }
-    const version = `${owner.entities.standing}:${owner.occluders?.version}`;
+    this.furniture?.refresh((box) => this.invalidate(box));
+    const version = owner.occluders?.version;
     if (version === this.blockerVersion) {
       return;
     }
-    const boxes = [...furnitureBounds(owner.entities), ...(owner.occluders?.boxes() ?? [])];
+    const boxes = owner.occluders?.boxes() ?? [];
     const blockers = new Map(boxes.map((box) => [`${box.min.join()},${box.max.join()}`, box]));
     for (const [key, box] of blockers) {
       if (!this.blockers.has(key)) {

@@ -56,8 +56,11 @@
         "terrainFire": {
           "color": "#ff6a00",
           "flame": {
+            "coreColor": "#fff1ae",
             "heightMetres": 0.59999999999999998,
-            "radiusMetres": 0.20000000000000001
+            "opacity": 0.80000000000000004,
+            "radiusMetres": 0.20000000000000001,
+            "tipColor": "#ff4a00"
           },
           "intensity": 2,
           "radiusMetres": 6
