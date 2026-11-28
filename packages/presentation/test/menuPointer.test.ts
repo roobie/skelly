@@ -13,7 +13,7 @@ document.body.append(canvas, cursor);
 const input = { locked: true, menuPointer: true, cursorX: 20, cursorY: 40, moveMenuCursor: () => undefined };
 let underCursor: Element | null = null;
 Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => underCursor });
-mountMenuPointer({ input, canvas, cursor });
+const pointer = mountMenuPointer({ input, canvas, cursor });
 
 const host = document.createElement('div');
 document.body.append(host);
@@ -75,7 +75,6 @@ it('skips the hit test and clears hover styling while the pointer is locked with
   const original = Object.getOwnPropertyDescriptor(document, 'elementFromPoint')!;
   Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: hitTest });
   try {
-    const pointer = mountMenuPointer({ input, canvas, cursor });
     pointer.update();
     expect(button.classList.contains('game-cursor-hover')).toBe(true);
 
