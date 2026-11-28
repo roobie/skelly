@@ -15,7 +15,7 @@ import type { MesherPort, ReceivedMeshRequest, ToMesher } from '@skelly/engine/m
 import { buildMesh, HeldChunks, paddedFrom, wideFrom } from '@skelly/engine/mesh';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import type { BlockBlow } from '@skelly/engine/sim';
+import type { Blow } from '@skelly/engine/sim';
 import { playerTuning } from '@skelly/engine/sim';
 import {
   CHUNK,
@@ -397,7 +397,7 @@ const meshing = (f: Fixture) => {
 };
 
 const debugBuild = (f: Fixture) => {
-  const blows: BlockBlow[] = [];
+  const blows: Blow[] = [];
   const engine = {
     config: { debug: true, scale },
     registry: f.registry,
@@ -408,7 +408,7 @@ const debugBuild = (f: Fixture) => {
   const build = new BuildMode(engine, f.session.body, 1, {
     strikeTerrainCell: (target, blow) => {
       blows.push(blow);
-      return f.session.strikeTerrainCell(target, blow);
+      return f.session.strikeTerrainCell(target, blow) !== undefined;
     },
     repairCell: () => undefined,
     takeApartCell: () => undefined,
@@ -476,7 +476,7 @@ describe('supply-aware terrain destruction', () => {
     debugKind(f, 'fixture_unsupported');
     const { build, blows, eye, dir } = debugBuild(f);
     build.toggle();
-    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported block damage kind "fixture_unsupported"');
+    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported damage kind "fixture_unsupported"');
     expect(blows).toEqual([]);
     expect(f.world.blockDamage.get(cell)).toBeUndefined();
   });

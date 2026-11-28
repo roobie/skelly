@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { buildRegistry, type ContentSource } from '@skelly/engine/content';
 import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { swapConsumable } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { freshnessWord, isRotten, spoilage } from '@skelly/engine/internal/core/food.ts';
-import { chargeOf, drainLight, swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { chargeOf, darkLightReason, drainLight } from '@skelly/engine/internal/core/lights.ts';
 import { canSprint, consume, stepNeeds, stepStamina } from '@skelly/engine/internal/core/needs.ts';
 import { gameHours, gameSeconds } from '@skelly/engine/internal/core/time.ts';
 import { freshDropTarget, Inventory, type Item, ItemFactory, type Target, toggleLight } from '@skelly/engine/inventory';
@@ -231,9 +232,9 @@ describe('flashlight', () => {
   /** The registry's drain rate, the charge of a fresh battery and how long that charge lasts on. */
   const drain = () => {
     const { light } = lit();
-    const rate = registry.items.get(light.type)!.light!.power!.chargePerGameHour;
+    const rate = registry.items.get(light.type)!.consumableSlot!.drainPerGameHour;
     const full = chargeOf(registry, light)!;
-    return { rate, full, lifetime: full / rate, batteryType: light.slots!.battery!.type };
+    return { rate, full, lifetime: full / rate, batteryType: light.slots!.consumable!.type };
   };
 
   it('drains the registry rate in one step as ticking every second, and goes out when the battery dies', () => {
@@ -254,7 +255,7 @@ describe('flashlight', () => {
     expect(drainLight(registry, caught, gameSeconds(lifetime))).toBeCloseTo(lifetime - span, 6);
     expect(caught.on).toBe(false);
     expect(chargeOf(registry, caught)).toBe(0);
-    expect(toggleLight(registry, caught)).toBe(coreMessage(registry, 'batteryDead'));
+    expect(toggleLight(registry, caught)).toBe(darkLightReason(registry, caught));
   });
 
   it('takes a fresh battery from a stack, and gives back the old one if it had charge left', () => {
@@ -264,7 +265,7 @@ describe('flashlight', () => {
     const batteries = inventory.create(batteryType, 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     const feet = (): Target => ({ kind: 'pile', pos: [0, 0, 0] });
-    expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
+    expect(swapConsumable(inventory, light, batteries, feet)).toBeUndefined();
     expect(batteries.count).toBe(2);
     expect(chargeOf(registry, light)).toBe(full);
     const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
@@ -272,15 +273,17 @@ describe('flashlight', () => {
     expect(chargeOf(registry, spent)).toBeCloseTo(full / 2, 9);
 
     drainLight(registry, light, gameSeconds(lifetime * 2)); // dead
-    expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
+    expect(swapConsumable(inventory, light, batteries, feet)).toBeUndefined();
     expect(inventory.pileAt([0, 0, 0])!.items).toHaveLength(1); // the dead one is thrown away
-    expect(swapBattery(inventory, light, light, feet)).toBe(coreMessage(registry, 'wrongBattery'));
+    expect(swapConsumable(inventory, light, light, feet)).toBe(
+      coreMessage(registry, 'wrongConsumable', { item: inventory.name(light).toLowerCase() }),
+    );
   });
 
   const halfSpent = () => {
     const { inventory, light } = lit();
     drainLight(registry, light, gameHours(2));
-    const old = light.slots!.battery!;
+    const old = light.slots!.consumable!;
     const batteries = inventory.create('aa_battery', 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     return { inventory, light, old, batteries };
@@ -290,14 +293,14 @@ describe('flashlight', () => {
     const { inventory, light, old, batteries } = halfSpent();
     inventory.landing = () => undefined;
     const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
-    expect(swapBattery(inventory, light, batteries, spent)).toBe(coreMessage(inventory.registry, 'noLanding'));
-    expect(light.slots!.battery).toBe(old);
+    expect(swapConsumable(inventory, light, batteries, spent)).toBe(coreMessage(inventory.registry, 'noLanding'));
+    expect(light.slots!.consumable).toBe(old);
     expect(batteries.count).toBe(3);
   });
 
   it('plans where the old battery lands with the charge it comes out with', () => {
     const { inventory, light } = lit();
-    const old = light.slots!.battery!;
+    const old = light.slots!.consumable!;
     const batteries = inventory.create('aa_battery', 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     // The feet pile has room only by merging into fresh batteries; the old one's charge, once written, won't merge.
@@ -311,7 +314,7 @@ describe('flashlight', () => {
       // Fill the cells left between the lights.
     }
     const spent = (item: Item) => freshDropTarget(inventory, item, [0, 0, 0]);
-    expect(swapBattery(inventory, light, batteries, spent)).toBeUndefined();
+    expect(swapConsumable(inventory, light, batteries, spent)).toBeUndefined();
     const at = inventory.locate(old);
     expect(at?.kind).toBe('pile');
     expect(at?.kind === 'pile' && at.pile.pos).not.toEqual([0, 0, 0]);
@@ -324,8 +327,10 @@ describe('flashlight', () => {
     while (inventory.add(filler(), pile)) {
       // Fill with the displaced footprint, without merging charged batteries.
     }
-    expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
-    expect(light.slots!.battery).toBe(old);
+    expect(swapConsumable(inventory, light, batteries, () => pile)).toBe(
+      coreMessage(inventory.registry, 'noGroundRoom'),
+    );
+    expect(light.slots!.consumable).toBe(old);
     expect(batteries.count).toBe(3);
   });
 });

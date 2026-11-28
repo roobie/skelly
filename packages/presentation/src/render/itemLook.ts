@@ -3,7 +3,7 @@
 // the hands and on the ground.
 
 import type { Registry } from '@skelly/engine/content';
-import { defOf, heldKind, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '@skelly/engine/inventory';
+import { CONSUMABLE_SLOT, defOf, heldKind, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 
 export interface ItemStateLook {
@@ -120,7 +120,7 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
       ]
     : [];
   for (const [slotId, child] of Object.entries(item.slots ?? {})) {
-    if (slotId === 'magazine' || slotId === 'battery' || slotId === 'canister' || !child) {
+    if (slotId === 'magazine' || slotId === CONSUMABLE_SLOT || !child) {
       continue;
     }
     const slot = attachmentSlot(registry, item, slotId, child);

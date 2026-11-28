@@ -1,4 +1,4 @@
-import type { DamageKind } from './body.ts';
+import { type Blow, strengthPast } from './blow.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -10,18 +10,12 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
-export interface BlockBlow {
-  strength: number;
-  kind: DamageKind;
-}
-
 export interface BlockBash {
   outcome: 'resisted' | 'damaged' | 'broken';
   damage: number;
 }
 
-/** Resistance is a fraction removed before the strength gate, not a second durability pool. */
-export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, blow: BlockBlow): BlockBash => {
+export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, blow: Blow): BlockBash => {
   const { material, damage } = cell;
   if (
     !(
@@ -34,14 +28,11 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   ) {
     throw new Error('Invalid block blow or damage');
   }
-  if (!Object.hasOwn(material.resistance, blow.kind)) {
-    throw new Error(`Unsupported block damage kind "${blow.kind}"`);
-  }
+  const strength = strengthPast(blow, material.resistance);
   // The breakable flag is the author's contract, so an unbreakable material refuses every blow, not only weak ones.
   if (!material.breakable) {
     return { outcome: 'resisted', damage };
   }
-  const strength = blow.strength * (1 - material.resistance[blow.kind]!);
   if (strength <= 0 || strength < material.minimumStrength) {
     return { outcome: 'resisted', damage };
   }

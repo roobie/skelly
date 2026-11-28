@@ -93,6 +93,7 @@ local spentCase(id, name, weight, description, model, soundsLike=null) = {
       "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
       "lightMount": { "kind": "strap" },
       "light": lights.flashlight,
+      "consumableSlot": lights.flashlightSlot,
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",

@@ -144,7 +144,7 @@ const piled = (inventory: Inventory) => [...inventory.piles.values()].flatMap((p
 const ruinBlows = (inventory: Inventory, entity: BlockEntity) => {
   const outcomes: (BashOutcome | undefined)[] = [];
   for (let dealt = 0; dealt < BREACH.durability; dealt += BREACH.minimumStrength) {
-    outcomes.push(inventory.entities.bash(entity, BREACH.minimumStrength));
+    outcomes.push(inventory.entities.bash(entity, { strength: BREACH.minimumStrength, kind: 'blunt' }));
   }
   return outcomes;
 };
@@ -267,7 +267,7 @@ it('cancels the work that names a ruined piece', () => {
   expect(session.search(target)).toBeUndefined();
   expect(session.queue.jobs.length).toBeGreaterThan(0);
 
-  expect(session.bashFurniture(target, BREACH.durability)).toBe('ruined');
+  expect(session.bashFurniture(target, { strength: BREACH.durability, kind: 'blunt' })).toBe('ruined');
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(session.queue.jobs).toEqual([]);
@@ -289,7 +289,7 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
   }
   const lying = piled(inventory).map(({ item }) => item.uid);
 
-  expect(() => session.bashFurniture(target, BREACH.durability)).not.toThrow();
+  expect(() => session.bashFurniture(target, { strength: BREACH.durability, kind: 'blunt' })).not.toThrow();
 
   expect(runtime.entities.byUid(target.uid)).toBe(target);
   expect(target.damage).toBe(BREACH.durability);
@@ -304,7 +304,7 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
   ]) {
     runtime.world.setBlock(x!, 0, z!, floor);
   }
-  expect(session.bashFurniture(target, BREACH.minimumStrength)).toBe('ruined');
+  expect(session.bashFurniture(target, { strength: BREACH.minimumStrength, kind: 'blunt' })).toBe('ruined');
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
@@ -328,7 +328,7 @@ it("lays a ruined housing's fitted and baseline parts on piles, keeping identity
     inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: 'spare', itemUid: spare.uid }),
   ).toBeUndefined();
 
-  expect(session.bashFurniture(housing, BREACH.durability)).toBe('ruined');
+  expect(session.bashFurniture(housing, { strength: BREACH.durability, kind: 'blunt' })).toBe('ruined');
 
   expect(inventory.entities.byUid(housing.uid)).toBeUndefined();
   const parts = (owner: Inventory) =>
@@ -376,7 +376,7 @@ it('keeps a ruined housing whose drops have no room standing and failed, its slo
   const slots = inventory.entities.housingView(target);
   const { nextItemUid } = inventory.snapshotState();
 
-  expect(() => session.bashFurniture(target, BREACH.durability)).not.toThrow();
+  expect(() => session.bashFurniture(target, { strength: BREACH.durability, kind: 'blunt' })).not.toThrow();
 
   expect(inventory.entities.byUid(target.uid)).toBe(target);
   expect(target.damage).toBe(BREACH.durability);

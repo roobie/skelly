@@ -1,7 +1,7 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
+import { swapConsumable } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
-import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
 import { worldRubbleClearing } from '@skelly/engine/internal/core/rubble.ts';
 import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
@@ -17,6 +17,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  CONSUMABLE_SLOT,
   claimed,
   conditionBand,
   firearmSlotIds,
@@ -202,6 +203,24 @@ describe('inventory bound control navigation', () => {
   });
 });
 
+/** A light and a tool, each with what its consumable slot takes: one card slot serves both. */
+const DEVICES = [
+  { device: 'flashlight', consumable: 'aa_battery' },
+  { device: 'blowtorch', consumable: 'gas_canister' },
+] as const;
+
+/** Lays the device on the ground with a consumable fitted, fitting one when it comes empty. */
+const groundDevice = (inv: Inventory, device: string, consumable: string) => {
+  const item = inv.create(device);
+  if (!inv.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+    throw new Error(`Fixture could not place the ${device} on the ground`);
+  }
+  if (!item.slots?.consumable) {
+    inv.fitSlot(item, CONSUMABLE_SLOT, inv.create(consumable));
+  }
+  return { item, fitted: item.slots!.consumable! };
+};
+
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const character = new Character(contentRegistry, { handedness });
@@ -239,7 +258,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
   let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
-  let loadHandler = (_lightUid: number, _batteryUid: number): string | undefined => undefined;
+  let loadHandler = (_deviceUid: number, _consumableUid: number): string | undefined => undefined;
   let alarm: { gameHour: number | undefined } | undefined;
   const commandOwners: ReplayCommandOwners = {
     inventory: inv,
@@ -248,6 +267,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     vehicleWork: () => undefined,
     operateVehiclePart: () => undefined,
     craftTakeApartCell: () => undefined,
+    cutCell: () => undefined,
     search: (uid) => {
       if (uid !== entity.uid || entity.searched || searching.has(entity)) {
         return;
@@ -256,8 +276,8 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
       queue.enqueueAction('furniture.search', 'Search furniture', 5);
     },
     work: (uid, operation) => workHandler(uid, operation),
-    loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
-    unloadBattery: () => undefined,
+    loadConsumable: (deviceUid, consumableUid) => loadHandler(deviceUid, consumableUid),
+    unloadConsumable: () => undefined,
     toHands: (uid, feet) => toHands(inv, queue, inv.itemByUid(uid)!, feet),
     wieldOrPocket: (uid, feet) => wieldOrPocket(inv, queue, inv.itemByUid(uid)!, feet),
     pickup: () => undefined,
@@ -1254,7 +1274,7 @@ describe('inventory screen Lit rendering', () => {
     screen.update();
 
     const light = firearm.slots![mounted.fitted.mountedAt]!;
-    const battery = root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`);
+    const battery = root.querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"]`);
     expect(battery?.dataset.occupied).toBe('true');
   });
 
@@ -1392,23 +1412,22 @@ describe('inventory screen Lit rendering', () => {
     t.screen.close();
   });
 
-  it('loads a battery dragged onto the battery slot of a light card', () => {
+  it.each(DEVICES)('loads $consumable dragged onto the consumable slot of a $device card', ({ device, consumable }) => {
     const t = setup();
-    const light = t.inv.create('flashlight');
-    const spare = t.inv.create('aa_battery');
-    if (!(t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] }) && t.inv.add(spare, { kind: 'hand', side: 'left' }))) {
-      throw new Error('Fixture could not place the light on the ground and the battery in hand');
+    const { item: owner, fitted } = groundDevice(t.inv, device, consumable);
+    const spare = t.inv.create(consumable);
+    if (!t.inv.add(spare, { kind: 'hand', side: 'left' })) {
+      throw new Error(`Fixture could not place the ${consumable} in hand`);
     }
-    const fitted = light.slots!.battery!;
-    t.setLoadHandler((lightUid, batteryUid) =>
-      swapBattery(t.inv, t.inv.itemByUid(lightUid)!, t.inv.itemByUid(batteryUid)!, () => ({
+    t.setLoadHandler((deviceUid, consumableUid) =>
+      swapConsumable(t.inv, t.inv.itemByUid(deviceUid)!, t.inv.itemByUid(consumableUid)!, () => ({
         kind: 'pile',
         pos: [0, 0, 0],
       })),
     );
-    t.screen.selected = light;
+    t.screen.selected = owner;
     t.screen.update();
-    const slot = t.root.querySelector<HTMLElement>(`[data-target="battery:${light.uid}"]`)!;
+    const slot = t.root.querySelector<HTMLElement>(`[data-target="consumable:${owner.uid}"]`)!;
     const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
 
     t.root
@@ -1424,44 +1443,43 @@ describe('inventory screen Lit rendering', () => {
     );
     hitTest.mockRestore();
 
-    expect(t.lastPayload()).toEqual({ kind: 'light.battery.load', lightUid: light.uid, batteryUid: spare.uid });
-    expect(light.slots?.battery).toBe(spare);
+    expect(t.lastPayload()).toEqual({ kind: 'consumable.load', deviceUid: owner.uid, consumableUid: spare.uid });
+    expect(owner.slots?.consumable).toBe(spare);
     expect(t.inv.locate(fitted)?.kind).toBe('pile');
     t.screen.close();
   });
 
-  it('asks to take a fitted battery out of its card slot when it is dragged to a hand, as from an inventory slot', () => {
-    const t = setup();
-    const light = t.inv.create('flashlight');
-    if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
-      throw new Error('Fixture could not place the light on the ground');
-    }
-    const fitted = light.slots!.battery!;
-    t.screen.selected = light;
-    t.screen.update();
-    const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
-    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
+  it.each(DEVICES)(
+    'asks to take a fitted $consumable out of the $device card slot when it is dragged to a hand',
+    ({ device, consumable }) => {
+      const t = setup();
+      const { item: owner, fitted } = groundDevice(t.inv, device, consumable);
+      t.screen.selected = owner;
+      t.screen.update();
+      const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
+      const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
 
-    t.root
-      .querySelector<HTMLElement>(`[data-target="battery:${light.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
-      .dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      t.root
+        .querySelector<HTMLElement>(`[data-target="consumable:${owner.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
+        .dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+        );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
       );
-    globalThis.window.dispatchEvent(
-      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
-    );
-    globalThis.window.dispatchEvent(
-      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
-    );
-    hitTest.mockRestore();
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      hitTest.mockRestore();
 
-    expect(t.lastPayload()).toEqual({
-      kind: 'light.battery.unload',
-      lightUid: light.uid,
-      target: { kind: 'hand', side: 'left' },
-    });
-    t.screen.close();
-  });
+      expect(t.lastPayload()).toEqual({
+        kind: 'consumable.unload',
+        deviceUid: owner.uid,
+        target: { kind: 'hand', side: 'left' },
+      });
+      t.screen.close();
+    },
+  );
 
   it('shows the battery slot of a light with no battery as an open slot that still takes a drop', () => {
     const t = setup();
@@ -1469,10 +1487,10 @@ describe('inventory screen Lit rendering', () => {
     if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
       throw new Error('Fixture could not place the light on the ground');
     }
-    t.inv.fitSlot(light, 'battery', undefined);
+    t.inv.fitSlot(light, CONSUMABLE_SLOT, undefined);
     t.screen.selected = light;
     t.screen.update();
-    const slot = t.root.querySelector<HTMLElement>(`.inv-slot[data-target="battery:${light.uid}"]`)!;
+    const slot = t.root.querySelector<HTMLElement>(`.inv-slot[data-target="consumable:${light.uid}"]`)!;
     expect(slot.dataset.occupied).toBe('false');
     expect(slot.querySelector('.inv-item')).toBeNull();
     t.screen.close();
@@ -1509,12 +1527,13 @@ describe('inventory screen Lit rendering', () => {
         search: () => undefined,
         work: () => undefined,
         craftTakeApartCell: () => undefined,
+        cutCell: () => undefined,
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
         vehicleWork: () => undefined,
         operateVehiclePart: () => undefined,
-        loadBattery: () => undefined,
-        unloadBattery: () => undefined,
+        loadConsumable: () => undefined,
+        unloadConsumable: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,
         interact: () => undefined,

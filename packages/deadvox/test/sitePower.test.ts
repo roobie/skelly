@@ -283,7 +283,7 @@ const plantRegistry = baseRegistryWith(
           item(CORE),
           item(DUD),
           item(STOCK),
-          { ...item(CELL), battery: { capacity: 100, rechargeable: { microjoulesPerCharge: 1_000_000_000 } } },
+          { ...item(CELL), consumable: { capacity: 100, rechargeable: { microjoulesPerCharge: 1_000_000_000 } } },
         ],
         sounds: [{ ...baseRegistry().sounds.values().next().value!, id: HUM }],
         powerDevices: [
@@ -548,7 +548,8 @@ describe('part-gated module sources', () => {
     fitCore(inventory, first, 'core');
     const entity = housing(inventory, first);
     expect(power.instruments(entity)?.producing).toBe(true);
-    expect(inventory.entities.bash(entity, inventory.entities.defOf(entity).breach.durability)).toBe('ruined');
+    const { durability } = inventory.entities.defOf(entity).breach;
+    expect(inventory.entities.bash(entity, { strength: durability, kind: 'blunt' })).toBe('ruined');
     expect(inventory.entities.stands(entity)).toBe(true);
     expect(power.instruments(entity)).toEqual({ enabled: true, producing: false, band: undefined, failures: [] });
   });
@@ -684,7 +685,7 @@ describe('part-gated module sources', () => {
     fitCore(inventory, first, 'core');
     fitCore(inventory, second, 'core');
     const serviced = housing(inventory, first);
-    if (inventory.entities.bash(serviced, 50) !== 'damaged') {
+    if (inventory.entities.bash(serviced, { strength: 50, kind: 'blunt' }) !== 'damaged') {
       throw new Error('Fixture module was not damaged');
     }
     if (!inventory.add(inventory.create(STOCK), { kind: 'pile', pos: [0, 1, 0] })) {

@@ -26,7 +26,7 @@ export {
 } from './core/actorSystem.ts';
 export { loweredStanceTuning } from './core/agentPerception.ts';
 export { BearTraps } from './core/bearTrap.ts';
-export type { BlockBlow } from './core/blockDamage.ts';
+export { type Blow, strengthPast } from './core/blow.ts';
 export { BODY_REGIONS, Body, type BodyRegion, bodyRegionLabel } from './core/body.ts';
 export { bookReadingHooks } from './core/bookReading.ts';
 export type { CastProjectileState, CastShotEnd } from './core/castVolleys.ts';

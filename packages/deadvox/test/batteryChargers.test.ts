@@ -1,7 +1,8 @@
 import { BatteryChargers } from '@skelly/engine/internal/core/batteryChargers.ts';
+import { fitsDevice, swapConsumable } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
-import { chargeOf, drainLight, fitsLight, swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { chargeOf, drainLight } from '@skelly/engine/internal/core/lights.ts';
 import type { PowerState } from '@skelly/engine/internal/core/power.ts';
 import { gameSeconds, simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { batteryEnergy, Inventory, toggleLight } from '@skelly/engine/inventory';
@@ -21,22 +22,17 @@ const content = () => ({
       size: [1, 1],
       weight: 0.1,
       stack: 4,
-      battery: { capacity: 7, rechargeable: { microjoulesPerCharge: 1001 } },
+      consumable: { capacity: 7, rechargeable: { microjoulesPerCharge: 1001 } },
     },
-    { id: 'primary', name: 'Primary', category: 'battery', size: [2, 2], weight: 0.1, battery: { capacity: 7 } },
+    { id: 'primary', name: 'Primary', category: 'battery', size: [2, 2], weight: 0.1, consumable: { capacity: 7 } },
     {
       id: 'lamp',
       name: 'Lamp',
       category: 'misc',
       size: [1, 1],
       weight: 0.1,
-      light: {
-        intensity: 1,
-        radius: 1,
-        seenFrom: 1,
-        color: '#ffffff',
-        power: { battery: 'cell', compatibleBatteries: ['primary'], chargePerGameHour: 1, swapSimSeconds: 1 },
-      },
+      light: { intensity: 1, radius: 1, seenFrom: 1, color: '#ffffff' },
+      consumableSlot: { accepts: ['cell', 'primary'], comesWith: 'cell', drainPerGameHour: 1, swapSimSeconds: 1 },
     },
   ],
   furniture: [
@@ -236,9 +232,9 @@ describe('portable battery charging owner', () => {
     expect(owner.collect(at(3000), 'charger', { kind: 'hand', side: 'right' }).ok).toBe(true);
     const lamp = inventory.create('lamp');
     expect(inventory.add(lamp, { kind: 'hand', side: 'left' })).toBe(true);
-    expect(fitsLight(registry, lamp, charged)).toBe(true);
-    expect(swapBattery(inventory, lamp, charged, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
-    expect(lamp.slots!.battery).toBe(charged);
+    expect(fitsDevice(registry, lamp, charged)).toBe(true);
+    expect(swapConsumable(inventory, lamp, charged, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
+    expect(lamp.slots!.consumable).toBe(charged);
     expect(toggleLight(registry, lamp)).toBeUndefined();
     expect(chargeOf(registry, lamp)).toBeGreaterThan(0);
     expect(drainLight(registry, lamp, gameSeconds(0.01))).toBeUndefined();
@@ -248,7 +244,7 @@ describe('portable battery charging owner', () => {
     expect(chargeOf(registry, charged)).toBe(0);
     const replacement = inventory.create('primary');
     expect(inventory.add(replacement, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(swapBattery(inventory, lamp, replacement, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
+    expect(swapConsumable(inventory, lamp, replacement, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
     expect(inventory.locate(charged)?.kind).toBe('pile');
   });
 });
@@ -300,7 +296,7 @@ it('validates rechargeability, exact energy bounds, compatibility and a fitting 
       data.furniture[0]!.charger.efficiency = 0.000_01;
     },
     (data: ReturnType<typeof content>) => {
-      data.items[0]!.battery!.capacity = Number.MAX_SAFE_INTEGER;
+      data.items[0]!.consumable!.capacity = Number.MAX_SAFE_INTEGER;
     },
   ];
   for (const mutate of mutations) {

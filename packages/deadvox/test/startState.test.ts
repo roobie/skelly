@@ -1,9 +1,11 @@
 import { buildRegistry, type Registry } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/internal/core/items.ts';
+import { chargeShare } from '@skelly/engine/internal/core/lights.ts';
 import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import { type StartDef, StartSchema } from '@skelly/engine/internal/core/schema/starts.ts';
 import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
-import { claimed, Inventory, isLongGun, SLING_SLOT } from '@skelly/engine/inventory';
+import { CONSUMABLE_SLOT, claimed, Inventory, isLongGun, SLING_SLOT, wantedConsumable } from '@skelly/engine/inventory';
 import { selectFolderClosure } from '@skelly/engine/packs';
 import { applyStartState, Body, Character } from '@skelly/engine/sim';
 import { parse } from 'valibot';
@@ -310,6 +312,41 @@ describe('new-game application', () => {
     expect(context.inventory.hands.right?.cartridges).not.toBe(start.kit[0]!.cartridges);
   });
 
+  it("starts a battery, a tool's consumable, a lamp and a liquid container at an authored share of their own capacity", () => {
+    const start = makeStart({ kit: [] });
+    const { registry } = setup(start);
+    const items = [...registry.items.values()];
+    const fill = 0.25;
+    const fuelled = items.find((def) => def.tool && def.consumableSlot);
+    const holders = [
+      items.find(({ consumable }) => consumable && !consumable.rechargeable),
+      items.find(({ consumable }) => consumable?.rechargeable),
+      fuelled && registry.items.get(wantedConsumable(registry, fuelled.id)),
+      items.find(({ light, vessel }) => light?.liquidFuel && vessel),
+      items.find(({ light, vessel }) => !light && vessel?.initialContents.kind === 'filled'),
+    ];
+    expect(holders.every(Boolean)).toBe(true);
+    const share = (item: Item): number | undefined => {
+      const def = registry.items.get(item.type)!;
+      return def.vessel && !def.light
+        ? (item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0) /
+            def.vessel.capacityMicrolitres
+        : chargeShare(registry, item);
+    };
+    for (const holder of holders) {
+      start.kit = [{ id: 'held', item: holder!.id, fill, destination: { kind: 'hand', role: 'dominant' } }];
+      registry.starts.set(start.id, start);
+      expect(startIssues(registry).filter(({ id }) => id === start.id)).toEqual([]);
+      const context = setup(start);
+      applyStartState(context.inventory, start, context);
+      expect(share(context.inventory.hands.right!)).toBeCloseTo(fill, 5);
+    }
+    start.kit = [{ id: 'held', item: 'fixture_start_stock', fill, destination: { kind: 'hand', role: 'dominant' } }];
+    expect(startIssues(registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'held', path: '.fill' } }),
+    );
+  });
+
   const cylinderFixture = () => {
     const start = makeStart({ kit: [] });
     const context = setup(start);
@@ -508,22 +545,30 @@ describe('new-game application', () => {
   it('fits a named child through ordinary slot certification', () => {
     const start = makeStart({ kit: [] });
     const context = setup(start);
-    const lamp = [...context.registry.items.values()].find(({ light }) => light?.power);
+    const lamp = [...context.registry.items.values()].find(({ light, consumableSlot }) => light && consumableSlot);
     expect(lamp).toBeDefined();
-    const battery = context.registry.items.get(lamp!.light!.power!.battery)!;
+    const battery = context.registry.items.get(wantedConsumable(context.registry, lamp!.id))!;
     const fixtureLamp = {
       ...lamp!,
       id: 'fixture_start_lamp',
-      light: { ...lamp!.light!, power: { ...lamp!.light!.power!, battery: 'fixture_start_battery' } },
+      consumableSlot: {
+        ...lamp!.consumableSlot!,
+        accepts: ['fixture_start_battery'],
+        comesWith: 'fixture_start_battery',
+      },
     };
     context.registry.items.set(fixtureLamp.id, fixtureLamp);
     context.registry.items.set('fixture_start_battery', { ...battery, id: 'fixture_start_battery' });
     start.kit = [
       { id: 'lamp', item: 'fixture_start_lamp', destination: { kind: 'hand', role: 'dominant' } },
-      { id: 'battery', item: 'fixture_start_battery', destination: { kind: 'slot', parent: 'lamp', slot: 'battery' } },
+      {
+        id: 'battery',
+        item: 'fixture_start_battery',
+        destination: { kind: 'slot', parent: 'lamp', slot: CONSUMABLE_SLOT },
+      },
     ];
     applyStartState(context.inventory, start, context);
-    expect(context.inventory.hands.right?.slots?.battery?.type).toBe(start.kit[1]!.item);
+    expect(context.inventory.hands.right?.slots?.consumable?.type).toBe(start.kit[1]!.item);
     const refused = setup(start);
     refused.registry.items.set(fixtureLamp.id, fixtureLamp);
     refused.registry.items.set('fixture_start_battery', context.registry.items.get('fixture_start_battery')!);

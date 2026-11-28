@@ -3,8 +3,7 @@
 import { blockId } from '@skelly/engine/content';
 import type { BindingRegistry } from '@skelly/engine/input';
 import { actionText, fillText } from '@skelly/engine/input';
-import type { BlockBlow } from '@skelly/engine/sim';
-import { playerTuning } from '@skelly/engine/sim';
+import { type Blow, playerTuning, strengthPast } from '@skelly/engine/sim';
 import { decimalText } from '@skelly/engine/text';
 import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
 import type { Engine } from '@skelly/presentation/play';
@@ -33,7 +32,7 @@ export class BuildMode {
   private readonly body: Body;
   private readonly reach: number;
   private readonly outline: LineSegments;
-  private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+  private readonly strikeTerrainCell: (cell: Vec3, blow: Blow) => boolean;
   private readonly repairCell: (cell: Vec3) => string | undefined;
   private readonly takeApartCell: (cell: Vec3) => string | undefined;
   private readonly igniteTerrainCell: (cell: Vec3, strength: number) => boolean;
@@ -50,7 +49,7 @@ export class BuildMode {
       igniteTerrainCell,
       bindings,
     }: {
-      readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+      readonly strikeTerrainCell: (cell: Vec3, blow: Blow) => boolean;
       readonly repairCell: (cell: Vec3) => string | undefined;
       readonly takeApartCell: (cell: Vec3) => string | undefined;
       readonly igniteTerrainCell: (cell: Vec3, strength: number) => boolean;
@@ -178,10 +177,7 @@ export class BuildMode {
       material.minimumStrength,
       material.durability * (mode === 'step' ? tuning.stepDurabilityFraction : 1),
     );
-    if (!Object.hasOwn(material.resistance, tuning.damageKind)) {
-      throw new Error(`Unsupported block damage kind "${tuning.damageKind}"`);
-    }
-    const admitted = 1 - material.resistance[tuning.damageKind]!;
+    const admitted = strengthPast({ strength: 1, kind: tuning.damageKind }, material.resistance);
     return this.strikeTerrainCell(hit.block, {
       kind: tuning.damageKind,
       strength: admitted > 0 ? effective / admitted : 0,

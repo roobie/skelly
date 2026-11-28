@@ -150,13 +150,14 @@ const applyCommand = (
     vehicleWork: runtime.session.beginVehicleWork,
     operateVehiclePart: runtime.session.operateVehiclePart,
     craftTakeApartCell: () => undefined,
+    cutCell: (cell) => runtime.session.cutCell(cell),
     search: (uid) => {
       const entity = runtime.entities.byUid(uid);
       return entity ? runtime.session.search(entity) : 'The container is no longer available';
     },
     work: (uid, operation) => runtime.session.crafting.act(uid, operation),
-    loadBattery: () => undefined,
-    unloadBattery: () => undefined,
+    loadConsumable: () => undefined,
+    unloadConsumable: () => undefined,
     toHands: (uid, feet) => {
       const item = runtime.inventory.itemByUid(uid);
       return item ? toHands(runtime.inventory, runtime.handling, item, feet) : 'The item is no longer available';
@@ -758,6 +759,7 @@ describe('input replay', () => {
       'furniture.use': { kind: 'furniture.use', entityUid: 1 },
       'furniture.slide': { kind: 'furniture.slide', entityUid: 1, way: 'push' },
       'furniture.place': { kind: 'furniture.place', pos: [0, 0, 0] },
+      'cell.cut': { kind: 'cell.cut', cell: [0, 0, 0] },
       'power.set': { kind: 'power.set', entityUid: 1, enabled: true },
       'charger.start': { kind: 'charger.start', entityUid: 1 },
       'charger.stop': { kind: 'charger.stop', entityUid: 1 },
@@ -780,8 +782,8 @@ describe('input replay', () => {
         supportedBy: [],
       },
       'vehicle.part': { kind: 'vehicle.part', vehicleId: 1, fittingId: 'fixture' },
-      'light.battery.load': { kind: 'light.battery.load', lightUid: 1, batteryUid: 2 },
-      'light.battery.unload': { kind: 'light.battery.unload', lightUid: 1, target: { kind: 'hand', side: 'left' } },
+      'consumable.load': { kind: 'consumable.load', deviceUid: 1, consumableUid: 2 },
+      'consumable.unload': { kind: 'consumable.unload', deviceUid: 1, target: { kind: 'hand', side: 'left' } },
       'craft.start': { kind: 'craft.start', recipeId: 'fixture' },
       'craft.place': {
         kind: 'craft.place',

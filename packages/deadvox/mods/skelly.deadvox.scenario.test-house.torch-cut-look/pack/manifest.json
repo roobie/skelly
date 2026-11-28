@@ -1,0 +1,33 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.building-blocks",
+    "skelly.deadvox.scenario.test-house",
+    "skelly.flame-tools",
+    "skelly.fuel",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house.torch-cut-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

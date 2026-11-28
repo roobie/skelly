@@ -121,7 +121,7 @@ const fixture = () => {
   if (!inventory.add(light, { kind: 'pocket', owner: cargo, pocket: 0 })) {
     throw new Error('Could not load fixture cargo');
   }
-  if (!light.slots?.battery) {
+  if (!light.slots?.consumable) {
     throw new Error('Fixture light needs a nested battery');
   }
   return { runtime, inventory, id, cargo, cargoId, light, absent };
@@ -147,7 +147,7 @@ describe('production vehicle ownership', () => {
     expect(firstIds.length).toBeGreaterThan(0);
     expect(secondIds.length).toBeGreaterThan(0);
     expect(secondIds.every((uid) => !firstIds.includes(uid))).toBe(true);
-    expect(inventory.itemByUid(light.slots!.battery!.uid)).toBe(light.slots!.battery);
+    expect(inventory.itemByUid(light.slots!.consumable!.uid)).toBe(light.slots!.consumable);
     expect(inventory.locate(cargo)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: cargoId });
     expect(inventory.placeOf(inventory.locate(light)!)).toMatchObject({ kind: 'vehicle', origin: spec('').origin });
     expect(inventory.move(cargo, { kind: 'hand', side: 'right' }).ok).toBe(false);
@@ -164,7 +164,7 @@ describe('production vehicle ownership', () => {
     expect(restored.session.vehicles).toBe(restored.inventory.vehicles);
     expect(restored.inventory.vehicles.get(id)).not.toBe(inventory.vehicles.get(id));
     expect(restored.inventory.itemByUid(cargo.uid)?.pockets?.[0]?.[0]?.item.uid).toBe(light.uid);
-    expect(restored.inventory.itemByUid(light.slots!.battery!.uid)).toBeDefined();
+    expect(restored.inventory.itemByUid(light.slots!.consumable!.uid)).toBeDefined();
     const build = restored.inventory.vehicles.get(id)!;
     expect(build.fittings.some((entry) => entry.id === absent)).toBe(false);
     expect(build.sites.some((entry) => entry.id === absent)).toBe(true);

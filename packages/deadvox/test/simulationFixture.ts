@@ -16,6 +16,7 @@ const responses = (blunt: number, cut: number, pierce: number, acid: number) => 
   fragment: pierce,
   breach: blunt,
   crush: blunt,
+  heat: acid,
 });
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {

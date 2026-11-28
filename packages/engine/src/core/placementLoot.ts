@@ -117,8 +117,8 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
     const item = new ItemFactory().create(registry, fixed.item);
     const fittedTypes = Object.values(item.slots ?? {}).map(({ type }) => type);
     const types = [fixed.item, ...fittedTypes, ...Object.values(fixed.fitted ?? {})];
-    if (!types.some((type) => registry.items.get(type)?.battery)) {
-      return `"${fixed.item}" has no battery to charge`;
+    if (!types.some((type) => registry.items.get(type)?.consumable)) {
+      return `"${fixed.item}" has no consumable to charge`;
     }
   }
   return placedTypeIssue(registry, fixed.item, context, fixed.fitted);

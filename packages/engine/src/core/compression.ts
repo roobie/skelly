@@ -100,6 +100,11 @@ export class Compression {
     return true;
   }
 
+  /** A prompt waits on Continue or Stop with no action running. */
+  get waitsOnPrompt(): boolean {
+    return !this.active && this.interruption !== undefined;
+  }
+
   /** A running action or a waiting prompt refuses keys; a ramp-down alone does not. */
   get refusesKeys(): boolean {
     return this.active || this.interruption !== undefined;

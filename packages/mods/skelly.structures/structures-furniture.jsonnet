@@ -2,6 +2,7 @@ local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
 local forcing = import 'tools/jsonnet/lib/door-forcing.libsonnet';
+local resistance = (import 'tools/jsonnet/lib/damage-resistance.libsonnet').resistance;
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -416,6 +417,8 @@ local unshaped = [
   furnitureMaterials: [
     {
       id: 'plastic', drops: { default: 'item_drop_wood' }, blowSound: 'door_bash',
+      // Heat melts plastic through fastest, as players expect, so it lands whole like every other kind.
+      resistance: resistance(0, 0, 0, 0, 0, 0, 0, 0, 0),
       damaged: [
         { from: 0.01, tint: '#4a4a44', strength: 0.15 },
         { from: 0.4, tint: '#4a4a44', strength: 0.35 },

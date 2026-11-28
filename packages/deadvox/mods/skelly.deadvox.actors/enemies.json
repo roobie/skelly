@@ -223,6 +223,14 @@
           "rightLeg": 0,
           "torso": 0
         },
+        "heat": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
         "pierce": {
           "head": 0,
           "leftArm": 0,
@@ -592,6 +600,14 @@
           "torso": 0
         },
         "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "heat": {
           "head": 0,
           "leftArm": 0,
           "leftLeg": 0,
@@ -975,6 +991,14 @@
           "rightLeg": 0,
           "torso": 0
         },
+        "heat": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
         "pierce": {
           "head": 0,
           "leftArm": 0,
@@ -1344,6 +1368,14 @@
           "torso": 0
         },
         "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "heat": {
           "head": 0,
           "leftArm": 0,
           "leftLeg": 0,
@@ -1727,6 +1759,14 @@
           "rightLeg": 0,
           "torso": 0
         },
+        "heat": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
         "pierce": {
           "head": 0,
           "leftArm": 0,
@@ -2096,6 +2136,14 @@
           "torso": 0
         },
         "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "heat": {
           "head": 0,
           "leftArm": 0,
           "leftLeg": 0,
@@ -2475,6 +2523,14 @@
           "rightLeg": 0,
           "torso": 0
         },
+        "heat": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
         "pierce": {
           "head": 0,
           "leftArm": 0,
@@ -2806,6 +2862,14 @@
           "torso": 0
         },
         "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "heat": {
           "head": 0,
           "leftArm": 0,
           "leftLeg": 0,
@@ -3165,6 +3229,14 @@
           "rightLeg": 0,
           "torso": 0
         },
+        "heat": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
         "pierce": {
           "head": 0,
           "leftArm": 0,
@@ -3517,6 +3589,14 @@
           "torso": 0
         },
         "fragment": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "heat": {
           "head": 0,
           "leftArm": 0,
           "leftLeg": 0,

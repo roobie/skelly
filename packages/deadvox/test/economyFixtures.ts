@@ -10,7 +10,7 @@ import baseUiSounds from '../../mods/skelly.ui/ui-sounds.json' with { type: 'jso
 import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
-import { fixtureDamageContent } from './fixtures/damageKinds.ts';
+import { fixtureDamageContent, fixtureResistance } from './fixtures/damageKinds.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
@@ -26,7 +26,13 @@ export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
 export const FIXTURE_MATERIAL = 'fixture_material';
 /** The material table entry `FIXTURE_MATERIAL` names, for a fixture registry built without base content. */
 export const fixtureMaterials = () => [
-  { id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+  {
+    id: FIXTURE_MATERIAL,
+    blowSound: FIXTURE_BLOW_SOUND,
+    resistance: fixtureResistance(),
+    drops: { default: FIXTURE_BLOW_SOUND },
+    methods: [],
+  },
 ];
 /** The sound a blow on fixture furniture makes; materials must name one that alerts hearing. */
 export const FIXTURE_BLOW_SOUND = 'fixture_blow';
@@ -43,6 +49,12 @@ export const fixtureSounds = () => [
     noise: { enabled: true, radiusMetres: 10 },
   },
 ];
+/** `fixtureMaterials` with the blow sound and damage kinds they name, for a registry built from nothing else. */
+export const fixtureMaterialContent = () => ({
+  damageKinds: fixtureDamageContent().damageKinds,
+  furnitureMaterials: fixtureMaterials(),
+  sounds: fixtureSounds(),
+});
 /**
  * Base content's core UI entry and the refusal sound it names: the game reads its action text from there, and
  * copying the lines into a fixture would only drift. JSON imports keep this module loadable by browser proofs.

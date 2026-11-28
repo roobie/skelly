@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '@skelly/engine/content';
 import { pileLayout } from '@skelly/engine/internal/core/pileLayout.ts';
-import { Inventory, PILE_GRID, type Pile, spentCaseItemId, toggleLight } from '@skelly/engine/inventory';
+import {
+  CONSUMABLE_SLOT,
+  Inventory,
+  PILE_GRID,
+  type Pile,
+  spentCaseItemId,
+  toggleLight,
+  wantedConsumable,
+} from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 import { createCompass } from '@skelly/presentation/internal/render/compass.ts';
 import { presentHeldDisplay } from '@skelly/presentation/internal/render/heldDisplay.ts';
@@ -435,10 +443,8 @@ describe('piles with models', () => {
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);
-        if (on && definition.tool?.fuel) {
-          const canister = items.create(definition.tool.fuel.canister);
-          canister.charges = registry.items.get(canister.type)!.canister!.capacity;
-          items.fitSlot(light, 'canister', canister);
+        if (on && definition.consumableSlot && !light.slots?.consumable) {
+          items.fitSlot(light, CONSUMABLE_SLOT, items.create(wantedConsumable(registry, definition.id)));
         }
         if (on) {
           expect(toggleLight(registry, light, 0)).toBeUndefined();

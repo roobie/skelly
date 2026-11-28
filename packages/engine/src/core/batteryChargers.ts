@@ -1,5 +1,5 @@
-import { batteryCapacityMicrojoules, batteryEnergy } from './battery.ts';
 import type { BlockEntity } from './blockEntities.ts';
+import { batteryCapacityMicrojoules, batteryEnergy } from './consumable.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory, Plan, Target } from './inventory.ts';
 import type { Item } from './items.ts';

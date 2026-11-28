@@ -17,7 +17,7 @@ import {
 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { registry } from './snapshotTestSupport.ts';
@@ -260,8 +260,7 @@ describe('the content check for covers', () => {
 
   it('refuses a cover placed as fitted', () => {
     const data = {
-      furnitureMaterials: fixtureMaterials(),
-      sounds: fixtureSounds(),
+      ...fixtureMaterialContent(),
       furniture: [cover],
       templates: [
         {

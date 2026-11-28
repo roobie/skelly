@@ -57,7 +57,7 @@ export const worldRepairFixture = (registry: Registry) => {
   const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });
   const commands = new CraftCommands({ inventory, character, sim, queue: new HandlingQueue(inventory), reach });
   const target = inventory.entities.add({ type: PIECE, pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' })!;
-  if (inventory.entities.bash(target, DURABILITY / 2) !== 'damaged') {
+  if (inventory.entities.bash(target, { strength: DURABILITY / 2, kind: 'blunt' }) !== 'damaged') {
     throw new Error('Fixture piece was not damaged');
   }
   if (!inventory.add(inventory.create(STOCK, 2), { kind: 'pile', pos: [0, 0, 0] })) {

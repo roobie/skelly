@@ -650,6 +650,8 @@ rounds are tracked under #1332.
   that boundary; separate strengths let wall-cracking and body harm tune apart as melee
   terrain impulse and body damage do. Fragments strike the first solid cell on each
   existing ray by fragment resistance. Breach charges follow, then furniture knock-out.
+  The torch cuts steel cells by ordinary blows (`DESIGN.md`, "Cutting cells"); its next
+  round, under #2046, cuts steel pieces and breaks a steel door open by cutting.
 - **Built systems.** Switch and charger controls exist
   (`packages/engine/src/game/session.ts`, `powerControl` and `chargerControl`); any
   process beyond charging and lamps, and rewiring, stay under #1184. Brute knockback and
@@ -709,7 +711,7 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
   zombie attention; neither can stand in for the other. See `packages/engine/src/core/lights.ts`,
   `lightSenseSourceFor`, and `packages/presentation/src/render/skylight.ts`, `Skylight`. Existing consumable
   light depletion (`packages/engine/src/core/lights.ts`, `drainBurnLight`) and torch gas spending
-  (`packages/engine/src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
+  (`packages/engine/src/core/consumableSlot.ts`, `spendConsumable`) are not a world fire or smoke model.
 
 ## Playtest questions and exit
 

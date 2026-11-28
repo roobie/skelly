@@ -134,7 +134,7 @@ describe('liquid vessel foundation', () => {
 
   it.each([
     { stack: 2 },
-    { canister: { capacity: 5 } },
+    { consumable: { capacity: 5 } },
     { igniter: { capacity: 5, perIgnition: 1 } },
     { unpack: { item: 'fixture_invalid', count: 1, simSeconds: 1 } },
   ])('rejects unsupported vessel mechanism combinations %o', (patch) => {

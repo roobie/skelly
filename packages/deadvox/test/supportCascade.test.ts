@@ -206,7 +206,7 @@ const fixture = (
   });
   const block = (cell: Vec3) => registry.blocks[canonical.getBlock(...cell)]!.id;
   const tick = (ticks = 1) => session.sim.scheduler.advance(ticks * session.sim.scheduler.stepOf('support', 1));
-  const strike = (cell: Vec3) => session.strikeTerrainCell(cell, { strength: 100, kind: 'blunt' });
+  const strike = (cell: Vec3) => session.strikeTerrainCell(cell, { strength: 100, kind: 'blunt' }) !== undefined;
   /** Every standing structure cell in the fixture's row, rubble aside, with whether support holds it. */
   const standing = () => {
     const support = createSupport(registry, terrainSupportView(canonical));

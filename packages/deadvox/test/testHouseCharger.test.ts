@@ -59,7 +59,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
   expect(session.search(charger!)).toBeUndefined();
   finishHandling();
   const nearby = session.reach().entries;
-  const cell = nearby.find(({ item }) => registry.items.get(item.type)?.battery?.rechargeable)?.item;
+  const cell = nearby.find(({ item }) => registry.items.get(item.type)?.consumable?.rechargeable)?.item;
   const lamp = nearby.find(({ item }) => registry.items.get(item.type)?.light)?.item;
   expect(cell, 'a rechargeable cell is available without travel or debug inventory edits').toBeDefined();
   expect(lamp, 'a light is beside the cell').toBeDefined();

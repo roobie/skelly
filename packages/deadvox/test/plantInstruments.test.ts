@@ -16,6 +16,7 @@ import content from '../mods/skelly.deadvox.scenario.test-house.plant-instrument
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
+import { crushProof } from './pieceBlows.ts';
 
 type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
 
@@ -338,6 +339,15 @@ it('furnishes a retained ruined fixture without ruining or materialising its bas
   expect(inventory.entities.conditionOf(entity)).toBe(0);
   expect(inventory.entities.housingView(entity)).toEqual(before);
   expect(inventory.snapshotState().nextItemUid).toBe(nextItemUid);
+});
+
+it('furnishes a fixture ruined whatever its material resists, since the ruin is authored, not struck', () => {
+  const { registry, definition } = fixture();
+  crushProof(registry, definition.id);
+  const inventory = new Inventory(registry, undefined, new BlockEntities(registry, 1));
+  const spec = { type: definition.id, pos: [0, 1, 0] as Vec3, size: definition.size, facing: 'n' as const };
+  const entity = inventory.furnishSpawn({ spec, loot: [], wear: 1 })!;
+  expect(inventory.entities.conditionOf(entity)).toBe(0);
 });
 
 it('formats an authored minimum including zero, but never invents the omitted comparison fallback', () => {

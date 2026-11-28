@@ -3,10 +3,12 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { BODY_REGIONS, type BodyRegion } from './body.ts';
 import type { Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import type { WorkTarget } from './items.ts';
 import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
+import type { CompressionCaps } from './schema.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import {
@@ -18,8 +20,11 @@ import {
 } from './vehicleInstances.ts';
 
 export type RestKind = 'rest' | 'sleep';
-/** Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. */
-const RUN_AT_1X_WHILE_COMPRESSION_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading']);
+/**
+ * Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. A cut takes
+ * the rules of taking a piece apart, a craft.
+ */
+const RUN_AT_1X_WHILE_COMPRESSION_REFUSED: ReadonlySet<string> = new Set(['treatment', 'craft', 'reading', 'cutCell']);
 export interface RestAction {
   kind: RestKind;
   furnitureUid: number;
@@ -55,6 +60,16 @@ export type LongJob =
       nextStrike: number;
     }
   | {
+      jobType: 'cutCell';
+      stopped: boolean;
+      last: number;
+      cell: [number, number, number];
+      toolUid: number;
+      strikeIntervalSimSeconds: number;
+      /** Sim seconds since the last strike; the cut's progress is the cell's retained damage, not kept here. */
+      sinceStrike: number;
+    }
+  | {
       jobType: 'vehicleWork';
       placement: VehicleWorkPlacement;
       kind: 'install' | 'remove';
@@ -81,6 +96,35 @@ export interface RestStartOptions {
   wakeAt?: number;
   sleepOnsetGameSeconds?: number;
 }
+const RESTING_JOBS: ReadonlySet<LongJob['jobType']> = new Set(['rest', 'sleep']);
+/** Strike jobs land blow by blow with a held tool, which they own and which keeps the body from other work. */
+type StrikeJobType = 'forceDoor' | 'cutCell';
+const STRIKE_JOBS: ReadonlySet<LongJob['jobType']> = new Set<StrikeJobType>(['forceDoor', 'cutCell']);
+export const isStrikeJob = (jobType: LongJob['jobType']): jobType is StrikeJobType => STRIKE_JOBS.has(jobType);
+/**
+ * Forcing always runs at 1×: it trades time against noise, so each blow must sound and draw attention as it
+ * lands. A cut compresses like taking furniture apart.
+ */
+type OneXJobType = 'forceDoor';
+const ONE_X_JOBS: ReadonlySet<LongJob['jobType']> = new Set<OneXJobType>(['forceDoor']);
+export const alwaysRunsAt1x = (jobType: LongJob['jobType']): jobType is OneXJobType => ONE_X_JOBS.has(jobType);
+/** Jobs without a cap of their own share crafting's, as they are hands-on work of the same pace. */
+const compressionCapOf = (jobType: Exclude<LongJob['jobType'], OneXJobType>): keyof CompressionCaps =>
+  jobType === 'vehicleWork' || jobType === 'cutCell' ? 'craft' : jobType;
+/** Why a running strike job keeps the body from other work. */
+export const strikeJobRefusal = (registry: Pick<Registry, 'ui'>, job: LongJob | undefined): string | undefined => {
+  if (!job || job.stopped) {
+    return undefined;
+  }
+  switch (job.jobType) {
+    case 'forceDoor':
+      return coreMessage(registry, 'busyForcing');
+    case 'cutCell':
+      return coreMessage(registry, 'busyCutting');
+    default:
+      return undefined;
+  }
+};
 const restActionRefusal = (registry: Pick<Registry, 'ui'>, job: LongJob | undefined): string | undefined => {
   if (!job || job.stopped) {
     return undefined;
@@ -90,10 +134,8 @@ const restActionRefusal = (registry: Pick<Registry, 'ui'>, job: LongJob | undefi
       return coreMessage(registry, 'busyCrafting');
     case 'reading':
       return coreMessage(registry, 'busyReading');
-    case 'forceDoor':
-      return coreMessage(registry, 'busyForcing');
     default:
-      return undefined;
+      return strikeJobRefusal(registry, job);
   }
 };
 const restStartTimingRefusal = (
@@ -122,6 +164,13 @@ export interface DoorForcingHooks {
   validate: (entityUid: number, toolUid: number, method: string) => string | undefined;
   strike: (entityUid: number, toolUid: number, method: string, time: number) => void;
   finish: (entityUid: number, toolUid: number, method: string) => string | undefined;
+}
+/** What one cutting strike did: the cell broke, the cut goes on, or it stops for the reason given. */
+export type CutStrikeResult = 'cut' | 'going' | { stop: string };
+export interface CellCuttingHooks {
+  /** Why the tool can't go on cutting the cell; Start, resume and every tick ask it. */
+  validate: (cell: Readonly<Vec3>, toolUid: number) => string | undefined;
+  strike: (cell: Readonly<Vec3>, toolUid: number) => CutStrikeResult;
 }
 export interface TreatmentActionHooks {
   validate: (region: BodyRegion, itemUid: number, itemType: string) => string | undefined;
@@ -219,6 +268,25 @@ const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void 
   }
 };
 
+const validateCutting = (job: Extract<LongJob, { jobType: 'cutCell' }>): void => {
+  if (
+    !(
+      Array.isArray(job.cell) &&
+      job.cell.length === 3 &&
+      job.cell.every(Number.isSafeInteger) &&
+      Number.isSafeInteger(job.toolUid)
+    ) ||
+    job.toolUid < 1 ||
+    !Number.isFinite(job.strikeIntervalSimSeconds) ||
+    job.strikeIntervalSimSeconds <= 0 ||
+    !Number.isFinite(job.sinceStrike) ||
+    job.sinceStrike < 0 ||
+    job.sinceStrike >= job.strikeIntervalSimSeconds
+  ) {
+    throw new Error('Invalid cutting descriptor');
+  }
+};
+
 const validateVehicleWork = (job: Extract<LongJob, { jobType: 'vehicleWork' }>): void => {
   if (
     (job.kind !== 'install' && job.kind !== 'remove') ||
@@ -299,6 +367,9 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
     case 'forceDoor':
       validateForcing(job);
       return;
+    case 'cutCell':
+      validateCutting(job);
+      return;
     case 'treatment':
       validateTreatment(job);
       return;
@@ -325,6 +396,7 @@ export class LongActions {
   craft: CraftActionHooks | undefined;
   reading: ReadingActionHooks | undefined;
   forcing: DoorForcingHooks | undefined;
+  cutting: CellCuttingHooks | undefined;
   treatment: TreatmentActionHooks | undefined;
   vehicleWork: VehicleWorkHooks | undefined;
   notice: (text: string) => void = () => undefined;
@@ -342,23 +414,23 @@ export class LongActions {
     return this.sim.actionRefusal;
   }
   /**
-   * Prying runs at 1×, and so do treatment, crafting and reading while the body refuses compression: a
+   * Forcing runs at 1×, and so do treatment, crafting, reading and cutting while the body refuses compression: a
    * bleeding player must still be able to treat the wound or make something to treat it (`packages/deadvox/DESIGN.md`, "Bleeding").
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
     return (
-      jobType === 'forceDoor' ||
+      alwaysRunsAt1x(jobType) ||
       (RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined)
     );
   }
   /** Drops to 1× for an uncompressed job, or asks for compression; returns why compression was refused. */
   private startTiming(jobType: LongJob['jobType']): string | undefined {
-    if (jobType === 'forceDoor' || this.runsUncompressed(jobType)) {
+    if (alwaysRunsAt1x(jobType) || this.runsUncompressed(jobType)) {
       this.sim.compression.stop();
       this.sim.compression.snap();
       return undefined;
     }
-    const result = this.sim.compressLongAction(jobType === 'vehicleWork' ? 'craft' : jobType);
+    const result = this.sim.compressLongAction(compressionCapOf(jobType));
     return result.ok ? undefined : result.reason;
   }
   get job(): Readonly<LongJob> | undefined {
@@ -410,6 +482,7 @@ export class LongActions {
     if (job?.jobType === 'reading' && !this.reading?.owns(job.bookUid)) {
       return 'Missing reading book';
     }
+    // A cut's cell may stand in a column that streams in after the restore, so its first tick asks instead.
     return job?.jobType === 'forceDoor' || job?.jobType === 'vehicleWork' || job?.jobType === 'treatment'
       ? this.validateOwner(job)
       : undefined;
@@ -417,8 +490,8 @@ export class LongActions {
   /** A restored running action compresses up to its own cap, not the default. */
   private restoreCompressionCap(): void {
     const job = this.current;
-    if (job && !job.stopped && job.jobType !== 'forceDoor' && this.sim.compression.active) {
-      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType);
+    if (job && !job.stopped && !alwaysRunsAt1x(job.jobType) && this.sim.compression.active) {
+      this.sim.compressLongAction(compressionCapOf(job.jobType));
     }
   }
   startWait(): string | undefined {
@@ -492,8 +565,9 @@ export class LongActions {
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return coreMessage(this.sim.registry, 'busyReading');
     }
-    if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
-      return coreMessage(this.sim.registry, 'busyForcing');
+    const striking = strikeJobRefusal(this.sim.registry, this.current);
+    if (striking) {
+      return striking;
     }
     const reason = this.craft.admit(plan);
     if (reason) {
@@ -589,6 +663,48 @@ export class LongActions {
       duration,
       strikeInterval,
       nextStrike: previous?.nextStrike ?? strikeInterval,
+    };
+    return undefined;
+  }
+  /** The first strike lands one interval in; resuming the same tool on the same cell keeps its strike cursor. */
+  beginCutting(cell: Readonly<Vec3>, toolUid: number, strikeIntervalSimSeconds: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
+    if (!this.cutting) {
+      return 'Missing cutting action owner';
+    }
+    if (this.current && !this.current.stopped) {
+      return coreMessage(this.sim.registry, 'busy');
+    }
+    const reason = this.cutting.validate(cell, toolUid);
+    if (reason) {
+      return reason;
+    }
+    if (!Number.isFinite(strikeIntervalSimSeconds) || strikeIntervalSimSeconds <= 0) {
+      return 'Invalid cutting time';
+    }
+    const previous = this.current;
+    const sinceStrike =
+      previous?.jobType === 'cutCell' &&
+      previous.toolUid === toolUid &&
+      previous.strikeIntervalSimSeconds === strikeIntervalSimSeconds &&
+      previous.cell.every((value, axis) => value === cell[axis])
+        ? previous.sinceStrike
+        : 0;
+    const refusal = this.startTiming('cutCell');
+    if (refusal) {
+      return refusal;
+    }
+    this.current = {
+      jobType: 'cutCell',
+      stopped: false,
+      last: this.sim.time,
+      cell: [cell[0], cell[1], cell[2]],
+      toolUid,
+      strikeIntervalSimSeconds,
+      sinceStrike,
     };
     return undefined;
   }
@@ -736,8 +852,9 @@ export class LongActions {
     if (this.current?.jobType === 'treatment' && !this.current.stopped) {
       return coreMessage(this.sim.registry, 'busyTreating');
     }
-    if (this.current?.jobType === 'forceDoor' && !this.current.stopped) {
-      return coreMessage(this.sim.registry, 'busyForcing');
+    const striking = strikeJobRefusal(this.sim.registry, this.current);
+    if (striking) {
+      return striking;
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return coreMessage(this.sim.registry, 'otherCraft');
@@ -812,7 +929,7 @@ export class LongActions {
     }
     this.advance(this.sim.time);
     if (this.current === job && !job.stopped) {
-      this.stopUncompressed(job, reason);
+      this.stopWithNotice(job, reason);
     }
   }
   cancel(): void {
@@ -848,8 +965,11 @@ export class LongActions {
     const reason = error instanceof Error ? error.message : 'Action effect refused';
     this.stopOrInterrupt(job, reason);
   }
-  /** An uncompressed job has no prompt to wait on, so its stop reason is a notice. */
-  private stopUncompressed(job: LongJob, reason: string): void {
+  /**
+   * Stops with a notice and no prompt, leaving the player free to move: an uncompressed job has no prompt to wait on,
+   * and a job its own owner refuses, such as a cut whose torch ran dry, cannot go on by Continue alone.
+   */
+  private stopWithNotice(job: LongJob, reason: string): void {
     job.stopped = true;
     this.sim.compression.stop();
     this.sim.compression.snap();
@@ -857,7 +977,7 @@ export class LongActions {
   }
   private stopOrInterrupt(job: LongJob, reason: string): void {
     if (this.runsUncompressed(job.jobType)) {
-      this.stopUncompressed(job, reason);
+      this.stopWithNotice(job, reason);
     } else {
       job.stopped = true;
       this.sim.compression.interrupt(reason);
@@ -869,9 +989,9 @@ export class LongActions {
       return;
     }
     const reason = this.sim.compression.interruption;
-    if (job.jobType === 'forceDoor' || this.runsUncompressed(job.jobType)) {
+    if (alwaysRunsAt1x(job.jobType) || this.runsUncompressed(job.jobType)) {
       if (reason !== undefined) {
-        this.stopUncompressed(job, reason);
+        this.stopWithNotice(job, reason);
       }
       return;
     }
@@ -887,7 +1007,7 @@ export class LongActions {
       reason === undefined &&
       !job.stopped &&
       RUN_AT_1X_WHILE_COMPRESSION_REFUSED.has(job.jobType) &&
-      this.sim.compressLongAction(job.jobType === 'vehicleWork' ? 'craft' : job.jobType).ok
+      this.sim.compressLongAction(compressionCapOf(job.jobType)).ok
     ) {
       return;
     }
@@ -903,6 +1023,8 @@ export class LongActions {
         return this.forcing
           ? this.forcing.validate(job.entityUid, job.toolUid, job.method)
           : 'Missing forcing action owner';
+      case 'cutCell':
+        return this.cutting ? this.cutting.validate(job.cell, job.toolUid) : 'Missing cutting action owner';
       case 'treatment':
         return this.treatment
           ? this.treatment.validate(job.region, job.itemUid, job.itemType)
@@ -931,6 +1053,9 @@ export class LongActions {
       }
       return job.elapsed === job.duration;
     }
+    if (job.jobType === 'cutCell') {
+      return this.advanceCutting(job, seconds);
+    }
     if (job.jobType === 'craft') {
       return this.craft!.advance(job.workUid, seconds);
     }
@@ -958,6 +1083,25 @@ export class LongActions {
     job.elapsed += seconds;
     // An alarm wakes you at its time, with fatigue held at its floor of 0 once rested.
     return job.rest.wakeAt === undefined ? this.sim.needs.fatigue <= 0 : job.last >= job.rest.wakeAt;
+  }
+  /** Lands each strike due in `seconds`; the job ends when a strike breaks the cell, and stops when one is refused. */
+  private advanceCutting(job: Extract<LongJob, { jobType: 'cutCell' }>, seconds: number): boolean {
+    let since = job.sinceStrike + seconds;
+    // Tick lengths sum with rounding error, so a strike due within the scheduler's epsilon lands now.
+    while (since >= job.strikeIntervalSimSeconds - SCHEDULER_TIME_EPSILON) {
+      since = Math.max(0, since - job.strikeIntervalSimSeconds);
+      const result = this.cutting!.strike(job.cell, job.toolUid);
+      if (result === 'cut') {
+        return true;
+      }
+      if (result !== 'going') {
+        job.sinceStrike = 0;
+        this.stopWithNotice(job, result.stop);
+        return false;
+      }
+    }
+    job.sinceStrike = since;
+    return false;
   }
   private finishJob(job: LongJob): void {
     try {
@@ -988,7 +1132,7 @@ export class LongActions {
         if (reason !== true) {
           this.failedEffect(job, new Error(reason));
         }
-      } else if (job.jobType !== 'wait') {
+      } else if (RESTING_JOBS.has(job.jobType)) {
         this.notice(coreMessage(this.sim.registry, 'rested'));
       }
     } catch (error) {
@@ -1020,13 +1164,13 @@ export class LongActions {
     }
     const reason = this.validateOwner(job);
     if (reason) {
-      this.stopOrInterrupt(job, reason);
+      this.stopWithNotice(job, reason);
       return;
     }
     const fromTime = job.last;
     const simSecondsElapsed = Math.max(0, time - fromTime);
     const elapsed =
-      job.jobType === 'forceDoor' || job.jobType === 'treatment' || job.jobType === 'vehicleWork'
+      isStrikeJob(job.jobType) || job.jobType === 'treatment' || job.jobType === 'vehicleWork'
         ? simSecondsElapsed
         : simSecondsElapsed * this.sim.clock.ratio;
     job.last = time;

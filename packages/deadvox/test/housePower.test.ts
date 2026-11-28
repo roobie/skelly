@@ -14,6 +14,7 @@ import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { bluntBlowLanding } from './pieceBlows.ts';
 import { contentLookup, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 vi.mock('@skelly/engine/internal/game/streamer.ts', () => {
@@ -197,9 +198,8 @@ describe('house supply and player controls', () => {
     f.loadCharger();
     const generator = f.control('generator');
     expect(f.powered().every(Boolean)).toBe(true);
-    expect(f.session.bashFurniture(generator, registry.furniture.get(generator.type)!.breach.durability)).toBe(
-      'ruined',
-    );
+    const { durability } = registry.furniture.get(generator.type)!.breach;
+    expect(f.session.bashFurniture(generator, bluntBlowLanding(registry, generator.type, durability))).toBe('ruined');
     expect(f.session.entities.byUid(generator.uid)).toBeUndefined();
     expect(f.powered().every((powered) => !powered)).toBe(true);
   });

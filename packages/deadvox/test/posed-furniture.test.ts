@@ -4,13 +4,7 @@ import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { BlockEntities, rotationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import {
-  FIXTURE_MATERIAL,
-  fixtureBreach,
-  fixtureLootContext,
-  fixtureMaterials,
-  fixtureSounds,
-} from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootContext, fixtureMaterialContent } from './economyFixtures.ts';
 
 describe('posed furniture', () => {
   it('keeps an authored fallen cabinet pose through rotated placement and spawn', () => {
@@ -25,8 +19,7 @@ describe('posed furniture', () => {
       {
         source: 'posed-cabinet-fixture',
         data: {
-          furnitureMaterials: fixtureMaterials(),
-          sounds: fixtureSounds(),
+          ...fixtureMaterialContent(),
           furniture: [
             {
               id: 'posed_cabinet',

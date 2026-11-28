@@ -8,5 +8,6 @@
     { id: 'fragment', class: 'non-melee' },
     { id: 'breach', class: 'non-melee' },
     { id: 'crush', class: 'non-melee' },
+    { id: 'heat', class: 'non-melee' },
   ],
 }

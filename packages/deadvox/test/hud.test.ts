@@ -241,14 +241,21 @@ describe('handlingViewModel', () => {
         durationSimSeconds: 5,
         stopped: false,
       },
+      { kind: 'cutCell', label: 'Fixture action', share: 0.3, stopped: false },
     ];
+    const shareOf = (job: TimedActionPresentation): number => {
+      if ('share' in job) {
+        return job.share;
+      }
+      return 'elapsedGameSeconds' in job
+        ? job.elapsedGameSeconds / job.durationGameSeconds
+        : job.elapsedSimSeconds / job.durationSimSeconds;
+    };
 
     for (const job of jobs) {
       const vm = handlingViewModel(timedActionHandlingPresentation(job, handlingText, keys), handlingText);
       expect(vm.visible).toBe(true);
-      const completed = 'elapsedGameSeconds' in job ? job.elapsedGameSeconds : job.elapsedSimSeconds;
-      const total = 'durationGameSeconds' in job ? job.durationGameSeconds : job.durationSimSeconds;
-      expect(vm.percent).toBe(Math.round((completed / total) * 100));
+      expect(vm.percent).toBe(Math.round(shareOf(job) * 100));
       const root = document.createElement('div');
       render(vm.cancelLabel, root);
       expect(root.querySelector('.keycap')?.textContent).toBe(keys.label('handling.stop'));

@@ -120,7 +120,8 @@ const content = [
         inventory: { visibility: 'occupied', order },
         selfView: 'frame',
       })),
-      furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
+      // The registry admits no damage kinds, so the material resists none.
+      furnitureMaterials: [{ id: 'scroll_material', blowSound, resistance: {}, drops: { default: blowSound } }],
       furniture: [
         {
           id: 'scroll_rack',
@@ -2170,7 +2171,7 @@ try {
     assert.ok(Number.isSafeInteger(lightUid) && Number.isSafeInteger(spareUid), 'the light and a loose battery spawn');
     await page.locator(`#inventory [data-uid="${lightUid}"]`).scrollIntoViewIfNeeded();
     await clickThroughMenuCursor(`#inventory [data-uid="${lightUid}"]`);
-    const batterySlot = page.locator(`#inventory .inv-details [data-target="battery:${lightUid}"]`);
+    const batterySlot = page.locator(`#inventory .inv-details [data-target="consumable:${lightUid}"]`);
     await batterySlot.waitFor({ state: 'visible', timeout: 5000 });
     await batterySlot.scrollIntoViewIfNeeded();
     await page.locator(`#inventory [data-uid="${spareUid}"]`).scrollIntoViewIfNeeded();
@@ -2197,8 +2198,8 @@ try {
           frames += 1;
         }
         return {
-          loads: dispatches.filter((action) => action.kind === 'light.battery.load').length,
-          fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
+          loads: dispatches.filter((action) => action.kind === 'consumable.load').length,
+          fittedUid: session.inventory.itemByUid(light)?.slots?.consumable?.uid,
           expected: spare,
         };
       },
@@ -2213,7 +2214,7 @@ try {
     const pageErrorsBeforeUnload = errors.length;
     const pocket = page.locator('#inventory .inv-grid[data-target^="pocket:"]').first();
     await pocket.scrollIntoViewIfNeeded();
-    await moveMenuCursorTo(`#inventory [data-target="battery:${lightUid}"] [data-uid="${spareUid}"]`);
+    await moveMenuCursorTo(`#inventory [data-target="consumable:${lightUid}"] [data-uid="${spareUid}"]`);
     await page.mouse.down();
     await moveMenuCursorTo(pocket);
     assert.equal(await pocket.getAttribute('data-drop-shape'), 'will-land', 'a pocket accepts the dragged-out battery');
@@ -2231,8 +2232,8 @@ try {
         }
         const spareItem = session.inventory.itemByUid(spare);
         return {
-          unloads: dispatches.filter((action) => action.kind === 'light.battery.unload').length,
-          fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
+          unloads: dispatches.filter((action) => action.kind === 'consumable.unload').length,
+          fittedUid: session.inventory.itemByUid(light)?.slots?.consumable?.uid,
           where: spareItem && session.inventory.locate(spareItem)?.kind,
         };
       },

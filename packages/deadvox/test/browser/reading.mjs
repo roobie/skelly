@@ -1102,10 +1102,11 @@ try {
       const { registry } = inventory;
       const { left: book, right: heldNote } = inventory.hands;
       const type = [...registry.items.keys()].find((id) => {
-        const light = registry.items.get(id)?.light;
+        const def = registry.items.get(id);
         return (
-          light?.power &&
-          !light.burning &&
+          def?.light &&
+          def.consumableSlot &&
+          !def.light.burning &&
           chargeOf(registry, inventory.createRolled({ type: id, count: 1, condition: 1, charge: 1 })) > 0
         );
       });
@@ -1161,13 +1162,13 @@ try {
       const { registry } = inventory;
       const fullLamp = inventory.itemByUid(full);
       const { job } = session.sim.actions;
-      const power = registry.items.get(type)?.light?.power;
-      if (!(fullLamp && job?.jobType === 'reading' && power)) {
+      const slot = registry.items.get(type)?.consumableSlot;
+      if (!(fullLamp && job?.jobType === 'reading' && slot)) {
         throw new Error('The full lamp, its battery or the reading job is missing');
       }
       // Charge for half the book's remaining time, so the battery dies mid-read.
       const remaining = job.duration - job.elapsed;
-      const share = (power.chargePerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
+      const share = (slot.drainPerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
       const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
       const feet = inventory.dropFeet();
       if (

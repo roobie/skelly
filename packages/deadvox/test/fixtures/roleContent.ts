@@ -1,5 +1,6 @@
 import type { ContentSource } from '@skelly/engine/content';
 import { FIXTURE_BLOW_SOUND, fixtureBreach } from '../economyFixtures.ts';
+import { fixtureResistance } from './damageKinds.ts';
 
 // Fixture-owned role content for the skill-role cases. Ids are fixture ids, except `wax`, which the recipe case reads.
 
@@ -43,6 +44,7 @@ export const fixtureRoleItemsSource = (): ContentSource => ({
       {
         id: FIXTURE_DOOR_MATERIAL,
         blowSound: FIXTURE_BLOW_SOUND,
+        resistance: fixtureResistance(),
         drops: { default: FIXTURE_BLOW_SOUND },
         methods: ['pry'],
       },

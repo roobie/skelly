@@ -6,7 +6,7 @@ import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '@
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -17,8 +17,7 @@ const own = buildRegistry([
   {
     source: 'goal-fixture',
     data: {
-      furnitureMaterials: fixtureMaterials(),
-      sounds: fixtureSounds(),
+      ...fixtureMaterialContent(),
       items: [
         {
           id: 'fixture_paper',

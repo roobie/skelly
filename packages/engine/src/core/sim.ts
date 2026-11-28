@@ -14,7 +14,7 @@ import {
   type ExposureContact,
 } from './damageExposure.ts';
 import { EventQueue, type EventReader } from './events.ts';
-import { LongActions } from './longAction.ts';
+import { alwaysRunsAt1x, LongActions, strikeJobRefusal } from './longAction.ts';
 import type { EffectActor } from './modifiers.ts';
 import { awakeRates, causeOf, type Needs, needsAllowRecovery, type RecoveryState, stepNeeds } from './needs.ts';
 import type { AnalgesicLookup } from './pain.ts';
@@ -445,8 +445,10 @@ export class Simulation {
    * emitted interruption, such as a hit, stops it (`packages/deadvox/DESIGN.md`, "Long actions").
    */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
-    if (this.actions.job?.jobType === 'forceDoor' && !this.actions.job.stopped) {
-      return { ok: false, reason: coreMessage(this.registry, 'busyForcing') };
+    const { job } = this.actions;
+    const striking = job && alwaysRunsAt1x(job.jobType) ? strikeJobRefusal(this.registry, job) : undefined;
+    if (striking) {
+      return { ok: false, reason: striking };
     }
     return this.compression.start(undefined, 'debug', limits);
   }

@@ -1,12 +1,13 @@
 // Using what's in your hands (`packages/deadvox/DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
-// are short actions in the handling queue, a light switches on and off, and a battery goes into
-// a light as the player chooses (`packages/deadvox/DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// are short actions in the handling queue, a light switches on and off, and a consumable goes into
+// a device as the player chooses (`packages/deadvox/DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { spentBattery } from '../core/battery.ts';
 import { canonicalJson } from '../core/canonicalJson.ts';
+import { CONSUMABLE_SLOT } from '../core/consumable.ts';
+import { deviceInHands, keptConsumable, swapConsumable, unloadConsumable } from '../core/consumableSlot.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
@@ -14,23 +15,14 @@ import { usedItem } from '../core/holders.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
-import {
-  chargeOf,
-  chargeShare,
-  drainBurnLight,
-  drainLight,
-  lightInHands,
-  swapBattery,
-  toggleLight,
-  unloadBattery,
-} from '../core/lights.ts';
+import { chargeOf, chargeShare, drainBurnLight, drainLight, toggleLight } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
 import { countText } from '../core/numberText.ts';
 import {
-  batteryHandRefusal,
-  batterySlotOption,
-  batterySlotRefusal,
-  batterySlotUnloadRefusal,
+  consumableHandRefusal,
+  consumableSlotOption,
+  consumableSlotRefusal,
+  consumableSlotUnloadRefusal,
   consumption,
   pourRefusal,
   stowTarget,
@@ -40,7 +32,6 @@ import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable, ReadRequest } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { gameSeconds, simSeconds, simToGameSeconds } from '../core/time.ts';
-import { swapCanister } from '../core/torch.ts';
 import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
@@ -67,7 +58,7 @@ const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, spr
 };
 
 export interface SurvivalHooks {
-  /** Where a spent battery with charge left, or a spent canister, is dropped; undefined with no ground nearby. */
+  /** Where a swapped-out consumable is dropped; undefined with no ground nearby. */
   feet: (item: Item) => Target | undefined;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
@@ -78,8 +69,8 @@ export interface SurvivalHooks {
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
   consumed?: ((type: string) => void) | undefined;
-  /** A battery went into a light of this type. */
-  batterySwapped?: ((lightType: string) => void) | undefined;
+  /** A consumable went into a device of this type. */
+  consumableSwapped?: ((deviceType: string) => void) | undefined;
 }
 
 export class Survival {
@@ -149,11 +140,11 @@ export class Survival {
       }
       return this.finishConsuming(item);
     });
-    this.queue.registerAction('survival.battery', (params) => {
-      const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
-      const battery = this.inventory.itemByUid(numberParam(params, 'batteryUid'));
-      if (!(light && battery)) {
-        return coreMessage(this.inventory.registry, 'batteryGone');
+    this.queue.registerAction('survival.consumable', (params) => {
+      const device = this.inventory.itemByUid(numberParam(params, 'deviceUid'));
+      const consumable = this.inventory.itemByUid(numberParam(params, 'consumableUid'));
+      if (!(device && consumable)) {
+        return coreMessage(this.inventory.registry, 'gone');
       }
       const { route } = params;
       if (route !== 'hands' && route !== 'slot') {
@@ -161,36 +152,22 @@ export class Survival {
       }
       const reason =
         (route === 'hands'
-          ? batteryHandRefusal(this.inventory, light, battery)
-          : batterySlotRefusal(this.hooks.reach(), light, battery)) ??
-        swapBattery(this.inventory, light, battery, this.hooks.feet);
+          ? consumableHandRefusal(this.inventory, device, consumable)
+          : consumableSlotRefusal(this.hooks.reach(), device, consumable)) ??
+        swapConsumable(this.inventory, device, consumable, this.hooks.feet);
       if (reason === undefined) {
-        this.hooks.batterySwapped?.(light.type);
+        this.hooks.consumableSwapped?.(device.type);
       }
       return reason;
     });
-    this.queue.registerAction('survival.batteryOut', (params) => {
-      const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
-      const reason = light ? this.unloadFor(light, params.target as unknown as TargetState | undefined) : undefined;
-      if (light && reason === undefined && this.lit === light) {
+    this.queue.registerAction('survival.consumableOut', (params) => {
+      const device = this.inventory.itemByUid(numberParam(params, 'deviceUid'));
+      const reason = device ? this.unloadFor(device, params.target as unknown as TargetState | undefined) : undefined;
+      if (device && reason === undefined && this.lit === device) {
         this.lit = undefined;
         this.fallBackToWornBeam();
       }
-      return light ? reason : coreMessage(this.inventory.registry, 'gone');
-    });
-    this.queue.registerAction('survival.canister', (params) => {
-      const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
-      const canister = this.inventory.itemByUid(numberParam(params, 'canisterUid'));
-      if (!tool || this.handOf(tool) === undefined) {
-        return text.survival.toolNotInHands;
-      }
-      if (!canister) {
-        return text.survival.cartridgeGone;
-      }
-      if (!this.hooks.reach().entries.some((entry) => entry.item === canister)) {
-        return text.survival.cartridgeOutOfReach;
-      }
-      return swapCanister(this.inventory, tool, canister, this.hooks.feet);
+      return device ? reason : coreMessage(this.inventory.registry, 'gone');
     });
     this.queue.registerAction('survival.pour', (params): string | undefined => {
       const sourceUid = numberParam(params, 'sourceUid');
@@ -334,77 +311,82 @@ export class Survival {
     return undefined;
   }
 
-  /** Queues a battery into a light from the light's battery slot on its item card. */
-  loadBattery(lightUid: number, batteryUid: number): string | undefined {
+  /** Queues a consumable into a device from the device's consumable slot on its item card. */
+  loadConsumable(deviceUid: number, consumableUid: number): string | undefined {
     if (this.sim.body.actionRefusal) {
       return this.sim.body.actionRefusal;
     }
-    const light = this.inventory.itemByUid(lightUid);
-    const battery = this.inventory.itemByUid(batteryUid);
-    if (!(light && battery)) {
-      return coreMessage(this.inventory.registry, 'batteryGone');
+    const device = this.inventory.itemByUid(deviceUid);
+    const consumable = this.inventory.itemByUid(consumableUid);
+    if (!(device && consumable)) {
+      return coreMessage(this.inventory.registry, 'gone');
     }
-    return this.enqueueBattery(batterySlotOption(this.hooks.reach(), light, battery));
+    return this.enqueueConsumable(consumableSlotOption(this.hooks.reach(), device, consumable));
   }
 
-  /** The one unload rule: with a `chosen` place the battery goes there from the card slot, else the held light stows it. */
-  private unloadFor(light: Item, chosen: TargetState | undefined): string | undefined {
+  /** The one unload rule: with a `chosen` place the consumable goes there from the card slot, else the held device stows it. */
+  private unloadFor(device: Item, chosen: TargetState | undefined): string | undefined {
     const { registry } = this.inventory;
     const place = chosen && this.inventory.resolveTarget(chosen);
     if (chosen && !place) {
       return coreMessage(registry, 'gone');
     }
     const reach = this.hooks.reach();
-    const refusal = place ? batterySlotUnloadRefusal(reach, light) : this.heldLightRefusal(light);
+    const refusal = place ? consumableSlotUnloadRefusal(reach, device) : this.heldDeviceRefusal(device);
     return (
       refusal ??
-      unloadBattery(this.inventory, light, (battery) => place ?? stowTarget(this.inventory, battery, reach.feet))
+      unloadConsumable(this.inventory, device, (item) => place ?? stowTarget(this.inventory, item, reach.feet))
     );
   }
 
-  private heldLightRefusal(light: Item): string | undefined {
+  private heldDeviceRefusal(device: Item): string | undefined {
     const { registry } = this.inventory;
-    return lightInHands(this.inventory, light)
+    return deviceInHands(this.inventory, device)
       ? undefined
-      : coreMessage(registry, 'notInHands', { item: defOf(registry, light.type).name.toLowerCase() });
+      : coreMessage(registry, 'notInHands', { item: defOf(registry, device.type).name.toLowerCase() });
   }
 
-  /** Queues taking a light's battery out from its item-card slot to the chosen place, as an item leaves an inventory slot. */
-  unloadBatteryTo(lightUid: number, target: TargetState): string | undefined {
+  /** Queues taking a device's consumable out from its item-card slot to the chosen place, as an item leaves an inventory slot. */
+  unloadConsumableTo(deviceUid: number, target: TargetState): string | undefined {
     if (this.sim.body.actionRefusal) {
       return this.sim.body.actionRefusal;
     }
-    const light = this.inventory.itemByUid(lightUid);
+    const device = this.inventory.itemByUid(deviceUid);
     const place = this.inventory.resolveTarget(target);
-    if (!(light && place)) {
+    if (!(device && place)) {
       return coreMessage(this.inventory.registry, 'gone');
     }
-    const refusal = batterySlotUnloadRefusal(this.hooks.reach(), light);
+    const refusal = consumableSlotUnloadRefusal(this.hooks.reach(), device);
     if (refusal) {
       return refusal;
     }
-    const battery = light.slots?.battery;
-    const placement = battery && spentBattery(this.inventory.registry, battery);
+    const placement = keptConsumable(this.inventory.registry, device.slots?.[CONSUMABLE_SLOT]);
     const plan = placement && this.inventory.planAdd(placement, place);
     if (plan && !plan.ok) {
       return plan.reason;
     }
-    this.queue.enqueueAction(
-      'survival.batteryOut',
-      coreLabel(this.inventory.registry, 'batteryOut'),
-      defOf(this.inventory.registry, light.type).light!.power!.swapSimSeconds,
-      { lightUid, target: target as unknown as JobValue },
-    );
+    this.enqueueUnload(device, { deviceUid, target: target as unknown as JobValue });
     return undefined;
   }
 
-  private enqueueBattery(option: ReturnType<typeof useOption>): string | undefined {
+  private enqueueUnload(device: Item, params: JobParams): void {
+    const { registry } = this.inventory;
+    const fitted = device.slots![CONSUMABLE_SLOT]!;
+    this.queue.enqueueAction(
+      'survival.consumableOut',
+      coreLabel(registry, 'consumableOut', { item: defOf(registry, fitted.type).name.toLowerCase() }),
+      defOf(registry, device.type).consumableSlot!.swapSimSeconds,
+      params,
+    );
+  }
+
+  private enqueueConsumable(option: ReturnType<typeof useOption>): string | undefined {
     if (!option.plan.ok) {
       return option.plan.reason;
     }
-    this.queue.enqueueAction('survival.battery', option.label, option.plan.durationSimSeconds, {
-      lightUid: option.light!.uid,
-      batteryUid: option.battery!.uid,
+    this.queue.enqueueAction('survival.consumable', option.label, option.plan.durationSimSeconds, {
+      deviceUid: option.device!.uid,
+      consumableUid: option.consumable!.uid,
       route: option.route!,
     });
     return undefined;
@@ -422,13 +404,8 @@ export class Survival {
       }
       return this.applyItemAction(item, this.selectedItemAction(item));
     }
-    if (this.selectedItemAction(item)?.battery === 'unload') {
-      this.queue.enqueueAction(
-        'survival.batteryOut',
-        coreLabel(this.inventory.registry, 'batteryOut'),
-        definition.light!.power!.swapSimSeconds,
-        { lightUid: item.uid },
-      );
+    if (this.selectedItemAction(item)?.consumable === 'unload') {
+      this.enqueueUnload(item, { deviceUid: item.uid });
       return undefined;
     }
     const option = useOption(item, this.hooks.reach());
@@ -443,14 +420,8 @@ export class Survival {
         return undefined;
       case 'pour':
         return this.pour(item.uid, option.receiver!.uid);
-      case 'battery':
-        return this.enqueueBattery(option);
-      case 'canister':
-        this.queue.enqueueAction('survival.canister', option.label, option.plan.durationSimSeconds, {
-          toolUid: option.tool!.uid,
-          canisterUid: option.canister!.uid,
-        });
-        return undefined;
+      case 'consumable':
+        return this.enqueueConsumable(option);
       case 'switch':
         return this.switchLight(item);
       case 'read':
@@ -522,7 +493,7 @@ export class Survival {
     if (def.firearm || def.weapon || def.key || (!use && def.category === 'tool' && !def.light)) {
       return fillText(this.text.survival.cantUseFromHere, name);
     }
-    if (at.kind === 'hand' || def.battery) {
+    if (at.kind === 'hand' || def.consumable) {
       return this.use(item);
     }
     if (use && at.kind === 'pocket') {
@@ -560,7 +531,7 @@ export class Survival {
     if (def.light?.liquidFuel) {
       lines.push(coreLabel(registry, item.on ? 'lightOnStatus' : 'lightOffStatus'));
     } else if (share !== undefined) {
-      const charge = fillText(def.igniter ? text.fuelDetail : text.batteryDetail, { percent: countText(share * 100) });
+      const charge = fillText(text.fillDetail, { percent: countText(share * 100) });
       lines.push(def.light ? fillText(item.on ? text.lightOnDetail : text.lightOffDetail, { charge }) : charge);
     }
     if (def.igniter) {
@@ -720,11 +691,13 @@ export class Survival {
 
   private tickLight(item: Item, location: LightLocation, path: string, dt: number): void {
     const { registry } = this.inventory;
-    const spec = defOf(registry, item.type).light;
+    const def = defOf(registry, item.type);
+    const spec = def.light;
     if (!(spec && item.on)) {
       return;
     }
-    const fittedPoweredLight = spec.power && location.kind === 'slot' && defOf(registry, location.owner.type).firearm;
+    const fittedPoweredLight =
+      def.consumableSlot && location.kind === 'slot' && defOf(registry, location.owner.type).firearm;
     if (!fittedPoweredLight && shouldDouse(spec, location, path, this.sprinting)) {
       this.douseLight(item, spec);
       return;

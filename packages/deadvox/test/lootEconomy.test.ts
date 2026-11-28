@@ -23,7 +23,7 @@ import { placementOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialContent } from './economyFixtures.ts';
 
 const context: LootContext = { usage: ['Medical'], tier: 'Tier2' };
 const TIERS = LOOT_TIERS;
@@ -168,8 +168,7 @@ describe('loot economy descriptions', () => {
       {
         source: 'economy-fixture',
         data: {
-          furnitureMaterials: fixtureMaterials(),
-          sounds: fixtureSounds(),
+          ...fixtureMaterialContent(),
           items: [
             {
               id: 'fixture_stock',
@@ -277,15 +276,15 @@ describe('loot economy descriptions', () => {
           items: [
             {
               ...item('fixture_host'),
-              light: {
-                intensity: 1,
-                radius: 1,
-                seenFrom: 1,
-                color: '#ffffff',
-                power: { battery: 'fixture_battery', chargePerGameHour: 1, swapSimSeconds: 2 },
+              light: { intensity: 1, radius: 1, seenFrom: 1, color: '#ffffff' },
+              consumableSlot: {
+                accepts: ['fixture_battery'],
+                comesWith: 'fixture_battery',
+                drainPerGameHour: 1,
+                swapSimSeconds: 2,
               },
             },
-            { ...item('fixture_battery'), battery: { capacity: 1 } },
+            { ...item('fixture_battery'), consumable: { capacity: 1 } },
             item('fixture_child'),
           ],
           itemEconomy: [

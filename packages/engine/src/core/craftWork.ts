@@ -3,9 +3,11 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
+import { spendConsumable } from './consumableSlot.ts';
+import type { RecipeDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
-import { admissionRefusal, equipmentRefusal, type WorkPlan } from './crafting.ts';
+import { admissionRefusal, craftFuel, equipmentRefusal, type WorkPlan } from './crafting.ts';
 import {
   type DisassemblyPlan,
   planDisassembly,
@@ -417,8 +419,52 @@ const craftAdmission = (
 ): string | undefined => {
   const recipe = inventory.registry.recipes.get(plan.recipe);
   return recipe
-    ? (placementRefusal(inventory, plan.recipe, plan.destination) ?? admissionRefusal(recipe, snapshot, character))
+    ? (placementRefusal(inventory, plan.recipe, plan.destination) ??
+        admissionRefusal(recipe, snapshot, character) ??
+        fuelShortage(recipe, snapshot, plan.gather + plan.work))
     : 'Unknown recipe';
+};
+
+const fuelShortage = (recipe: RecipeDef, snapshot: ReachSnapshot, durationGameSeconds: number): string | undefined => {
+  const fuel = craftFuel(recipe, snapshot, durationGameSeconds);
+  return typeof fuel === 'string' ? fuel : undefined;
+};
+
+/** Why a running craft can't go on: the same admission as its start, over the duration it recorded. */
+const craftWorkRefusal = (
+  inventory: Inventory,
+  work: Extract<NonNullable<Item['work']>, { kind: 'craft' }>,
+  snapshot: ReachSnapshot,
+  character: Character,
+): string | undefined => {
+  const recipe = inventory.registry.recipes.get(work.recipe)!;
+  return admissionRefusal(recipe, snapshot, character) ?? fuelShortage(recipe, snapshot, work.duration);
+};
+
+/**
+ * Finishes the work and burns the fuel a craft used. A tool that no longer holds that fuel refuses the finish, and a
+ * refused finish spends nothing.
+ */
+const finishFuelledWork = (
+  inventory: Inventory,
+  item: Item,
+  work: NonNullable<Item['work']>,
+  context: Parameters<typeof finishCraftWork>[3],
+): string | undefined => {
+  const fuel =
+    work.kind === 'craft'
+      ? craftFuel(inventory.registry.recipes.get(work.recipe)!, context.snapshot, work.duration)
+      : [];
+  if (typeof fuel === 'string') {
+    return fuel;
+  }
+  const refusal = finishCraftWork(inventory, item, work, context);
+  if (refusal === undefined) {
+    for (const { tool, amount } of fuel) {
+      spendConsumable(inventory, tool, amount);
+    }
+  }
+  return refusal;
 };
 
 const worldWorkRefusal = (inventory: Inventory, item: Item): string | undefined => {
@@ -490,9 +536,7 @@ export const craftActionHooks = (
     return (
       worldWorkRefusal(inventory, item) ??
       repairTargetRefusal(inventory, item, reach()) ??
-      (work.kind === 'craft'
-        ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
-        : undefined)
+      (work.kind === 'craft' ? craftWorkRefusal(inventory, work, reach(), character) : undefined)
     );
   },
   advance: (uid, seconds) => {
@@ -523,12 +567,7 @@ export const craftActionHooks = (
       });
       return undefined;
     }
-    return finishCraftWork(inventory, item, work, {
-      character,
-      snapshot: reach(),
-      feet,
-      calendar,
-    });
+    return finishFuelledWork(inventory, item, work, { character, snapshot: reach(), feet, calendar });
   },
   cancel: (uid) => {
     const item = inventory.itemByUid(uid);

@@ -4,6 +4,7 @@
 // ray casts find it from any of them. Worldgen claims a piece by the corner it
 // spawned at, its origin, which stays claimed wherever the piece is carried.
 
+import { type Blow, strengthPast } from './blow.ts';
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -1825,6 +1826,11 @@ export class BlockEntities {
     return def.door !== undefined && !isBodyDoor(def);
   }
 
+  /** Whether a piece stands to be damaged: a carried piece is out of the world, and an open leaf is a gap. */
+  private struck(entity: BlockEntity): boolean {
+    return !(entity.carried || (this.breachable(entity) && entity.open));
+  }
+
   /**
    * How many of its material's damage looks a piece has reached, 0 when none; a view redraws a piece when this
    * changes, not on every blow (`FurnitureMeshes.damageLook`).
@@ -1906,43 +1912,58 @@ export class BlockEntities {
 
   /**
    * One blow against a standing piece, an actor's bash or a player's strike alike; an open leaf is a gap, not a
-   * target. A blow below the piece's minimum strength leaves no mark, so waiting never lets a weak attacker through;
-   * stronger blows add their strength until it reaches the durability. A broken leaf stands open and its lock and
-   * bar are gone, so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and
-   * the caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`). Where that finds no room the piece
-   * stands at full damage, and the next blow that lands ruins it again.
+   * target. Its material's resistance to the blow's kind reduces it first, as a terrain cell's does
+   * (`src/core/blow.ts`, `strengthPast`). A blow below the piece's minimum strength leaves no mark, so waiting never
+   * lets a weak attacker through; stronger blows add their strength until it reaches the durability, which ruins the
+   * piece (`ruin`).
    */
-  bash(entity: BlockEntity, strength: number): BashOutcome | undefined {
-    const { breach } = this.defOf(entity);
-    const leaf = this.breachable(entity);
-    if (entity.carried || (leaf && entity.open)) {
+  bash(entity: BlockEntity, blow: Blow): BashOutcome | undefined {
+    const { breach, material } = this.defOf(entity);
+    if (!this.struck(entity)) {
       return undefined;
     }
     const hit = resolveDestructibleHit(
       entity.damage ?? 0,
-      { force: strength, continuation: 0 },
+      { force: strengthPast(blow, this.registry.furnitureMaterials.get(material)!.resistance), continuation: 0 },
       { minimumForce: breach.minimumStrength, breakForce: breach.durability, forceTaken: breach.durability },
     );
     if (hit.outcome === 'resisted') {
       return 'resisted';
     }
-    const { damage } = hit;
+    if (hit.damage >= breach.durability) {
+      return this.ruin(entity);
+    }
+    const worn = this.wearOf(entity);
+    entity.damage = hit.damage;
     this.version += 1;
-    if (damage < breach.durability || !leaf) {
+    if (this.wearOf(entity) !== worn) {
+      this.standingChanged(entity);
+    }
+    return 'damaged';
+  }
+
+  /**
+   * Takes a standing piece to its whole durability with no blow, for a ruin decided before any blow lands (authored
+   * state, a load rule), so no resistance tuning can undo it. A broken leaf stands open and its lock and bar are gone,
+   * so the breach is one-way, as forcing is. Any other piece is ruined, its damage set to its durability, and the
+   * caller destroys it at once (`src/core/furnitureMove.ts`, `ruinFurniture`). Where that finds no room the piece
+   * stands at full damage, and the next blow that lands ruins it again.
+   */
+  ruin(entity: BlockEntity): 'broken' | 'ruined' | undefined {
+    if (!this.struck(entity)) {
+      return undefined;
+    }
+    this.version += 1;
+    if (!this.breachable(entity)) {
       const worn = this.wearOf(entity);
-      const strike = () => {
-        entity.damage = Math.min(damage, breach.durability);
-      };
       // A ruined housing produces nothing, even while its drops have no room and it stands.
-      if (damage < breach.durability) {
-        strike();
-      } else {
-        this.changeParts(entity, strike);
-      }
+      this.changeParts(entity, () => {
+        entity.damage = this.defOf(entity).breach.durability;
+      });
       if (this.wearOf(entity) !== worn) {
         this.standingChanged(entity);
       }
-      return damage < breach.durability ? 'damaged' : 'ruined';
+      return 'ruined';
     }
     entity.damage = undefined;
     entity.broken = true;

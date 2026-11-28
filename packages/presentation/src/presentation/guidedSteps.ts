@@ -77,8 +77,8 @@ export class GuidedSteps {
     }
   }
 
-  batterySwapped(type: string): void {
-    this.record((when) => when.kind === 'battery-swapped' && when.item === type);
+  consumableSwapped(type: string): void {
+    this.record((when) => when.kind === 'consumable-swapped' && when.item === type);
   }
 
   opened(type: string): void {

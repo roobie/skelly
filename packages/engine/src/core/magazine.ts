@@ -1,7 +1,7 @@
 // A detachable box magazine (`packages/deadvox/SLICE-3.md`, "Firearms for real"): an item whose model carries the gun
 // authoring tool's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
-import { batteryFits } from './battery.ts';
+import { CONSUMABLE_SLOT, consumableFits } from './consumable.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import {
   attachmentIdFor,
@@ -22,8 +22,7 @@ export const knownItemSlot = (registry: Registry, type: string, slot: string): b
   return (
     def !== undefined &&
     ((slot === 'magazine' && magazineWellCalibre(registry, type) !== undefined) ||
-      (slot === 'battery' && def.light?.power !== undefined) ||
-      (slot === 'canister' && def.tool?.fuel !== undefined) ||
+      (slot === CONSUMABLE_SLOT && def.consumableSlot !== undefined) ||
       firearmSlotIds(registry, def).includes(slot))
   );
 };
@@ -125,8 +124,7 @@ const attachmentSlotsReason = (
     if (
       !child ||
       slotId === 'magazine' ||
-      slotId === 'battery' ||
-      slotId === 'canister' ||
+      slotId === CONSUMABLE_SLOT ||
       slotId === SLING_SLOT ||
       slotId === LIGHT_MOUNT_SLOT
     ) {
@@ -150,33 +148,21 @@ const attachmentSlotsReason = (
   return undefined;
 };
 
-const batterySlotReason = (
+const consumableSlotReason = (
   registry: Registry,
-  lightType: string,
+  deviceType: string,
   slots: Readonly<Record<string, { readonly type: string } | undefined>>,
 ): string | undefined => {
-  if (registry.items.get(lightType)?.light?.power) {
-    return !slots.battery ||
-      (batteryFits(registry, lightType, slots.battery.type) && registry.items.get(slots.battery.type)?.battery)
-      ? undefined
-      : 'A powered light takes only its matching battery';
-  }
-  return slots.battery ? 'Only a powered light has a battery slot' : undefined;
-};
-
-const canisterSlotReason = (
-  registry: Registry,
-  canisterType: string | undefined,
-  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
-): string | undefined => {
-  if (!slots.canister) {
+  const fitted = slots[CONSUMABLE_SLOT];
+  if (!fitted) {
     return undefined;
   }
-  return canisterType !== undefined &&
-    slots.canister.type === canisterType &&
-    registry.items.get(canisterType)?.canister
+  if (!registry.items.get(deviceType)?.consumableSlot) {
+    return 'Only a device with a consumable slot takes a consumable';
+  }
+  return consumableFits(registry, deviceType, fitted.type)
     ? undefined
-    : 'Only a fuelled tool takes its own cartridge';
+    : 'The device takes only a consumable it accepts';
 };
 
 const slingSlotReason = (
@@ -221,12 +207,9 @@ export const slotsReason = (
   const definition = registry.items.get(type);
   const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
   const magazineCalibre = magazineWellCalibre(registry, type);
-  const batteryType = definition?.light?.power?.battery;
-  const canisterType = definition?.tool?.fuel?.canister;
   const hasSlots =
     magazineCalibre !== undefined ||
-    batteryType !== undefined ||
-    canisterType !== undefined ||
+    definition?.consumableSlot !== undefined ||
     (model?.gun?.attachmentSlots?.length ?? 0) > 0 ||
     isLongGun(definition);
   if (!hasSlots) {
@@ -242,8 +225,7 @@ export const slotsReason = (
     return 'Only a magazine-fed firearm has a magazine slot';
   }
   return (
-    batterySlotReason(registry, type, slots) ??
-    canisterSlotReason(registry, canisterType, slots) ??
+    consumableSlotReason(registry, type, slots) ??
     slingSlotReason(registry, definition, slots) ??
     lightMountSlotReason(registry, definition, slots) ??
     attachmentSlotsReason(registry, model, slots)

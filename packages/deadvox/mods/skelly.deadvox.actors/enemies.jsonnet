@@ -7,7 +7,7 @@ local acidFigureSeeds = [1, 2, 3, 4, 6, 8];
 local severed = import 'tools/jsonnet/lib/severed-parts.libsonnet';
 local resistanceFor(amount) = { [region]: amount for region in ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] };
 local neutralDamageResistance = {
-  [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce', 'acid', 'blast', 'fragment', 'breach', 'crush']
+  [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce', 'acid', 'blast', 'fragment', 'breach', 'crush', 'heat']
 };
 local agent = {
   sight: 25, nightSight: 10, stimulusMemorySimSeconds: 180, sightCone: 60,

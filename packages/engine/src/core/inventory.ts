@@ -855,7 +855,7 @@ export class Inventory {
     if (entity && wear !== undefined) {
       if (wear === 1) {
         // A fixture starts at a retained ruin, not at a new destruction event that releases its internals.
-        this.entities.bash(entity, this.entities.defOf(entity).breach.durability);
+        this.entities.ruin(entity);
       } else {
         this.entities.wear(entity, wear);
       }
@@ -901,10 +901,10 @@ export class Inventory {
       item.slots![slot]!.cartridges = [...rounds];
     }
     if (charge !== undefined) {
-      for (const battery of [item, ...Object.values(item.slots ?? {})]) {
-        const capacity = defOf(this.registry, battery.type).battery?.capacity;
+      for (const consumable of [item, ...Object.values(item.slots ?? {})]) {
+        const capacity = defOf(this.registry, consumable.type).consumable?.capacity;
         if (capacity !== undefined) {
-          battery.charges = charge * capacity;
+          consumable.charges = charge * capacity;
         }
       }
     }
@@ -928,6 +928,14 @@ export class Inventory {
       });
     }
     return walkItemTree(roots());
+  }
+
+  /** Items in hand or worn, with what they carry: the ones a tool job can use, in definition-id order so the pick is stable. */
+  carriedTools(): Item[] {
+    return [...this.items()]
+      .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
+      .map(({ item }) => item)
+      .sort((a, b) => compareCodeUnits(a.type, b.type));
   }
 
   itemByUid(uid: number): Item | undefined {

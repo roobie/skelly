@@ -54,6 +54,8 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
+/** The ways into the inventory, which stay live over a waiting interruption prompt; see `PROMPT_ADMITTED_COMMANDS`. */
+const intoInventory: readonly InputContext[] = [...moving, 'inventory', 'interrupted'];
 const HUD_TOGGLE_HOLD_MS = 1000;
 type Action = Omit<Binding, 'defaults'>;
 // biome-ignore lint/complexity/useMaxParams: compact declarations keep gesture metadata in one catalogue.
@@ -153,8 +155,8 @@ export const INPUT_ACTIONS: readonly Action[] = [
       ],
     },
   ),
-  row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory']),
-  ...INVENTORY_TAB_BINDINGS.map(({ action, description }) => row(action, description, [...moving, 'inventory'])),
+  row('ui.inventory-toggle', 'Open / close inventory', intoInventory),
+  ...INVENTORY_TAB_BINDINGS.map(({ action, description }) => row(action, description, intoInventory)),
   row('ui.main-menu-toggle', 'Main menu', entered, 'press', { text: true }),
   row('hud.toggle', 'Hold to hide or show the HUD', entered, 'hold', { holdMs: HUD_TOGGLE_HOLD_MS }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted']),
@@ -265,6 +267,16 @@ export const INPUT_ACTIONS: readonly Action[] = [
     debugRow(`debug.build-slot.${i + 1}`, `Select build slot ${i + 1}`, ['build']),
   ),
 ];
+/**
+ * Commands admitted while an interruption prompt waits: the rows bound `intoInventory`, so a key the prompt's context
+ * delivers is also one its admission lets through. What stopped the action is often answered from the inventory, and
+ * every way into it works alike. The prompt's own Continue and Stop are handled before admission.
+ */
+export const PROMPT_ADMITTED_COMMANDS: ReadonlySet<string> = new Set(
+  INPUT_ACTIONS.filter(({ contexts }) => contexts === intoInventory).flatMap(({ commands }) =>
+    commands.map(({ id }) => id),
+  ),
+);
 
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },

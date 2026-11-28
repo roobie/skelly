@@ -53,7 +53,7 @@ const fixture = (type = 'repair_box', boarding?: typeof BOARDING) => {
     type === 'repair_box' ? [{ type: 'repair_stock', count: 1, condition: 1 }] : [],
   )!;
   const { entities } = inventory;
-  const outcome = entities.bash(entity, BREACH.durability / 2);
+  const outcome = entities.bash(entity, { strength: BREACH.durability / 2, kind: 'blunt' });
   return { entities, entity, outcome };
 };
 
@@ -138,7 +138,7 @@ it.each(['removed', 'carried', 'ruined', 'broken', 'intact'])(
       entities.lift(entity);
     }
     if (kind === 'ruined' || kind === 'broken') {
-      entities.bash(entity, BREACH.durability);
+      entities.bash(entity, { strength: BREACH.durability, kind: 'blunt' });
     }
     if (kind === 'intact') {
       entities.repair(entity, BREACH.durability, FULL);

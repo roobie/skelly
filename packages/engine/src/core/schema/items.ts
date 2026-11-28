@@ -213,17 +213,46 @@ const FoodSchema = pipe(
   ),
 );
 
+/** The blow a tool lands on a terrain cell each strike of a cut; the cell's resistance decides whether it cuts. */
+const ToolCutSchema = strictObject({
+  strength: Positive,
+  damageKind: Id,
+  strikeIntervalSimSeconds: PositiveSimSeconds,
+  /** Plays on each strike; it must alert hearing. */
+  strikeSound: Id,
+});
+
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
   qualities: record(Id, QualityLevel),
-  /** It runs on a swappable canister: the item type that fits it, and Sim seconds to swap one in. */
-  fuel: optional(strictObject({ canister: Id, swapSimSeconds: PositiveSimSeconds })),
+  cut: optional(ToolCutSchema),
 });
 
-/** The fill shape of a battery, for a canister a fuelled tool draws on. */
-const CanisterSchema = strictObject({
-  /** Fill when full, in the units a forcing method's `fuel` spends. */
+/**
+ * The slot takes one swappable consumable component the device draws down, a light while lit and a tool while working.
+ * It names no kind of consumable, so a worn part can be one as a battery or a gas cartridge is.
+ */
+const ConsumableSlotSchema = pipe(
+  strictObject({
+    /** The consumable item types that fit. */
+    accepts: pipe(array(Id), nonEmpty('needs at least one accepted consumable')),
+    /** The consumable a new device comes with fitted; absent, a new one comes empty. */
+    comesWith: optional(Id),
+    swapSimSeconds: PositiveSimSeconds,
+    /** Fill drawn per Game hour of drawing, in the consumable's own units. */
+    drainPerGameHour: GamePerHour,
+  }),
+  check(
+    (slot) => slot.comesWith === undefined || slot.accepts.includes(slot.comesWith),
+    'the consumable it comes with must be one it accepts',
+  ),
+);
+
+/** What a device's consumable slot draws down. */
+const ConsumableSchema = strictObject({
+  /** Fill when full, in the units its device's `drainPerGameHour` and a forcing method's `fuel` spend. */
   capacity: Positive,
+  rechargeable: optional(strictObject({ microjoulesPerCharge: pipe(number(), safeInteger(), minValue(1)) })),
 });
 
 /** Holding the attack past the wind-up builds a stronger strike. Doc: `packages/deadvox/docs/charged-attacks.md`. */
@@ -509,15 +538,6 @@ const LightSchema = strictObject({
   ),
   /** Size of the drawn flame, in metres, standing on the model's `flame` anchor while lit. */
   flame: optional(strictObject({ heightMetres: Positive, radiusMetres: Positive })),
-  /** What powers it: an item with a battery component, and charge used per Game hour. */
-  power: optional(
-    strictObject({
-      battery: Id,
-      compatibleBatteries: optional(array(Id)),
-      chargePerGameHour: GamePerHour,
-      swapSimSeconds: PositiveSimSeconds,
-    }),
-  ),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
   wornSwitch: optional(vBoolean()),
   /** How the view looks through it while worn, on and charged (`packages/deadvox/DESIGN.md`, "Light"). */
@@ -595,12 +615,6 @@ const FirearmAttachmentEffectsSchema = variant('kind', [
     wearPerShot: Fraction,
   }),
 ]);
-
-const BatterySchema = strictObject({
-  /** Charge when full, in the units lights use per hour. */
-  capacity: Positive,
-  rechargeable: optional(strictObject({ microjoulesPerCharge: pipe(number(), safeInteger(), minValue(1)) })),
-});
 
 export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
 
@@ -885,8 +899,8 @@ export const ItemSchema = strictObject({
   book: optional(BookSchema),
   /** Held, the item casts this ability; the ability, not the item, is what the caster must know. */
   casting: optional(strictObject({ ability: Id })),
-  battery: optional(BatterySchema),
-  canister: optional(CanisterSchema),
+  consumable: optional(ConsumableSchema),
+  consumableSlot: optional(ConsumableSlotSchema),
   vessel: optional(VesselSchema),
   /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
   alarm: optional(literal(true)),

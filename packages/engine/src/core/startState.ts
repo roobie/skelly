@@ -1,6 +1,7 @@
 import type { Body } from './body.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
+import { setInitialFill } from './fill.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { type Item, setInitialCylinder } from './items.ts';
 import { toggleLight } from './lights.ts';
@@ -56,6 +57,9 @@ const createStartItem = (inventory: Inventory, entry: StartKitEntry): Item => {
   }
   if (entry.cylinder !== undefined) {
     setInitialCylinder(inventory.registry, item, entry.cylinder);
+  }
+  if (entry.fill !== undefined) {
+    setInitialFill(inventory.registry, item, entry.fill);
   }
   return item;
 };

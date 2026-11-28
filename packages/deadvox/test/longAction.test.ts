@@ -426,6 +426,8 @@ describe('core long actions', () => {
     const runtime = make();
     const book = runtime.inv.create('field_manual');
     expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    const notices: string[] = [];
+    runtime.sim.actions.notice = (text) => notices.push(text);
     expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
     runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
     runtime.light.dark = true;
@@ -437,7 +439,8 @@ describe('core long actions', () => {
     }
     expect(job.elapsed).toBeGreaterThan(0);
     expect(job.elapsed).toBeLessThan(job.duration);
-    expect(runtime.sim.compression.interruption).toBe('fixture darkness');
+    expect(runtime.sim.compression.interruption).toBeUndefined();
+    expect(notices).toEqual(['fixture darkness']);
 
     expect(runtime.sim.actions.beginReading(book.uid)).toBe('fixture darkness');
     expect(runtime.sim.actions.job).toMatchObject({ stopped: true });
@@ -718,6 +721,8 @@ describe('core long actions', () => {
 
   it('rechecks tools on a tick and Continue, refusing without spending progress', () => {
     const runtime = start();
+    const notices: string[] = [];
+    runtime.sim.actions.notice = (text) => notices.push(text);
     runtime.sim.scheduler.advance(4);
     const { elapsed } = runtime.payload;
     const knife = [...runtime.inv.items()].find(({ item }) => item.type === 'kitchen_knife')!.item;
@@ -726,7 +731,8 @@ describe('core long actions', () => {
     expect(refusal).toBeDefined();
     runtime.sim.scheduler.advance(1);
     expect(runtime.payload.elapsed).toBe(elapsed);
-    expect(runtime.sim.compression.interruption).toBe(refusal);
+    expect(runtime.sim.compression.interruption).toBeUndefined();
+    expect(notices).toEqual([refusal]);
     expect(runtime.sim.actions.resume()).toBe(refusal);
     expect(runtime.payload.elapsed).toBe(elapsed);
     runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos: [0, 0, 0] });

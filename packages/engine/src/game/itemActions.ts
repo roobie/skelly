@@ -1,11 +1,13 @@
 import { type ActionText, actionText } from '../core/actionText.ts';
 import type { Body } from '../core/body.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
+import { CONSUMABLE_SLOT } from '../core/consumable.ts';
+import { canUnloadConsumable, deviceInHands } from '../core/consumableSlot.ts';
 import { coreLabel } from '../core/coreText.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
-import { canUnloadBattery, chargeOf, lightInHands } from '../core/lights.ts';
+import { chargeOf } from '../core/lights.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import type { TreatmentDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
@@ -20,8 +22,8 @@ export interface ItemAction {
   readonly treatment?: Readonly<{ region: BodyRegion; itemType: string }>;
   /** Unloading a held magazine: R only loads one (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
-  /** Taking a held light's battery out: a swap needs a spare, so this is the way to move a cell on its own. */
-  readonly battery?: 'unload';
+  /** Taking a held device's consumable out: a swap needs a spare, so this is the way to move one on its own. */
+  readonly consumable?: 'unload';
   readonly opening?: true;
   readonly sharpening?: true;
   /** Resuming a held, paused craft: the action menu is where a paused craft's status lives. */
@@ -78,18 +80,23 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
   return target ? [...actions, { id: 'open-can', label: labels.openCan, opening: true }] : actions;
 };
 
-/** The light's own click first, so the default use switches it rather than taking the battery out. */
-const lightActions = (item: Item, inventory: Inventory): readonly ItemAction[] => {
+/** The device's own click first, so the default use switches it rather than taking its consumable out. */
+const deviceActions = (item: Item, inventory: Inventory): readonly ItemAction[] => {
   const { registry } = inventory;
   let own: 'switchOff' | 'switchOn' | 'use' = 'use';
   if (item.on) {
     own = 'switchOff';
-  } else if ((chargeOf(registry, item) ?? 0) > 0) {
+  } else if (defOf(registry, item.type).light && (chargeOf(registry, item) ?? 0) > 0) {
     own = 'switchOn';
   }
+  const fitted = item.slots![CONSUMABLE_SLOT]!;
   return [
     { id: 'own', label: coreLabel(registry, own) },
-    { id: 'battery:unload', label: coreLabel(registry, 'batteryOut'), battery: 'unload' },
+    {
+      id: 'consumable:unload',
+      label: coreLabel(registry, 'consumableOut', { item: defOf(registry, fitted.type).name.toLowerCase() }),
+      consumable: 'unload',
+    },
   ];
 };
 
@@ -98,8 +105,8 @@ const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): read
     const label = actionText(inventory.registry).itemActions.stripRound;
     return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
   }
-  if (canUnloadBattery(inventory.registry, item) && lightInHands(inventory, item)) {
-    return lightActions(item, inventory);
+  if (canUnloadConsumable(inventory.registry, item) && deviceInHands(inventory, item)) {
+    return deviceActions(item, inventory);
   }
   const { treatment } = defOf(inventory.registry, item.type);
   if (!treatment) {

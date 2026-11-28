@@ -13,7 +13,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { throwStanceWorldOffset } from '../core/heldPose.ts';
-import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
+import { type InputContext, inventoryTabForAction, PROMPT_ADMITTED_COMMANDS } from '../core/inputActions.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../core/itemThrow.ts';
@@ -845,6 +845,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       sim.actions.job?.jobType === 'wait' ||
       sim.actions.job?.jobType === 'reading' ||
       sim.actions.job?.jobType === 'forceDoor' ||
+      sim.actions.job?.jobType === 'cutCell' ||
       sim.actions.job?.jobType === 'treatment' ||
       sim.actions.job?.jobType === 'vehicleWork'
     ) {
@@ -858,9 +859,15 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- key admission ----
 
-  /** A key press ends a ramp-down; replay never snaps, the recorded sample decides. */
-  const keyAdmitted = (): boolean => {
+  /**
+   * A key press ends a ramp-down; replay never snaps, the recorded sample decides. A waiting prompt admits only
+   * `PROMPT_ADMITTED_COMMANDS`, and leaves the prompt waiting.
+   */
+  const keyAdmitted = (action?: string): boolean => {
     const { compression } = ports.session().sim;
+    if (action !== undefined && compression.waitsOnPrompt && PROMPT_ADMITTED_COMMANDS.has(action)) {
+      return true;
+    }
     if (ports.replaying()) {
       return !(ports.replaySample()?.inputLocked ?? compression.locksInput);
     }
@@ -1134,7 +1141,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (!tab) {
       return false;
     }
-    if (keyAdmitted()) {
+    if (keyAdmitted(action)) {
       presentation.openInventory(tab);
     }
     return true;
@@ -1147,7 +1154,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       readingAction: (command) => modal.readingAction(command),
       readingMovementAction: () => modal.readingMovementAction(),
       toggleInventory: () => {
-        if (keyAdmitted()) {
+        if (keyAdmitted('ui.inventory-toggle')) {
           modal.toggleInventory();
         }
       },
@@ -1377,8 +1384,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       fitAttachment: (firearmUid, slotId, attachmentUid) =>
         session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
       removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
-      loadBattery: (lightUid, batteryUid) => survival.loadBattery(lightUid, batteryUid),
-      unloadBattery: (lightUid, target) => survival.unloadBatteryTo(lightUid, target),
+      loadConsumable: (deviceUid, consumableUid) => survival.loadConsumable(deviceUid, consumableUid),
+      unloadConsumable: (deviceUid, target) => survival.unloadConsumableTo(deviceUid, target),
       toHands: (uid, feetPosition) => {
         const item = inventory.itemByUid(uid);
         return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;
@@ -1432,6 +1439,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       place: (pos) => session.placeFurniture(pos),
       turn: () => session.turnFurniture(),
       tip: () => session.tipFurniture(),
+      cutCell: (cell) => session.cutCell(cell),
       clearDownedBody: (id, way) => session.clearDownedBody(id, way),
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
       craftPlace: (recipeId, destination, preference, sources) =>

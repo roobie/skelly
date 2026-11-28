@@ -1,5 +1,6 @@
 import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
 import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { INVENTORY_TAB_BINDINGS } from '@skelly/engine/internal/core/inputActions.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
@@ -14,7 +15,7 @@ import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { FIXTURE_WAND, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
-import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
+import { COMPRESSION_CAPS_FIXTURE, Simulation as SimulationFixture } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 
@@ -119,6 +120,64 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     cancelHeld: unused,
   },
   ...ports,
+});
+
+describe('command router at an interruption prompt', () => {
+  /** A wait stopped by an emitted interruption, its prompt waiting, and a router over a closed inventory. */
+  const interrupted = () => {
+    const sim = new SimulationFixture({ seed: 1 });
+    const refusal = sim.actions.startWait();
+    sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    sim.frame(1);
+    if (refusal !== undefined || !sim.compression.waitsOnPrompt) {
+      throw new Error(`The wait did not reach a waiting prompt: ${refusal ?? 'no interruption'}`);
+    }
+    const session = { sim, rest: { action: undefined } } as unknown as Session;
+    const inventory: { open: boolean; tab?: string } = { open: false };
+    const ports = routerPorts({ session: () => session });
+    const router = createCommandRouter({
+      ...ports,
+      presentation: {
+        ...ports.presentation,
+        openInventory: (tab) => {
+          inventory.open = true;
+          inventory.tab = tab;
+        },
+        modal: {
+          ...ports.presentation.modal,
+          readingOpen: () => false,
+          mainMenuOpen: () => false,
+          screenOpen: () => inventory.open,
+          toggleInventory: () => {
+            inventory.open = !inventory.open;
+          },
+        },
+      },
+    });
+    return { sim, router, inventory };
+  };
+
+  it('opens and closes the inventory over the prompt, which waits on until Stop ends the action', () => {
+    const { sim, router, inventory } = interrupted();
+    router.modalCommand('ui.inventory-toggle');
+    expect(inventory.open).toBe(true);
+    expect(sim.compression.refusesKeys).toBe(true);
+    router.modalCommand('ui.inventory-toggle');
+    expect(inventory.open).toBe(false);
+    expect(sim.compression.interruption).toBe('test interruption');
+
+    expect(router.modalCommand('handling.stop')).toBe(true);
+    expect(sim.actions.job).toBeUndefined();
+    expect(sim.compression.interruption).toBeUndefined();
+  });
+
+  it('opens the inventory at a tab from the prompt, as the inventory key does', () => {
+    const { sim, router, inventory } = interrupted();
+    const [{ action, tab }] = INVENTORY_TAB_BINDINGS;
+    expect(router.modalCommand(action)).toBe(true);
+    expect(inventory).toEqual({ open: true, tab });
+    expect(sim.compression.interruption).toBe('test interruption');
+  });
 });
 
 describe('command router furniture choices', () => {

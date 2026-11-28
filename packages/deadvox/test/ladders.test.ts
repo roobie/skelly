@@ -14,6 +14,7 @@ import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skell
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { crushProof } from './pieceBlows.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
@@ -554,7 +555,7 @@ const houseWall = (): World => {
 };
 /** A sound downspout up the house's west wall, with the segment `worn` placed at `wear`, as worldgen places it. */
 const houseWithPipe = (worn?: { readonly y: number; readonly wear: number }, options: RuntimeOptions = {}) => {
-  const entities = new BlockEntities(registry);
+  const entities = new BlockEntities(options.content ?? registry);
   for (let y = 1; y < roofTop; y++) {
     const segment = entities.add({ type: downspout, pos: [-1, y, 0], size: pipeSize, facing: 'w' })!;
     if (y === worn?.y) {
@@ -640,6 +641,13 @@ describe('downspouts', () => {
     });
     expect(resumed.session.entities.at(-1, tornY, 0)).toBeUndefined();
     expect(resumed.session.entities.at(-1, tornY + 1, 0)).toBeDefined();
+  });
+
+  it('tears off an overloaded segment whatever its material resists, since the load decides the tear', () => {
+    const tornY = 5;
+    const runtime = houseWithPipe({ y: tornY, wear: 0.99 }, { content: crushProof(baseRegistry(), downspout) });
+    climbPipe(runtime);
+    expect(runtime.session.entities.at(-1, tornY, 0)).toBeUndefined();
   });
 
   it('tears off the lowest loaded segment of a sound pipe under a heavy pack', () => {

@@ -66,6 +66,9 @@ const checkItem = (item: ItemDef, checker: Checker, registry: Registry): void =>
     checker.selected('.explosive.blast.damageKind', item.explosive.blast.damageKind);
     checker.selected('.explosive.fragments.damageKind', item.explosive.fragments.damageKind);
   }
+  if (item.tool?.cut) {
+    checker.selected('.tool.cut.damageKind', item.tool.cut.damageKind);
+  }
   if (item.trap) {
     checker.selected('.trap.playerInjury.kind', item.trap.playerInjury.kind);
   }
@@ -94,6 +97,9 @@ export const checkDamageKinds = (registry: Registry, report: Report): void => {
   }
   for (const material of registry.blockMaterials.values()) {
     checkerFor(registry, report, 'blockMaterials', material.id).complete('.resistance', material.resistance);
+  }
+  for (const material of registry.furnitureMaterials.values()) {
+    checkerFor(registry, report, 'furnitureMaterials', material.id).complete('.resistance', material.resistance);
   }
   for (const meleeClass of registry.meleeClasses.values()) {
     const checker = checkerFor(registry, report, 'meleeClasses', meleeClass.id);

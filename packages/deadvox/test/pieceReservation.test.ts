@@ -7,6 +7,7 @@ import { expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';
+import { fixtureResistance } from './fixtures/damageKinds.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
 const base = baseContentSources();
@@ -43,6 +44,7 @@ const { registry, issues } = buildFixtureRegistry([
         {
           id: FIXTURE_MATERIAL,
           blowSound: FIXTURE_BLOW_SOUND,
+          resistance: fixtureResistance(),
           drops: { default: FIXTURE_BLOW_SOUND },
           methods: [methodId],
         },

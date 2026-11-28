@@ -130,7 +130,7 @@ it('saves and restores fitted attachment identity and a nested light battery', a
   const rifle = original.inventory.create('rifle_assault');
   const optic = rifle.slots?.[defaultAttachment.mountedAt];
   const flashlight = original.inventory.create('flashlight');
-  const battery = flashlight.slots?.battery;
+  const battery = flashlight.slots?.consumable;
   if (!(optic && battery)) {
     throw new Error('fitted-item fixtures were not created');
   }
@@ -153,7 +153,7 @@ it('saves and restores fitted attachment identity and a nested light battery', a
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const restored = session([], decoded.snapshot);
   const restoredOptic = restored.inventory.hands.right?.slots?.[defaultAttachment.mountedAt];
-  const restoredBattery = restored.inventory.hands.left?.slots?.battery;
+  const restoredBattery = restored.inventory.hands.left?.slots?.consumable;
   if (!(restoredOptic && restoredBattery)) {
     throw new Error('fitted-item save state did not restore its children');
   }

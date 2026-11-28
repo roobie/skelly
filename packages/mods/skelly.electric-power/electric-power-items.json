@@ -1,13 +1,13 @@
 {
   "items": [
     {
-      "battery": {
+      "category": "battery",
+      "consumable": {
         "capacity": 1,
         "rechargeable": {
           "microjoulesPerCharge": 7200000000
         }
       },
-      "category": "battery",
       "description": "A rechargeable AA cell.",
       "id": "rechargeable_aa_battery",
       "model": "aa_battery",
@@ -17,10 +17,10 @@
       "workInProgress": false
     },
     {
-      "battery": {
+      "category": "battery",
+      "consumable": {
         "capacity": 1
       },
-      "category": "battery",
       "id": "aa_battery",
       "model": "aa_battery",
       "name": "AA battery",
@@ -50,6 +50,12 @@
     },
     {
       "category": "light",
+      "consumableSlot": {
+        "accepts": ["aa_battery", "rechargeable_aa_battery"],
+        "comesWith": "aa_battery",
+        "drainPerGameHour": 0.25,
+        "swapSimSeconds": 2
+      },
       "description": "A battery-powered flashlight. Its light is visible to nearby zombies.",
       "id": "flashlight",
       "light": {
@@ -65,12 +71,6 @@
         },
         "color": "#fff1d8",
         "intensity": 4,
-        "power": {
-          "battery": "aa_battery",
-          "chargePerGameHour": 0.25,
-          "compatibleBatteries": ["rechargeable_aa_battery"],
-          "swapSimSeconds": 2
-        },
         "radius": 20,
         "seenFrom": 40
       },
@@ -81,6 +81,12 @@
     },
     {
       "category": "light",
+      "consumableSlot": {
+        "accepts": ["aa_battery", "rechargeable_aa_battery"],
+        "comesWith": "aa_battery",
+        "drainPerGameHour": 0.20000000000000001,
+        "swapSimSeconds": 2
+      },
       "description": "A battery-powered beam worn on the head, leaving both hands free.",
       "disassembly": {
         "skill": "crafting",
@@ -123,12 +129,6 @@
         },
         "color": "#fff1d8",
         "intensity": 3.2999999999999998,
-        "power": {
-          "battery": "aa_battery",
-          "chargePerGameHour": 0.20000000000000001,
-          "compatibleBatteries": ["rechargeable_aa_battery"],
-          "swapSimSeconds": 2
-        },
         "radius": 12,
         "seenFrom": 30,
         "wornSwitch": true
@@ -144,6 +144,12 @@
     },
     {
       "category": "light",
+      "consumableSlot": {
+        "accepts": ["aa_battery", "rechargeable_aa_battery"],
+        "comesWith": "aa_battery",
+        "drainPerGameHour": 0.14999999999999999,
+        "swapSimSeconds": 2
+      },
       "description": "Battery-powered night-vision goggles with an infrared lamp.",
       "figureModels": [
         {
@@ -174,12 +180,6 @@
           "gain": 6,
           "grain": 0.080000000000000002,
           "tint": "#8cff8f"
-        },
-        "power": {
-          "battery": "aa_battery",
-          "chargePerGameHour": 0.14999999999999999,
-          "compatibleBatteries": ["rechargeable_aa_battery"],
-          "swapSimSeconds": 2
         },
         "radius": 14,
         "seenFrom": 8,

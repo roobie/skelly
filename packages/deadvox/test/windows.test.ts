@@ -420,7 +420,7 @@ describe('boarded windows', () => {
     expect(blowLandsOnPane(entities, entity, undefined)).toBe(false);
     expect(blowLandsOnPane(entities, entity, 'board')).toBe(false);
     expect(blowLandsOnPane(entities, entity, 'pane')).toBe(true);
-    expect(entities.bash(entity, entities.defOf(entity).breach.durability)).toBe('ruined');
+    expect(entities.bash(entity, { strength: entities.defOf(entity).breach.durability, kind: 'blunt' })).toBe('ruined');
   });
 
   it('refuses boards saved on an open window, since the boards hold its sash shut', () => {
@@ -478,7 +478,9 @@ describe('window curtains', () => {
       isSolid: () => false,
     });
     expect(picked).toMatchObject({ entity, part: 'curtain' });
-    expect(runtime.session.bashFurniture(entity, pane.breakForce, picked!.part)).toBe('broken');
+    expect(runtime.session.bashFurniture(entity, { strength: pane.breakForce, kind: 'blunt' }, picked!.part)).toBe(
+      'broken',
+    );
     expect(entity.window).toMatchObject({ pane: 'missing' });
     expect(entity.damage).toBeUndefined();
   });

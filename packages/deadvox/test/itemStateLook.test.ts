@@ -1,4 +1,5 @@
 import { buildRegistry, modelPresentationAssetIssues } from '@skelly/engine/content';
+import { CONSUMABLE_SLOT } from '@skelly/engine/internal/core/consumable.ts';
 import { itemPresentationIssues } from '@skelly/engine/internal/core/itemPresentation.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import {
@@ -75,19 +76,21 @@ const fixture = () => {
         ],
         items: [
           { ...base, id: 'plain', model: 'plain' },
-          { ...base, id: 'battery', model: 'plain', battery: { capacity: 100 } },
-          { ...base, id: 'canister', model: 'plain', canister: { capacity: 100 } },
+          { ...base, id: 'battery', model: 'plain', consumable: { capacity: 100 } },
+          { ...base, id: 'canister', model: 'plain', consumable: { capacity: 100 } },
           {
             ...base,
             id: 'tool',
             model: 'plain',
-            tool: { qualities: {}, fuel: { canister: 'canister', swapSimSeconds: 1 } },
+            tool: { qualities: {} },
+            consumableSlot: { accepts: ['canister'], swapSimSeconds: 1, drainPerGameHour: 1 },
           },
           {
             ...base,
             id: 'powered',
             model: 'plain',
-            light: { ...light, power: { battery: 'battery', chargePerGameHour: 1, swapSimSeconds: 1 } },
+            light,
+            consumableSlot: { accepts: ['battery'], comesWith: 'battery', swapSimSeconds: 1, drainPerGameHour: 1 },
           },
           { ...base, id: 'igniter', model: 'filled', igniter: { capacity: 100, perIgnition: 1 } },
           { ...base, id: 'vessel', model: 'filled', vessel },
@@ -204,17 +207,15 @@ it('resolves every supply capability without conflating absent supplies, empty v
   for (const type of ['battery', 'powered', 'canister', 'tool', 'igniter', 'vessel', 'liquid_light', 'burn']) {
     const item = create(type);
     if (type === 'tool') {
-      item.slots = { canister: create('canister') };
+      item.slots = { [CONSUMABLE_SLOT]: create('canister') };
     }
     expect(supplyShare(registry, item)).toEqual({ kind: 'share', share: 1 });
     if (type === 'burn') {
       item.burnRemainingGameSeconds = registry.items.get(type)!.light!.burnTimeGameHours! / 2;
     } else if (type === 'vessel' || type === 'liquid_light') {
       item.liquidContents = { kind: 'empty' };
-    } else if (type === 'powered') {
-      item.slots!.battery!.charges = 0;
-    } else if (type === 'tool') {
-      item.slots!.canister!.charges = 0;
+    } else if (type === 'powered' || type === 'tool') {
+      item.slots!.consumable!.charges = 0;
     } else {
       item.charges = 0;
     }
@@ -223,7 +224,7 @@ it('resolves every supply capability without conflating absent supplies, empty v
     expect(value?.kind === 'share' && value.share).toBeLessThan(1);
   }
   const powered = create('powered');
-  powered.slots!.battery!.charges = 0;
+  powered.slots!.consumable!.charges = 0;
   const emptyKey = itemLook(registry, powered)!.key;
   powered.slots = {};
   expect(chargeShare(registry, powered)).toBeUndefined();

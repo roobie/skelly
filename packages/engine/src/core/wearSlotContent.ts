@@ -1,4 +1,5 @@
 import { claimed } from './capabilities.ts';
+import { CONSUMABLE_SLOT } from './consumable.ts';
 import type { ItemDef, Registry } from './content.ts';
 import { firearmSlotIds, isLongGun } from './firearmFitting.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
@@ -75,7 +76,7 @@ const checkAllowedModels = (
     });
   };
   checkEntries(host);
-  const fittingSlots = ['magazine', 'battery', 'canister', ...firearmSlotIds(registry, host)].filter((id) =>
+  const fittingSlots = ['magazine', CONSUMABLE_SLOT, ...firearmSlotIds(registry, host)].filter((id) =>
     knownItemSlot(registry, host.id, id),
   );
   // Frame permission is per drawable child; pair compatibility remains the fitting owner's invariant.

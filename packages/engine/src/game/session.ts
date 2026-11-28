@@ -30,7 +30,7 @@ import {
 } from '../core/aim.ts';
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
-import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
+import { worldCellRepair } from '../core/blockDamage.ts';
 import {
   type BashOutcome,
   BlockEntities,
@@ -38,12 +38,14 @@ import {
   boxIntersectsBody,
   searchTime,
 } from '../core/blockEntities.ts';
+import type { Blow } from '../core/blow.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
 import type { CastShotEnd } from '../core/castVolleys.ts';
+import { cellCutPlan } from '../core/cellCutting.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { collapseBlockingCells, reachableCollapseExit, refreshBurial } from '../core/collapse.ts';
@@ -55,6 +57,7 @@ import {
   worldSoundBlocking,
 } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
+import { consumableCovers, consumableRefusal, spendConsumable } from '../core/consumableSlot.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
@@ -172,7 +175,6 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { cascadeSupport, strikeTerrain, type TerrainStrikeResult } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
-import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { vehicleOpeningPlan } from '../core/vehicleOpening.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
@@ -587,7 +589,7 @@ export interface SessionOptions {
   onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
   onDischarge?: (item: Item, sighted: boolean) => void;
   onCompletedSwing?: (isFist: boolean) => void;
-  onBatterySwapped?: ((lightType: string) => void) | undefined;
+  onConsumableSwapped?: ((deviceType: string) => void) | undefined;
   /** An unpack opened a container in place; called with the container's type. */
   onOpened?: ((type: string) => void) | undefined;
   /** An unpack delivered its contents; called with their item type. */
@@ -1352,7 +1354,7 @@ export const createSession = (options: SessionOptions) => {
     read: options.onRead,
     readingLight: () => readingLight(),
     consumed: options.onConsumed,
-    batterySwapped: options.onBatterySwapped,
+    consumableSwapped: options.onConsumableSwapped,
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;
@@ -1703,7 +1705,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const bashPiece = (
     target: BlockEntity | undefined,
-    strength: number,
+    blow: Blow,
     part?: FurniturePart,
     sound = true,
   ): BashOutcome | undefined => {
@@ -1723,12 +1725,18 @@ export const createSession = (options: SessionOptions) => {
           },
         },
         target,
-        { force: strength, continuation: 0 },
+        { force: blow.strength, continuation: 0 },
         position,
       );
     }
-    const outcome = target && entities.bash(target, strength);
-    if (!(target && outcome)) {
+    return target && settlePiece(target, entities.bash(target, blow), sound);
+  };
+  const settlePiece = (
+    target: BlockEntity,
+    outcome: BashOutcome | undefined,
+    sound: boolean,
+  ): BashOutcome | undefined => {
+    if (!outcome) {
       return undefined;
     }
     bashPieceSound(target, sound);
@@ -1739,11 +1747,12 @@ export const createSession = (options: SessionOptions) => {
     }
     return outcome;
   };
-  /** A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. */
+  /** A climber a piece can't bear tears it off: the load decides it, so it ruins with no blow, as loud as one. */
   const tearPiece = (piece: BlockEntity): void => {
-    bashPiece(piece, entities.defOf(piece).breach.durability);
+    settlePiece(piece, entities.ruin(piece), true);
   };
-  const applyTerrainStrike = (cell: Vec3, blow: BlockBlow, sound = true): TerrainStrikeResult | undefined => {
+  /** Lands one blow on a terrain cell; undefined when nothing there takes it. */
+  const applyTerrainStrike = (cell: Vec3, blow: Blow, sound = true): TerrainStrikeResult | undefined => {
     const context = options.terrainDestruction;
     if (!context) {
       return undefined;
@@ -1779,7 +1788,7 @@ export const createSession = (options: SessionOptions) => {
   /** The player's terrain blow; only the player hears why a trunk holding canopy refuses it. */
   const strikeTerrainCell = (
     cell: Vec3,
-    blow: BlockBlow,
+    blow: Blow,
     { sound = true, refusal = true }: { readonly sound?: boolean; readonly refusal?: boolean } = {},
   ): boolean => {
     const result = applyTerrainStrike(cell, blow, sound);
@@ -1932,15 +1941,16 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       isSolid: physicalSolid,
     });
+    const blow: Blow = { strength: weapon.impulse, kind: weapon.type };
     if (picked?.entity.window) {
-      return bashPiece(picked.entity, weapon.impulse, picked.part) !== undefined;
+      return bashPiece(picked.entity, blow, picked.part) !== undefined;
     }
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
-      return bashPiece(piece, weapon.impulse) !== undefined;
+      return bashPiece(piece, blow) !== undefined;
     }
-    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
+    return hit ? strikeTerrainCell(hit.block, blow) : false;
   };
   /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
    * read and published before the damage lands, so the damaged world survives streaming and saves. */
@@ -2004,7 +2014,7 @@ export const createSession = (options: SessionOptions) => {
     bashObstacle: (ahead, strength, kind) => {
       const piece = entities.pieceTouching(ahead);
       if (piece) {
-        return bashPiece(piece, strength);
+        return bashPiece(piece, { strength, kind });
       }
       const cell = terrainCellTouching(ahead);
       if (!cell) {
@@ -2249,7 +2259,7 @@ export const createSession = (options: SessionOptions) => {
       if (entities.byUid(piece.uid) !== piece) {
         continue;
       }
-      if (bashPiece(piece, strength, undefined, sound()) && sound()) {
+      if (bashPiece(piece, { strength, kind: 'blast' }, undefined, sound()) && sound()) {
         sounds += 1;
       }
     }
@@ -3100,9 +3110,36 @@ export const createSession = (options: SessionOptions) => {
       }
       const broken = entities.breakLock(entity);
       if (broken === undefined && plan.fuel !== undefined) {
-        spendFuel(inventory, plan.tool, plan.fuel);
+        spendConsumable(inventory, plan.tool, plan.fuel);
       }
       return broken;
+    },
+  };
+  sim.actions.cutting = {
+    validate: (cell, toolUid) => {
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
+      return plan.ok ? undefined : plan.reason;
+    },
+    strike: (cell, toolUid) => {
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
+      if (!plan.ok) {
+        return { stop: plan.reason };
+      }
+      spendConsumable(inventory, plan.tool, plan.strikeFuel);
+      const result = applyTerrainStrike([...cell], plan.blow, false);
+      if (!result) {
+        return { stop: coreMessage(registry, 'gone') };
+      }
+      playNoisyWorldSound(plan.strikeSound, boxCentre([...cell], [1, 1, 1]));
+      if (result.outcome === 'refused') {
+        return { stop: coreMessage(registry, result.cause === 'canopy' ? 'trunkHoldsCanopy' : 'noRoom') };
+      }
+      if (result.outcome === 'broken') {
+        return 'cut';
+      }
+      return consumableCovers(registry, plan.tool, plan.strikeFuel)
+        ? 'going'
+        : { stop: consumableRefusal(registry, [plan.tool]) };
     },
   };
 
@@ -3331,6 +3368,11 @@ export const createSession = (options: SessionOptions) => {
             strikeIntervalSimSeconds: plan.strikeInterval,
           })
         : plan.reason;
+    },
+    /** Starts cutting a terrain cell with a carried tool, or says why not. */
+    cutCell: (cell: Vec3, toolUid?: number) => {
+      const plan = cellCutPlan(inventory, world, cell, { clock: sim.clock, toolUid });
+      return plan.ok ? sim.actions.beginCutting(cell, plan.tool.uid, plan.strikeIntervalSimSeconds) : plan.reason;
     },
     downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */

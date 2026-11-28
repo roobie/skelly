@@ -383,7 +383,7 @@ describe('furniture', () => {
     };
     furniture.sync(entities);
     const intact = colours();
-    for (let blows = 0; entities.bash(door, 1e6) !== 'broken'; blows++) {
+    for (let blows = 0; entities.bash(door, { strength: 1e6, kind: 'blunt' }) !== 'broken'; blows++) {
       expect(blows).toBeLessThan(1000);
     }
     furniture.sync(entities);
@@ -406,7 +406,7 @@ describe('furniture', () => {
     furniture.sync(entities);
     const intact = colours();
     const { durability } = entities.defOf(door).breach;
-    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
+    expect(entities.bash(door, { strength: durability * 0.8, kind: 'blunt' })).toBe('damaged');
     furniture.sync(entities);
     expect(door.broken).toBeUndefined();
     expect(colours()).not.toEqual(intact);
@@ -417,11 +417,11 @@ describe('furniture', () => {
     const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const { durability, minimumStrength } = entities.defOf(door).breach;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    entities.bash(door, durability * 0.8);
+    entities.bash(door, { strength: durability * 0.8, kind: 'blunt' });
     furniture.sync(entities);
     const [drawn] = furniture.group.children;
     const { standing } = entities;
-    expect(entities.bash(door, minimumStrength)).toBe('damaged');
+    expect(entities.bash(door, { strength: minimumStrength, kind: 'blunt' })).toBe('damaged');
     expect(entities.standing).toBe(standing);
     furniture.sync(entities);
     expect(furniture.group.children[0]).toBe(drawn);
@@ -438,7 +438,7 @@ describe('furniture', () => {
     const before = [...furniture.group.children];
 
     const { durability } = entities.defOf(door).breach;
-    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
+    expect(entities.bash(door, { strength: durability * 0.8, kind: 'blunt' })).toBe('damaged');
     furniture.sync(entities);
     const after = [...furniture.group.children];
     expect(after).toContain(drawnCrate);

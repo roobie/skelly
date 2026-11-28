@@ -4,6 +4,8 @@
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { dominantSide, offSide } from './character.ts';
+import { CONSUMABLE_SLOT } from './consumable.ts';
+import { deviceInHands, fitsDevice } from './consumableSlot.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
@@ -11,10 +13,9 @@ import { HandlingQueue, type MoveJob } from './handling.ts';
 import { usedItem } from './holders.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { chargeOf, fitsLight, lightInHands } from './lights.ts';
+import { chargeOf, darkLightReason } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Readable } from './readable.ts';
-import { fitsFuelledTool } from './torch.ts';
 
 /** Keys stay ordinary Inventory-owned items; only held definitions authorize a door lock. */
 export const heldKeyLocks = (inventory: Inventory): string[] =>
@@ -117,14 +118,13 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'consume' | 'switch' | 'battery' | 'canister' | 'read' | 'trap' | 'pour';
+  operation?: 'consume' | 'switch' | 'consumable' | 'read' | 'trap' | 'pour';
   receiver?: Item;
-  /** How a battery load was admitted; completion rechecks the same route. */
-  route?: BatteryRoute;
+  /** How a consumable load was admitted; completion rechecks the same route. */
+  route?: ConsumableRoute;
   light?: Item;
-  battery?: Item;
-  tool?: Item;
-  canister?: Item;
+  device?: Item;
+  consumable?: Item;
   readable?: Readable;
 }
 
@@ -336,16 +336,19 @@ export const otherHandPour = (item: Item, view: ReachSnapshot): UseOption => {
   };
 };
 
-type BatteryRoute = 'hands' | 'slot';
+type ConsumableRoute = 'hands' | 'slot';
 
-const loadOption = (inv: Inventory, light: Item, battery: Item, route: BatteryRoute): UseOption => ({
+const loadOption = (inv: Inventory, device: Item, consumable: Item, route: ConsumableRoute): UseOption => ({
   kind: 'use',
-  label: coreLabel(inv.registry, 'batteryIn', { item: inv.name(light).toLowerCase() }),
-  operation: 'battery',
+  label: coreLabel(inv.registry, 'consumableIn', {
+    consumable: inv.name(consumable).toLowerCase(),
+    item: inv.name(device).toLowerCase(),
+  }),
+  operation: 'consumable',
   route,
-  light,
-  battery,
-  plan: swapPlan(defOf(inv.registry, light.type).light!.power!.swapSimSeconds),
+  device,
+  consumable,
+  plan: swapPlan(defOf(inv.registry, device.type).consumableSlot!.swapSimSeconds),
 });
 
 /** The item at the top of `item`'s slot chain, as a light fitted to a gun answers to the gun. */
@@ -363,112 +366,87 @@ const unreachedRefusal = (view: ReachSnapshot, item: Item): string | undefined =
 };
 
 /**
- * Whether `battery` can go into `light` from the light's battery slot on its item card: both within reach,
- * a fitted light through the item it is fitted to. Returns why not, or undefined.
+ * Whether `consumable` can go into `device` from the device's consumable slot on its item card: both within reach,
+ * a fitted device through the item it is fitted to. Returns why not, or undefined.
  */
-export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: Item): string | undefined => {
+export const consumableSlotRefusal = (view: ReachSnapshot, device: Item, consumable: Item): string | undefined => {
   const inv = view.player.inventory;
-  if (!(inv.locate(light) && inv.locate(battery))) {
+  if (!(inv.locate(device) && inv.locate(consumable))) {
     return coreMessage(inv.registry, 'gone');
   }
-  const unreached = unreachedRefusal(view, slotRoot(inv, light)) ?? unreachedRefusal(view, battery);
+  const unreached = unreachedRefusal(view, slotRoot(inv, device)) ?? unreachedRefusal(view, consumable);
   if (unreached) {
     return unreached;
   }
-  if (inv.locate(light)?.kind === 'worn') {
+  if (inv.locate(device)?.kind === 'worn') {
     return coreMessage(inv.registry, 'headlampOnHead');
   }
-  return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
+  return fitsDevice(inv.registry, device, consumable)
+    ? undefined
+    : coreMessage(inv.registry, 'wrongConsumable', { item: inv.name(consumable).toLowerCase() });
 };
 
 /**
- * Whether the battery fitted to `light` can be taken out from the light's battery slot on its item card:
- * the light within reach, a fitted light through the item it is fitted to. Returns why not, or undefined.
+ * Whether the consumable fitted to `device` can be taken out from the device's consumable slot on its item card:
+ * the device within reach, a fitted device through the item it is fitted to. Returns why not, or undefined.
  */
-export const batterySlotUnloadRefusal = (view: ReachSnapshot, light: Item): string | undefined => {
+export const consumableSlotUnloadRefusal = (view: ReachSnapshot, device: Item): string | undefined => {
   const inv = view.player.inventory;
-  if (!inv.locate(light)) {
+  if (!inv.locate(device)) {
     return coreMessage(inv.registry, 'gone');
   }
-  const unreached = unreachedRefusal(view, slotRoot(inv, light));
+  const unreached = unreachedRefusal(view, slotRoot(inv, device));
   if (unreached) {
     return unreached;
   }
-  if (inv.locate(light)?.kind === 'worn') {
+  if (inv.locate(device)?.kind === 'worn') {
     return coreMessage(inv.registry, 'headlampOnHead');
   }
-  return light.slots?.battery ? undefined : coreMessage(inv.registry, 'batteryGone');
+  return device.slots?.[CONSUMABLE_SLOT] ? undefined : coreMessage(inv.registry, 'gone');
 };
 
-/** Loading from the item card's battery slot (`packages/deadvox/DESIGN.md`, "Light"). */
-export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
+/** Loading from the item card's consumable slot (`packages/deadvox/DESIGN.md`, "Light"). */
+export const consumableSlotOption = (view: ReachSnapshot, device: Item, consumable: Item): UseOption => {
   const inv = view.player.inventory;
-  const refusal = batterySlotRefusal(view, light, battery);
-  return refusal ? refuseUse(inv, refusal) : loadOption(inv, light, battery, 'slot');
+  const refusal = consumableSlotRefusal(view, device, consumable);
+  return refusal ? refuseUse(inv, refusal) : loadOption(inv, device, consumable, 'slot');
 };
 
 /**
- * Whether a battery in one hand can go into a light held, or fitted to a gun held, in the other.
+ * Whether a consumable in one hand can go into a device held, or fitted to a gun held, in the other.
  * Returns why not, or undefined.
  */
-export const batteryHandRefusal = (inv: Inventory, light: Item, battery: Item): string | undefined => {
-  if (!(inv.locate(light) && inv.locate(battery))) {
+export const consumableHandRefusal = (inv: Inventory, device: Item, consumable: Item): string | undefined => {
+  if (!(inv.locate(device) && inv.locate(consumable))) {
     return coreMessage(inv.registry, 'gone');
   }
-  if (inv.locate(battery)?.kind !== 'hand') {
-    return coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() });
+  if (inv.locate(consumable)?.kind !== 'hand') {
+    return coreMessage(inv.registry, 'notInHands', { item: inv.name(consumable).toLowerCase() });
   }
-  return lightInHands(inv, light) && fitsLight(inv.registry, light, battery)
+  return deviceInHands(inv, device) && fitsDevice(inv.registry, device, consumable)
     ? undefined
-    : coreMessage(inv.registry, 'noLightToFit');
+    : coreMessage(inv.registry, 'nothingToFit');
 };
 
-/** A battery used from one hand goes into the light held, or fitted to the gun held, in the other. */
-const batteryOption = (battery: Item, inv: Inventory): UseOption => {
-  if (inv.locate(battery)?.kind !== 'hand') {
-    return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(battery).toLowerCase() }));
+/** A consumable used from one hand goes into the device held, or fitted to the gun held, in the other. */
+const consumableOption = (consumable: Item, inv: Inventory): UseOption => {
+  if (inv.locate(consumable)?.kind !== 'hand') {
+    return refuseUse(inv, coreMessage(inv.registry, 'notInHands', { item: inv.name(consumable).toLowerCase() }));
   }
-  const light = [...inv.carriedTree()]
+  const device = [...inv.carriedTree()]
     .map(({ item }) => item)
-    .find((item) => batteryHandRefusal(inv, item, battery) === undefined);
-  return light ? loadOption(inv, light, battery, 'hands') : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
+    .find((item) => consumableHandRefusal(inv, item, consumable) === undefined);
+  return device
+    ? loadOption(inv, device, consumable, 'hands')
+    : refuseUse(inv, coreMessage(inv.registry, 'nothingToFit'));
 };
 
 const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, durationSimSeconds: simSeconds });
 
-const canisterOption = (canister: Item, inv: Inventory): UseOption => {
-  const tool = [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
-    (held) => held && fitsFuelledTool(inv, held, canister),
-  );
-  return tool
-    ? {
-        kind: 'use',
-        label: coreLabel(inv.registry, 'cartridgeIn', {
-          fuel: inv.name(canister).toLowerCase(),
-          item: inv.name(tool).toLowerCase(),
-        }),
-        operation: 'canister',
-        tool,
-        canister,
-        plan: swapPlan(defOf(inv.registry, tool.type).tool!.fuel!.swapSimSeconds),
-      }
-    : refuseUse(inv, coreMessage(inv.registry, 'noToolToFit'));
-};
-
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
-    if (defOf(inv.registry, item.type).tool?.fuel) {
-      const [fuel] = view.entries
-        .map((entry) => entry.item)
-        .filter((candidate) => fitsFuelledTool(inv, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
-        .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
-      return fuel ? canisterOption(fuel, inv) : refuseUse(inv, coreMessage(inv.registry, 'outOfFuelNoSpare'));
-    }
-    if (!defOf(inv.registry, item.type).light?.power) {
-      return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
-    }
-    return refuseUse(inv, coreMessage(inv.registry, 'noBattery'));
+    return refuseUse(inv, darkLightReason(inv.registry, item));
   }
   return {
     kind: 'use',
@@ -506,12 +484,8 @@ const useLocationRefusal = (
 export const isReadableItem = (def: ItemDef): boolean =>
   def.book !== undefined || def.readable !== undefined || def.paperMap !== undefined;
 
-const goneReason = (registry: Registry, def: ItemDef, item: string): string => {
-  if (def.battery) {
-    return coreMessage(registry, 'batteryGone');
-  }
-  return def.canister ? coreMessage(registry, 'cartridgeGone') : coreMessage(registry, 'notInHands', { item });
-};
+const goneReason = (registry: Registry, def: ItemDef, item: string): string =>
+  def.consumable ? coreMessage(registry, 'gone') : coreMessage(registry, 'notInHands', { item });
 
 /** A trap lying set is disarmed where it lies; an unset one is set from the hands. */
 const trapOption = (
@@ -556,11 +530,8 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (unreached) {
     return refuseUse(inv, unreached);
   }
-  if (def.battery) {
-    return batteryOption(item, inv);
-  }
-  if (def.canister) {
-    return canisterOption(item, inv);
+  if (def.consumable) {
+    return consumableOption(item, inv);
   }
   if (def.trap) {
     return trapOption(item, at, inv, def.trap);
@@ -625,8 +596,8 @@ const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   }
   const dominant = dominantSide(inv.character);
   const held = inv.hands[dominant];
-  // A battery goes beside the light it fits, so using it puts it in (`packages/deadvox/DESIGN.md`, "Light").
-  return def.battery && held && fitsLight(inv.registry, held, item) ? otherHand(dominant) : dominant;
+  // A consumable goes beside the device it fits, so using it puts it in (`packages/deadvox/DESIGN.md`, "Light").
+  return def.consumable && held && fitsDevice(inv.registry, held, item) ? otherHand(dominant) : dominant;
 };
 
 /** Where a displaced held item goes without being dropped: a free shoulder, else the best pocket's planned spot. */

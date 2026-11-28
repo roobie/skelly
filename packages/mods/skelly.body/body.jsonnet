@@ -5,6 +5,8 @@ local normalSleep = 100 / normalSleepGameHours;
 local responses(blunt, cut, pierce, acid) = {
   blunt: blunt, cut: cut, pierce: pierce, acid: acid,
   blast: blunt, fragment: pierce, breach: blunt, crush: blunt,
+  // A burn eats skin and clothing as acid does.
+  heat: acid,
 };
 
 {

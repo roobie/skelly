@@ -159,7 +159,7 @@ const RECIPE_COMBINATION_CAP = 1024n;
 
 type Issue = BaseIssue<unknown>;
 
-/** "items[0].light.power", with palette characters in brackets: `palette["#"]`. */
+/** "items[0].light.beam", with palette characters in brackets: `palette["#"]`. */
 const formatPath = (issue: Issue): string => {
   const keys = (issue.path ?? []).map((item) => item.key as string | number);
   return keys
@@ -539,8 +539,8 @@ const vesselHasState = (item: ItemDef, registry: Registry): boolean =>
     item.light,
     item.igniter,
     item.explosive,
-    item.battery,
-    item.canister,
+    item.consumable,
+    item.consumableSlot,
     item.model && registry.models.get(item.model)?.gun,
   ].some(Boolean);
 
@@ -711,39 +711,41 @@ const checkItemHeldDisplay = (item: ItemDef, registry: Registry, report: Report)
   }
 };
 
-const checkItemBatteries = (item: ItemDef, registry: Registry, report: Report) => {
-  const { light } = item;
-  const batteries = light?.power ? [light.power.battery, ...(light.power.compatibleBatteries ?? [])] : [];
-  for (const [index, battery] of batteries.entries()) {
-    if (registry.items.get(battery)?.battery === undefined) {
-      const path = index === 0 ? '.light.power.battery' : `.light.power.compatibleBatteries[${index - 1}]`;
-      report('items', item.id, path, `"${battery}" is not an item with a battery component`);
+const checkItemConsumable = (item: ItemDef, registry: Registry, report: Report) => {
+  for (const [index, type] of (item.consumableSlot?.accepts ?? []).entries()) {
+    if (registry.items.get(type)?.consumable === undefined) {
+      report('items', item.id, `.consumableSlot.accepts[${index}]`, `"${type}" is not a consumable`);
     }
   }
+  if (item.consumable && item.consumableSlot) {
+    report('items', item.id, '.consumableSlot', 'a consumable cannot draw on a consumable of its own');
+  }
   if (
-    item.battery?.rechargeable &&
-    !Number.isSafeInteger(item.battery.capacity * item.battery.rechargeable.microjoulesPerCharge)
+    item.consumable?.rechargeable &&
+    !Number.isSafeInteger(item.consumable.capacity * item.consumable.rechargeable.microjoulesPerCharge)
   ) {
-    report('items', item.id, '.battery', 'rechargeable capacity must be a safe integer number of microjoules');
+    report('items', item.id, '.consumable', 'rechargeable capacity must be a safe integer number of microjoules');
   }
 };
 
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
   const { light, igniter } = item;
-  checkItemBatteries(item, registry, report);
   if (igniter && igniter.perIgnition > igniter.capacity) {
     report('items', item.id, '.igniter.perIgnition', 'must not exceed fuel capacity');
   }
-  if (light?.power && light.burnTimeGameHours !== undefined) {
-    report('items', item.id, '.light.burnTimeGameHours', 'battery lights cannot also have a burn time');
-  }
-  if (light?.fuelPerGameHour !== undefined && !igniter && !item.tool?.fuel) {
+  if (light && item.consumableSlot && light.burnTimeGameHours !== undefined) {
     report(
       'items',
       item.id,
-      '.light.fuelPerGameHour',
-      'self-fuelled lights need an igniter or a swappable fuel canister',
+      '.light.burnTimeGameHours',
+      'lights that draw on a consumable cannot also have a burn time',
     );
+  }
+  if (light?.fuelPerGameHour !== undefined && !igniter) {
+    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights need an igniter');
+  }
+  if (light?.fuelPerGameHour !== undefined && item.consumableSlot) {
+    report('items', item.id, '.light.fuelPerGameHour', 'lights that draw on a consumable cannot also fuel themselves');
   }
   if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
     report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
@@ -769,9 +771,8 @@ const checkLiquidFuel = (item: ItemDef, registry: Registry, report: Report): voi
   }
   if (
     !item.vessel ||
-    light.power ||
+    item.consumableSlot ||
     item.igniter ||
-    item.tool?.fuel ||
     light.burnTimeGameHours !== undefined ||
     light.fuelPerGameHour !== undefined
   ) {
@@ -1328,11 +1329,9 @@ const checkVessel = (item: ItemDef, registry: Registry, report: Report): void =>
     report('items', item.id, '.stack', 'liquid vessels cannot stack');
   }
   if (
-    item.canister ||
-    item.battery ||
+    item.consumable ||
+    item.consumableSlot ||
     item.igniter ||
-    item.tool?.fuel ||
-    item.light?.power ||
     item.light?.burnTimeGameHours !== undefined ||
     item.light?.fuelPerGameHour !== undefined ||
     item.serving ||
@@ -1377,6 +1376,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkPackaging(item, registry, report);
     checkItemMass(item, registry, report);
     checkVessel(item, registry, report);
+    checkItemConsumable(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemHeldDisplay(item, registry, report);
@@ -1390,7 +1390,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkBook(item, registry, report);
     checkPaperMap(item, report);
     checkStockpileStack(item, report);
-    checkToolFuel(item, registry, report);
+    checkToolCut(item, registry, report);
     checkWearableModels(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
@@ -1562,20 +1562,42 @@ const checkForcingFuel = (
     if ((item.tool?.qualities[method.quality] ?? 0) < method.level) {
       continue;
     }
-    const canister = item.tool?.fuel?.canister;
-    const capacity = canister === undefined ? undefined : registry.items.get(canister)?.canister?.capacity;
+    const capacity = smallestConsumableCapacity(registry, item);
     if (capacity === undefined) {
-      report('furniture', at.furniture, `${at.path}.fuel`, `"${item.id}" meets the method but has no fuel canister`);
+      report('furniture', at.furniture, `${at.path}.fuel`, `"${item.id}" meets the method but has no consumable slot`);
     } else if (capacity < method.fuel!) {
-      report('furniture', at.furniture, `${at.path}.fuel`, `a full canister for "${item.id}" cannot cover one cut`);
+      report('furniture', at.furniture, `${at.path}.fuel`, `a full consumable for "${item.id}" cannot cover one cut`);
     }
   }
 };
 
-const checkToolFuel = (item: ItemDef, registry: Registry, report: Report) => {
-  const canister = item.tool?.fuel?.canister;
-  if (canister !== undefined && registry.items.get(canister)?.canister === undefined) {
-    report('items', item.id, '.tool.fuel.canister', `"${canister}" is not an item with a canister component`);
+/** The fill of the smallest full consumable the device accepts; undefined without a consumable slot. */
+const smallestConsumableCapacity = (registry: Registry, item: ItemDef): number | undefined => {
+  const capacities = (item.consumableSlot?.accepts ?? []).flatMap((type) => {
+    const capacity = registry.items.get(type)?.consumable?.capacity;
+    return capacity === undefined ? [] : [capacity];
+  });
+  return capacities.length === 0 ? undefined : Math.min(...capacities);
+};
+
+const checkToolCut = (item: ItemDef, registry: Registry, report: Report) => {
+  const cut = item.tool?.cut;
+  if (!cut) {
+    return;
+  }
+  if (!registry.sounds.get(cut.strikeSound)?.noise.enabled) {
+    report('items', item.id, '.tool.cut.strikeSound', 'cutting strikes need a sound that alerts hearing');
+  }
+  const capacity = smallestConsumableCapacity(registry, item);
+  const clockRatio = registry.dayCycle?.clockRatio;
+  const slot = item.consumableSlot;
+  if (
+    slot &&
+    capacity !== undefined &&
+    clockRatio !== undefined &&
+    capacity < slot.drainPerGameHour * cut.strikeIntervalSimSeconds * clockRatio
+  ) {
+    report('items', item.id, '.consumableSlot.drainPerGameHour', 'a full consumable cannot cover one cutting strike');
   }
 };
 
@@ -1583,7 +1605,7 @@ const checkChargerBattery = (registry: Registry, furniture: FurnitureDef, type: 
   const charger = furniture.charger!;
   const grid = furniture.container?.pockets[charger.pocket]?.grid;
   const item = registry.items.get(type);
-  if (!item?.battery?.rechargeable) {
+  if (!item?.consumable?.rechargeable) {
     report('furniture', furniture.id, '.charger.batteries', `"${type}" is not rechargeable`);
   } else if (
     grid &&
@@ -2602,7 +2624,7 @@ const checkLayoutGuidance = (layout: SiteLayoutDef, registry: Registry, report: 
     }
   }
   const light = layout.practice?.light;
-  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+  if (light && !registry.items.get(light.light)?.consumableSlot?.accepts.includes(light.battery)) {
     report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
   }
 };

@@ -18,7 +18,7 @@ describe('flashlight daylight scale', () => {
     const { items } = JSON.parse(readFileSync('../mods/skelly.electric-power/electric-power-items.json', 'utf8')) as {
       items: ItemDef[];
     };
-    const beams = items.flatMap(({ light }) => (light?.beam && light.power ? [light] : []));
+    const beams = items.flatMap(({ light, consumableSlot }) => (light?.beam && consumableSlot ? [light] : []));
     expect(beams.length).toBeGreaterThan(0);
     for (const light of beams) {
       const pool = (light.intensity / (3 + NEAR_FIELD_M) ** light.beam!.decay) * scaleAt(hour);

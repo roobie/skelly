@@ -9,7 +9,7 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   massKg: 10,
   span: 1,
   crumblesUnderLoad: false,
-  resistance: { blunt: 0, cut: 0.5, pierce: 1, blast: 0, fragment: 0.25, breach: 0, crush: 0, acid: 0 },
+  resistance: { blunt: 0, cut: 0.5, pierce: 1, blast: 0, fragment: 0.25, breach: 0, crush: 0, acid: 0, heat: 0 },
   fallsTo,
   breakable: false,
   rubble: [],

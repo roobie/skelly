@@ -1,10 +1,10 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
-import type { FurnitureDef, Registry } from './content.ts';
+import { consumableCovers, consumableRefusal } from './consumableSlot.ts';
+import type { FurnitureDef } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
-import { chargeOf } from './lights.ts';
 import { type EffectActor, modified, UNSKILLED } from './modifiers.ts';
 import type { SoundId } from './soundEvents.ts';
 
@@ -16,7 +16,7 @@ export type PryPlan =
       tool: Item;
       strikeInterval: number;
       strikeSound: SoundId;
-      /** Canister fill the finished cut spends from `tool`. */
+      /** Consumable fill the finished cut spends from `tool`. */
       fuel?: number;
     }
   | { ok: false; reason: string; toolNames: string[] };
@@ -52,28 +52,20 @@ export const pryPlan = (
   if (methods.length === 0) {
     return refuse(coreMessage(registry, 'cantForce'));
   }
-  const carried = [...inventory.items()]
-    .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
-    .map(({ item }) => item)
-    .filter((item) => toolUid === undefined || item.uid === toolUid)
-    .sort((a, b) => compareCodeUnits(a.type, b.type));
-  let fuelRefusal: string | undefined;
+  const carried = inventory.carriedTools().filter((item) => toolUid === undefined || item.uid === toolUid);
+  let dry: string | undefined;
   for (const [method, tuning] of methods) {
     const capable = carried.filter((item) => meets(item.type, tuning));
-    const tool = capable.find((item) => (chargeOf(inventory.registry, item) ?? 0) >= (tuning.fuel ?? 0));
+    const tool = capable.find((item) => consumableCovers(registry, item, tuning.fuel ?? 0));
     if (tool) {
       return planFor({ method, tuning, tool, character });
     }
-    fuelRefusal = capable.length > 0 ? dryRefusal(registry, capable) : fuelRefusal;
+    dry = capable.length > 0 ? consumableRefusal(registry, capable) : dry;
   }
-  return refuse(fuelRefusal ?? coreMessage(registry, 'nothingToForce'));
+  return refuse(dry ?? coreMessage(registry, 'nothingToForce'));
 };
 
 type Tuning = NonNullable<FurnitureDef['door']>['methods'][string];
-
-/** Why tools that meet the method can't start it: they hold too little gas. */
-const dryRefusal = (registry: Registry, capable: Item[]): string =>
-  coreMessage(registry, capable.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
 
 const planFor = ({
   method,

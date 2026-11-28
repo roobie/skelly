@@ -1,10 +1,10 @@
 {
   "items": [
     {
-      "canister": {
+      "category": "misc",
+      "consumable": {
         "capacity": 3
       },
-      "category": "misc",
       "description": "Fuel for a blowtorch.",
       "id": "gas_canister",
       "model": "gas_canister",

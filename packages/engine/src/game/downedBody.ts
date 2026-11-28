@@ -1,7 +1,6 @@
 import { actionText, fillText } from '../core/actionText.ts';
 import type { Actor } from '../core/actorState.ts';
 import type { ActorSystem } from '../core/actorSystem.ts';
-import { compareCodeUnits } from '../core/codeUnitOrder.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -21,11 +20,9 @@ export const isDownedBodyWay = (value: unknown): value is DownedBodyWay =>
 
 /** The first carried tool, by definition id, with the quality at the level. */
 const carriedTool = (inventory: Inventory, quality: string, level: number): Item | undefined =>
-  [...inventory.items()]
-    .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
-    .map(({ item }) => item)
-    .filter((item) => (defOf(inventory.registry, item.type).tool?.qualities[quality] ?? 0) >= level)
-    .sort((a, b) => compareCodeUnits(a.type, b.type))[0];
+  inventory
+    .carriedTools()
+    .find((item) => (defOf(inventory.registry, item.type).tool?.qualities[quality] ?? 0) >= level);
 
 /** Whether the player can clear this downed body that way now, how long it takes, and its label. */
 export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, way: DownedBodyWay): DownedBodyPlan => {

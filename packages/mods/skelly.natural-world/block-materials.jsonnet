@@ -1,7 +1,5 @@
 local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
-local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
-  blunt: blunt, cut: cut, pierce: pierce, blast: blast, fragment: fragment, breach: breach, crush: crush, acid: acid,
-};
+local resistance = (import 'tools/jsonnet/lib/damage-resistance.libsonnet').resistance;
 local cracks = {
   color: '#1c1712', opacity: 0.9, widthBlocks: 0.035, strands: 3, segments: 5, jitterRadians: 0.6, branchChance: 0.35,
   rootSpreadBlocks: 0.15, strandLengthBlocks: 0.5, branchSwingRadians: 0.7853981633974483, branchStepFactor: 0.6,
@@ -16,21 +14,23 @@ local material(id, minimum, durability, mass, span, resist, tint, yield, clearTi
   broken: { tint: tint, strength: 0.6 },
   cracks: cracks,
 };
+// Heat cuts metal; it does nothing to stone or earth. Timber and textile take nothing from heat as a blow, because
+// what a flame does to them is burning, which is fire's to decide, not a strike's.
 local materials = [
-  material('soil', 2, 30, 180, 0, resistance(0, 0.1, 0.4, 0, 0.4, 0, 0, 0.4), '#685744', 'rubble_stone', 3),
-  material('masonry', 9, 300, 260, 2, resistance(0.1, 0.8, 0.8, 0.1, 0.7, 0, 0.1, 0.8), '#827b71', 'rubble_stone', 12),
-  material('timber', 5, 100, 65, 3, resistance(0.1, 0, 0.5, 0.1, 0.4, 0, 0.1, 0.5), '#776144', 'wood_offcut', 6) + {
+  material('soil', 2, 30, 180, 0, resistance(0, 0.1, 0.4, 0, 0.4, 0, 0, 0.4, 1), '#685744', 'rubble_stone', 3),
+  material('masonry', 9, 300, 260, 2, resistance(0.1, 0.8, 0.8, 0.1, 0.7, 0, 0.1, 0.8, 1), '#827b71', 'rubble_stone', 12),
+  material('timber', 5, 100, 65, 3, resistance(0.1, 0, 0.5, 0.1, 0.4, 0, 0.1, 0.5, 1), '#776144', 'wood_offcut', 6) + {
     flammability: { ignitionStrength: 10, burnDurationGameMinutes: 2, burnsTo: 'charred_remains' },
   },
-  material('metal', 9, 400, 180, 4, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6), '#6e6965', 'scrap_metal', 12),
-  material('textile', 0, 15, 8, 1, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0), '#68604e', 'cloth_strip', 2),
-  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: 'soil_rubble', breakable: false, rubble: [], cracks+: { steps: [] } },
-  material('reinforced_concrete', 9, 400, 300, 7, resistance(0.2, 0.8, 0.8, 0.15, 0.7, 0, 0.2, 0.8), '#87847d', 'rubble_stone', 15),
+  material('metal', 9, 400, 180, 4, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6, 0.1), '#6e6965', 'scrap_metal', 12),
+  material('textile', 0, 15, 8, 1, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0, 1), '#68604e', 'cloth_strip', 2),
+  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: 'soil_rubble', breakable: false, rubble: [], cracks+: { steps: [] } },
+  material('reinforced_concrete', 9, 400, 300, 7, resistance(0.2, 0.8, 0.8, 0.15, 0.7, 0, 0.2, 0.8, 1), '#87847d', 'rubble_stone', 15),
 ];
 {
   fireTuning: [{ id: 'core', capability: 'fire', cellsPerTick: 64 }],
   blockMaterials: materials + [
-    material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0, 0, 0, 0, 0), '#29231f', 'wood_offcut', 2) + {
+    material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0, 0, 0, 0, 0, 1), '#29231f', 'wood_offcut', 2) + {
       fallsTo: 'charred_remains', crumblesUnderLoad: true,
     },
   ],

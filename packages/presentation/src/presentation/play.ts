@@ -662,6 +662,16 @@ const handlingPresentationFor = ({
   if (craft) {
     return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling, keys);
   }
+  if (job?.jobType === 'cutCell' && !job.stopped) {
+    const cell = inventory.cellRepair?.state(job.cell);
+    const action: TimedActionPresentation = {
+      kind: 'cutCell',
+      share: cell ? cell.damage / cell.durability : 0,
+      label: actionText(inventory.registry).longActions.cutting,
+      stopped: false,
+    };
+    return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling, keys);
+  }
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -1230,7 +1240,7 @@ const startPlayWith = (
         guide?.unarmedHit();
       }
     },
-    onBatterySwapped: (lightType) => guide?.batterySwapped(lightType),
+    onConsumableSwapped: (deviceType) => guide?.consumableSwapped(deviceType),
     onOpened: (type) => guide?.opened(type),
     onUnpacked: (type) => guide?.weapons.unpackedAmmo(type),
     onFirearmEjection: (effect) =>
@@ -2617,12 +2627,18 @@ const startPlayWith = (
         if (mode !== 'wield') {
           return undefined;
         }
-        const actions = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        const actions = cellActionsFor(inventory, engine.simulationWorld, target.cell, {
+          knownRecipes: session.character.knownRecipes,
+          clock: sim.clock,
+        });
         const selected = actionMenu.open(
           'furniture',
           undefined,
           radialEntries(actions, actionMenuTuning.directions.furniture),
         );
+        if (selected?.id === 'cut') {
+          return { kind: 'cell.cut', cell: [...target.cell] };
+        }
         if (selected?.id === 'repair' || selected?.id === 'take_apart') {
           quickbarInput.cancel();
           screen.openCellWork(target.cell, selected.id);
@@ -3141,7 +3157,10 @@ const startPlayWith = (
       case 'vehicle':
         return vehiclePartHint(key, target);
       case 'cell': {
-        const [action] = cellActionsFor(inventory, target.cell, session.character.knownRecipes);
+        const [action] = cellActionsFor(inventory, engine.simulationWorld, target.cell, {
+          knownRecipes: session.character.knownRecipes,
+          clock: sim.clock,
+        });
         return action
           ? html`${blockHint()} · ${fillHint(screenText.interaction.hold, { key, action: action.label })}`
           : blockHint();
