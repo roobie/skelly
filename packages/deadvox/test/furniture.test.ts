@@ -87,19 +87,8 @@ const kitchen = () => {
 describe('furniture', () => {
   it('holds what worldgen rolled for it, once', () => {
     const { inv, cupboard, beans } = kitchen();
-    expect(inv.locate(beans)).toMatchObject({
-      kind: 'furniture',
-      entity: cupboard,
-      pocket: 0,
-    });
-    expect(
-      inv.furnish({
-        type: 'kitchen_cupboard',
-        pos: [0, 0, 0],
-        size: [2, 2, 1],
-        facing: 'n',
-      }),
-    ).toBeUndefined();
+    expect(inv.locate(beans)).toMatchObject({ kind: 'furniture', entity: cupboard, pocket: 0 });
+    expect(inv.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' })).toBeUndefined();
     expect([...inv.entities.all]).toHaveLength(1);
     expect(inv.entities.at(1, 1, 0)).toBe(cupboard);
     expect(inv.entities.at(2, 0, 0)).toBeUndefined();
@@ -109,15 +98,8 @@ describe('furniture', () => {
     const { inv, cupboard, beans } = kitchen();
     const fullMassKg = inv.entities.massKg(cupboard)!;
     const fullCarry = furnitureMoveStamina(inv, cupboard, 'carry');
-    const pile = {
-      kind: 'pile',
-      pos: [0, 0, 0] as [number, number, number],
-    } as const;
-    const furniture = {
-      kind: 'furniture',
-      entity: cupboard,
-      pocket: 0,
-    } as const;
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
 
     inv.entities.markSearched(cupboard);
     expect(inv.move(beans, pile).ok).toBe(true);
@@ -157,10 +139,7 @@ describe('furniture', () => {
   it('has to be searched before anything moves in or out', () => {
     const { inv, hoodie, cupboard, beans } = kitchen();
     const toPocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
-    expect(inv.plan(beans, toPocket)).toMatchObject({
-      ok: false,
-      reason: expect.any(String),
-    });
+    expect(inv.plan(beans, toPocket)).toMatchObject({ ok: false, reason: expect.any(String) });
     const matches = inv.create('matches');
     inv.add(matches, toPocket);
     expect(inv.plan(matches, { kind: 'furniture', entity: cupboard, pocket: 0 })).toMatchObject({ ok: false });
@@ -180,15 +159,8 @@ describe('furniture', () => {
   it('counts a container item once when it is returned and taken again', () => {
     const { inv, cupboard, beans } = kitchen();
     inv.entities.markSearched(cupboard);
-    const pile = {
-      kind: 'pile',
-      pos: [0, 0, 0] as [number, number, number],
-    } as const;
-    const furniture = {
-      kind: 'furniture',
-      entity: cupboard,
-      pocket: 0,
-    } as const;
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
 
     expect(inv.move(beans, pile).ok).toBe(true);
     expect(inv.move(beans, furniture).ok).toBe(true);
@@ -199,15 +171,8 @@ describe('furniture', () => {
   it('carries the counted units through stack splits and counts new units only', () => {
     const { inv, cupboard } = kitchen();
     const nails = inv.create('nails', 20);
-    const furniture = {
-      kind: 'furniture',
-      entity: cupboard,
-      pocket: 0,
-    } as const;
-    const pile = {
-      kind: 'pile',
-      pos: [0, 0, 0] as [number, number, number],
-    } as const;
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
     expect(inv.add(nails, furniture)).toBe(true);
     inv.entities.markSearched(cupboard);
 
@@ -249,9 +214,7 @@ describe('furniture', () => {
     expect(time).toBeGreaterThanOrEqual(minSimSeconds);
     expect(time).toBeLessThan(searchTime(registry.furniture.get('wardrobe')!, tuning));
     expect(searchTime(registry.furniture.get('wardrobe')!, tuning)).toBeLessThanOrEqual(maxSimSeconds);
-    queue.enqueueAction('test.search', 'Search', time, {
-      entityUid: cupboard.uid,
-    });
+    queue.enqueueAction('test.search', 'Search', time, { entityUid: cupboard.uid });
     queue.tick(time - 0.1);
     expect(cupboard.searched).toBe(false);
     const { done } = queue.tick(0.2);
@@ -261,12 +224,7 @@ describe('furniture', () => {
 
   it('tagged door jobs play open, close, and blocked-close sounds at the door centre', () => {
     const inv = new Inventory(registry);
-    const door = inv.furnish({
-      type: 'wood_door',
-      pos: [4, 0, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = inv.furnish({ type: 'wood_door', pos: [4, 0, 0], size: [2, 4, 1], facing: 'n' })!;
     const queue = new HandlingQueue(inv);
     const bodyAt = (pos: [number, number, number]): Body => ({
       pos,
@@ -285,16 +243,10 @@ describe('furniture', () => {
       playWorldSound: (event, position) => {
         sounds.push({ event, position: [...position] });
       },
-      closeBlockedMessages: {
-        player: 'fixture player blocks',
-        other: 'fixture other blocks',
-      },
+      closeBlockedMessages: { player: 'fixture player blocks', other: 'fixture other blocks' },
     });
     const enqueue = (closing: boolean) =>
-      queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, {
-        entityUid: door.uid,
-        closing,
-      });
+      queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, { entityUid: door.uid, closing });
 
     enqueue(false);
     queue.tick(0.1);
@@ -312,51 +264,26 @@ describe('furniture', () => {
     enqueue(true);
     expect(queue.tick(0.1).failed[0]?.reason).toBe('fixture player blocks');
     expect(door.open).toBe(true);
-    expect(sounds[3]).toEqual({
-      event: 'door_blocked_close',
-      position: [5, 2, 0.5],
-    });
+    expect(sounds[3]).toEqual({ event: 'door_blocked_close', position: [5, 2, 0.5] });
   });
 
   it('doors stop you only while closed', () => {
     const inv = new Inventory(registry);
-    const door = inv.furnish({
-      type: 'wood_door',
-      pos: [4, 0, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = inv.furnish({ type: 'wood_door', pos: [4, 0, 0], size: [2, 4, 1], facing: 'n' })!;
     expect(inv.entities.isSolid(5, 3, 0)).toBe(true);
     inv.entities.setOpen(door, true);
     expect(inv.entities.isSolid(5, 3, 0)).toBe(false);
-    const bed = inv.furnish({
-      type: 'bed',
-      pos: [0, 0, 4],
-      size: [2, 1, 4],
-      facing: 'n',
-    })!;
+    const bed = inv.furnish({ type: 'bed', pos: [0, 0, 4], size: [2, 1, 4], facing: 'n' })!;
     expect(inv.entities.isSolid(0, 0, 4)).toBe(true);
     expect(bed.pockets).toBeUndefined();
   });
 
   it('picks a door by its panel and lets an open doorway ray reach furniture behind it', () => {
     const entities = new BlockEntities(registry);
-    const door = entities.add({
-      type: 'wood_door',
-      pos: [4, 1, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const empty = () => false;
     const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
-      pickFurniture({
-        entities,
-        origin,
-        direction,
-        maxDistance,
-        blockSize: 0.5,
-        isSolid: empty,
-      });
+      pickFurniture({ entities, origin, direction, maxDistance, blockSize: 0.5, isSolid: empty });
     const closedHit = pick([5, 3.24, 4], [0, 0, -1], 8);
     expect(closedHit).toBe(door);
     const closedOffPanel = pick([8, 3.24, 0.1], [-1, 0, 0], 8);
@@ -366,12 +293,7 @@ describe('furniture', () => {
     const swungHit = pick([8, 3.24, 1.5], [-1, 0, 0], 10);
     expect(swungHit).toBe(door);
 
-    const fridge = entities.add({
-      type: 'fridge',
-      pos: [5, 1, -4],
-      size: [2, 4, 2],
-      facing: 'n',
-    })!;
+    const fridge = entities.add({ type: 'fridge', pos: [5, 1, -4], size: [2, 4, 2], facing: 'n' })!;
     const throughDoor = pick([5, 3.24, 4], [0, 0, -1], 12);
     expect(throughDoor).toBe(fridge);
     expect(throughDoor).not.toBe(door);
@@ -403,21 +325,13 @@ describe('furniture', () => {
     };
     const { registry: fixtureRegistry, issues } = buildRegistry([
       fixtureMaterialSource(),
-      {
-        source: 'furniture-render-fixture.json',
-        data: { furniture: [fixture] },
-      },
+      { source: 'furniture-render-fixture.json', data: { furniture: [fixture] } },
     ]);
     expect(issues).toEqual([]);
 
     const entities = new BlockEntities(fixtureRegistry);
     for (const x of [0, 3, 6]) {
-      entities.add({
-        type: fixture.id,
-        pos: [x, 0, 0],
-        size: fixture.size,
-        facing: 'n',
-      });
+      entities.add({ type: fixture.id, pos: [x, 0, 0], size: fixture.size, facing: 'n' });
     }
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
@@ -450,12 +364,7 @@ describe('furniture', () => {
     expect(issues).toEqual([]);
     for (const facing of ['n', 'e', 's', 'w'] as const) {
       const entities = new BlockEntities(fixtureRegistry);
-      entities.add({
-        type: fixture.id,
-        pos: [0, 0, 0],
-        size: [1, 1, 1],
-        facing,
-      });
+      entities.add({ type: fixture.id, pos: [0, 0, 0], size: [1, 1, 1], facing });
       const furniture = new FurnitureMeshes(BLOCK_SIZE);
       furniture.sync(entities);
       const mesh = furniture.group.children.find((child) => child.type === 'Mesh')!;
@@ -474,12 +383,7 @@ describe('furniture', () => {
 
   it('repaints a door leaf once a blow breaks it, on the view that already drew it intact', () => {
     const entities = new BlockEntities(registry);
-    const door = entities.add({
-      type: 'wood_door',
-      pos: [4, 1, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     const colours = (): string[] => {
       const found: string[] = [];
@@ -501,12 +405,7 @@ describe('furniture', () => {
 
   it('repaints a door leaf damaged short of breaking, on the view that already drew it intact', () => {
     const entities = new BlockEntities(registry);
-    const door = entities.add({
-      type: 'wood_door',
-      pos: [4, 1, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     const colours = (): string[] => {
       const found: string[] = [];
@@ -528,12 +427,7 @@ describe('furniture', () => {
 
   it('keeps a drawn door leaf when a blow leaves its look unchanged', () => {
     const entities = new BlockEntities(registry);
-    const door = entities.add({
-      type: 'wood_door',
-      pos: [4, 1, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     const { durability, minimumStrength } = entities.defOf(door).breach;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     entities.bash(door, durability * 0.8);
@@ -548,21 +442,11 @@ describe('furniture', () => {
 
   it('touches only the mesh of the piece that changed, and frees a removed piece', () => {
     const entities = new BlockEntities(registry);
-    const crate = entities.add({
-      type: 'crate',
-      pos: [0, 0, 0],
-      size: [2, 2, 2],
-      facing: 'n',
-    })!;
+    const crate = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
     const [drawnCrate] = furniture.group.children;
-    const door = entities.add({
-      type: 'wood_door',
-      pos: [4, 1, 0],
-      size: [2, 4, 1],
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
     furniture.sync(entities);
     const before = [...furniture.group.children];
 
@@ -582,12 +466,7 @@ describe('furniture', () => {
 
   it("repaints a piece that isn't a door only when its damage crosses into another of its material's steps", () => {
     const entities = new BlockEntities(registry);
-    const { uid } = entities.add({
-      type: 'crate',
-      pos: [0, 0, 0],
-      size: [2, 2, 2],
-      facing: 'n',
-    })!;
+    const { uid } = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
     const def = entities.defOf(entities.byUid(uid)!);
     const steps = registry.furnitureMaterials.get(def.material)?.damaged ?? [];
     if (steps.length < 2) {
@@ -639,21 +518,9 @@ describe('furniture', () => {
     ]);
     expect(issues).toEqual([]);
     const entities = new BlockEntities(fixtureRegistry);
-    const safe = entities.add({
-      type: fixture.id,
-      pos: [4, 1, 8],
-      size: [3, 2, 2],
-      facing: 'n',
-    })!;
+    const safe = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [3, 2, 2], facing: 'n' })!;
     const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
-      pickFurniture({
-        entities,
-        origin,
-        direction,
-        maxDistance,
-        blockSize: BLOCK_SIZE,
-        isSolid: () => false,
-      });
+      pickFurniture({ entities, origin, direction, maxDistance, blockSize: BLOCK_SIZE, isSolid: () => false });
     expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);
     expect(pick([3, 2, 9], [1, 0, 0], 3)).toBeUndefined();
     expect(pick([5.5, 2.5, 11], [0, 0, -1], 6)).toBeUndefined();
@@ -662,12 +529,7 @@ describe('furniture', () => {
   it('moves the affordance onto the open door panel and follows open state without a new selection', () => {
     const definition = registry.furniture.get('wood_door')!;
     const entities = new BlockEntities(registry);
-    const door = entities.add({
-      type: definition.id,
-      pos: [4, 1, 8],
-      size: definition.size,
-      facing: 'n',
-    })!;
+    const door = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     const marker = furniture.group.children[0]!;
 
@@ -691,12 +553,7 @@ describe('furniture', () => {
   it('keeps the open HQ safe body solid and pickable while its door swings outward', () => {
     const definition = registry.furniture.get('camp_hq_safe')!;
     const entities = new BlockEntities(registry);
-    const safe = entities.add({
-      type: definition.id,
-      pos: [4, 1, 8],
-      size: definition.size,
-      facing: 'n',
-    })!;
+    const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
     entities.setOpen(safe, true);
 
     expect(entities.blocks(safe)).toBe(true);
@@ -742,12 +599,7 @@ describe('furniture', () => {
     ]);
     expect(issues).toEqual([]);
     const entities = new BlockEntities(fixtureRegistry);
-    const corpse = entities.add({
-      type: fixture.id,
-      pos: [4, 1, 8],
-      size: [4, 2, 2],
-      facing: 'n',
-    })!;
+    const corpse = entities.add({ type: fixture.id, pos: [4, 1, 8], size: [4, 2, 2], facing: 'n' })!;
     const pick = (height: number) =>
       pickFurniture({
         entities,
@@ -807,11 +659,7 @@ describe('templates', () => {
     id: 'l_shape',
     lootContext: { usage: ['Residential'], tier: 'Tier1' },
     size: [3, 5, 2],
-    palette: {
-      '#': 'brick',
-      '.': 'air',
-      R: { furniture: 'wardrobe', facing: 'e', loot: 'wardrobe' },
-    },
+    palette: { '#': 'brick', '.': 'air', R: { furniture: 'wardrobe', facing: 'e', loot: 'wardrobe' } },
     layers: [
       ['##.', '#..'],
       ['R..', 'R..'],
@@ -824,23 +672,13 @@ describe('templates', () => {
   it('turns by quarter turns: stamped blocks and pieces agree', () => {
     const compiled = compileTemplate(registry, template);
     expect(compiled.pieces).toEqual([
-      {
-        furniture: 'wardrobe',
-        loot: 'wardrobe',
-        facing: 'e',
-        pos: [0, 1, 0],
-        size: [1, 4, 2],
-      },
+      { furniture: 'wardrobe', loot: 'wardrobe', facing: 'e', pos: [0, 1, 0], size: [1, 4, 2] },
     ]);
     const brick = registry.blockIds.get('brick')!;
     const facings = ['e', 's', 'w', 'n'];
     for (const turn of [0, 1, 2, 3] as Turn[]) {
       const chunk = new Chunk(0, 0, 0);
-      const placement = {
-        template: compiled,
-        origin: [4, 2, 4] as [number, number, number],
-        turn,
-      };
+      const placement = { template: compiled, origin: [4, 2, 4] as [number, number, number], turn };
       stampPlacement(chunk, placement);
       const bricks = [...cellsOf([12, 1, 12])]
         .filter(([x, , z]) => chunk.get(x, 2, z) === brick)

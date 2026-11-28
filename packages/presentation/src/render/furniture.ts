@@ -46,18 +46,9 @@ import { type ContentVehicleView, vehicleModel, workshopLift } from './workshopV
 const INSET = 0.02;
 const BODY_DOOR_SHADE = 0.62;
 const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
-const BODY_DOOR_HANDLE_SIZE_M = {
-  alongWidth: 0.1,
-  acrossWidth: 0.06,
-  height: 0.22,
-} as const;
+const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
 const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
-const HATCH_FROM_HINGE: Record<Facing, Vec3> = {
-  n: [0, 0, 1],
-  s: [0, 0, -1],
-  e: [-1, 0, 0],
-  w: [1, 0, 0],
-};
+const HATCH_FROM_HINGE: Record<Facing, Vec3> = { n: [0, 0, 1], s: [0, 0, -1], e: [-1, 0, 0], w: [1, 0, 0] };
 
 function markerEdges(): EdgesGeometry {
   const box = new BoxGeometry(1, 1, 1);
@@ -451,13 +442,7 @@ export class FurnitureMeshes {
     const key = `${x},${z}`;
     let column = this.columns.get(key);
     if (!column) {
-      column = {
-        key,
-        x,
-        z,
-        revealed: this.revealedAt(x, z),
-        pieces: new Set(),
-      };
+      column = { key, x, z, revealed: this.revealedAt(x, z), pieces: new Set() };
       this.columns.set(key, column);
     }
     return column;
@@ -515,10 +500,7 @@ export class FurnitureMeshes {
       return this.bodyGlowMesh(entity, def, workshopLift(entity, this.blockSize));
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, {
-        blockSize: this.blockSize,
-        content: this.content,
-      });
+      return vehicleModel(entity, def.vehicle, { blockSize: this.blockSize, content: this.content });
     }
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).
@@ -584,11 +566,7 @@ export class FurnitureMeshes {
     const across = 0;
     const normal = 2;
     const hardware = spec.hardwareSizeBlocks * this.blockSize;
-    const latch: DoorPanelBox = {
-      ...sash.box,
-      center: [...sash.box.center],
-      size: [hardware, hardware, hardware],
-    };
+    const latch: DoorPanelBox = { ...sash.box, center: [...sash.box.center], size: [hardware, hardware, hardware] };
     const width = entity.size[alongX ? 0 : 2] * this.blockSize;
     latch.center[across] =
       (spec.hinge === 'high' ? -1 : 1) * (width - (spec.frameWidthBlocks + spec.sashWidthBlocks) * this.blockSize);
@@ -599,11 +577,7 @@ export class FurnitureMeshes {
     add(latch, this.material(spec.hardwareColor));
     if (entity.window!.frameRemnants) {
       const bottom = parts.filter((part) => part.kind === 'frame').at(-2)!.box;
-      const remnants: DoorPanelBox = {
-        ...bottom,
-        center: [...bottom.center],
-        size: [...bottom.size],
-      };
+      const remnants: DoorPanelBox = { ...bottom, center: [...bottom.center], size: [...bottom.size] };
       remnants.size[1] = spec.remnantHeightBlocks * this.blockSize;
       remnants.size[normal] = spec.glass.thicknessBlocks * this.blockSize;
       remnants.center[1] += (bottom.size[1] + remnants.size[1]) / 2;

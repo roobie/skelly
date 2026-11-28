@@ -5,7 +5,6 @@ read_if:
   - you're adding a test that needs presentation internals
   - you're adding an import to a presentation file
   - you're changing loading readiness, GPU upload pacing or shader warm-up
-  - you're changing furniture rendering or its instancing
 ---
 
 # Presentation
