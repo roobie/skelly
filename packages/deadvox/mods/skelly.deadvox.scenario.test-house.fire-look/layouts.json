@@ -98,6 +98,11 @@
           "position": [-12, 20.5, 14],
           "rotation": 0,
           "template": "test_house_fire_shed"
+        },
+        {
+          "position": [-5, 20.5, 14],
+          "rotation": 0,
+          "template": "test_house_fire_post"
         }
       ],
       "demo": true,
@@ -109,7 +114,7 @@
       },
       "player": {
         "bearing": 0,
-        "position": [-9.75, 21, 19.5]
+        "position": [-3.75, 21, 17]
       },
       "showroom": {
         "capacity": 3,
@@ -274,6 +279,30 @@
         "t": "plank_wall"
       },
       "size": [9, 6, 9]
+    },
+    {
+      "id": "test_house_fire_post",
+      "layers": [
+        ["kkkkkk", "kkkkkk", "kkkkkk", "kkkkkk", "kkkkkk"],
+        ["..t...", "......", "......", "t...c.", "......"],
+        ["..t...", "......", "......", "......", "......"],
+        ["..t...", "......", "......", "......", "......"],
+        ["..t...", "......", "......", "......", "......"],
+        ["..ttt.", "..f...", "..f...", "......", "......"],
+        ["......", "......", "......", "......", "......"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "c": "charred_remains",
+        "f": "plank_floor",
+        "k": "concrete",
+        "t": "plank_wall"
+      },
+      "size": [6, 7, 5]
     }
   ]
 }
