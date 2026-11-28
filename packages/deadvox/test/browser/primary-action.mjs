@@ -2918,7 +2918,7 @@ try {
               def.readable ||
               def.book ||
               def.unpack ||
-              def.battery ||
+              def.consumable ||
               def.twoHanded ||
               def.wearable ||
               def.container ||
