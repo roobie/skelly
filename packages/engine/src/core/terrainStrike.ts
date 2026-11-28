@@ -151,8 +151,12 @@ const preStrikeRefusal = (
   return undefined;
 };
 
-export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
-  const { terrain, supply, mover } = context;
+export const strikeTerrain = (
+  context: TerrainEventContext,
+  cell: Vec3,
+  blow: BlockBlow,
+): TerrainStrikeResult | undefined => {
+  const { terrain, mover } = context;
   const { world } = terrain;
   const { registry } = mover.inventory;
   const block = registry.blocks[terrain.getBlock(...cell)];
@@ -168,6 +172,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
   if (bash.outcome === 'resisted') {
     return { outcome: 'resisted', destroyed: [], edited: [] };
   }
+  const supply = context.project();
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   if (bash.outcome === 'damaged') {
@@ -176,7 +181,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     });
     return { outcome: 'damaged', destroyed: [], edited: [] };
   }
-  return breakCell(context, cell, bash.damage);
+  return breakCell({ ...context, supply }, cell, bash.damage);
 };
 
 const breakCell = (context: TerrainStrike, cell: Vec3, damage?: number): TerrainStrikeResult => {
@@ -217,7 +222,7 @@ const breakCell = (context: TerrainStrike, cell: Vec3, damage?: number): Terrain
   }
 };
 
-type TerrainFallContext = Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] };
+type TerrainEventContext = Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] };
 
 interface TerrainLanding {
   cell: Vec3;
@@ -226,7 +231,7 @@ interface TerrainLanding {
   blocked: boolean;
 }
 
-const landingCell = (context: TerrainFallContext, cell: Vec3): TerrainLanding => {
+const landingCell = (context: TerrainEventContext, cell: Vec3): TerrainLanding => {
   const { terrain, mover } = context;
   const { registry } = mover.inventory;
   const landing: TerrainLanding = { cell: [...cell], destroyed: [], edited: [], blocked: false };
@@ -256,7 +261,7 @@ const landingCell = (context: TerrainFallContext, cell: Vec3): TerrainLanding =>
 
 /** An instant drop: furniture loses the source cell, and its debris plans around the landed rubble. */
 const fallCell = (
-  context: TerrainFallContext,
+  context: TerrainEventContext,
   cell: Vec3,
   rubble: number,
 ): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> & { fell: boolean } => {
@@ -327,7 +332,7 @@ const fallCell = (
  * queues what depended on it. Cells past the budget wait for the next call.
  */
 export const cascadeSupport = (
-  context: TerrainFallContext,
+  context: TerrainEventContext,
   budget: number,
 ): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> => {
   const { terrain, mover } = context;
