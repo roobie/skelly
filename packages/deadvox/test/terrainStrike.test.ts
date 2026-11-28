@@ -255,7 +255,7 @@ const fixture = (
     strikeTerrain(
       {
         terrain: canonical,
-        supply: session.projectSupply(source),
+        project: () => session.projectSupply(source),
         mover: {
           inventory,
           terrainSolid: worldSolid(world, registry, inventory.entities),
@@ -576,7 +576,7 @@ describe('supply-aware terrain destruction', () => {
     const result = strikeTerrain(
       {
         terrain: canonical,
-        supply: f.session.projectSupply(source),
+        project: () => f.session.projectSupply(source),
         mover: {
           inventory: f.inventory,
           terrainSolid: () => false,
@@ -604,7 +604,11 @@ describe('supply-aware terrain destruction', () => {
   it('resists without owners or overlay, then publishes partial damage with complete stamped terrain', async () => {
     const f = fixture();
     const before = owners(f);
+    const project = vi.spyOn(f.session, 'projectSupply');
+    const inventoryProject = vi.spyOn(f.inventory, 'project');
     expect(f.strike(1)?.outcome).toBe('resisted');
+    expect(project).not.toHaveBeenCalled();
+    expect(inventoryProject).not.toHaveBeenCalled();
     expect(owners(f)).toEqual(before);
     expect(f.world.chunks.size).toBe(0);
     expect(f.strike(4, 'cut')?.outcome).toBe('damaged');
@@ -769,7 +773,7 @@ describe('supply-aware terrain destruction', () => {
     const result = strikeTerrain(
       {
         terrain: f.canonical,
-        supply: projection,
+        project: () => projection,
         mover: {
           inventory: f.inventory,
           terrainSolid: () => false,

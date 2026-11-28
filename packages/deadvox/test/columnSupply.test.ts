@@ -2,8 +2,9 @@ import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { createColumnSupply } from '@skelly/engine/internal/core/columnSupply.ts';
 import { commitRuin, planRuin, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { drainBurnLight, toggleLight } from '@skelly/engine/internal/core/lights.ts';
 import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
-import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { gameSeconds, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { CHUNK, createTerrainEvaluator, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
@@ -270,6 +271,29 @@ describe('authored supply projection', () => {
     expect(() => invalid.include(0, 0)).toThrow();
     expect(owners(inventory)).toEqual(before);
     expect([...consumed]).toEqual([]);
+  });
+
+  it('rejects publication after an owned light burns, before installing columns or applying the plan', () => {
+    const { inventory, registry, owner, source } = fixture();
+    const type = 'supply_fixture_light';
+    registry.items.set(type, {
+      ...registry.items.get(loot.type)!,
+      id: type,
+      light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, burnTimeGameHours: gameSeconds(1) },
+    });
+    const light = inventory.create(type);
+    expect(inventory.add(light, { kind: 'pile', pos: [-4, 2, 3] })).toBe(true);
+    expect(toggleLight(registry, light, 0)).toBeUndefined();
+    const projection = owner.project(source);
+    projection.include(0, 0);
+    expect(drainBurnLight(light, light.burnRemainingGameSeconds! / 2)).toBe(false);
+    const before = owners(inventory);
+    const ensure = vi.fn();
+    const apply = vi.fn(() => undefined);
+    expect(() => projection.publish(projection.revision, ensure, apply)).toThrow('Stale supply projection');
+    expect(ensure).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+    expect(owners(inventory)).toEqual(before);
   });
 
   it('publishes an emptied source and empty keys, saves before arrival and never resurrects them', async () => {

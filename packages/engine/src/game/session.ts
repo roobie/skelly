@@ -1752,7 +1752,7 @@ export const createSession = (options: SessionOptions) => {
     const result = strikeTerrain(
       {
         terrain: context.terrain,
-        supply: columnSupply.project(context.source),
+        project: () => columnSupply.project(context.source),
         mover: furnitureMover(),
         obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
       },
