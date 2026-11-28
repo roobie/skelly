@@ -12,7 +12,7 @@ local cracks = {
 };
 local material(id, minimum, durability, mass, span, resist, tint, yield, clearTime) = {
   id: id, minimumStrength: minimum, durability: durability, massKg: mass, span: span,
-  resistance: resist, structural: false, fallsTo: { block: id + '_rubble' }, breakable: true, rubble: [{ item: yield, count: 1 }],
+  resistance: resist, structural: false, fallsTo: { block: id + '_rubble' }, crumblesUnderLoad: false, breakable: true, rubble: [{ item: yield, count: 1 }],
   rubbleClearTimeGameMinutes: clearTime, blowSound: 'door_bash',
   broken: { tint: tint, strength: 0.6 },
   cracks: cracks,
@@ -30,7 +30,7 @@ local materials = [
   material('reinforced_concrete', 9, 400, 300, 7, resistance(0.2, 0.8, 0.8, 0.15, 0.7, 0, 0.2, 0.8), '#87847d', 'rubble_stone', 15),
 ];
 local charredMaterial = material('charred', 0, 12, 12, 0, resistance(0, 0, 0, 0, 0, 0, 0, 0), '#29231f', 'wood_offcut', 2) + {
-  structural: true, fallsTo: { block: 'charred_remains' },
+  structural: true, fallsTo: { block: 'charred_remains' }, crumblesUnderLoad: true,
 };
 {
   fireTuning: [{ id: 'core', capability: 'fire', cellsPerTick: 64 }],

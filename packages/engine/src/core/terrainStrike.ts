@@ -177,14 +177,15 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     });
     return { outcome: 'damaged', destroyed: [], edited: [] };
   }
-  const result = breakCell(context, cell, blockBreakYields(registry, block));
-  if (result.outcome === 'refused') {
-    world.blockDamage.record(terrain, registry, cell, bash.damage);
-  }
-  return result;
+  return breakCell(context, cell, blockBreakYields(registry, block), bash.damage);
 };
 
-const breakCell = (context: TerrainStrike, cell: Vec3, yields: BlockMaterialDef['rubble']): TerrainStrikeResult => {
+const breakCell = (
+  context: TerrainStrike,
+  cell: Vec3,
+  yields: BlockMaterialDef['rubble'],
+  damage?: number,
+): TerrainStrikeResult => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
   const { registry } = mover.inventory;
@@ -199,6 +200,9 @@ const breakCell = (context: TerrainStrike, cell: Vec3, yields: BlockMaterialDef[
       const pile = projected.inventory.pileAt(above);
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields }]);
       if (!plan) {
+        if (damage !== undefined) {
+          world.blockDamage.record(terrain, registry, cell, damage);
+        }
         return { outcome: 'refused', destroyed: [], edited: [] };
       }
       let destroyed: BlockEntity[] = [];
@@ -218,16 +222,39 @@ const breakCell = (context: TerrainStrike, cell: Vec3, yields: BlockMaterialDef[
   }
 };
 
-const landingCell = (context: TerrainStrike, cell: Vec3): Vec3 => {
+type TerrainFallContext = Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] };
+
+interface TerrainLanding {
+  cell: Vec3;
+  destroyed: BlockEntity[];
+  edited: Vec3[];
+  blocked: boolean;
+}
+
+const landingCell = (context: TerrainFallContext, cell: Vec3): TerrainLanding => {
   const { terrain, mover } = context;
-  const landing: Vec3 = [...cell];
+  const { registry } = mover.inventory;
+  const landing: TerrainLanding = { cell: [...cell], destroyed: [], edited: [], blocked: false };
   const minY = terrain.terrain.scale.minCy * CHUNK;
-  while (
-    landing[1] > minY &&
-    !mover.inventory.registry.blocks[terrain.getBlock(landing[0], landing[1] - 1, landing[2])]!.solid &&
-    context.obstructed?.(landing[0], landing[1] - 1, landing[2]) !== true
-  ) {
-    landing[1] -= 1;
+  while (landing.cell[1] > minY) {
+    const under: Vec3 = [landing.cell[0], landing.cell[1] - 1, landing.cell[2]];
+    if (context.obstructed?.(...under) === true) {
+      break;
+    }
+    const block = registry.blocks[terrain.getBlock(...under)]!;
+    if (block.solid) {
+      if (!registry.blockMaterials.get(block.material)!.crumblesUnderLoad) {
+        break;
+      }
+      const broken = breakCell({ ...context, supply: context.project() }, under, blockBreakYields(registry, block));
+      if (broken.outcome !== 'broken') {
+        landing.blocked = true;
+        break;
+      }
+      landing.destroyed.push(...broken.destroyed);
+      landing.edited.push(...broken.edited);
+    }
+    landing.cell[1] -= 1;
   }
   return landing;
 };
@@ -244,43 +271,50 @@ const followBurial = (mover: FurnitureMover, cell: Vec3, landing: Vec3): void =>
 
 /** Both outcomes use the same failure owner; yields reuse the break planner, not a second pile writer. */
 const fallCell = (
-  context: TerrainStrike,
+  context: TerrainFallContext,
   cell: Vec3,
   result: BlockMaterialDef['fallsTo'],
-): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
+): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> & { fell: boolean } => {
   if ('block' in result) {
     return fallBlock(context, cell, result.block);
   }
-  const broken = breakCell(context, cell, result.yields);
-  return broken.outcome === 'broken' ? broken : undefined;
+  const broken = breakCell({ ...context, supply: context.project() }, cell, result.yields);
+  return { ...broken, fell: broken.outcome === 'broken' };
 };
 
 const fallBlock = (
-  context: TerrainStrike,
+  context: TerrainFallContext,
   cell: Vec3,
   rubble: string,
-): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
-  const { terrain, supply, mover } = context;
+): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> & { fell: boolean } => {
+  const { terrain, mover } = context;
   const rubbleId = mover.inventory.registry.blockIds.get(rubble)!;
+  const impact = landingCell(context, cell);
+  const stopped = { destroyed: impact.destroyed, edited: impact.edited, fell: false };
+  if (impact.blocked) {
+    return stopped;
+  }
+  // A landing can publish breaks, so the drop must project the resulting supply rather than reuse a spent projection.
+  const supply = context.project();
+  const strike = { ...context, supply };
+  const landing = impact.cell;
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
     const { revision } = supply;
     try {
-      const clearing = provisionalMover(context, cell);
-      const landing = landingCell(context, cell);
+      const clearing = provisionalMover(strike, cell);
       if (fallingBoxRefusal(clearing, landing, [1, cell[1] - landing[1] + 1, 1])) {
-        return undefined;
+        return stopped;
       }
-      const crushed = clearing.inventory.entities.filling(...landing);
       const roots = [
-        ...(crushed ? [crushed] : []),
+        clearing.inventory.entities.filling(...landing),
         ...floorLossRoots(clearing, [cell[0], cell[1] + 1, cell[2]]),
         ...hostLossRoots(clearing, [cell[0], cell[1] - 1, cell[2]]),
-      ];
+      ].filter((root): root is BlockEntity => root !== undefined);
       const landed = provisionalMover(
         {
-          ...context,
+          ...strike,
           obstructed: (x, y, z) =>
             (x === landing[0] && y === landing[1] && z === landing[2]) || context.obstructed?.(x, y, z) === true,
         },
@@ -288,7 +322,7 @@ const fallBlock = (
       );
       const plan = roots.length > 0 ? planRuin(landed, roots, [], []) : undefined;
       if (roots.length > 0 && !plan) {
-        return undefined;
+        return stopped;
       }
       let destroyed: BlockEntity[] = [];
       let edited: Vec3[] = [];
@@ -305,7 +339,7 @@ const fallBlock = (
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
         terrain.world.falls.emit({ kind: 'terrain', block, from: [...cell], to: [...landing] });
       });
-      return { destroyed, edited };
+      return { destroyed: [...impact.destroyed, ...destroyed], edited: [...impact.edited, ...edited], fell: true };
     } catch (error) {
       if (error !== expanded) {
         throw error;
@@ -320,7 +354,7 @@ const fallBlock = (
  * queues what depended on it. Cells past the budget wait for the next call.
  */
 export const cascadeSupport = (
-  context: Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] },
+  context: TerrainFallContext,
   budget: number,
 ): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> => {
   const { terrain, mover } = context;
@@ -338,21 +372,19 @@ export const cascadeSupport = (
     if (!block?.solid || view.natural(...cell)) {
       return false;
     }
-    if (support.holds(cell)) {
+    if (support.supported(cell)) {
       if (lostFloor) {
         state.enqueueSideways(registry, cell);
       }
       return false;
     }
-    // A projection publishes once, so each fall reads the supply afresh.
-    const fell = fallCell({ ...context, supply: context.project() }, cell, blockFallResult(registry, block));
-    if (!fell) {
-      return false;
+    const fall = fallCell(context, cell, blockFallResult(registry, block));
+    destroyed.push(...fall.destroyed);
+    edited.push(...fall.edited);
+    if (fall.edited.length > 0) {
+      support = createSupport(registry, view);
     }
-    destroyed.push(...fell.destroyed);
-    edited.push(...fell.edited);
-    support = createSupport(registry, view);
-    return true;
+    return fall.fell;
   };
   for (let judged = 0; judged < budget; judged++) {
     const entry = state.next();

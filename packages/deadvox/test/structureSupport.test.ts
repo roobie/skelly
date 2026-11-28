@@ -5,9 +5,9 @@ import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
 const registry = baseRegistry();
-const fixtureBlock = (id: string, span: number): number => {
+const fixtureBlock = (id: string, span: number, crumblesUnderLoad = false): number => {
   const material = `support_fixture_${id}`;
-  registry.blockMaterials.set(material, { ...fixtureBlockMaterial(id), id: material, span });
+  registry.blockMaterials.set(material, { ...fixtureBlockMaterial(id), id: material, span, crumblesUnderLoad });
   registry.blockIds.set(id, registry.blocks.length);
   registry.blocks.push({ id, name: id, material, solid: true, color: '#888888' });
   return registry.blockIds.get(id)!;
@@ -37,6 +37,7 @@ for (const [id, rise, bearing] of [
     fallsTo: { yields: [{ item: OFFCUT, count: 1 }] },
   });
 }
+const CHAR = fixtureBlock('support_fixture_char', 0, true);
 
 /** Ground fills y <= 0 and every ground block is natural; every other cell is what the case sets. */
 const world = (cells: readonly (readonly [Vec3, number])[]) => {
@@ -102,6 +103,21 @@ describe('structure support', () => {
 
   it('lets natural ground beside a cell hold it sideways', () => {
     expect(world([...column(0, 3, GROUND), [[1, 3, 0], BEAM]]).holds([1, 3, 0])).toBe(true);
+  });
+
+  it.each(['above', 'beside', 'through'] as const)('gives no support %s a crumbling cell', (direction) => {
+    const cells: [Vec3, number][] = [...column(0, 2), [[0, 3, 0], CHAR]];
+    let load: Vec3;
+    if (direction === 'above') {
+      load = [0, 4, 0];
+    } else if (direction === 'beside') {
+      load = [1, 3, 0];
+    } else {
+      cells.push([[0, 3, 0], POST], [[1, 3, 0], CHAR]);
+      load = [2, 3, 0];
+    }
+    cells.push([load, BEAM]);
+    expect(world(cells).holds(load)).toBe(false);
   });
 
   it('holds a cell on any held solid cell, whatever its material', () => {

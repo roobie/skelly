@@ -326,6 +326,18 @@ describe('Shadows', () => {
     expect(frame(1, moved)).toHaveLength(0);
   });
 
+  it('waits for the idle refresh while the sun turns too little to count and the player stands still', () => {
+    const { frame, light } = setup();
+    const axis = new Vector3(0, 0, 1);
+    // A day clock's turn per frame: under the turn that redraws at once, yet it moves the snapping grid.
+    const turn = () => {
+      light.position.applyAxisAngle(axis, 2e-5);
+      return frame(1).length;
+    };
+    frame(1);
+    expect([turn(), turn(), turn(), turn()]).toEqual([0, 1, 0, 1]);
+  });
+
   it('draws no sun map with its light out, and draws it again as soon as the light is back', () => {
     const { frame } = setup();
     frame(1);

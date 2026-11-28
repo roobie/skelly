@@ -109,6 +109,7 @@ export const BlockMaterialSchema = strictObject({
   massKg: Positive,
   span: Count,
   structural: vBoolean(),
+  crumblesUnderLoad: vBoolean(),
   fallsTo: FallResultSchema,
   flammability: optional(
     strictObject({
