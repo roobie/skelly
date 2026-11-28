@@ -59,7 +59,13 @@ export const SenseSchema = strictObject({
       color: Color,
       intensity: Positive,
       radiusMetres: Positive,
-      flame: strictObject({ heightMetres: Positive, radiusMetres: Positive }),
+      flame: strictObject({
+        coreColor: Color,
+        heightMetres: Positive,
+        opacity: Fraction,
+        radiusMetres: Positive,
+        tipColor: Color,
+      }),
     }),
     /**
      * Item-lamp pool budgets: even inactive shadow slots cost shader samplers and varyings.

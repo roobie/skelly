@@ -25,6 +25,10 @@
         {
           "cell": [-24, 45, 33],
           "strength": 11
+        },
+        {
+          "cell": [-24, 43, 35],
+          "strength": 11
         }
       ],
       "id": "firelook",
