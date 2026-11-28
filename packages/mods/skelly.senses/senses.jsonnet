@@ -53,7 +53,7 @@ local crouch = {
           color: '#ff6a00',
           intensity: 2,
           radiusMetres: 6,
-          flame: { heightMetres: 0.6, radiusMetres: 0.2 },
+          flame: { coreColor: '#fff1ae', heightMetres: 0.6, opacity: 0.8, radiusMetres: 0.2, tipColor: '#ff4a00' },
         },
         // Each item lamp slot casts a cube shadow and costs every frame whether lit or dark, so these are a budget.
         heldLamps: 2,
