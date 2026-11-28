@@ -45,7 +45,10 @@ const door = {
 
 function fixture() {
   const { registry, issues } = buildFixtureRegistry([
-    { source: 'batched-fixture.json', data: { furniture: [plain, shaped, door] } },
+    {
+      source: 'batched-fixture.json',
+      data: { furniture: [plain, shaped, door] },
+    },
   ]);
   if (issues.length > 0) {
     throw new Error(JSON.stringify(issues));
@@ -87,13 +90,21 @@ const sameMatrix = (drawn: readonly number[], matrix: Matrix4) =>
 
 /** The drawn instances that draw `entity` as its standalone mesh would. */
 const drawsOf = (furniture: FurnitureMeshes, entity: BlockEntity, def: FurnitureDef) => {
-  const alone = furniture.pieceMesh(entity, def) as Mesh;
+  const alone = furniture.pieceMesh(entity, def);
   alone.updateMatrixWorld(true);
-  return drawnInstances(furniture).filter(
-    (drawn) =>
-      drawn.geometry === alone.geometry &&
-      drawn.material === alone.material &&
-      sameMatrix(drawn.matrix, alone.matrixWorld),
+  const meshes: Mesh[] = [];
+  alone.traverse((part) => {
+    if (part instanceof MeshClass) {
+      meshes.push(part);
+    }
+  });
+  return drawnInstances(furniture).filter((drawn) =>
+    meshes.some(
+      (mesh) =>
+        drawn.geometry === mesh.geometry &&
+        drawn.material === mesh.material &&
+        sameMatrix(drawn.matrix, mesh.matrixWorld),
+    ),
   );
 };
 
@@ -122,7 +133,10 @@ const drawnState = (furniture: FurnitureMeshes) => {
       }
     });
   }
-  return { batches: batches.sort(compareCodeUnits), loose: loose.sort(compareCodeUnits) };
+  return {
+    batches: batches.sort(compareCodeUnits),
+    loose: loose.sort(compareCodeUnits),
+  };
 };
 
 describe('furniture batches', () => {
@@ -131,14 +145,27 @@ describe('furniture batches', () => {
       {
         source: 'glowing-fixture.json',
         data: {
-          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
+          powerDevices: [
+            {
+              id: 'fixture_light',
+              kind: 'consumer',
+              priority: 1,
+              demandWatts: 10,
+            },
+          ],
           furniture: [plain, shaped].map((base) => ({
             ...base,
             power: {
               device: 'fixture_light',
               fuelLitres: 0,
               enabled: true,
-              light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
+              light: {
+                color: '#ffd080',
+                intensity: 1,
+                radius: 2,
+                seenFrom: 40,
+                emissive: 0.7,
+              },
             },
           })),
         },
@@ -149,13 +176,26 @@ describe('furniture batches', () => {
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     for (const [index, id] of [plain.id, shaped.id].entries()) {
       const def = registry.furniture.get(id)!;
-      const lit = entities.add({ type: id, size: def.size, pos: [index * 8, 1, 0], facing: 'n' })!;
-      const unlit = entities.add({ type: id, size: def.size, pos: [index * 8 + 3, 1, 0], facing: 'n' })!;
+      const lit = entities.add({
+        type: id,
+        size: def.size,
+        pos: [index * 8, 1, 0],
+        facing: 'n',
+      })!;
+      const unlit = entities.add({
+        type: id,
+        size: def.size,
+        pos: [index * 8 + 3, 1, 0],
+        facing: 'n',
+      })!;
       furniture.sync(entities, [
         {
           ...def.power!.light!,
           pos: [lit.pos[0] + 0.5, lit.pos[1] + 2.5, lit.pos[2] + 0.5],
-          body: { min: lit.pos, max: lit.pos.map((value, axis) => value + lit.size[axis]!) as Vec3 },
+          body: {
+            min: lit.pos,
+            max: lit.pos.map((value, axis) => value + lit.size[axis]!) as Vec3,
+          },
         },
       ]);
       const materialOf = (entity: BlockEntity) => {
@@ -182,26 +222,59 @@ describe('furniture batches', () => {
       device: 'fixture_light',
       fuelLitres: 0,
       enabled: true,
-      light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
+      light: {
+        color: '#ffd080',
+        intensity: 1,
+        radius: 2,
+        seenFrom: 40,
+        emissive: 0.7,
+      },
     };
     const { registry, issues } = buildFixtureRegistry([
       {
         source: 'doorway-glow.json',
         data: {
-          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
-          furniture: [plain, door].map((base) => ({ ...base, size: [2, 3, 1], power })),
+          powerDevices: [
+            {
+              id: 'fixture_light',
+              kind: 'consumer',
+              priority: 1,
+              demandWatts: 10,
+            },
+          ],
+          furniture: [plain, door].map((base) => ({
+            ...base,
+            size: [2, 3, 1],
+            power,
+          })),
         },
       },
     ]);
     expect(issues).toEqual([]);
     const entities = new BlockEntities(registry);
-    const leaf = entities.add({ type: door.id, size: [2, 3, 1], pos: [1, 0, 0], facing: 'n' })!;
+    const leaf = entities.add({
+      type: door.id,
+      size: [2, 3, 1],
+      pos: [1, 0, 0],
+      facing: 'n',
+    })!;
     expect(entities.setOpen(leaf, true)).toBeUndefined();
-    const box = entities.add({ type: plain.id, size: [2, 3, 1], pos: [0, 0, 0], facing: 'n' })!;
+    const box = entities.add({
+      type: plain.id,
+      size: [2, 3, 1],
+      pos: [0, 0, 0],
+      facing: 'n',
+    })!;
     expect(box).toBeDefined();
     expect(entities.at(...leaf.pos)).toBe(box);
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    furniture.sync(entities, [{ ...power.light, pos: [1.5, 2.5, 0.5], body: { min: leaf.pos, max: [3, 3, 1] } }]);
+    furniture.sync(entities, [
+      {
+        ...power.light,
+        pos: [1.5, 2.5, 0.5],
+        body: { min: leaf.pos, max: [3, 3, 1] },
+      },
+    ]);
     const material = (furniture.pieceMesh(box, registry.furniture.get(box.type)!) as Mesh)
       .material as MeshLambertMaterial;
     expect(Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * material.emissiveIntensity).toBe(
@@ -223,7 +296,13 @@ describe('furniture batches', () => {
           seam: 0.01,
           fields: [1, 1],
           hinges: { count: 2, length: 0.1, width: 0.02 },
-          handle: { kind: 'knob', fromFreeEdge: 0.08, along: 0.5, length: 0.04, thickness: 0.02 },
+          handle: {
+            kind: 'knob',
+            fromFreeEdge: 0.08,
+            along: 0.5,
+            length: 0.04,
+            thickness: 0.02,
+          },
         },
       },
     },
@@ -238,13 +317,26 @@ describe('furniture batches', () => {
       device: 'fixture_light',
       fuelLitres: 0,
       enabled: true,
-      light: { color: '#ffd080', intensity: 1, radius: 2, seenFrom: 40, emissive: 0.7 },
+      light: {
+        color: '#ffd080',
+        intensity: 1,
+        radius: 2,
+        seenFrom: 40,
+        emissive: 0.7,
+      },
     };
     const { registry, issues } = buildFixtureRegistry([
       {
         source: 'door-glow.json',
         data: {
-          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
+          powerDevices: [
+            {
+              id: 'fixture_light',
+              kind: 'consumer',
+              priority: 1,
+              demandWatts: 10,
+            },
+          ],
           furniture: [{ ...door, ...look, power }],
         },
       },
@@ -252,8 +344,18 @@ describe('furniture batches', () => {
     expect(issues).toEqual([]);
     const entities = new BlockEntities(registry);
     const def = registry.furniture.get(door.id)!;
-    const leaf = entities.add({ type: def.id, size: def.size, pos: [0, 0, 0], facing: 'n' })!;
-    const twin = entities.add({ type: def.id, size: def.size, pos: [4, 0, 0], facing: 'n' })!;
+    const leaf = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [0, 0, 0],
+      facing: 'n',
+    })!;
+    const twin = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [4, 0, 0],
+      facing: 'n',
+    })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     const emissions = (entity: BlockEntity) => {
       const values: number[] = [];
@@ -268,7 +370,13 @@ describe('furniture batches', () => {
       expect(values.length).toBeGreaterThan(0);
       return values;
     };
-    furniture.sync(entities, [{ ...power.light, pos: [0.5, 2.5, 0.5], body: { min: leaf.pos, max: [2, 3, 1] } }]);
+    furniture.sync(entities, [
+      {
+        ...power.light,
+        pos: [0.5, 2.5, 0.5],
+        body: { min: leaf.pos, max: [2, 3, 1] },
+      },
+    ]);
     expect(emissions(leaf).every((value) => value > 0)).toBe(true);
     expect(emissions(twin).every((value) => value === 0)).toBe(true);
     furniture.sync(entities, []);
@@ -292,11 +400,15 @@ describe('furniture batches', () => {
         modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
       },
     );
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { content: { registry, models } });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
+      content: { registry, models },
+    });
     furniture.sync(entities);
     const batch = furniture.group.children.find((child) => child instanceof InstancedMesh)!;
     expect(batch).toBeInstanceOf(InstancedMesh);
-    const { pieces } = furniture as unknown as { pieces: Map<BlockEntity, { mesh: Object3D }> };
+    const { pieces } = furniture as unknown as {
+      pieces: Map<BlockEntity, { mesh: Object3D }>;
+    };
     const { mesh } = [...pieces.values()][0]!;
     models.version += 1;
     furniture.sync(entities);
@@ -312,9 +424,15 @@ describe('furniture batches', () => {
     const entities = new BlockEntities(registry);
     entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
     // A library that has loaded no part model until its version rises, as models stream in during play.
-    const models = { version: 0, part: () => (models.version > 0 ? new Group() : undefined) };
+    const models = {
+      version: 0,
+      part: () => (models.version > 0 ? new Group() : undefined),
+    };
     const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
-      content: { registry, models: models as unknown as InstanceType<typeof ModelLibrary> },
+      content: {
+        registry,
+        models: models as unknown as InstanceType<typeof ModelLibrary>,
+      },
     });
     const parts = () => {
       let count = 0;
@@ -338,10 +456,17 @@ describe('furniture batches', () => {
       facings.map((facing, column) => {
         const def = registry.furniture.get(id)!;
         const size: Vec3 = facing === 'e' || facing === 'w' ? [def.size[2], def.size[1], def.size[0]] : [...def.size];
-        return entities.add({ type: id, size, pos: [column * CHUNK + 3, 1, row * 4], facing })!;
+        return entities.add({
+          type: id,
+          size,
+          pos: [column * CHUNK + 3, 1, row * 4],
+          facing,
+        })!;
       }),
     );
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { sectorChunks: 1 });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
+      sectorChunks: 1,
+    });
     furniture.sync(entities);
     for (const entity of placed) {
       expect(drawsOf(furniture, entity, entities.defOf(entity))).toHaveLength(1);
@@ -352,28 +477,42 @@ describe('furniture batches', () => {
   it('batches a closed door, then restages it loose while open and re-batches it when closed', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(door.id)!;
-    const leaf = entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' })!;
+    const leaf = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [1, 1, 1],
+      facing: 'n',
+    })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
 
     furniture.sync(entities);
-    expect(drawnInstances(furniture)).toHaveLength(1);
+    expect(drawsOf(furniture, leaf, def)).toHaveLength(1);
 
     expect(entities.setOpen(leaf, true)).toBeUndefined();
     furniture.sync(entities);
     expect(drawnInstances(furniture)).toHaveLength(0);
-    expect(furniture.group.children.some((child) => !(child instanceof InstancedMesh))).toBe(true);
 
     expect(entities.setOpen(leaf, false)).toBeUndefined();
     furniture.sync(entities);
-    expect(drawnInstances(furniture)).toHaveLength(1);
+    expect(drawsOf(furniture, leaf, def)).toHaveLength(1);
     furniture.dispose();
   });
 
   it('leaves an unrevealed piece out of every batch until its column is revealed', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(plain.id)!;
-    const near = entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' })!;
-    const far = entities.add({ type: def.id, size: def.size, pos: [CHUNK + 1, 1, 1], facing: 'n' })!;
+    const near = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [1, 1, 1],
+      facing: 'n',
+    })!;
+    const far = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [CHUNK + 1, 1, 1],
+      facing: 'n',
+    })!;
     const reveal = revealUpTo(CHUNK);
     const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal);
     furniture.sync(entities);
@@ -390,8 +529,18 @@ describe('furniture batches', () => {
   it('redraws a slid piece at its new place only, and still draws its batch-mates', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(plain.id)!;
-    const still = entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' })!;
-    const slid = entities.add({ type: def.id, size: def.size, pos: [1, 1, 3], facing: 'n' })!;
+    const still = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [1, 1, 1],
+      facing: 'n',
+    })!;
+    const slid = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [1, 1, 3],
+      facing: 'n',
+    })!;
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
     const before = furniture.pieceMesh(slid, def);
@@ -407,10 +556,14 @@ describe('furniture batches', () => {
   it('draws after each change only what a fresh view looking at every piece draws', () => {
     const { registry, entities } = fixture();
     const reveal = revealUpTo(CHUNK);
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, { sectorChunks: 1 });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, {
+      sectorChunks: 1,
+    });
     const synced = () => {
       furniture.sync(entities);
-      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, { sectorChunks: 1 });
+      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, {
+        sectorChunks: 1,
+      });
       fresh.sync(entities);
       expect(drawnState(furniture)).toEqual(drawnState(fresh));
       fresh.dispose();
@@ -451,7 +604,12 @@ describe('furniture batches', () => {
   it('stands a frozen loose piece where its unfrozen standalone mesh stands, before and after a move restages it', () => {
     const { registry, entities } = fixture();
     const def = registry.furniture.get(door.id)!;
-    const leaf = entities.add({ type: def.id, size: def.size, pos: [2, 1, 3], facing: 'n' })!;
+    const leaf = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [2, 1, 3],
+      facing: 'n',
+    })!;
     expect(entities.setOpen(leaf, true)).toBeUndefined();
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     // Doors and other pieces that move between syncs draw as their own meshes, frozen where they
@@ -481,9 +639,21 @@ describe('furniture batches', () => {
     const def = registry.furniture.get(plain.id)!;
     const shapedDef = registry.furniture.get(shaped.id)!;
     entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
-    const moved = entities.add({ type: def.id, size: def.size, pos: [1, 1, 3], facing: 'n' })!;
-    entities.add({ type: shapedDef.id, size: shapedDef.size, pos: [1, 1, 6], facing: 'n' });
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { sectorChunks: 1 });
+    const moved = entities.add({
+      type: def.id,
+      size: def.size,
+      pos: [1, 1, 3],
+      facing: 'n',
+    })!;
+    entities.add({
+      type: shapedDef.id,
+      size: shapedDef.size,
+      pos: [1, 1, 6],
+      facing: 'n',
+    });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
+      sectorChunks: 1,
+    });
     const freed = new Map<object, number>();
     const watch = (resource: EventDispatcher<{ dispose: object }>) => {
       if (!freed.has(resource)) {

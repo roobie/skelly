@@ -46,9 +46,18 @@ import { type ContentVehicleView, vehicleModel, workshopLift } from './workshopV
 const INSET = 0.02;
 const BODY_DOOR_SHADE = 0.62;
 const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
-const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
+const BODY_DOOR_HANDLE_SIZE_M = {
+  alongWidth: 0.1,
+  acrossWidth: 0.06,
+  height: 0.22,
+} as const;
 const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
-const HATCH_FROM_HINGE: Record<Facing, Vec3> = { n: [0, 0, 1], s: [0, 0, -1], e: [-1, 0, 0], w: [1, 0, 0] };
+const HATCH_FROM_HINGE: Record<Facing, Vec3> = {
+  n: [0, 0, 1],
+  s: [0, 0, -1],
+  e: [-1, 0, 0],
+  w: [1, 0, 0],
+};
 
 function markerEdges(): EdgesGeometry {
   const box = new BoxGeometry(1, 1, 1);
@@ -73,12 +82,20 @@ interface Piece {
   readonly pose: string;
   /** The model library version its mesh was staged against; a content vehicle look restages when it rises. */
   readonly models?: number | undefined;
-  /** A batched piece's mesh is never drawn; it holds the geometry, material and transform its batch instances. */
+  /** A loose piece's mesh is drawn itself; a batched one's meshes supply its parts' look and transforms. */
   readonly mesh: Group | Mesh;
-  /** The batch a piece that never moves between syncs is drawn in. */
-  readonly batch?: string;
+  /** The batches a piece that never moves between syncs is drawn in, one for each mesh part's look. */
+  readonly batches?: readonly BatchPart[];
   /** The column its lowest corner stands in, which decides whether it is revealed. */
   readonly column: RevealColumn;
+}
+
+/** One mesh part of a batched piece, in the batch matching its geometry, material, shadow flags and sector. */
+interface BatchPart {
+  readonly entity: BlockEntity;
+  readonly owner: Piece;
+  readonly mesh: Mesh;
+  readonly batch: string;
 }
 
 /** The drawn pieces whose lowest corner stands in one chunk column, which `ColumnReveal` reveals as a whole. */
@@ -92,7 +109,7 @@ interface RevealColumn {
 }
 
 interface Batch {
-  readonly members: readonly Piece[];
+  readonly members: readonly BatchPart[];
   readonly mesh: InstancedMesh;
 }
 
@@ -122,7 +139,7 @@ export class FurnitureMeshes {
   private readonly pieces = new Map<BlockEntity, Piece>();
   private readonly columns = new Map<string, RevealColumn>();
   /** Every drawn piece of each batch, revealed or not. */
-  private readonly batched = new Map<string, Set<BlockEntity>>();
+  private readonly batched = new Map<string, Set<BatchPart>>();
   private readonly batches = new Map<string, Batch>();
 
   /**
@@ -310,7 +327,7 @@ export class FurnitureMeshes {
   private stage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
     this.pieces.set(entity, piece);
     piece.column.pieces.add(entity);
-    if (piece.batch === undefined) {
+    if (piece.batches === undefined) {
       piece.mesh.visible = piece.column.revealed;
       // A staged piece stands where it was built until a change restages it as a fresh mesh, so its
       // subtree never moves in place.
@@ -318,13 +335,15 @@ export class FurnitureMeshes {
       this.group.add(piece.mesh);
       return;
     }
-    let members = this.batched.get(piece.batch);
-    if (!members) {
-      members = new Set();
-      this.batched.set(piece.batch, members);
+    for (const part of piece.batches) {
+      let members = this.batched.get(part.batch);
+      if (!members) {
+        members = new Set();
+        this.batched.set(part.batch, members);
+      }
+      members.add(part);
+      redraw.add(part.batch);
     }
-    members.add(entity);
-    redraw.add(piece.batch);
   }
 
   private unstage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
@@ -333,16 +352,18 @@ export class FurnitureMeshes {
     if (piece.column.pieces.size === 0) {
       this.columns.delete(piece.column.key);
     }
-    if (piece.batch === undefined) {
+    if (piece.batches === undefined) {
       this.group.remove(piece.mesh);
       return;
     }
-    const members = this.batched.get(piece.batch)!;
-    members.delete(entity);
-    if (members.size === 0) {
-      this.batched.delete(piece.batch);
+    for (const part of piece.batches) {
+      const members = this.batched.get(part.batch)!;
+      members.delete(part);
+      if (members.size === 0) {
+        this.batched.delete(part.batch);
+      }
+      redraw.add(part.batch);
     }
-    redraw.add(piece.batch);
   }
 
   /** Shows or hides the pieces of each column whose reveal changed. */
@@ -355,10 +376,12 @@ export class FurnitureMeshes {
       column.revealed = revealed;
       for (const entity of column.pieces) {
         const piece = this.pieces.get(entity)!;
-        if (piece.batch === undefined) {
+        if (piece.batches === undefined) {
           piece.mesh.visible = revealed;
         } else {
-          redraw.add(piece.batch);
+          for (const part of piece.batches) {
+            redraw.add(part.batch);
+          }
         }
       }
     }
@@ -369,8 +392,10 @@ export class FurnitureMeshes {
    * disposing it otherwise.
    */
   private redrawBatch(key: string, entities: BlockEntities): void {
-    const revealed = [...(this.batched.get(key) ?? [])].filter((entity) => this.pieces.get(entity)!.column.revealed);
-    const members = entities.listed(revealed).map((entity) => this.pieces.get(entity)!);
+    const revealed = [...(this.batched.get(key) ?? [])].filter((part) => part.owner.column.revealed);
+    const members = entities
+      .listed(new Set(revealed.map((part) => part.entity)))
+      .flatMap((entity) => revealed.filter((part) => part.entity === entity));
     const kept = this.batches.get(key);
     if (kept && sameMembers(kept.members, members)) {
       return;
@@ -389,15 +414,29 @@ export class FurnitureMeshes {
 
   private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Omit<Piece, 'models'> {
     const column = this.columnOf(entity);
+    const mesh = castsAndReceives(this.meshFor(entity, def));
     if (!standsStill(entity, def)) {
-      return { pose, mesh: castsAndReceives(this.meshFor(entity, def)), column };
+      return { pose, mesh, column };
     }
-    const mesh = this.standingMesh(entity, def);
-    mesh.updateMatrix();
+    mesh.updateMatrixWorld(true);
     const sector = this.sectorBlocks
       ? `${Math.floor(entity.pos[0] / this.sectorBlocks)}:${Math.floor(entity.pos[2] / this.sectorBlocks)}`
       : '';
-    return { pose, mesh, batch: `${mesh.geometry.uuid}:${mesh.material.uuid}:${sector}`, column };
+    const batches: BatchPart[] = [];
+    const piece: Piece = { pose, mesh, batches, column };
+    mesh.traverse((part) => {
+      if (!(part instanceof Mesh)) {
+        return;
+      }
+      part.matrix.copy(part.matrixWorld);
+      batches.push({
+        entity,
+        owner: piece,
+        mesh: part,
+        batch: `${part.geometry.uuid}:${part.material.uuid}:${part.castShadow}:${part.receiveShadow}:${sector}`,
+      });
+    });
+    return piece;
   }
 
   private columnOf(entity: BlockEntity): RevealColumn {
@@ -406,7 +445,13 @@ export class FurnitureMeshes {
     const key = `${x},${z}`;
     let column = this.columns.get(key);
     if (!column) {
-      column = { key, x, z, revealed: this.revealedAt(x, z), pieces: new Set() };
+      column = {
+        key,
+        x,
+        z,
+        revealed: this.revealedAt(x, z),
+        pieces: new Set(),
+      };
       this.columns.set(key, column);
     }
     return column;
@@ -464,7 +509,10 @@ export class FurnitureMeshes {
       return this.bodyGlowMesh(entity, def, workshopLift(entity, this.blockSize));
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, { blockSize: this.blockSize, content: this.content });
+      return vehicleModel(entity, def.vehicle, {
+        blockSize: this.blockSize,
+        content: this.content,
+      });
     }
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).
@@ -530,7 +578,11 @@ export class FurnitureMeshes {
     const across = 0;
     const normal = 2;
     const hardware = spec.hardwareSizeBlocks * this.blockSize;
-    const latch: DoorPanelBox = { ...sash.box, center: [...sash.box.center], size: [hardware, hardware, hardware] };
+    const latch: DoorPanelBox = {
+      ...sash.box,
+      center: [...sash.box.center],
+      size: [hardware, hardware, hardware],
+    };
     const width = entity.size[alongX ? 0 : 2] * this.blockSize;
     latch.center[across] =
       (spec.hinge === 'high' ? -1 : 1) * (width - (spec.frameWidthBlocks + spec.sashWidthBlocks) * this.blockSize);
@@ -541,7 +593,11 @@ export class FurnitureMeshes {
     add(latch, this.material(spec.hardwareColor));
     if (entity.window!.frameRemnants) {
       const bottom = parts.filter((part) => part.kind === 'frame').at(-2)!.box;
-      const remnants: DoorPanelBox = { ...bottom, center: [...bottom.center], size: [...bottom.size] };
+      const remnants: DoorPanelBox = {
+        ...bottom,
+        center: [...bottom.center],
+        size: [...bottom.size],
+      };
       remnants.size[1] = spec.remnantHeightBlocks * this.blockSize;
       remnants.size[normal] = spec.glass.thicknessBlocks * this.blockSize;
       remnants.center[1] += (bottom.size[1] + remnants.size[1]) / 2;
@@ -550,7 +606,7 @@ export class FurnitureMeshes {
     return group;
   }
 
-  /** The one mesh of a piece that `standsStill`. */
+  /** The single mesh of a plain piece that `standsStill`; doors and windows contribute their own mesh parts. */
   private standingMesh(entity: BlockEntity, def: FurnitureDef): Mesh<BufferGeometry, MeshLambertMaterial> {
     const vertexColors = Boolean(def.stockAppearance || def.appearance || tintedShape(drawnShape(def, 0)));
     const base = this.damageLook(entity, this.material(vertexColors ? '#ffffff' : def.color, vertexColors), def);
@@ -829,23 +885,25 @@ const drawnShape = (def: FurnitureDef, step: number): readonly ShapeBox[] => [
 
 const tintedShape = (shape: readonly ShapeBox[]): boolean => shape.some((box) => box.color);
 
-/** Open doors and windows swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
+/** Open doors and windows swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest keeps still. */
 const standsStill = (entity: BlockEntity, def: FurnitureDef): boolean =>
   def.id !== 'workshop_lift' &&
   !def.vehicle &&
   !def.corpse &&
   !(def.door && entity.open) &&
-  !(def.window && entity.window!.open);
+  !(def.window && entity.window?.open === true);
 
-const sameMembers = (kept: readonly Piece[], list: readonly Piece[]): boolean =>
-  kept.length === list.length && kept.every((piece, index) => piece === list[index]);
+const sameMembers = (kept: readonly BatchPart[], list: readonly BatchPart[]): boolean =>
+  kept.length === list.length && kept.every((part, index) => part === list[index]);
 
 /** One instanced draw of `members`, which share a geometry and material, each at its own mesh's transform. */
-const batchMesh = (members: readonly Piece[]): InstancedMesh => {
-  const { geometry, material } = members[0]!.mesh as Mesh;
-  const batch = castsAndReceives(new InstancedMesh(geometry, material, members.length));
-  for (const [index, piece] of members.entries()) {
-    batch.setMatrixAt(index, piece.mesh.matrix);
+const batchMesh = (members: readonly BatchPart[]): InstancedMesh => {
+  const { geometry, material, castShadow, receiveShadow } = members[0]!.mesh;
+  const batch = new InstancedMesh(geometry, material, members.length);
+  batch.castShadow = castShadow;
+  batch.receiveShadow = receiveShadow;
+  for (const [index, part] of members.entries()) {
+    batch.setMatrixAt(index, part.mesh.matrix);
   }
   batch.computeBoundingBox();
   batch.computeBoundingSphere();

@@ -68,7 +68,7 @@ an unfinished program cannot leave the mask up forever. See `src/presentation/wo
 
 ## Furniture instancing
 
-A closed door or window joins the existing static batch in `src/render/furniture.ts`, `FurnitureMeshes`. An open one keeps its individual mesh until a later sync closes it. Moving parts must leave and rejoin that path rather than creating another instancing route. Static furniture shares geometry and material, so this avoids per-piece scene traversal and draw submission while preserving the moving look when state needs it.
+A closed door or window joins the existing static batch in `src/render/furniture.ts`, `FurnitureMeshes`, one instance for each mesh part's geometry, material and shadow flags. An open one keeps its individual mesh until a later sync closes it. Moving parts must leave and rejoin that path rather than creating another instancing route. Static furniture shares geometry and material, so this avoids per-piece scene traversal and draw submission while preserving the same parts and moving look when state needs it.
 
 ## Tests
 
