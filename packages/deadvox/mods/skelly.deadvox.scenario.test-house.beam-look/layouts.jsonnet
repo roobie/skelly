@@ -1,5 +1,5 @@
 local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet').layouts[0];
-local palette = { '.': 'air', k: 'concrete', s: 'steel_beam_x', d: 'slab_deck', m: 'beam_look_marker' };
+local palette = { '.': 'air', k: 'concrete', s: 'steel_beam_x', d: 'slab_deck' };
 local narrowWall = [
   'k.....................k', 'k.....................k', 'k.....................k', 'k.....................k',
   'k.....................k', 'k.....................k', 'k.....................k',
@@ -32,7 +32,7 @@ local wideWall = [
       ['kkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkk',
        'kkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkk', 'kkkkkkkkkkkkkkkkkkkkkkkk'],
       wideWall, wideWall, wideWall, wideWall, wideWall, wideWall,
-      ['k......................k', 'kssssssssssssssssssssssk', 'k......................k', 'mssssssssssssssssssssssk',
+      ['k......................k', 'kssssssssssssssssssssssk', 'k......................k', 'kssssssssssssssssssssssk',
        'k......................k', 'kssssssssssssssssssssssk', 'k......................k'],
       ['dddddddddddddddddddddddd', 'dddddddddddddddddddddddd', 'dddddddddddddddddddddddd', 'dddddddddddddddddddddddd',
        'dddddddddddddddddddddddd', 'dddddddddddddddddddddddd', 'dddddddddddddddddddddddd'],

@@ -5,12 +5,6 @@
       "debugOnly": true,
       "defaultForSite": true,
       "density": null,
-      "fires": [
-        {
-          "cell": [2, 48, 31],
-          "strength": 11
-        }
-      ],
       "id": "beamlook",
       "kit": [
         {
@@ -109,6 +103,7 @@
       "skills": {},
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,
+      "supportLoss": [[3, 47, 29]],
       "wounds": []
     }
   ]

@@ -4,6 +4,6 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
     id: 'beamlook',
     site: 'testHouseBeamLook',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    fires: [{ cell: [2, 48, 31], strength: 11 }],
+    supportLoss: [[3, 47, 29]],
   }],
 }

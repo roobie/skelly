@@ -4,9 +4,9 @@ manifest(
   id='skelly.deadvox.scenario.test-house.beam-look',
   tier='scenario',
   optIn=true,
-  content=['layouts', 'markers', 'starts'],
+  content=['layouts', 'starts'],
   dependencies=kit.dependencies([
     'skelly.deadvox.scenario.test-house', 'skelly.building-blocks', 'skelly.manufactured-blocks',
-    'skelly.natural-world', 'skelly.deadvox.actors',
+    'skelly.natural-world',
   ]),
 )

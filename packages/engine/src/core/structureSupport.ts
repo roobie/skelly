@@ -35,8 +35,10 @@ export interface SupportView {
 }
 
 export interface Support {
-  /** Whether the cell's block holds what rests on it: natural ground, or a held structure cell. */
+  /** Whether the cell can hold what rests on it, rather than only being supported itself. */
   readonly holds: (cell: Readonly<Vec3>) => boolean;
+  /** Whether the cell itself is supported, even if its material cannot bear another cell. */
+  readonly supported: (cell: Readonly<Vec3>) => boolean;
 }
 
 /**
@@ -45,6 +47,9 @@ export interface Support {
  */
 export const createSupport = (registry: Registry, view: SupportView): Support => {
   const solid = registry.blocks.map((block) => block.solid);
+  const bearing = registry.blocks.map(
+    (block) => block.solid && !registry.blockMaterials.get(block.material)?.crumblesUnderLoad,
+  );
   const span = registry.blocks.map((block) =>
     Math.floor(
       ((block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
@@ -59,8 +64,10 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
   const held = new Map<string, boolean>();
   const solidAt = (x: number, y: number, z: number): boolean =>
     y >= view.minY && y < view.maxY && solid[view.block(x, y, z)] === true;
+  const bearsAt = (x: number, y: number, z: number): boolean =>
+    y >= view.minY && y < view.maxY && bearing[view.block(x, y, z)] === true;
   const holdsAt = (x: number, y: number, z: number): boolean =>
-    view.externalSupport?.(x, y, z) === true || (solidAt(x, y, z) && (view.natural(x, y, z) || heldAt(x, y, z)));
+    view.externalSupport?.(x, y, z) === true || (bearsAt(x, y, z) && (view.natural(x, y, z) || heldAt(x, y, z)));
   /** Whether what is under a solid cell holds it. */
   const standsAt = (x: number, y: number, z: number): boolean => {
     const key = `${x},${y},${z}`;
@@ -77,7 +84,7 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     for (let distance = 1; distance <= reach; distance++) {
       const nx = x + dx * distance * side;
       const nz = z + dz * distance * side;
-      if (!solidAt(nx, y, nz)) {
+      if (!bearsAt(nx, y, nz)) {
         return undefined;
       }
       if (view.natural(nx, y, nz) || standsAt(nx, y, nz)) {
@@ -114,7 +121,7 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
           return false;
         }
         seen.add(key);
-        if (!solidAt(nx, y, nz)) {
+        if (!bearsAt(nx, y, nz)) {
           return false;
         }
         if (view.natural(nx, y, nz) || standsAt(nx, y, nz)) {
@@ -139,7 +146,11 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     }
     return answer;
   };
-  return { holds: ([x, y, z]) => holdsAt(x, y, z) };
+  return {
+    holds: ([x, y, z]) => holdsAt(x, y, z),
+    supported: ([x, y, z]) =>
+      view.externalSupport?.(x, y, z) === true || (solidAt(x, y, z) && (view.natural(x, y, z) || heldAt(x, y, z))),
+  };
 };
 
 /** A cell a cascade still has to judge, because a cell it may depend on stopped holding. */

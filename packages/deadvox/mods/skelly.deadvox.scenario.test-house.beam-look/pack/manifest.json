@@ -2,7 +2,6 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.building-blocks",
-    "skelly.deadvox.actors",
     "skelly.deadvox.scenario.test-house",
     "skelly.hand-tools",
     "skelly.light-sources",
@@ -17,10 +16,6 @@
     {
       "kind": "content",
       "path": "layouts.json"
-    },
-    {
-      "kind": "content",
-      "path": "markers.json"
     },
     {
       "kind": "content",

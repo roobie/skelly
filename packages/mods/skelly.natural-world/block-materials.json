@@ -37,6 +37,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 30,
       "fallsTo": {
         "block": "soil_rubble"
@@ -101,6 +102,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 300,
       "fallsTo": {
         "block": "masonry_rubble"
@@ -165,6 +167,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 100,
       "fallsTo": {
         "block": "timber_rubble"
@@ -234,6 +237,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 400,
       "fallsTo": {
         "block": "metal_rubble"
@@ -298,6 +302,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 15,
       "fallsTo": {
         "block": "textile_rubble"
@@ -349,6 +354,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 1,
       "fallsTo": {
         "block": "soil_rubble"
@@ -408,6 +414,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": false,
       "durability": 400,
       "fallsTo": {
         "block": "reinforced_concrete_rubble"
@@ -472,6 +479,7 @@
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
+      "crumblesUnderLoad": true,
       "durability": 12,
       "fallsTo": {
         "block": "charred_remains"

@@ -110,6 +110,7 @@ export const BlockMaterialSchema = strictObject({
   /** Metres of non-beam sideways reach, or beam clear span when a member has no override. */
   span: NonNegative,
   structural: vBoolean(),
+  crumblesUnderLoad: vBoolean(),
   fallsTo: FallResultSchema,
   flammability: optional(
     strictObject({

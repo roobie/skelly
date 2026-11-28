@@ -91,6 +91,30 @@ describe('axis beam clear span', () => {
     }
   });
 
+  it('does not use a standing but crumbling cell as a beam bearing', () => {
+    const f = fixture('x', 3);
+    const material = {
+      ...fixtureBlockMaterial('fixture_char'),
+      id: 'fixture_char_material',
+      span: 0,
+      crumblesUnderLoad: true,
+    };
+    f.registry.blockMaterials.set(material.id, material);
+    const char = f.registry.blocks.length;
+    f.registry.blocks.push({
+      id: 'fixture_char',
+      name: 'Fixture char',
+      material: material.id,
+      solid: true,
+      color: '#222222',
+    });
+    f.put(f.at(0), char);
+    const support = f.support();
+    expect(support.supported(f.at(0))).toBe(true);
+    expect(support.holds(f.at(0))).toBe(false);
+    expect(support.holds(f.at(1))).toBe(false);
+  });
+
   it('does not use a merely sideways-held end as a beam bearing', () => {
     const f = fixture('x', 3);
     f.cells.delete(f.at(0, 1).join(','));

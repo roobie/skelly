@@ -18,10 +18,9 @@ The start supplies maximum skills and places the player outside both bays, facin
    with debug destruction to check the ordinary cut cascade. Reload the same start to
    repeat the initial comparison.
 
-The short-lived ignition marker is only a cascade trigger, not a removable prop beneath
-an otherwise valid run. It chars on top of an intact wall, preserving that bearing while
-queuing the oversized bay. This makes failure visible without asking the reviewer to
-set up a cut or wait for a burn. See `markers.jsonnet` and `starts.jsonnet`.
+The start queues the ordinary support owner below the oversized run without removing
+a bearing. This makes its pre-existing lack of support visible without asking the
+reviewer to set up a cut or wait for a burn. See `starts.jsonnet`.
 
 The dimensions are curated in `layouts.jsonnet`; the material limits and cited grade
 assumptions live in `packages/mods/skelly.natural-world/beam-calibration.libsonnet`.
