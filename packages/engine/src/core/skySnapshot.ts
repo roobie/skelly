@@ -1,5 +1,6 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, chunkKey, type Vec3 } from './coords.ts';
 import { SKY_LOSS, type SkyBlocker, type SkyBounds } from './skylight.ts';
@@ -52,7 +53,7 @@ export interface CapturedSky {
   input: SkySnapshot;
   unknown: boolean;
   /** Pass `furnitureBounds` when several captures are checked against one standing state. */
-  current: (furniture?: readonly SkyBlocker[]) => boolean;
+  current: (furniture?: Iterable<SkyBlocker>) => boolean;
 }
 /** Every standing piece's light-blocking boxes, each opaque. */
 export const furnitureBounds = (entities: BlockEntities): SkyBlocker[] =>
@@ -69,13 +70,16 @@ export function* captureSky(
   { world, entities, registry }: { world: ChunkSource; entities: BlockEntities; registry: Registry },
   bounds: SkyBounds,
   { bottom, top }: { bottom: number; top: number },
-  standing: readonly SkyBlocker[] = furnitureBounds(entities),
+  standing: Iterable<SkyBlocker> = furnitureBounds(entities),
 ): Generator<void, CapturedSky> {
   const dependency = skyDependencyBounds(bounds, top);
   const chunks: SkyChunk[] = [];
   let unknown = false;
   const versions: { coords: Vec3; chunk: Chunk | undefined; revision: number | undefined }[] = [];
-  const nearby = (all: readonly SkyBlocker[]) => all.filter((box) => overlapsSky(dependency, box));
+  const nearby = (all: Iterable<SkyBlocker>) =>
+    [...all]
+      .filter((box) => overlapsSky(dependency, box))
+      .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b)));
   const furniture = nearby(standing);
   const furnitureKey = JSON.stringify(furniture);
   const opacity = Uint8Array.from(registry.blocks, (definition, id) =>
