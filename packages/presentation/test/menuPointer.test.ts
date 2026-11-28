@@ -68,6 +68,30 @@ it('keeps focus on the combo field when an option is clicked through the drawn c
   expect(choose).toHaveBeenCalledExactlyOnceWith('fixture-b');
 });
 
+it('skips the hit test and clears hover styling while the pointer is locked with the menu pointer off', () => {
+  render(html`<button id="fixture-hover" type="button">fixture</button>`, host);
+  const button = host.querySelector<HTMLElement>('#fixture-hover')!;
+  const hitTest = vi.fn(() => button);
+  const original = Object.getOwnPropertyDescriptor(document, 'elementFromPoint')!;
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: hitTest });
+  try {
+    const pointer = mountMenuPointer({ input, canvas, cursor });
+    pointer.update();
+    expect(button.classList.contains('game-cursor-hover')).toBe(true);
+
+    input.menuPointer = false;
+    hitTest.mockClear();
+    pointer.update();
+
+    expect(hitTest).not.toHaveBeenCalled();
+    expect(document.querySelector('.game-cursor-hover')).toBeNull();
+    expect(cursor.classList.contains('hand')).toBe(false);
+  } finally {
+    input.menuPointer = true;
+    Object.defineProperty(document, 'elementFromPoint', original);
+  }
+});
+
 it('picks the first control that is enabled, shown and outside inert content', () => {
   render(
     html`<div style="display: none"><button>not shown</button></div><button disabled>disabled</button>
