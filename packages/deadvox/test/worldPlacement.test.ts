@@ -22,6 +22,7 @@ import { Simulation } from './simulationFixture.ts';
 
 const STOCK = 'placement_stock';
 const BLOCK = 'placement_block';
+const CHAR = 'placement_char';
 const PIECE = 'placement_piece';
 const CELL_RECIPE = 'placement_cell_recipe';
 const ENTITY_RECIPE = 'placement_entity_recipe';
@@ -46,7 +47,21 @@ registry.items.set(STOCK, {
   workInProgress: false,
 });
 registry.blockIds.set(BLOCK, registry.blocks.length);
-registry.blocks.push({ ...registry.blocks.find((block) => block.solid)!, id: BLOCK, name: 'Fixture block' });
+registry.blockMaterials.set(BLOCK, {
+  ...registry.blockMaterials.values().next().value!,
+  id: BLOCK,
+  span: 0,
+  crumblesUnderLoad: false,
+});
+registry.blocks.push({ id: BLOCK, name: 'Fixture block', material: BLOCK, solid: true, color: '#888888' });
+registry.blockMaterials.set(CHAR, {
+  ...registry.blockMaterials.get(registry.blocks[registry.blockIds.get(BLOCK)!]!.material)!,
+  id: CHAR,
+  span: 0,
+  crumblesUnderLoad: true,
+});
+registry.blockIds.set(CHAR, registry.blocks.length);
+registry.blocks.push({ id: CHAR, name: 'Fixture char', material: CHAR, solid: true, color: '#222222' });
 registry.furniture.set(PIECE, {
   id: PIECE,
   name: 'Fixture piece',
@@ -204,6 +219,18 @@ it('refuses a floating block before spending inputs, then admits it once a place
   finish(r, start(r).uid);
   expect(r.world.support.isPlaced(CELL.pos)).toBe(true);
   expect(r.inventory.worldPlacement!.refusal(registry.recipes.get(CELL_RECIPE)!, above)).toBeUndefined();
+});
+
+it('refuses a block on char as unsupported without spending inputs or breaking the remains', () => {
+  const r = make();
+  r.terrain.ensureCell(...CELL.pos);
+  r.world.setBlock(...CELL.pos, registry.blockIds.get(CHAR)!);
+  const above: WorldDestination = { kind: 'cell', pos: [CELL.pos[0], CELL.pos[1] + 1, CELL.pos[2]] };
+  const before = save(r);
+  const unsupported = coreMessage(registry, 'placementUnsupported');
+  expect(r.commands.previewPlacement(CELL_RECIPE, above).refusal).toBe(unsupported);
+  expect(r.commands.place(CELL_RECIPE, above)).toBe(unsupported);
+  expect(save(r)).toEqual(before);
 });
 
 it('requires an explicit destination and validates the result grain before spending inputs', () => {

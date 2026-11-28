@@ -177,6 +177,16 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: Blow): T
     });
     return { outcome: 'damaged', destroyed: [], edited: [] };
   }
+  return breakCell(context, cell, bash.damage);
+};
+
+const breakCell = (context: TerrainStrike, cell: Vec3, damage?: number): TerrainStrikeResult => {
+  const { terrain, supply, mover } = context;
+  const { world } = terrain;
+  const { registry } = mover.inventory;
+  const material = registry.blockMaterials.get(registry.blocks[terrain.getBlock(...cell)]!.material)!;
+  const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
+  supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
     const { revision } = supply;
     try {
@@ -186,7 +196,9 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: Blow): T
       const pile = projected.inventory.pileAt(above);
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
       if (!plan) {
-        world.blockDamage.record(terrain, registry, cell, bash.damage);
+        if (damage !== undefined) {
+          world.blockDamage.record(terrain, registry, cell, damage);
+        }
         return { outcome: 'refused', destroyed: [], edited: [] };
       }
       let destroyed: BlockEntity[] = [];
@@ -206,46 +218,76 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: Blow): T
   }
 };
 
-const landingCell = (context: TerrainStrike, cell: Vec3): Vec3 => {
+type TerrainFallContext = Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] };
+
+interface TerrainLanding {
+  cell: Vec3;
+  destroyed: BlockEntity[];
+  edited: Vec3[];
+  blocked: boolean;
+}
+
+const landingCell = (context: TerrainFallContext, cell: Vec3): TerrainLanding => {
   const { terrain, mover } = context;
-  const landing: Vec3 = [...cell];
+  const { registry } = mover.inventory;
+  const landing: TerrainLanding = { cell: [...cell], destroyed: [], edited: [], blocked: false };
   const minY = terrain.terrain.scale.minCy * CHUNK;
-  while (
-    landing[1] > minY &&
-    !mover.inventory.registry.blocks[terrain.getBlock(landing[0], landing[1] - 1, landing[2])]!.solid &&
-    context.obstructed?.(landing[0], landing[1] - 1, landing[2]) !== true
-  ) {
-    landing[1] -= 1;
+  while (landing.cell[1] > minY) {
+    const under: Vec3 = [landing.cell[0], landing.cell[1] - 1, landing.cell[2]];
+    if (context.obstructed?.(...under) === true) {
+      break;
+    }
+    const block = registry.blocks[terrain.getBlock(...under)]!;
+    if (block.solid) {
+      if (!registry.blockMaterials.get(block.material)!.crumblesUnderLoad) {
+        break;
+      }
+      const broken = breakCell({ ...context, supply: context.project() }, under);
+      if (broken.outcome !== 'broken') {
+        landing.blocked = true;
+        break;
+      }
+      landing.destroyed.push(...broken.destroyed);
+      landing.edited.push(...broken.edited);
+    }
+    landing.cell[1] -= 1;
   }
   return landing;
 };
 
 /** An instant drop: furniture loses the source cell, and its debris plans around the landed rubble. */
 const fallCell = (
-  context: TerrainStrike,
+  context: TerrainFallContext,
   cell: Vec3,
   rubble: number,
-): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> | undefined => {
-  const { terrain, supply, mover } = context;
+): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> & { fell: boolean } => {
+  const { terrain, mover } = context;
+  const impact = landingCell(context, cell);
+  const stopped = { destroyed: impact.destroyed, edited: impact.edited, fell: false };
+  if (impact.blocked) {
+    return stopped;
+  }
+  // A landing can publish breaks, so the drop must project the resulting supply rather than reuse a spent projection.
+  const supply = context.project();
+  const strike = { ...context, supply };
+  const landing = impact.cell;
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
     const { revision } = supply;
     try {
-      const clearing = provisionalMover(context, cell);
-      const landing = landingCell(context, cell);
+      const clearing = provisionalMover(strike, cell);
       if (fallingBoxRefusal(clearing, landing, [1, cell[1] - landing[1] + 1, 1])) {
-        return undefined;
+        return stopped;
       }
-      const crushed = clearing.inventory.entities.filling(...landing);
       const roots = [
-        ...(crushed ? [crushed] : []),
+        clearing.inventory.entities.filling(...landing),
         ...floorLossRoots(clearing, [cell[0], cell[1] + 1, cell[2]]),
         ...hostLossRoots(clearing, [cell[0], cell[1] - 1, cell[2]]),
-      ];
+      ].filter((root): root is BlockEntity => root !== undefined);
       const landed = provisionalMover(
         {
-          ...context,
+          ...strike,
           obstructed: (x, y, z) =>
             (x === landing[0] && y === landing[1] && z === landing[2]) || context.obstructed?.(x, y, z) === true,
         },
@@ -253,7 +295,7 @@ const fallCell = (
       );
       const plan = roots.length > 0 ? planRuin(landed, roots, [], []) : undefined;
       if (roots.length > 0 && !plan) {
-        return undefined;
+        return stopped;
       }
       let destroyed: BlockEntity[] = [];
       let edited: Vec3[] = [];
@@ -262,14 +304,7 @@ const fallCell = (
         destroyed = plan ? commitRuin({ ...mover, inventory: live }, plan) : [];
         mover.crush?.(landing, [1, cell[1] - landing[1] + 1, 1], landing, [1, 1, 1]);
         // Follow the debris so clearing its source cannot free a victim still trapped at the landing.
-        for (const body of [mover.player, ...mover.others]) {
-          if (body.buried?.some((at) => at.every((value, axis) => value === cell[axis]))) {
-            body.pos[1] = Math.min(body.pos[1], landing[1]);
-            body.buried = body.buried.map((at) =>
-              at.every((value, axis) => value === cell[axis]) ? [...landing] : at,
-            );
-          }
-        }
+        followBuriedDebris(mover, cell, landing);
         const block = terrain.world.getBlock(...cell);
         const carried = terrain.world.rubble.release(cell);
         const buried = live.buryPile(landing);
@@ -278,7 +313,7 @@ const fallCell = (
         terrain.world.rubble.bury(landing, [...carried, ...buried]);
         terrain.world.falls.emit({ kind: 'terrain', block, from: [...cell], to: [...landing] });
       });
-      return { destroyed, edited };
+      return { destroyed: [...impact.destroyed, ...destroyed], edited: [...impact.edited, ...edited], fell: true };
     } catch (error) {
       if (error !== expanded) {
         throw error;
@@ -293,7 +328,7 @@ const fallCell = (
  * queues what depended on it. Cells past the budget wait for the next call.
  */
 export const cascadeSupport = (
-  context: Omit<TerrainStrike, 'supply'> & { readonly project: () => TerrainStrike['supply'] },
+  context: TerrainFallContext,
   budget: number,
 ): Pick<TerrainStrikeResult, 'destroyed' | 'edited'> => {
   const { terrain, mover } = context;
@@ -311,22 +346,20 @@ export const cascadeSupport = (
     if (!block?.solid || view.natural(...cell)) {
       return false;
     }
-    if (support.holds(cell)) {
+    if (support.supported(cell)) {
       if (lostFloor) {
         state.enqueueSideways(registry, cell);
       }
       return false;
     }
     const material = registry.blockMaterials.get(block.material)!;
-    // A projection publishes once, so each fall reads the supply afresh.
-    const fell = fallCell({ ...context, supply: context.project() }, cell, registry.blockIds.get(material.fallsTo)!);
-    if (!fell) {
-      return false;
+    const fall = fallCell(context, cell, registry.blockIds.get(material.fallsTo)!);
+    destroyed.push(...fall.destroyed);
+    edited.push(...fall.edited);
+    if (fall.edited.length > 0) {
+      support = createSupport(registry, view);
     }
-    destroyed.push(...fell.destroyed);
-    edited.push(...fell.edited);
-    support = createSupport(registry, view);
-    return true;
+    return fall.fell;
   };
   for (let judged = 0; judged < budget; judged++) {
     const entry = state.next();
@@ -342,3 +375,12 @@ export const cascadeSupport = (
   }
   return { destroyed, edited };
 };
+
+function followBuriedDebris(mover: FurnitureMover, cell: Vec3, landing: Vec3) {
+  for (const body of [mover.player, ...mover.others]) {
+    if (body.buried?.some((at) => at.every((value, axis) => value === cell[axis]))) {
+      body.pos[1] = Math.min(body.pos[1], landing[1]);
+      body.buried = body.buried.map((at) => (at.every((value, axis) => value === cell[axis]) ? [...landing] : at));
+    }
+  }
+}
