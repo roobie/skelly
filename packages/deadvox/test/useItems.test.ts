@@ -1,4 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
+import { consumableCharge } from '@skelly/engine/internal/core/consumable.ts';
+import { slotCharge } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { chargeOf, darkLightReason } from '@skelly/engine/internal/core/lights.ts';
 import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
@@ -6,6 +8,7 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { SurvivalHooks } from '@skelly/engine/internal/game/survival.ts';
 import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
 import {
+  CONSUMABLE_SLOT,
   HandlingQueue,
   Inventory,
   type Item,
@@ -151,6 +154,23 @@ const setup = (
   };
   return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
+
+/** A light and a tool, each with what its consumable slot takes: one slot serves both. */
+const DEVICES = [
+  { device: 'flashlight', consumable: 'aa_battery' },
+  { device: 'blowtorch', consumable: 'gas_canister' },
+] as const;
+
+/** Holds the device with a consumable fitted, fitting one when the device comes empty. */
+const holdLoaded = (t: ReturnType<typeof setup>, device: string, consumable: string) => {
+  const held = t.hold(device);
+  if (!held.slots?.consumable) {
+    t.inventory.fitSlot(held, CONSUMABLE_SLOT, t.inventory.create(consumable));
+  }
+  return { held, fitted: held.slots!.consumable! };
+};
+
+const swapTime = (device: string) => registry.items.get(device)!.consumableSlot!.swapSimSeconds;
 
 describe('a paused craft in the held-item list', () => {
   const heldWork = (t: ReturnType<typeof setup>, where: 'hand' | 'pile') => {
@@ -504,18 +524,20 @@ describe('using what you hold', () => {
     expect(light.on).toBe(true);
   });
 
-  it('loads a battery into the light in your other hand', () => {
-    const { inventory, queue, survival, hold } = setup();
-    const light = hold('flashlight');
-    const battery = hold('aa_battery', 'left');
-    batteryOf(light).charges = 0.1;
-    expect(survival.use(battery)).toBeUndefined();
-    queue.tick(2.1);
-    expect(chargeOf(registry, light)).toBe(1);
-    expect(inventory.hands.left).toBeUndefined();
-    // The old battery comes out with what it had left.
-    const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
-    expect(chargeOf(registry, spent)).toBeCloseTo(0.1, 9);
+  it.each(DEVICES)('loads $consumable from the other hand into the held $device', ({ device, consumable }) => {
+    const t = setup();
+    const { held, fitted } = holdLoaded(t, device, consumable);
+    const fresh = t.hold(consumable, 'left');
+    const { capacity } = registry.items.get(consumable)!.consumable!;
+    fitted.charges = 0.1 * capacity;
+    expect(t.survival.use(fresh)).toBeUndefined();
+    t.queue.tick(swapTime(device) + 0.1);
+    expect(held.slots?.consumable).toBe(fresh);
+    expect(slotCharge(registry, held)).toBe(capacity);
+    expect(t.inventory.hands.left).toBeUndefined();
+    // The old one comes out with what it had left.
+    expect(t.inventory.locate(fitted)?.kind).toBe('pile');
+    expect(consumableCharge(registry, fitted)).toBeCloseTo(0.1 * capacity, 9);
   });
 
   it('a dead light used with a charged battery in the other hand refuses and loads nothing', () => {
@@ -556,19 +578,19 @@ describe('using what you hold', () => {
   });
 });
 
-describe('taking the battery out of a held light', () => {
-  // The player chooses taking the battery out for one use of the light.
-  const unload = (t: ReturnType<typeof setup>, light: Item) => {
-    const unloadAction = t.survival.availableItemActions(light).find((action) => action.consumable === 'unload');
+describe('taking the consumable out of a held device', () => {
+  // The player chooses taking the consumable out for one use of the device.
+  const unload = (t: ReturnType<typeof setup>, device: Item) => {
+    const unloadAction = t.survival.availableItemActions(device).find((action) => action.consumable === 'unload');
     if (!unloadAction) {
-      throw new Error('a loaded held light offers taking the battery out');
+      throw new Error('a loaded held device offers taking its consumable out');
     }
     let selected: ItemAction['consumable'];
-    const refusal = t.survival.withItemAction(light, unloadAction.id, () => {
-      selected = t.survival.selectedItemAction(light)?.consumable;
-      return t.survival.use(light);
+    const refusal = t.survival.withItemAction(device, unloadAction.id, () => {
+      selected = t.survival.selectedItemAction(device)?.consumable;
+      return t.survival.use(device);
     });
-    const ticked = t.queue.tick(registry.items.get(light.type)!.consumableSlot!.swapSimSeconds + 0.1);
+    const ticked = t.queue.tick(swapTime(device.type) + 0.1);
     return { selected, refusal, failed: ticked.failed };
   };
 
@@ -590,16 +612,18 @@ describe('taking the battery out of a held light', () => {
     expect(chargeOf(registry, battery)).toBeCloseTo(0.4, 9);
   });
 
-  it('puts the battery on the ground when no pocket has room', () => {
-    const t = setup();
-    const light = t.hold('flashlight');
-    const battery = batteryOf(light);
+  it.each(DEVICES)(
+    'puts $consumable out of the $device on the ground when no pocket has room',
+    ({ device, consumable }) => {
+      const t = setup();
+      const { held, fitted } = holdLoaded(t, device, consumable);
 
-    unload(t, light);
+      expect(unload(t, held)).toEqual({ selected: 'unload', refusal: undefined, failed: [] });
 
-    expect(light.slots?.consumable).toBeUndefined();
-    expect(t.inventory.locate(battery)?.kind).toBe('pile');
-  });
+      expect(held.slots?.consumable).toBeUndefined();
+      expect(t.inventory.locate(fitted)?.kind).toBe('pile');
+    },
+  );
 
   it('leaves the battery fitted with nowhere to put it', () => {
     const t = setup();

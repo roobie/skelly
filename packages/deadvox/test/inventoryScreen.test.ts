@@ -203,6 +203,24 @@ describe('inventory bound control navigation', () => {
   });
 });
 
+/** A light and a tool, each with what its consumable slot takes: one card slot serves both. */
+const DEVICES = [
+  { device: 'flashlight', consumable: 'aa_battery' },
+  { device: 'blowtorch', consumable: 'gas_canister' },
+] as const;
+
+/** Lays the device on the ground with a consumable fitted, fitting one when it comes empty. */
+const groundDevice = (inv: Inventory, device: string, consumable: string) => {
+  const item = inv.create(device);
+  if (!inv.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+    throw new Error(`Fixture could not place the ${device} on the ground`);
+  }
+  if (!item.slots?.consumable) {
+    inv.fitSlot(item, CONSUMABLE_SLOT, inv.create(consumable));
+  }
+  return { item, fitted: item.slots!.consumable! };
+};
+
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const character = new Character(contentRegistry, { handedness });
@@ -1394,23 +1412,22 @@ describe('inventory screen Lit rendering', () => {
     t.screen.close();
   });
 
-  it('loads a battery dragged onto the battery slot of a light card', () => {
+  it.each(DEVICES)('loads $consumable dragged onto the consumable slot of a $device card', ({ device, consumable }) => {
     const t = setup();
-    const light = t.inv.create('flashlight');
-    const spare = t.inv.create('aa_battery');
-    if (!(t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] }) && t.inv.add(spare, { kind: 'hand', side: 'left' }))) {
-      throw new Error('Fixture could not place the light on the ground and the battery in hand');
+    const { item: owner, fitted } = groundDevice(t.inv, device, consumable);
+    const spare = t.inv.create(consumable);
+    if (!t.inv.add(spare, { kind: 'hand', side: 'left' })) {
+      throw new Error(`Fixture could not place the ${consumable} in hand`);
     }
-    const fitted = light.slots!.consumable!;
     t.setLoadHandler((deviceUid, consumableUid) =>
       swapConsumable(t.inv, t.inv.itemByUid(deviceUid)!, t.inv.itemByUid(consumableUid)!, () => ({
         kind: 'pile',
         pos: [0, 0, 0],
       })),
     );
-    t.screen.selected = light;
+    t.screen.selected = owner;
     t.screen.update();
-    const slot = t.root.querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"]`)!;
+    const slot = t.root.querySelector<HTMLElement>(`[data-target="consumable:${owner.uid}"]`)!;
     const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [slot]);
 
     t.root
@@ -1426,44 +1443,43 @@ describe('inventory screen Lit rendering', () => {
     );
     hitTest.mockRestore();
 
-    expect(t.lastPayload()).toEqual({ kind: 'consumable.load', deviceUid: light.uid, consumableUid: spare.uid });
-    expect(light.slots?.consumable).toBe(spare);
+    expect(t.lastPayload()).toEqual({ kind: 'consumable.load', deviceUid: owner.uid, consumableUid: spare.uid });
+    expect(owner.slots?.consumable).toBe(spare);
     expect(t.inv.locate(fitted)?.kind).toBe('pile');
     t.screen.close();
   });
 
-  it('asks to take a fitted battery out of its card slot when it is dragged to a hand, as from an inventory slot', () => {
-    const t = setup();
-    const light = t.inv.create('flashlight');
-    if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
-      throw new Error('Fixture could not place the light on the ground');
-    }
-    const fitted = light.slots!.consumable!;
-    t.screen.selected = light;
-    t.screen.update();
-    const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
-    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
+  it.each(DEVICES)(
+    'asks to take a fitted $consumable out of the $device card slot when it is dragged to a hand',
+    ({ device, consumable }) => {
+      const t = setup();
+      const { item: owner, fitted } = groundDevice(t.inv, device, consumable);
+      t.screen.selected = owner;
+      t.screen.update();
+      const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
+      const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
 
-    t.root
-      .querySelector<HTMLElement>(`[data-target="consumable:${light.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
-      .dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      t.root
+        .querySelector<HTMLElement>(`[data-target="consumable:${owner.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
+        .dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+        );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
       );
-    globalThis.window.dispatchEvent(
-      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
-    );
-    globalThis.window.dispatchEvent(
-      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
-    );
-    hitTest.mockRestore();
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      hitTest.mockRestore();
 
-    expect(t.lastPayload()).toEqual({
-      kind: 'consumable.unload',
-      deviceUid: light.uid,
-      target: { kind: 'hand', side: 'left' },
-    });
-    t.screen.close();
-  });
+      expect(t.lastPayload()).toEqual({
+        kind: 'consumable.unload',
+        deviceUid: owner.uid,
+        target: { kind: 'hand', side: 'left' },
+      });
+      t.screen.close();
+    },
+  );
 
   it('shows the battery slot of a light with no battery as an open slot that still takes a drop', () => {
     const t = setup();

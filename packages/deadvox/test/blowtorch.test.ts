@@ -1,12 +1,13 @@
 import type { Registry } from '@skelly/engine/content';
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
-import { consumableRefusal } from '@skelly/engine/internal/core/consumableSlot.ts';
+import { consumableRefusal, slotCharge } from '@skelly/engine/internal/core/consumableSlot.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
 import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
 import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
+import { simSeconds, simToGameSeconds } from '@skelly/engine/internal/core/time.ts';
 import { cellActionsFor } from '@skelly/engine/internal/game/cellActions.ts';
 import {
   CONSUMABLE_SLOT,
@@ -16,6 +17,7 @@ import {
   Inventory,
   swapConsumable,
   type Target,
+  toggleLight,
 } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
@@ -471,6 +473,24 @@ describe('torch cutting a steel cell', () => {
     expect(chargeOf(registry, torch)).toBeCloseTo(canisterCapacity - strikes * strikeFuel, 9);
   });
 
+  it('draws nothing from an idle torch over a span a lit flashlight drains at its rate per Game hour', () => {
+    const f = cutFixture('open');
+    const torch = f.holdFuelled(canisterCapacity);
+    const light = f.inventory.create('flashlight');
+    if (!f.inventory.add(light, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the fixture flashlight');
+    }
+    expect(toggleLight(registry, light, f.sim.calendar)).toBeUndefined();
+    const before = slotCharge(registry, light);
+    const span = simSeconds(60);
+
+    f.sim.scheduler.advance(span);
+
+    const lightDrain = registry.items.get('flashlight')!.consumableSlot!.drainPerGameHour;
+    expect(before - slotCharge(registry, light)).toBeCloseTo(lightDrain * simToGameSeconds(f.sim.clock, span), 9);
+    expect(slotCharge(registry, torch)).toBe(canisterCapacity);
+  });
+
   it('refuses to start below one strike of gas, though the menu still offers the cut', () => {
     const f = cutFixture('open');
     const torch = f.holdFuelled(strikeFuel / 2);
@@ -517,9 +537,9 @@ describe('torch cutting a steel cell', () => {
     expect(f.damageAt(joist)).toBeGreaterThan(kept);
   });
 
-  it('carries a cut through a save and strikes on the beat it kept', async () => {
+  it('carries a cut and the cartridge it draws on through a save, striking on the beat it kept', async () => {
     const f = cutFixture('open');
-    f.holdFuelled(canisterCapacity);
+    const torch = f.holdFuelled(canisterCapacity);
     expect(f.session.cutCell(joist)).toBeUndefined();
     f.strike();
     // Saved between strikes, so the time already spent towards the next one must carry over.
@@ -531,6 +551,9 @@ describe('torch cutting a steel cell', () => {
 
     expect(restored.damageAt(joist)).toBe(saved);
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'cutCell', cell: joist, stopped: false });
+    const restoredTorch = restored.inventory.hands.left!;
+    expect(restoredTorch.slots?.consumable?.type).toBe(torch.slots?.consumable?.type);
+    expect(chargeOf(registry, restoredTorch)).toBe(chargeOf(registry, torch));
     for (const run of [f, restored]) {
       run.sim.scheduler.advance(halfStrike);
     }
