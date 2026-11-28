@@ -138,7 +138,7 @@ export class FurnitureMeshes {
   private drawnModels = -1;
   private readonly pieces = new Map<BlockEntity, Piece>();
   private readonly columns = new Map<string, RevealColumn>();
-  /** Every drawn piece of each batch, revealed or not. */
+  /** Every drawn mesh part of each batch, revealed or not. */
   private readonly batched = new Map<string, Set<BatchPart>>();
   private readonly batches = new Map<string, Batch>();
 
@@ -215,10 +215,10 @@ export class FurnitureMeshes {
   private hiddenPieceUids: ReadonlySet<number> = new Set();
 
   /**
-   * Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. Pieces that never move
-   * between syncs are drawn as one instanced batch per geometry, material and sector, so a frame draws, culls and
-   * updates a batch rather than each piece; a batch whose revealed members did not change is kept. Every explored
-   * piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
+   * Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. Parts of pieces that
+   * never move between syncs are drawn as one instanced batch per geometry, material, shadow flags and sector, so a
+   * frame draws, culls and updates a batch rather than each part; a batch whose revealed members did not change is kept.
+   * Every explored piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
    * reveal changed, and draws what looking at every piece would.
    */
   sync(
@@ -392,10 +392,16 @@ export class FurnitureMeshes {
    * disposing it otherwise.
    */
   private redrawBatch(key: string, entities: BlockEntities): void {
-    const revealed = [...(this.batched.get(key) ?? [])].filter((part) => part.owner.column.revealed);
-    const members = entities
-      .listed(new Set(revealed.map((part) => part.entity)))
-      .flatMap((entity) => revealed.filter((part) => part.entity === entity));
+    const partsByEntity = new Map<BlockEntity, BatchPart[]>();
+    for (const part of this.batched.get(key) ?? []) {
+      if (!part.owner.column.revealed) {
+        continue;
+      }
+      const parts = partsByEntity.get(part.entity) ?? [];
+      parts.push(part);
+      partsByEntity.set(part.entity, parts);
+    }
+    const members = entities.listed(partsByEntity.keys()).flatMap((entity) => partsByEntity.get(entity)!);
     const kept = this.batches.get(key);
     if (kept && sameMembers(kept.members, members)) {
       return;
