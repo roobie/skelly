@@ -61,7 +61,11 @@ const fixture = (restored?: Readonly<SaveSnapshot>, withLandingPost = false) => 
     });
   }
   const [fire] = registry.fireTuning.values();
-  registry.fireTuning.set(fire!.id, { ...fire!, cellsPerTick: 2 });
+  registry.fireTuning.set(fire!.id, {
+    ...fire!,
+    cellsPerTick: 2,
+    smoke: { ...fire!.smoke, stepGameSeconds: 0.25, decayFraction: 0.1 },
+  });
   const ground = registry.blockIds.get(METAL)!;
   const wood = registry.blockIds.get(WOOD)!;
   const plan: TerrainPlan = {
@@ -327,6 +331,126 @@ describe('cell fire owner', () => {
     expect(restored.world.fire.snapshotState()).toEqual(live.world.fire.snapshotState());
     expect(PATCH.map(restored.block)).toEqual(PATCH.map(live.block));
     expect(PATCH.every((cell) => restored.block(cell) === CHAR)).toBe(true);
+  });
+
+  it('retains fractional-step emission through save when a source disappears before the step ends', async () => {
+    const live = fixture();
+    const tuning = [...live.registry.fireTuning.values()][0]!.smoke;
+    expect(live.ignite(OTHER)).toBe(true);
+    live.world.fire.tick(live.terrain, live.registry, gameSeconds(tuning.stepGameSeconds / 2), 1);
+    expect(live.world.smoke.snapshotState().pending.length).toBeGreaterThan(0);
+    live.world.setBlock(...OTHER, live.registry.blockIds.get(METAL)!);
+    const restored = await reload(live);
+    for (const f of [live, restored]) {
+      f.world.fire.tick(f.terrain, f.registry, gameSeconds(tuning.stepGameSeconds / 2), 1);
+    }
+    expect(live.world.smoke.snapshotState().entries.length).toBeGreaterThan(0);
+    expect(restored.world.smoke.snapshotState()).toEqual(live.world.smoke.snapshotState());
+  });
+
+  it('rises only one layer per step and pools below a solid ceiling without sideways transfer', () => {
+    const f = fixture();
+    const tuning = [...f.registry.fireTuning.values()][0]!.smoke;
+    const initial: Vec3 = [OTHER[0], OTHER[1] + 1, OTHER[2]];
+    f.world.smoke.restoreState(
+      { remainderGameSeconds: 0, entries: [{ cell: initial, density: 2 }], pending: [] },
+      tuning,
+    );
+    const step = () => f.world.fire.tick(f.terrain, f.registry, gameSeconds(tuning.stepGameSeconds), 1);
+    step();
+    const risen = f.world.smoke.snapshotState().entries;
+    expect(risen.some(({ cell }) => cell[1] === initial[1] + 1)).toBe(true);
+    expect(
+      risen.every(({ cell }) => cell[1] <= initial[1] + 1 && cell[0] === initial[0] && cell[2] === initial[2]),
+    ).toBe(true);
+    const ceiling: Vec3 = [initial[0], initial[1] + 1, initial[2]];
+    f.world.setBlock(...ceiling, f.registry.blockIds.get(METAL)!);
+    for (let tick = 0; tick < 4; tick++) {
+      step();
+    }
+    const pooled = f.world.smoke.snapshotState().entries;
+    expect(pooled.length).toBeGreaterThan(0);
+    expect(pooled.every(({ cell }) => cell[1] < ceiling[1] && cell[0] === initial[0] && cell[2] === initial[2])).toBe(
+      true,
+    );
+  });
+
+  it('integrates additive optical depth including both endpoints without changing terrain', () => {
+    const f = fixture();
+    const tuning = [...f.registry.fireTuning.values()][0]!.smoke;
+    f.world.smoke.restoreState(
+      {
+        remainderGameSeconds: 0,
+        pending: [],
+        entries: [
+          { cell: [0, 2, 0], density: tuning.sightDepth },
+          { cell: [2, 2, 0], density: tuning.sightDepth },
+        ],
+      },
+      tuning,
+    );
+    const depth = (a: Vec3, b: Vec3) => f.world.smoke.opticalDepth(a, b, tuning.grainBlocks, scale.blockSize);
+    expect(depth([0, 2.5, 0.5], [1, 2.5, 0.5])).toBeLessThan(tuning.sightDepth);
+    expect(depth([0, 2.5, 0.5], [3, 2.5, 0.5])).toBeGreaterThanOrEqual(tuning.sightDepth);
+    expect(depth([3, 2.5, 0.5], [0, 2.5, 0.5])).toEqual(depth([0, 2.5, 0.5], [3, 2.5, 0.5]));
+    expect(depth([0.25, 2.5, 0.5], [0.75, 2.5, 0.5])).toBeGreaterThan(0);
+    expect(depth([0, 2.5, 1.5], [3, 2.5, 1.5])).toBe(0);
+    expect(f.terrain.getBlock(0, 2, 0)).toBe(0);
+  });
+
+  it('preserves emission and residual-only decay through save and continues after the last flame', async () => {
+    const live = fixture();
+    expect(live.ignite(OTHER)).toBe(true);
+    live.tick(live.duration / 2 + live.step);
+    expect(live.world.smoke.active).toBe(true);
+    const emitting = await reload(live);
+    expect(emitting.world.smoke.snapshotState()).toEqual(live.world.smoke.snapshotState());
+    const advance = live.duration / 2 + live.step;
+    live.tick(advance);
+    emitting.tick(advance);
+    expect(live.world.fire.burning).toBe(false);
+    expect(live.world.smoke.active).toBe(true);
+    expect(emitting.world.smoke.snapshotState()).toEqual(live.world.smoke.snapshotState());
+    const residual = await reload(live);
+    live.tick(advance);
+    residual.tick(advance);
+    expect(residual.world.smoke.snapshotState()).toEqual(live.world.smoke.snapshotState());
+    for (let i = 0; i < 200 && live.world.smoke.active; i++) {
+      live.tick(advance);
+    }
+    expect(live.world.smoke.active).toBe(false);
+  });
+
+  it('does not extend emission for expired sources waiting behind the capped fire queue', () => {
+    const capped = fixture();
+    const uncapped = fixture();
+    for (const f of [capped, uncapped]) {
+      for (const cell of PATCH) {
+        expect(f.ignite(cell)).toBe(true);
+      }
+    }
+    capped.world.fire.tick(capped.terrain, capped.registry, gameSeconds(capped.burn.burnDurationGameMinutes), 1);
+    uncapped.world.fire.tick(
+      uncapped.terrain,
+      uncapped.registry,
+      gameSeconds(uncapped.burn.burnDurationGameMinutes),
+      PATCH.length,
+    );
+    for (const f of [capped, uncapped]) {
+      f.world.fire.tick(f.terrain, f.registry, gameSeconds(1), PATCH.length);
+    }
+    expect(capped.world.smoke.active).toBe(true);
+    expect(capped.world.smoke.snapshotState()).toEqual(uncapped.world.smoke.snapshotState());
+  });
+
+  it('retains already emitted smoke when a burning cell is replaced', () => {
+    const f = fixture();
+    expect(f.ignite(OTHER)).toBe(true);
+    f.tick(f.duration / 2);
+    expect(f.world.smoke.active).toBe(true);
+    f.world.setBlock(...OTHER, f.registry.blockIds.get(METAL)!);
+    expect(f.world.fire.burning).toBe(false);
+    expect(f.world.smoke.active).toBe(true);
   });
 
   it('clears burning when another gameplay mutation replaces the cell', () => {

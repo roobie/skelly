@@ -5,6 +5,7 @@ import { EventQueue } from './events.ts';
 import type { FallRecord } from './fall.ts';
 import { Fire } from './fire.ts';
 import { Rubble } from './rubble.ts';
+import { Smoke } from './smoke.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { SupportState } from './structureSupport.ts';
 
@@ -81,6 +82,7 @@ export class World {
   readonly chunks = new Map<string, Chunk>();
   readonly blockDamage = new BlockDamage(this);
   readonly fire = new Fire(this);
+  readonly smoke = new Smoke();
   readonly rubble = new Rubble(this);
   readonly support = new SupportState(this);
   /** Gravity moves the view has not consumed; derived and deliberately absent from saves. */

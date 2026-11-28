@@ -1,4 +1,5 @@
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -86,6 +87,20 @@ export class Fire {
     ) {
       throw new Error('Invalid fire tick');
     }
+    const tuning = claimed(registry.fireTuning, 'fire');
+    if (!tuning) {
+      throw new Error('Fire needs smoke tuning');
+    }
+    this.world.smoke.advance({
+      terrain,
+      registry,
+      tuning: tuning.smoke,
+      elapsedGameSeconds,
+      sources: [...this.entries.values()].map(({ cell, endsAtGameSeconds }) => ({
+        cell,
+        remainingGameSeconds: Math.max(0, endsAtGameSeconds - this.timeGameSeconds),
+      })),
+    });
     this.timeGameSeconds += elapsedGameSeconds;
     // Taking only the bounded prefix prevents cycling around to a cell twice in the same tick.
     const pending: BurningCell[] = [];

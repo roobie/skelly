@@ -132,6 +132,19 @@ export const FireTuningSchema = strictObject({
   id: Id,
   capability: capabilityField('fireTuning'),
   cellsPerTick: pipe(Count, minValue(1)),
+  smoke: strictObject({
+    grainBlocks: pipe(
+      Positive,
+      maxValue(1),
+      check((value) => Number.isSafeInteger(1 / value), 'Smoke grain must divide a terrain cell'),
+    ),
+    stepGameSeconds: Positive,
+    emissionPerGameSecond: NonNegative,
+    riseFraction: Fraction,
+    decayFraction: pipe(Fraction, gtValue(0)),
+    cutoff: Positive,
+    sightDepth: Positive,
+  }),
 });
 
 /** How a support cascade paces itself (`packages/deadvox/SLICE-5.md`, "Support"). */

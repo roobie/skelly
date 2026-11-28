@@ -1887,7 +1887,7 @@ export const createSession = (options: SessionOptions) => {
   sim.scheduler.register({
     id: 'fire',
     rate: PHYSICS_RATE,
-    enabled: () => world.fire.burning,
+    enabled: () => world.fire.burning || world.smoke.active,
     tick: (dt) => {
       const context = options.terrainDestruction;
       const tuning = claimed(registry.fireTuning, 'fire');
@@ -3153,6 +3153,7 @@ export const createSession = (options: SessionOptions) => {
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     world.fire.restoreState(restored.world.fire, registry, options.onRestoreIssue);
+    world.smoke.restoreState(restored.world.smoke, claimed(registry.fireTuning, 'fire')?.smoke);
     world.rubble.restoreState(restored.world.rubble, registry, options.onRestoreIssue);
     world.support.restoreState(restored.world.support, registry, options.onRestoreIssue);
     actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));

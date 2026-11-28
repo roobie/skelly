@@ -147,6 +147,7 @@ interface WirePayload {
     rolledColumns: string[];
     blockDamage: SaveSnapshot['world']['blockDamage'];
     fire: SaveSnapshot['world']['fire'];
+    smoke: SaveSnapshot['world']['smoke'];
     rubble: SaveSnapshot['world']['rubble'];
     support: SaveSnapshot['world']['support'];
   };
@@ -986,6 +987,12 @@ const fireSchema = obj({
   entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), endsAtGameSeconds: num() })),
 });
 
+const smokeSchema = obj({
+  remainderGameSeconds: num(),
+  entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), density: num() })),
+  pending: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), density: num() })),
+});
+
 const rubbleSchema = obj({
   nextEpoch: positiveInt,
   entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), epoch: safeInt, buried: opt(placedGrid) })),
@@ -1036,6 +1043,7 @@ const wirePayloadSchema = obj({
     rolledColumns: arr(str({ nonEmpty: true })),
     blockDamage: blockDamageSchema,
     fire: fireSchema,
+    smoke: smokeSchema,
     rubble: rubbleSchema,
     support: supportSchema,
   }),
@@ -1455,6 +1463,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       rolledColumns: [...snapshot.world.rolledColumns],
       blockDamage: structuredClone(snapshot.world.blockDamage),
       fire: structuredClone(snapshot.world.fire),
+      smoke: structuredClone(snapshot.world.smoke),
       rubble: structuredClone(snapshot.world.rubble),
       support: structuredClone(snapshot.world.support),
     },
@@ -1533,6 +1542,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
       fire: structuredClone(wire.world.fire),
+      smoke: structuredClone(wire.world.smoke),
       rubble: structuredClone(wire.world.rubble),
       support: structuredClone(wire.world.support),
     },
@@ -2130,6 +2140,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         rolledColumns: arr(str({ nonEmpty: true })),
         blockDamage: blockDamageSchema,
         fire: fireSchema,
+        smoke: smokeSchema,
         rubble: rubbleSchema,
         support: supportSchema,
       }),

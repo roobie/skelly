@@ -21,6 +21,7 @@ import type { SavedRubble } from './rubble.ts';
 import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import type { SimulationWorld } from './simulationTerrain.ts';
+import type { SavedSmoke } from './smoke.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
 import type { SavedSupport } from './structureSupport.ts';
@@ -33,6 +34,7 @@ export interface SaveSnapshot {
     columns: SavedColumn[];
     blockDamage: SavedBlockDamage;
     fire: SavedFire;
+    smoke: SavedSmoke;
     rubble: SavedRubble;
     support: SavedSupport;
     vehicles: VehicleInstancesState;
@@ -143,6 +145,7 @@ export const snapshotSession = ({
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
       fire: world.fire.snapshotState() as SavedFire,
+      smoke: world.smoke.snapshotState() as SavedSmoke,
       rubble: world.rubble.snapshotState() as SavedRubble,
       support: world.support.snapshotState() as SavedSupport,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,

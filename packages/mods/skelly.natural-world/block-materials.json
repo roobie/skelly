@@ -1021,7 +1021,16 @@
     {
       "capability": "fire",
       "cellsPerTick": 64,
-      "id": "core"
+      "id": "core",
+      "smoke": {
+        "cutoff": 0.001,
+        "decayFraction": 0.002,
+        "emissionPerGameSecond": 2,
+        "grainBlocks": 1,
+        "riseFraction": 0.12,
+        "sightDepth": 3,
+        "stepGameSeconds": 0.25
+      }
     }
   ]
 }
