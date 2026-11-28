@@ -110,7 +110,7 @@ export class Fire {
         throw new Error('Burning cell has no exhaustion block');
       }
       edited.push(...this.world.setBlock(...entry.cell, result));
-      this.world.support.replaced(registry, entry.cell);
+      this.world.support.replaced(registry, entry.cell, terrain.terrain.scale.blockSize);
     }
     return { visited: pending.length, edited };
   }

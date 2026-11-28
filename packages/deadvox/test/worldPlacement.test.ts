@@ -61,7 +61,7 @@ registry.blocks.push({
   color: '#888888',
 });
 registry.blockMaterials.set(CHAR, {
-  ...registry.blockMaterials.get(registry.blocks[registry.blockIds.get(BLOCK)!]!.material)!,
+  ...fixtureBlockMaterial(BLOCK),
   id: CHAR,
   span: 0,
   crumblesUnderLoad: true,

@@ -66,7 +66,7 @@ const playLook = () => {
     character: session.character,
     body: session.sim.body,
     damageCell: session.damageTerrainCell,
-    loseSupport: (cell) => simulation.support.lost(registry, cell),
+    loseSupport: (cell) => simulation.support.lost(registry, cell, config.scale.blockSize),
   });
   return session;
 };

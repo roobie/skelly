@@ -10,6 +10,8 @@ import type { World } from './world.ts';
 /** Sideways run directions, in the fixed order every peer searches them. */
 const BEARING_OFFSETS = { '-x': [-1, 0], '+x': [1, 0], '-z': [0, -1], '+z': [0, 1] } as const;
 
+const BEAM_AXES = { x: [1, 0], z: [0, 1] } as const;
+
 const SIDEWAYS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -19,6 +21,7 @@ const SIDEWAYS: readonly (readonly [number, number])[] = [
 
 /** The cells a support judgement reads. */
 export interface SupportView {
+  readonly blockSize: number;
   /** The block id standing at a cell inside the world's height. */
   readonly block: (x: number, y: number, z: number) => number;
   /** Whether the solid block at a cell is untouched natural ground. */
@@ -47,8 +50,16 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
   const bearing = registry.blocks.map(
     (block) => block.solid && !registry.blockMaterials.get(block.material)?.crumblesUnderLoad,
   );
-  const span = registry.blocks.map((block) => registry.blockMaterials.get(block.material)?.span ?? 0);
-  const bearings = registry.blocks.map((block) => (block.loadPath ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0]));
+  const span = registry.blocks.map((block) =>
+    Math.floor(
+      ((block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
+        registry.blockMaterials.get(block.material)?.span ??
+        0) / view.blockSize,
+    ),
+  );
+  const bearings = registry.blocks.map((block) =>
+    block.loadPath?.kind === 'strut' ? BEARING_OFFSETS[block.loadPath.bearing] : [0, 0],
+  );
   const standing = new Map<string, boolean>();
   const held = new Map<string, boolean>();
   const solidAt = (x: number, y: number, z: number): boolean =>
@@ -68,8 +79,35 @@ export const createSupport = (registry: Registry, view: SupportView): Support =>
     }
     return answer;
   };
+  const beamEnd = ([x, y, z]: Readonly<Vec3>, axis: 'x' | 'z', reach: number, side: number): number | undefined => {
+    const [dx, dz] = BEAM_AXES[axis];
+    for (let distance = 1; distance <= reach; distance++) {
+      const nx = x + dx * distance * side;
+      const nz = z + dz * distance * side;
+      if (!bearsAt(nx, y, nz)) {
+        return undefined;
+      }
+      if (view.natural(nx, y, nz) || standsAt(nx, y, nz)) {
+        return distance;
+      }
+      const path = registry.blocks[view.block(nx, y, nz)]?.loadPath;
+      if (path?.kind !== 'beam' || path.axis !== axis) {
+        return undefined;
+      }
+    }
+    return undefined;
+  };
+  const beamAt = (cell: Readonly<Vec3>, axis: 'x' | 'z', reach: number): boolean => {
+    const before = beamEnd(cell, axis, reach, -1);
+    const after = before === undefined ? undefined : beamEnd(cell, axis, reach, 1);
+    return before !== undefined && after !== undefined && before + after - 1 <= reach;
+  };
   const sidewaysAt = (x: number, y: number, z: number): boolean => {
     const reach = span[view.block(x, y, z)] ?? 0;
+    const path = registry.blocks[view.block(x, y, z)]?.loadPath;
+    if (path?.kind === 'beam') {
+      return beamAt([x, y, z], path.axis, reach);
+    }
     const seen = new Set<string>([`${x},${z}`]);
     const open: [number, number, number][] = [[x, z, 0]];
     for (const [cx, cz, distance] of open) {
@@ -140,9 +178,18 @@ const warnRestoreIssue = (issue: string): void => {
   console.warn(issue);
 };
 
-/** The widest span any material reaches, which bounds how far sideways a lost cell's dependants can be. */
-const widestSpan = (registry: Registry): number =>
-  [...registry.blockMaterials.values()].reduce((widest, { span }) => (span > widest ? span : widest), 0);
+/** Bounds sideways dependants, including block-authored member overrides. */
+const widestSpan = (registry: Registry, beam: boolean): number =>
+  registry.blocks.reduce((widest, block) => {
+    if ((block.loadPath?.kind === 'beam') !== beam) {
+      return widest;
+    }
+    const span =
+      (block.loadPath?.kind === 'beam' ? block.loadPath.span : undefined) ??
+      registry.blockMaterials.get(block.material)?.span ??
+      0;
+    return Math.max(widest, span);
+  }, 0);
 
 const registryBearings = new WeakMap<Registry, Set<keyof typeof BEARING_OFFSETS | undefined>>();
 
@@ -187,7 +234,7 @@ export class SupportState {
    * A cell stopped holding: queue its receivers in the row above, then its bounded same-row dependants.
    * A cell is followed once per cascade.
    */
-  lost(registry: Registry, cell: Readonly<Vec3>): void {
+  lost(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
     const key = keyOf(cell);
     if (this.lostCells.has(key)) {
       return;
@@ -195,32 +242,40 @@ export class SupportState {
     this.lostCells.set(key, [...cell] as Vec3);
     let bearings = registryBearings.get(registry);
     if (!bearings) {
-      bearings = new Set(registry.blocks.map((block) => block.loadPath?.bearing));
+      bearings = new Set(
+        registry.blocks.map((block) => (block.loadPath?.kind === 'strut' ? block.loadPath.bearing : undefined)),
+      );
       registryBearings.set(registry, bearings);
     }
     for (const bearing of bearings) {
       const [dx, dz] = bearing ? BEARING_OFFSETS[bearing] : [0, 0];
       this.enqueue([cell[0] - dx!, cell[1] + 1, cell[2] - dz!], true);
     }
-    this.enqueueSideways(registry, cell);
+    this.enqueueSideways(registry, cell, blockSize);
   }
 
   /** A material replacement may lose span without losing solidity, so judge it as well as its dependants. */
-  replaced(registry: Registry, cell: Readonly<Vec3>): void {
+  replaced(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
     this.markPlaced(cell);
     this.enqueue([...cell] as Vec3, false);
-    this.lost(registry, cell);
+    this.lost(registry, cell, blockSize);
   }
 
   /** Queues the cells whose sideways run may pass through or end at `cell`. */
-  enqueueSideways(registry: Registry, cell: Readonly<Vec3>): void {
-    const reach = widestSpan(registry);
+  enqueueSideways(registry: Registry, cell: Readonly<Vec3>, blockSize: number): void {
+    const reach = Math.floor(widestSpan(registry, false) / blockSize);
     for (let dx = -reach; dx <= reach; dx++) {
       const depth = reach - Math.abs(dx);
       for (let dz = -depth; dz <= depth; dz++) {
         if (dx !== 0 || dz !== 0) {
           this.enqueue([cell[0] + dx, cell[1], cell[2] + dz], false);
         }
+      }
+    }
+    const beamReach = Math.floor(widestSpan(registry, true) / blockSize);
+    for (let distance = 1; distance <= beamReach; distance++) {
+      for (const [dx, dz] of SIDEWAYS) {
+        this.enqueue([cell[0] + dx * distance, cell[1], cell[2] + dz * distance], false);
       }
     }
   }
@@ -328,6 +383,7 @@ export const terrainSupportView = (
     placing !== undefined && x === placing.cell[0] && y === placing.cell[1] && z === placing.cell[2];
   const block = (x: number, y: number, z: number): number => (at(x, y, z) ? placing!.block : terrain.getBlock(x, y, z));
   return {
+    blockSize: scale.blockSize,
     minY,
     maxY,
     block,

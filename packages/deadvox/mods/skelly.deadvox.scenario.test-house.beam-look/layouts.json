@@ -1,0 +1,349 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
+      },
+      "buildings": [
+        {
+          "position": [4, 20.5, -4.5],
+          "rotation": 0,
+          "template": "test_house_home"
+        },
+        {
+          "position": [-5, 20.5, -7],
+          "rotation": 0,
+          "template": "test_house_shed"
+        },
+        {
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
+        },
+        {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
+          "position": [-2, 20.5, 4.5],
+          "rotation": 0,
+          "template": "test_house_garden_wall"
+        },
+        {
+          "position": [-4, 20.5, -1],
+          "rotation": 0,
+          "template": "test_house_path"
+        },
+        {
+          "position": [3, 20.5, -1.5],
+          "rotation": 0,
+          "template": "test_house_step"
+        },
+        {
+          "position": [2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_outdoor_stock"
+        },
+        {
+          "position": [-2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
+        },
+        {
+          "position": [-12.5, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
+        },
+        {
+          "position": [-14, 20.5, 14],
+          "rotation": 0,
+          "template": "test_house_beam_limit"
+        },
+        {
+          "position": [1, 20.5, 14],
+          "rotation": 0,
+          "template": "test_house_beam_over_limit"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "testHouseBeamLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [-0.75, 21, 33]
+      },
+      "showroom": {
+        "capacity": 3,
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [],
+        "spacing": 1
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "water": [],
+      "weatheringProfile": "proper",
+      "woodlands": []
+    }
+  ],
+  "templates": [
+    {
+      "id": "test_house_beam_limit",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkk"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k",
+          "k.....................k"
+        ],
+        [
+          "k.....................k",
+          "ksssssssssssssssssssssk",
+          "k.....................k",
+          "ksssssssssssssssssssssk",
+          "k.....................k",
+          "ksssssssssssssssssssssk",
+          "k.....................k"
+        ],
+        [
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd",
+          "ddddddddddddddddddddddd"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "d": "slab_deck",
+        "k": "concrete",
+        "s": "steel_beam_x"
+      },
+      "size": [23, 9, 7]
+    },
+    {
+      "id": "test_house_beam_over_limit",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkk"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k",
+          "k......................k"
+        ],
+        [
+          "k......................k",
+          "kssssssssssssssssssssssk",
+          "k......................k",
+          "kssssssssssssssssssssssk",
+          "k......................k",
+          "kssssssssssssssssssssssk",
+          "k......................k"
+        ],
+        [
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd",
+          "dddddddddddddddddddddddd"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "d": "slab_deck",
+        "k": "concrete",
+        "s": "steel_beam_x"
+      },
+      "size": [24, 9, 7]
+    }
+  ]
+}

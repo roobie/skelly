@@ -183,12 +183,13 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
 const breakCell = (
   context: TerrainStrike,
   cell: Vec3,
-  yields: BlockMaterialDef['rubble'],
+  yields?: BlockMaterialDef['rubble'],
   damage?: number,
 ): TerrainStrikeResult => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
   const { registry } = mover.inventory;
+  const loose = yields ?? blockBreakYields(registry, registry.blocks[terrain.getBlock(...cell)]!);
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
   for (;;) {
@@ -198,7 +199,7 @@ const breakCell = (
       const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
       const roots = [...floorLossRoots(projected, above), ...hostLossRoots(projected, [cell[0], cell[1] - 1, cell[2]])];
       const pile = projected.inventory.pileAt(above);
-      const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields }]);
+      const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: loose }]);
       if (!plan) {
         if (damage !== undefined) {
           world.blockDamage.record(terrain, registry, cell, damage);
@@ -212,7 +213,7 @@ const breakCell = (
         destroyed = commitRuin({ ...mover, inventory: live }, plan);
         edited = world.setBlock(...cell, 0);
       });
-      world.support.lost(registry, cell);
+      world.support.lost(registry, cell, terrain.terrain.scale.blockSize);
       return { outcome: 'broken', destroyed, edited };
     } catch (error) {
       if (error !== expanded) {
@@ -279,7 +280,7 @@ const fallCell = (
     return fallBlock(context, cell, result.block);
   }
   const broken = breakCell({ ...context, supply: context.project() }, cell, result.yields);
-  return { ...broken, fell: broken.outcome === 'broken' };
+  return { destroyed: broken.destroyed, edited: broken.edited, fell: broken.outcome === 'broken' };
 };
 
 const fallBlock = (
@@ -374,7 +375,7 @@ export const cascadeSupport = (
     }
     if (support.supported(cell)) {
       if (lostFloor) {
-        state.enqueueSideways(registry, cell);
+        state.enqueueSideways(registry, cell, terrain.terrain.scale.blockSize);
       }
       return false;
     }
@@ -395,7 +396,7 @@ export const cascadeSupport = (
     const lost = judge(cell, entry.lostFloor);
     state.judged();
     if (lost) {
-      state.lost(registry, cell);
+      state.lost(registry, cell, terrain.terrain.scale.blockSize);
     }
   }
   return { destroyed, edited };

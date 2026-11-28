@@ -15,6 +15,12 @@ const fixtureBlock = (id: string, span: number, crumblesUnderLoad = false): numb
 const GROUND = fixtureBlock('support_fixture_ground', 0);
 const BEAM = fixtureBlock('support_fixture_beam', 2);
 const POST = fixtureBlock('support_fixture_post', 0);
+const OVERRIDE = fixtureBlock('support_fixture_override', 2);
+const FALLBACK = fixtureBlock('support_fixture_fallback', 2);
+const ZERO = fixtureBlock('support_fixture_zero', 2);
+registry.blocks[OVERRIDE]!.loadPath = { kind: 'beam', axis: 'x', span: 3 };
+registry.blocks[FALLBACK]!.loadPath = { kind: 'beam', axis: 'x' };
+registry.blocks[ZERO]!.loadPath = { kind: 'beam', axis: 'x', span: 0 };
 const STRUT = fixtureBlock('support_fixture_strut', 0);
 const REVERSED = fixtureBlock('support_fixture_reversed', 0);
 const OFFCUT = 'support_fixture_offcut';
@@ -40,16 +46,37 @@ for (const [id, rise, bearing] of [
 const CHAR = fixtureBlock('support_fixture_char', 0, true);
 
 /** Ground fills y <= 0 and every ground block is natural; every other cell is what the case sets. */
-const world = (cells: readonly (readonly [Vec3, number])[]) => {
+const world = (cells: readonly (readonly [Vec3, number])[], blockSize = 1) => {
   const placed = new Map(cells.map(([cell, id]) => [cell.join(','), id]));
   const block = (x: number, y: number, z: number) => placed.get(`${x},${y},${z}`) ?? (y <= 0 ? GROUND : 0);
-  const view: SupportView = { minY: -4, maxY: 16, block, natural: (x, y, z) => block(x, y, z) === GROUND };
+  const view: SupportView = { blockSize, minY: -4, maxY: 16, block, natural: (x, y, z) => block(x, y, z) === GROUND };
   return createSupport(registry, view);
 };
 const column = (x: number, height: number, id = POST): [Vec3, number][] =>
   Array.from({ length: height }, (_, at) => [[x, at + 1, 0], id]);
 
 describe('structure support', () => {
+  it('uses a beam override, including zero, and otherwise falls back to its material clear span', () => {
+    const run = (id: number, length: number): [Vec3, number][] => [
+      ...column(0, 3),
+      ...column(length + 1, 3),
+      ...Array.from({ length }, (_, x): [Vec3, number] => [[x + 1, 3, 0], id]),
+    ];
+    expect(world(run(OVERRIDE, 3)).holds([3, 3, 0])).toBe(true);
+    expect(world(run(FALLBACK, 3)).holds([2, 3, 0])).toBe(false);
+    expect(world(run(FALLBACK, 2)).holds([2, 3, 0])).toBe(true);
+    expect(world(run(ZERO, 1)).holds([1, 3, 0])).toBe(false);
+  });
+  it('converts authored metre reach through block size, rounding down to whole cells', () => {
+    const cells: [Vec3, number][] = [
+      ...column(0, 3),
+      ...Array.from({ length: 5 }, (_, x): [Vec3, number] => [[x + 1, 3, 0], BEAM]),
+    ];
+    expect(world(cells, 0.5).holds([4, 3, 0])).toBe(true);
+    expect(world(cells, 0.5).holds([5, 3, 0])).toBe(false);
+    expect(world(cells, 0.75).holds([2, 3, 0])).toBe(true);
+    expect(world(cells, 0.75).holds([3, 3, 0])).toBe(false);
+  });
   it('carries a beam through a held diagonal foot, but not a floating or reversed strut', () => {
     const cells: [Vec3, number][] = [...column(0, 2), [[1, 3, 0], STRUT], [[1, 4, 0], BEAM]];
     const held = world(cells);

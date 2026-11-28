@@ -86,7 +86,7 @@ const playLook = (buried = false) => {
     character: session.character,
     body: session.sim.body,
     damageCell: session.damageTerrainCell,
-    loseSupport: (cell) => simulation.support.lost(registry, cell),
+    loseSupport: (cell) => simulation.support.lost(registry, cell, blockSize),
   });
   const heldKit = start.kit.find((entry) => entry.destination.kind === 'hand');
   const weapon = heldKit ? meleeWeaponFromContent(registry.items.get(heldKit.item)!.weapon!.melee) : undefined;

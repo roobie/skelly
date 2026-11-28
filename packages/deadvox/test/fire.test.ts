@@ -32,11 +32,11 @@ const fixture = (restored?: Readonly<SaveSnapshot>, withLandingPost = false) => 
   const registry = baseRegistry();
   const burn = { ignitionStrength: 3, burnDurationGameMinutes: gameMinutes(1), burnsTo: CHAR };
   for (const [id, span, flammability] of [
-    [WOOD, 2, burn],
-    [FIBRE, 1, burn],
+    [WOOD, 1, burn],
+    [FIBRE, 0.5, burn],
     [CHAR, 0, undefined],
     [RUBBLE, 0, undefined],
-    [METAL, 2, undefined],
+    [METAL, 1, undefined],
     [LIQUID, 0, undefined],
   ] as const) {
     registry.blockMaterials.set(id, {

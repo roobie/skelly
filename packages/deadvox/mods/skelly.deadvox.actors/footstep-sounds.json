@@ -265,6 +265,30 @@
       "sound": "shambler_step_wood"
     },
     {
+      "block": "steel_beam_x",
+      "family": "shambler",
+      "id": "8_shambler_steel_beam_x",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "steel_beam_z",
+      "family": "shambler",
+      "id": "8_shambler_steel_beam_z",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "concrete_beam_x",
+      "family": "shambler",
+      "id": "8_shambler_concrete_beam_x",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "concrete_beam_z",
+      "family": "shambler",
+      "id": "8_shambler_concrete_beam_z",
+      "sound": "shambler_step_stone"
+    },
+    {
       "block": "steel_strut_px",
       "family": "shambler",
       "id": "8_shambler_steel_strut_px",
@@ -287,6 +311,18 @@
       "family": "shambler",
       "id": "8_shambler_steel_strut_nz",
       "sound": "shambler_step_stone"
+    },
+    {
+      "block": "timber_beam_x",
+      "family": "shambler",
+      "id": "8_shambler_timber_beam_x",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "timber_beam_z",
+      "family": "shambler",
+      "id": "8_shambler_timber_beam_z",
+      "sound": "shambler_step_wood"
     },
     {
       "block": "timber_strut_px",

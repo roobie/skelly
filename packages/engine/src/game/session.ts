@@ -1081,7 +1081,7 @@ export const createSession = (options: SessionOptions) => {
     }
     world.rubble.release(cell);
     const edited = world.setBlock(cell[0], cell[1], cell[2], 0);
-    world.support.lost(registry, [...cell]);
+    world.support.lost(registry, [...cell], s);
     options.onTerrainEdited?.(edited);
     return undefined;
   };

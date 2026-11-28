@@ -13,7 +13,7 @@ read_if:
   - you're changing collapse displacement, burial, suffocation, continuous-damage audio or buried-player presentation
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
   - you're integrating terrain repair or rubble clearing with the shared world-work review
-  - you're changing structure support, bent span reach, cascade landing, buried contents or their clearing
+  - you're changing structure support, beam clear-span calibration, bent reach, cascade landing or buried contents
   - you're changing strut geometry, material admission or ray passage
 ---
 
@@ -138,15 +138,26 @@ unbuilt. Unanswered gates block only their dependent work.
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
 - **Support:** binary gravity support prevents floating walls without claiming to
-  simulate physical stress. Bending accommodates corners without a corner-specific
-  tunable; refusing merely sideways-held endpoints prevents endless cantilevers.
+  simulate physical stress. Metre-authored limits keep calibration independent of world
+  resolution. A beam is a member carried at both ends, not a cantilever: it needs standing
+  bearings on both sides, and only its own axis can carry its clear span. A sideways-held
+  cell cannot become a bearing for another run, so decks stand on beams rather than hang
+  beside them. Non-beam bending accommodates corners without a corner-specific tunable.
+  The beam cell fixes the member section; a cited material span-to-depth ratio therefore
+  gives its clear-span limit without choosing a separate member. Grade and reinforcement
+  assumptions stay with that content calibration. Steel's hall is the limit, not a reason
+  to raise a span for a failing building. See
+  `packages/mods/skelly.natural-world/beam-calibration.libsonnet`.
   Downward bearing preserves memo termination and query-order independence without
   ports or a second support graph. Struts move the bearing point geometrically, not
   by granting a span bonus. Reverse bearing reach matters because losing a diagonal
   foot must invalidate its receiver even when no block stands straight above it.
-  Bounded sideways reach keeps cascade invalidation local. See
+  Bounding the bending search separately from straight members keeps a long beam from
+  expanding every cascade into a wide neighbourhood. See
   `packages/engine/src/core/structureSupport.ts`, `createSupport`, `SupportState.lost`
-  and `SupportState.enqueueSideways`.
+  and `SupportState.enqueueSideways`. The prepared bay comparison leaves both bearings
+  intact so its collapse proves the clear-span boundary rather than a missing end; see
+  `packages/deadvox/mods/skelly.deadvox.scenario.test-house.beam-look/README.md`.
   A canopy-bearing trunk refuses a blow until felling exists: canopy reduced to rubble
   or left floating both read wrong, and refusal keeps timber yield open. An exhausted
   search has not cleared the trunk; see
@@ -190,8 +201,11 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Strut geometry:** shape belongs to a construction block, not to a material whitelist,
   so another structural material can reuse the same mechanism. A single load-path field
   keeps support reading one load description rather than competing shape-specific fields;
-  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Content derives oriented
-  burn replacements to avoid turning an open member into a cube. The bounded prism keeps
+  see `packages/engine/src/core/schema/blocks.ts`, `BlockSchema`. Beam rows share a generator
+  so material variants cannot lose an orientation; see
+  `packages/mods/skelly.natural-world/beams.libsonnet`. A burnt beam loses its axis because
+  char cannot bridge a gap. Strut content instead derives oriented burn replacements to
+  avoid turning an open member into a cube. The bounded prism keeps
   mesh ownership inside its cell; explicit vertex ownership avoids inferring a cell from
   a sloping face normal. Open members opt out of cube-face cracks in content so damage
   cannot paint their empty gaps; see `packages/presentation/src/render/terrainCracks.ts`,
