@@ -1097,6 +1097,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fixed-lamp-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-batch-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-push-look/furniture.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.furniture-push-look/furniture.json"
     },

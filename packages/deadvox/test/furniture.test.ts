@@ -59,6 +59,19 @@ const panelCorners = (box: ReturnType<typeof doorPanel>): Vector3[] =>
 const maxCornerError = (expected: Vector3[], actual: Vector3[]): number =>
   Math.max(...expected.map((point) => Math.min(...actual.map((other) => point.distanceTo(other)))));
 
+const drawnPanelMatrix = (furniture: FurnitureMeshes, panel: Mesh, index: number, open: boolean): Matrix4 => {
+  if (open) {
+    return panel.matrixWorld;
+  }
+  const batch = furniture.group.children.find(
+    (child): child is InstancedMesh =>
+      child instanceof InstancedMesh && child.geometry === panel.geometry && child.material === panel.material,
+  )!;
+  const instance = new Matrix4();
+  batch.getMatrixAt(index, instance);
+  return instance.premultiply(batch.matrixWorld);
+};
+
 /** A cupboard next to a player in a hoodie, and a can of beans in the cupboard. */
 const kitchen = () => {
   const inv = new Inventory(registry);
@@ -625,13 +638,15 @@ describe('furniture', () => {
       for (let index = 0; index < doors.length; index++) {
         const door = doors[index]!;
         const box = doorPanel(door, 0.5);
-        const group = furniture.group.children[index]!;
-        const panel = group.children[0] as import('three').Mesh;
+        const standalone = furniture.pieceMesh(door, registry.furniture.get(door.type)!) as import('three').Group;
+        standalone.updateMatrixWorld(true);
+        const panel = standalone.children[0] as import('three').Mesh;
         // A detailed leaf is built in its own hinge frame: its core slab spans the panel's length and height, and its
         // depth is the panel's thin side.
         const { max } = panel.geometry.boundingBox!;
         const slab = new Matrix4().makeScale(2 * max.x, 2 * max.y, Math.min(...box.size));
-        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld.clone().multiply(slab)));
+        const matrix = drawnPanelMatrix(furniture, panel, index, open);
+        const error = maxCornerError(panelCorners(box), renderedCorners(matrix.clone().multiply(slab)));
         expect(error, `${door.facing} door ${open ? 'open' : 'closed'}`).toBeLessThan(0.001);
       }
     }
